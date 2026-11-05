@@ -1,0 +1,122 @@
+/* Chess Lab Open — Play vs Stockfish at a chosen strength, with a blindfold option.
+   Limited strength uses the engine's own UCI_LimitStrength / UCI_Elo (its scale,
+   1320–3190); the limit is switched off right after each move so analysis stays
+   full strength. Blindfold: no pieces, no move dots; moves by typing or tapping;
+   Peek shows the pieces for 2 seconds (counted). Last 30 games stay in this browser. */
+'use strict';
+(function(){
+let board=null;
+const S={g:null,me:'w',elo:1800,blind:false,peeks:0,over:false,busy:false,resignArm:false,moves:[]};
+
+function games(){ return Store.get('play-games')||[] }
+function saveGame(result,reason){
+  const list=games();
+  list.unshift({t:Date.now(),me:S.me,elo:S.elo,blind:S.blind,peeks:S.peeks,result,reason,moves:S.moves.join(' ')});
+  Store.put('play-games',list.slice(0,30)); renderGames();
+}
+function renderGames(){
+  const list=games();
+  const el=$('pl-games');
+  const W=list.filter(g=>g.result==='win').length,D=list.filter(g=>g.result==='draw').length,L=list.length-W-D;
+  el.innerHTML=(list.length?`<p class="note">${W} wins · ${D} draws · ${L} losses</p>`:'<p class="note">No games yet.</p>')+
+    list.slice(0,12).map(g=>`<div class="gamerow"><span class="src">${new Date(g.t).toISOString().slice(0,10)}</span>
+      <span>${g.me==='w'?'White':'Black'} vs Stockfish${g.elo==='max'?'':' ('+g.elo+')'}${g.blind?' · blindfold'+(g.peeks?' ('+g.peeks+' peeks)':''):''}</span>
+      <span class="pill ${g.result==='win'?'good':g.result==='draw'?'none':'bad'}">${g.result}</span>
+      <a class="note" href="https://lichess.org/analysis/pgn/${encodeURIComponent(g.moves)}" target="_blank" rel="noopener">review ↗</a></div>`).join('');
+}
+function newGame(){
+  S.g=new Chess(); S.moves=[]; S.over=false; S.busy=false; S.resignArm=false; S.peeks=0;
+  S.elo=$('pl-elo').value==='max'?'max':+$('pl-elo').value;
+  const c=$('pl-color').value; S.me=c==='random'?(Math.random()<0.5?'w':'b'):c;
+  S.blind=$('pl-blind').checked;
+  $('pl-board').classList.toggle('blind',S.blind);
+  board.set(S.g,{orient:S.me,last:null});
+  renderMoves();
+  status('', 'New game.',`You are ${S.me==='w'?'White':'Black'} vs Stockfish${S.elo==='max'?' at full strength':' ('+S.elo+')'}${S.blind?' — blindfold':''}.`);
+  if(S.g.turn()!==S.me) botMove();
+}
+async function botMove(){
+  if(S.over) return;
+  S.busy=true;
+  let uci=null;
+  if(S.elo==='max'){ const a=await SharedEngine.analyse(S.g.fen(),14,1,12000).catch(()=>null); uci=a&&a[0]&&a[0].uci }
+  else uci=await SharedEngine.play(S.g.fen(),S.elo,700).catch(()=>null);
+  S.busy=false;
+  if(S.over) return;
+  if(!uci){ status('warn','The engine is not available.','Check Settings, or try again.'); return }
+  const m=S.g.move({from:uci.slice(0,2),to:uci.slice(2,4),promotion:uci[4]||'q'});
+  if(!m){ status('warn','Engine move failed.',''); return }
+  S.moves.push(m.san);
+  board.set(S.g,{last:{from:m.from,to:m.to},orient:S.me});
+  renderMoves();
+  if(!checkEnd()) status('', 'Your move.',m.san+' played.');
+}
+function userMove(from,to,promo){
+  if(!S.g||S.over||S.busy) return;
+  if(S.g.turn()!==S.me) return;
+  const m=S.g.move({from,to,promotion:promo||'q'});
+  if(!m) return;
+  S.moves.push(m.san); S.resignArm=false;
+  board.set(S.g,{last:{from:m.from,to:m.to},orient:S.me});
+  renderMoves();
+  if(!checkEnd()){ status('', 'Stockfish is thinking…',''); botMove() }
+}
+function checkEnd(){
+  const g=S.g; let result=null, reason='';
+  if(g.in_checkmate()){ result=g.turn()===S.me?'loss':'win'; reason='checkmate' }
+  else if(g.in_stalemate()){ result='draw'; reason='stalemate' }
+  else if(g.in_threefold_repetition()){ result='draw'; reason='threefold repetition' }
+  else if(g.insufficient_material()){ result='draw'; reason='insufficient material' }
+  else if(g.in_draw()){ result='draw'; reason='fifty-move rule' }
+  if(!result) return false;
+  endGame(result,reason); return true;
+}
+function endGame(result,reason){
+  S.over=true;
+  $('pl-board').classList.remove('blind');
+  board.set(S.g,{last:null,orient:S.me,locked:true});
+  status(result==='win'?'good':result==='draw'?'':'bad',
+    result==='win'?'You won!':result==='draw'?'Draw.':'Stockfish wins.',
+    reason+(S.blind?` · blindfold${S.peeks?', '+S.peeks+' peeks':''}`:'')+'. The pieces are back; review below.');
+  saveGame(result,reason);
+}
+function resign(){
+  if(!S.g||S.over) return;
+  if(!S.resignArm){ S.resignArm=true; status('warn','Resign?','Press Resign again to confirm.'); return }
+  endGame('loss','resignation');
+}
+function peek(){
+  if(!S.blind||S.over) return;
+  S.peeks++;
+  const b=$('pl-board'); b.classList.remove('blind');
+  status('warn','Peek '+S.peeks,'The pieces hide again in 2 seconds.');
+  setTimeout(()=>{ if(S.blind&&!S.over) b.classList.add('blind') },2000);
+}
+function renderMoves(){
+  const el=$('pl-moves'); let html='';
+  S.moves.forEach((s,i)=>{ if(i%2===0) html+=`<span class="note">${i/2+1}.</span> `; html+=`<b>${esc(s)}</b> ` });
+  el.innerHTML=html||'<span class="note">No moves yet.</span>';
+  const strip=S.moves.slice(-8);
+  $('pl-strip').innerHTML=strip.map((s,i)=>i===strip.length-1?`<b>${esc(s)}</b>`:esc(s)).join(' · ');
+}
+function status(tone,head,rest){ const el=$('pl-status'); el.className='status'+(tone?' '+tone:''); el.innerHTML=`<strong>${esc(head)}</strong>${esc(rest||'')}` }
+
+function init(){
+  board=makeBoard($('pl-board'),{onMove:userMove});
+  board.set(new Chess(),{locked:true});
+  renderGames();
+  $('pl-new').addEventListener('click',newGame);
+  $('pl-resign').addEventListener('click',resign);
+  $('pl-peek').addEventListener('click',peek);
+  $('pl-flip').addEventListener('click',()=>board.flip());
+  $('pl-moveform').addEventListener('submit',e=>{
+    e.preventDefault(); const txt=$('pl-movein').value; $('pl-moveerr').textContent='';
+    if(!txt.trim()||!S.g||S.over) return;
+    if(S.g.turn()!==S.me){ $('pl-moveerr').textContent='Wait for the engine.'; return }
+    const mv=parseTyped(S.g,txt);
+    if(!mv){ $('pl-moveerr').textContent=`${txt} isn’t legal here.`; return }
+    $('pl-movein').value=''; userMove(mv.from,mv.to,mv.promotion);
+  });
+}
+window.PlayTab={init,newGame,userMove,resign,peek,get state(){return S}};
+})();

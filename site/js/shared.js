@@ -108,7 +108,23 @@ window.SharedEngine=(()=>{
     }));
     const p=queue.then(job); queue=p.catch(()=>{}); return p;
   }
-  return {start,analyse,restart,get failed(){return failed},get ready(){return ok},get name(){return name},get why(){return why},get restarts(){return restarts}};
+  /* A move at limited strength (UCI_LimitStrength / UCI_Elo, the engine's own scale, 1320-3190).
+     The limit is switched off again right after, so analysis keeps full strength; jobs share the
+     one queue, so they never overlap. */
+  function play(fen,elo,movetime=700){
+    start();
+    const job=()=>ready.then(()=>new Promise(res=>{
+      if(!w||failed){res(null);return}
+      let done=false; const finish=u=>{ if(done) return; done=true; clearTimeout(kill); listener=null; w&&w.postMessage('setoption name UCI_LimitStrength value false'); res(u) };
+      const kill=setTimeout(()=>{ finish(null); restart() },movetime+6000);
+      listener=l=>{ if(l.startsWith('bestmove')){ const u=l.split(' ')[1]; finish(u&&u!=='(none)'?u:null) } };
+      w.postMessage('setoption name MultiPV value 1'); w.postMessage('setoption name UCI_LimitStrength value true');
+      w.postMessage('setoption name UCI_Elo value '+Math.max(1320,Math.min(3190,Math.round(elo))));
+      w.postMessage('position fen '+fen); w.postMessage('go movetime '+movetime);
+    }));
+    const p=queue.then(job); queue=p.catch(()=>{}); return p;
+  }
+  return {start,analyse,play,restart,get failed(){return failed},get ready(){return ok},get name(){return name},get why(){return why},get restarts(){return restarts}};
 })();
 /* Remember finished searches, so revisiting a position answers instantly. */
 (()=>{ const raw=SharedEngine.analyse, cache=new Map(), inflight=new Map();

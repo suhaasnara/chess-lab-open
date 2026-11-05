@@ -15,10 +15,14 @@ import hashlib, os, re, sys
 
 BANNED_PATHS = [
     r'(^|/)input(/|$)', r'(^|/)work(/|$)', r'(^|/)out(/|$)',
-    r'(^|/)reps/ann-', r'(^|/)calc(/|$)', r'(^|/)gtm(/|$)', r'(^|/)players(/|$)',
+    # gtm/bNN.json is the private kit's shard naming (book-derived games); the open
+    # repo's own published game lives at site/data/gtm/ and is allowed.
+    r'(^|/)reps/ann-', r'(^|/)calc(/|$)', r'(^|/)gtm/b\d', r'(^|/)players(/|$)',
     r'(^|/)bands(/|$)', r'\.hce$', r'(^|/)everyone\.json$', r'(^|/)punish', r'(^|/)olm',
 ]
-# sha256 of lowercase single tokens and two-word pairs that must never appear
+# sha256 of lowercase single tokens and two-word pairs that must never appear.
+# One former entry was removed by the owner's explicit choice: the opponent in the
+# published Guess-the-move game agreed-to-publish pick (site/data/gtm/).
 HASHES = set("""
 040deb56c7878b689c1a91cd0d10e60298166739a77065ecf10850cc7ba7cbcb
 05534b135a1caf94f9ea6619efee043317a6f2e0cdb79b05c5e9a3e9b0108aff
@@ -60,7 +64,6 @@ afe8728ffe12579f40083c9fb6f5f51a7d32e7db8669ba62b08e51951b6618f2
 b409109f76ff65e8868567d0cb8ef41e315af72a75f4810bc2014d09adc1987c
 bb58bde5be7339d74dbf331743ad3ae3ba475d99f140f2d903a4840fcd3bb0d0
 bb97ef631e949a4696a5b743316a19f11b3d91c1682d656d553453a8b5255bd1
-bc38e56ac4a65013d2f18e591514d341abfb2c5be6dc771e4986ec6c862d283f
 be8e4379163eed89916d959032c533abf08df74a69da12e4cd775f26b91ba771
 c562de0b114cd4dff6fb59bb78ca38536db06915be91a2a8e7d388520417cdeb
 d21e358d22c7f89ddcbc12f66dbc18b1b2ca5371f678d3e33e80457f3f0c626c

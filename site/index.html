@@ -28,6 +28,8 @@
     <button data-route="tactics">Tactics</button>
     <button data-route="analyze">Analyze my games</button>
     <button data-route="drills">Drills</button>
+    <button data-route="play">Play</button>
+    <button data-route="guess">Guess the move</button>
     <button data-route="progress">Progress</button>
     <span class="spacer"></span>
     <button data-route="settings">&#9881; Settings</button>
@@ -196,6 +198,75 @@
   </div>
 </section>
 
+<!-- ================= Play ================= -->
+<section id="play" hidden>
+  <div class="grid">
+    <div>
+      <div class="card">
+        <span class="label">New game</span>
+        <div class="field" style="margin-top:8px">Strength
+          <select id="pl-elo">
+            <option value="1400">Stockfish 1400</option><option value="1600">1600</option>
+            <option value="1800" selected>1800</option><option value="2000">2000</option>
+            <option value="2200">2200</option><option value="2400">2400</option>
+            <option value="2600">2600</option><option value="max">Full strength</option>
+          </select></div>
+        <div class="field" style="margin-top:8px">Your side
+          <select id="pl-color"><option value="w">White</option><option value="b">Black</option><option value="random">Random</option></select></div>
+        <label class="toggle"><input type="checkbox" id="pl-blind"> Blindfold (no pieces shown)</label>
+        <div class="btns" style="margin-top:10px"><button class="btn primary" id="pl-new">Start</button></div>
+      </div>
+      <div class="card" style="margin-top:12px"><span class="label">Your games</span><div id="pl-games" style="margin-top:6px"></div></div>
+    </div>
+    <div class="panel">
+      <div class="boardwrap">
+        <div class="board" id="pl-board" role="grid" aria-label="Chess board"></div>
+        <p class="note" id="pl-strip" style="margin:6px 0 0;min-height:1.2em"></p>
+        <div class="boardtools">
+          <button class="btn sm" id="pl-peek">Peek</button>
+          <button class="btn sm" id="pl-resign">Resign</button>
+          <button class="btn sm" id="pl-flip">Flip <kbd>F</kbd></button>
+        </div>
+        <form class="moveform" id="pl-moveform">
+          <div class="moverow"><input id="pl-movein" placeholder="Type a move (Nf3, e4, O-O)" aria-label="Type a move"><button class="btn">Play</button></div>
+          <p class="note err" id="pl-moveerr"></p>
+        </form>
+      </div>
+      <div class="side">
+        <div class="status" id="pl-status" aria-live="polite">Set a strength and press Start.</div>
+        <div class="card"><span class="label">Moves</span><div class="movelist" id="pl-moves"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= Guess the move ================= -->
+<section id="guess" hidden>
+  <div class="grid">
+    <div>
+      <p class="note" style="margin:0 0 10px">Play through an instructive game from the winner&rsquo;s side and guess
+         each move. 2 points for a key move, 1 for the rest; a move the engine rates as good counts too.</p>
+      <div class="list" id="g-list"></div>
+    </div>
+    <div class="panel">
+      <div class="boardwrap">
+        <div class="board" id="g-board" role="grid" aria-label="Chess board"></div>
+        <div class="boardtools">
+          <button class="btn sm" id="g-hint">Hint <kbd>H</kbd></button>
+          <button class="btn sm" id="g-restart">Restart game</button>
+          <button class="btn sm" id="g-flip">Flip <kbd>F</kbd></button>
+          <span class="evalchip" id="g-score"></span>
+        </div>
+      </div>
+      <div class="side">
+        <div class="status" id="g-status" aria-live="polite">Pick a game on the left.</div>
+        <div class="card"><span class="label">The game</span><dl class="facts" id="g-facts"></dl></div>
+        <div class="tablewrap" id="g-tablewrap" hidden><table id="g-table"></table></div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ================= Progress ================= -->
 <section id="progress" hidden>
   <div class="stats" id="p-stats"></div>
@@ -237,6 +308,8 @@
 <script src="js/tactics.js"></script>
 <script src="js/analyze.js"></script>
 <script src="js/drills.js"></script>
+<script src="js/play.js"></script>
+<script src="js/gtm.js"></script>
 <script src="js/progress.js"></script>
 <script src="js/settingspage.js"></script>
 <script src="js/router.js"></script>

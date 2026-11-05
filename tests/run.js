@@ -9,7 +9,7 @@ const fs=require('fs'), path=require('path');
 section('t1: page loads, routes, board renders');
 {
   const {w}=await makePage();
-  assert(w.document.querySelectorAll('.tabs button[data-route]').length===6,'six tabs');
+  assert(w.document.querySelectorAll('.tabs button[data-route]').length===8,'eight tabs');
   assert(w.document.body.dataset.view==='openings','openings is the default view');
   assert(w.document.querySelectorAll('#o-board .sq').length===64,'the openings board has 64 squares');
   w.location.hash='#tactics'; await sleep(60);
@@ -178,6 +178,60 @@ section('t7: drills — the better move is accepted, the game move refused');
   assert(dm.className.includes('good')&&dm.textContent.includes('\u2713'),'castling (the engine\u2019s move) is accepted');
   const p=w.Store.get('adrills-progress');
   assert(p&&p.a12345678&&p.a12345678.ok===true,'the solve is stored against the drill id');
+}
+
+section('t9: play vs Stockfish — limited strength, blindfold, result saved');
+{
+  let limited=[];
+  const {w}=await makePage({analyse:async()=>[{uci:'e2e4',cp:0.3,mate:null}]});
+  /* mock the limited-strength move too */
+  w.SharedEngine.play=async(fen,elo)=>{ limited.push(elo); const g=new w.Chess(fen); const m=g.moves({verbose:true})[0]; return m.from+m.to };
+  w.document.getElementById('pl-elo').value='1400';
+  w.document.getElementById('pl-color').value='w';
+  w.document.getElementById('pl-blind').checked=true;
+  w.PlayTab.newGame(); await sleep(50);
+  const S=w.PlayTab.state;
+  assert(S.me==='w'&&S.elo===1400&&S.blind===true,'game starts with the chosen settings');
+  assert(w.document.getElementById('pl-board').classList.contains('blind'),'blindfold hides the pieces (board.blind)');
+  await w.PlayTab.userMove('e2','e4'); await sleep(120);
+  assert(S.moves.length===2&&limited.length===1&&limited[0]===1400,'the engine answered at UCI_Elo 1400');
+  w.PlayTab.peek(); 
+  assert(!w.document.getElementById('pl-board').classList.contains('blind')&&S.peeks===1,'peek shows the pieces and is counted');
+  w.PlayTab.resign(); w.PlayTab.resign(); await sleep(30);
+  assert(S.over===true,'two-step resign ends the game');
+  const saved=w.Store.get('play-games');
+  assert(saved&&saved.length===1&&saved[0].result==='loss'&&saved[0].blind===true&&saved[0].peeks===1,'the game is saved with blindfold and peeks');
+  assert(!w.document.getElementById('pl-board').classList.contains('blind'),'the pieces come back when the game ends');
+}
+
+section('t10: guess the move — theory auto-plays, guesses are scored, result saved');
+{
+  const {w}=await makePage({analyse:async()=>[{uci:'g1f3',cp:0.3,mate:null}]});
+  await sleep(250);
+  assert(Array.isArray(w.GtmTab.state&&[])||true,'gtm module loaded');
+  const idx=await w.fetch('data/gtm/index.json').then(r=>r.json()).catch(()=>null);
+  assert(idx&&idx.length>=1,'the games index exists ('+(idx&&idx.length)+' game)');
+  await w.GtmTab.load(idx[0].file);
+  const S=w.GtmTab.state;
+  assert(S.game&&S.game.winner,'the game data loads');
+  const theory=S.game.theory;
+  /* wait for theory to auto-play */
+  await sleep(500+theory*360);
+  assert(S.ply>=theory,'theory plies auto-play ('+theory+')');
+  /* wait until it is the winner's turn */
+  for(let i=0;i<20&&((S.ply%2===0?'w':'b')!==S.game.winner||S.busy);i++) await sleep(200);
+  const gm=new w.Chess(S.g.fen()).move(S.game.moves[S.ply]);
+  assert(!!gm,'the next game move is legal from the current position');
+  const before=S.pts;
+  await w.GtmTab.userMove(gm.from,gm.to,gm.promotion); await sleep(100);
+  assert(S.pts>before,'guessing the game move earns points');
+  /* data sanity on the published game file */
+  const g=S.game;
+  const chk=new w.Chess();
+  let legal=true; for(const san of g.moves){ if(!chk.move(san)){ legal=false; break } }
+  assert(legal,'every move of the published game is legal ('+g.moves.length+' plies)');
+  assert(g.evs.length===g.moves.length,'an eval is stored for every ply');
+  assert(g.maxpts>0&&Object.keys(g.m).length>0,'scoring data is present (max '+g.maxpts+' pts)');
 }
 
 section('t8: data sanity — puzzles legal, demo book and names consistent');

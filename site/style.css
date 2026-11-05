@@ -121,6 +121,9 @@ body[data-board="brown"] .board{background:repeating-conic-gradient(#b58863 0 25
 body[data-board="blue"] .board{background:repeating-conic-gradient(#8ca2ad 0 25%,#dee3e6 0 50%) 0 0/25% 25%!important}
 body[data-board="green"] .board{background:repeating-conic-gradient(#86a666 0 25%,#ffffdd 0 50%) 0 0/25% 25%!important}
 body[data-board="grey"] .board{background:repeating-conic-gradient(#9a9a9a 0 25%,#dcdcdc 0 50%) 0 0/25% 25%!important}
+/* Blindfold: pieces and move dots hidden while the game is on */
+.board.blind .pc{display:none}
+.board.blind .sq.tgt::after{display:none}
 .evalbar{height:8px;border-radius:4px;background:#2b3442;overflow:hidden;margin-top:10px}
 .evalbar i{display:block;height:100%;background:#f4f1ea;transition:width .4s}
 .boardtools{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center}
