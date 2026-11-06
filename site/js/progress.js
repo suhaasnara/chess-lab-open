@@ -85,11 +85,11 @@ function render(){
     <div class="stat"><b>${Object.values(dp).filter(x=>x.ok).length} / ${dr.length}</b><span class="note">game drills solved</span></div>
     <div class="stat"><b>${eg.solved} / ${eg.total||'–'}</b><span class="note">endgames solved</span></div>`;
   const t=$('p-table');
-  t.innerHTML='<tr><th>Opening</th><th>Side</th><th>Lines</th><th>Rating</th><th>Last trained</th></tr>'+
+  t.innerHTML='<tr><th>Opening</th><th>Side</th><th>Lines</th><th>Rating</th><th>Last trained</th></tr>'+(
     withStats.sort((a,b)=>b.st.lines-a.st.lines).map(({o,st})=>{
       const last=st.history.length?new Date(st.history[st.history.length-1].t).toISOString().slice(0,10):'—';
       return `<tr><td>${esc(o.name)}</td><td>${o.side}</td><td>${st.lines}</td><td>${st.rating}</td><td>${last}</td></tr>`;
-    }).join('')||'<tr><td colspan="5" class="note">Nothing trained yet.</td></tr>';
+    }).join('')||'<tr><td colspan="5" class="note">Nothing trained yet. Opening lines you play in Rated mode show up here.</td></tr>');
   charts(withStats);
 }
 function init(){

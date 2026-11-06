@@ -27,6 +27,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 
 /* Header and section menu */
 .hero{background:var(--navy);color:var(--white)}
+/* The intro header is for the landing page only; the other tabs start straight at the menu. */
+body[data-view]:not([data-view=today]) .hero{display:none}
 .hero .inner{padding-block:22px 18px}
 .hero h1{color:var(--white);margin:0;font-size:1.7rem}
 .hero p{margin:6px 0 0;color:var(--blue-on-navy);font-size:.95rem;max-width:62ch}
@@ -38,7 +40,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .tabs button[aria-current="true"]{color:var(--navy);border-bottom-color:var(--navy)}
 .tabs .spacer{flex:1}
 main.inner{padding-block:20px 44px}
-body[data-view="openings"] main.inner{max-width:1500px}
+body[data-view="openings"] main.inner,body[data-view="tactics"] main.inner,body[data-view="calc"] main.inner,body[data-view="endgames"] main.inner,body[data-view="drills"] main.inner,body[data-view="play"] main.inner,body[data-view="guess"] main.inner{max-width:1500px}
 
 /* Shared pieces of UI */
 .label{font-size:.72rem;text-transform:uppercase;letter-spacing:.14em;color:var(--blue);font-weight:600}
@@ -93,7 +95,7 @@ textarea{width:100%;min-height:72px;border:1px solid var(--line);border-radius:v
 .session b{font-family:var(--serif);font-weight:400;font-size:1.25rem}
 
 /* Board: Lichess maple squares, cburnett pieces, Lichess move highlights */
-.boardwrap{width:100%;max-width:min(580px,100%)}
+.boardwrap{width:100%;max-width:min(640px,100%,max(320px,calc(100vh - 190px)))}
 .board{display:grid;grid-template-columns:repeat(8,1fr);aspect-ratio:1;max-width:100%;background:url("assets/board/maple.jpg");background-size:100% 100%;user-select:none;-webkit-user-select:none;touch-action:manipulation;box-shadow:0 2px 12px rgba(19,40,74,.22)}
 .sq{position:relative;cursor:pointer}
 .sq.last{background:rgba(155,199,0,.41)}
@@ -275,3 +277,15 @@ footer .inner{padding-block:18px;font-size:.85rem;color:var(--muted)}
 .eghead{margin:8px 2px 0}
 #eg-list .eghead:first-child{margin-top:0}
 .ccline sup{font-size:.7em;margin-left:1px}
+
+/* Touch screens: controls at least ~36px tall so they're easy to hit. */
+@media (pointer:coarse){
+  .chip{padding:8px 12px}
+  .seg button{padding:10px 8px}
+  select,input[type=text],input:not([type]){min-height:38px}
+  .welcomex{padding:8px 4px}
+  .btn.sm{min-height:36px}
+}
+/* Phones: the tab row scrolls sideways; a fade at the right edge shows there are more tabs. */
+@media (max-width:860px){.tabs .inner{scrollbar-width:none;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent)}.tabs .inner::-webkit-scrollbar{display:none}}
+.evalchip:empty{display:none}

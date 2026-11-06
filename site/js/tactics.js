@@ -44,7 +44,7 @@ function daily(list){
 function renderFilters(){
   /* the 18 most common motifs */
   const cnt={}; for(const z of LIB) if(z.motif) cnt[z.motif]=(cnt[z.motif]||0)+1;
-  const motifs=['All',...Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]).slice(0,17)];
+  const motifs=['All',...Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]).slice(0,17).map(m=>[m,themeName(m)])];
   const mk=(el,items,cur,fn,label)=>{ el.innerHTML='';
     for(const it of items){ const name=Array.isArray(it)?it[1]:it, val=Array.isArray(it)?it[0]:it;
       const b=document.createElement('button'); b.className='chip'; b.textContent=name; b.setAttribute('aria-pressed',String(val===cur));
@@ -59,7 +59,7 @@ function renderL(){
   for(const z of daily(filtered()).slice(0,200)){
     const st=p[z.id];
     const b=document.createElement('button'); b.className='drill'; b.setAttribute('aria-current',S.cur&&S.cur.id===z.id?'true':'false');
-    b.innerHTML=`<span class="src">${st?(st.ok?'✓':'✗'):''}</span><span><span class="opp">${esc(z.motif||'Tactic')}</span><br><span class="meta">${z.rating}</span></span><span class="evalchip">${esc((z.themes||[])[0]||'')}</span>`;
+    b.innerHTML=`<span class="src">${st?(st.ok?'✓':'✗'):''}</span><span><span class="opp">${esc(themeName(z.motif)||'Tactic')}</span><br><span class="meta">${z.rating}</span></span><span class="evalchip">${esc(themeName((z.themes||[])[0]))}</span>`;
     b.addEventListener('click',()=>load(z));
     el.appendChild(b);
   }
@@ -74,8 +74,8 @@ function load(z){
   if(z.pre!==false&&z.moves.length>1){ const u=z.moves[0]; const m=S.g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'}); if(m) last={from:m.from,to:m.to}; S.step=1 }
   board.set(S.g,{last,orient:S.g.turn()});
   status('', (S.g.turn()==='w'?'White':'Black')+' to move.','Find the best move.');
-  $('t-facts').innerHTML=`<dt>Motif</dt><dd>${esc(z.motif||'—')}</dd><dt>Rating</dt><dd>${z.rating||'—'}</dd>
-    <dt>Themes</dt><dd>${esc((z.themes||[]).join(', '))||'—'}</dd>`;
+  $('t-facts').innerHTML=`<dt>Motif</dt><dd>${esc(themeName(z.motif)||'—')}</dd><dt>Rating</dt><dd>${z.rating||'—'}</dd>
+    <dt>Themes</dt><dd>${esc((z.themes||[]).map(themeName).join(', '))||'—'}</dd>`;
   $('t-lichess').href=z.url||('https://lichess.org/analysis/'+encodeURIComponent(S.g.fen()));
   renderL();
 }

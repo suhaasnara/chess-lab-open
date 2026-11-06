@@ -31,6 +31,9 @@ function renderL(){
     el.appendChild(b);
   }
   if(!el.children.length) el.innerHTML='<p class="empty">No drills yet. Run <b>Analyze my games</b> first and save drills from your mistakes.</p>';
+  const none=!el.querySelector('button.drill')&&!S.cur;   /* nothing to train yet: no buttons that do nothing */
+  for(const id of ['d-next','d-show','d-playout']) $(id).disabled=none;
+  $('d-lichess').hidden=none;
 }
 function load(d){
   if(endbar) endbar.hide();

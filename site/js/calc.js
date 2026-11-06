@@ -31,7 +31,7 @@ function renderList(){
   for(const z of list()){
     const r=p[z.id];
     const b=document.createElement('button'); b.className='drill'; b.setAttribute('aria-current',S.cur&&S.cur.id===z.id?'true':'false');
-    b.innerHTML=`<span class="src">${r?(r.score>=1?'✓':Math.round(r.score*100)+'%'):''}</span><span><span class="opp">${mine(z)} moves · ${z.rating}</span><br><span class="meta">${esc(z.motif||'')}</span></span><span class="evalchip">&#9654;</span>`;
+    b.innerHTML=`<span class="src">${r?(r.score>=1?'✓':Math.round(r.score*100)+'%'):''}</span><span><span class="opp">${mine(z)} moves · ${z.rating}</span><br><span class="meta">${esc(themeName(z.motif))}</span></span><span class="evalchip">&#9654;</span>`;
     b.addEventListener('click',()=>load(z)); el.appendChild(b);
   }
   if(!el.children.length) el.innerHTML='<p class="empty">Loading exercises…</p>';
@@ -46,7 +46,7 @@ function load(z){
   clearInterval(S.tick); S.t0=Date.now(); S.tick=setInterval(()=>{ $('cc-clock').textContent=fmt(Math.round((Date.now()-S.t0)/1000)) },1000);
   $('cc-clock').textContent='0:00';
   status('',`${S.g.turn()==='w'?'White':'Black'} to move. See ${mine(z)} moves deep.`,'Play the whole line (your moves and the replies you expect), then Submit.');
-  $('cc-facts').innerHTML=`<dt>Length</dt><dd>${mine(z)} moves for you</dd><dt>Rating</dt><dd>${z.rating}</dd><dt>Motif</dt><dd>${esc(z.motif||'—')}</dd>`;
+  $('cc-facts').innerHTML=`<dt>Length</dt><dd>${mine(z)} moves for you</dd><dt>Rating</dt><dd>${z.rating}</dd><dt>Motif</dt><dd>${esc(themeName(z.motif)||'—')}</dd>`;
   $('cc-lichess').href=z.url||'#';
   renderLine(); renderList();
 }

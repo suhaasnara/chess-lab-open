@@ -31,6 +31,8 @@ window.Store=(()=>{
   return {get,put,del,keys,exportAll,importAll};
 })();
 const deep=o=>o==null?o:JSON.parse(JSON.stringify(o));
+/* Lichess puzzle theme ids as words: hangingPiece -> Hanging piece, mateIn4 -> Mate in 4, backRankMate -> Back rank mate. */
+const themeName=t=>{ if(!t) return ''; if(t==='attackingF2F7') return 'Attacking f2/f7'; const w=String(t).replace(/([a-z])([A-Z0-9])/g,'$1 $2').replace(/([0-9])([A-Za-z])/g,'$1 $2').toLowerCase(); return w[0].toUpperCase()+w.slice(1) };
 
 /* ---------- Position ids (same scheme as the private kit: progress stays compatible) ---------- */
 /* Key: 'board side castling ep' with the en passant square kept only when the capture is legal. */
