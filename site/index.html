@@ -94,7 +94,10 @@
       </div>
     </div>
     <div class="boardwrap">
-      <div class="board" id="o-board" role="grid" aria-label="Chess board"></div>
+      <div class="boardbox" id="o-boardbox">
+        <div class="board" id="o-board" role="grid" aria-label="Chess board"></div>
+        <div class="endbar" id="o-endbar" hidden><span id="o-endtext"></span><button class="btn sm primary" id="o-endnext">Next line</button></div>
+      </div>
       <div class="evalbar" id="o-evalbar" hidden><i style="width:50%"></i></div>
       <div class="boardtools" id="o-tools">
         <button class="btn sm primary" id="o-newline">Next line <kbd>N</kbd></button>

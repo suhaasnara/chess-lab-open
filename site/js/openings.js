@@ -107,7 +107,8 @@ function selectOpening(id){
 /* ---------- Line play ---------- */
 function newLine(){
   if(!S.op) return;
-  S.g=new Chess(); S.phase='await'; S.busy=false; S.log=[]; S.userMoves=0; S.misses=[]; S.scored=[]; S.hintStage=0; S.fens=[START]; S.endMsg='';
+  $('o-endbar').hidden=true; $('o-boardbox').classList.remove('end-good','end-warn');
+  S.g=new Chess(); S.phase='await'; S.busy=false; S.outBook=0; S.log=[]; S.userMoves=0; S.misses=[]; S.scored=[]; S.hintStage=0; S.fens=[START]; S.endMsg='';
   S.startRating=stats(S.op.id).rating;
   for(const san of (S.op.moves||[])){ const m=S.g.move(san); if(m){ S.log.push({san:m.san,uci:m.from+m.to+(m.promotion||''),who:'book'}); S.fens.push(S.g.fen()) } }
   draw();
@@ -143,7 +144,13 @@ async function opponentMove(){
     if(bk&&!bk.demo&&bk.level&&bk.level!=='masters') note=Book.levelLabel(bk.level)+' opponent';
   }else{
     const bk=await Book.oppMoves(fen);
-    if(!bk||!bk.rows.length||(!bk.demo&&bk.total<20)) return endLine('The book runs out here.');
+    if(!bk||!bk.rows.length||(!bk.demo&&bk.total<20)){
+      /* past the book: Stockfish plays on until the line length (your moves are judged by the engine already) */
+      uci=await engineReply(fen);
+      if(!uci) return endLine('The book runs out here.');
+      if(!S.outBook){ S.outBook=S.log.length; }
+      note='Out of book: Stockfish plays on.';
+    }else
     if(bk.demo){
       /* the demo book has no game counts: keep only the named moves Stockfish rates as sound */
       const ok=await soundDemoMoves(fen,bk.rows.map(r=>r.uci));
@@ -162,6 +169,17 @@ async function opponentMove(){
   draw();
   status('','Your move.',note);
   renderSide(); renderBook();
+}
+/* Past the book: Stockfish's reply (MultiPV 3, depth 12), picking among moves within 0.05 winning
+   chances of the best, weighted toward the best, so lines don't all go the same way. */
+async function engineReply(fen){
+  if(SharedEngine.failed) return null;
+  const a=await SharedEngine.analyse(fen,12,3,8000).catch(()=>null);
+  if(!a||!a.length) return null;
+  const val=l=>l.mate!=null?(l.mate>0?15:-15):l.cp;
+  const best=wc(val(a[0]));
+  const ok=a.filter(l=>best-wc(val(l))<=0.05);
+  return pick(ok.map(l=>l.uci),ok.map(l=>Math.exp(-(best-wc(val(l)))/0.015)));
 }
 /* Demo-book moves Stockfish rates within 0.06 winning chances of the best of them (depth 12),
    weighted toward the best. Without the engine, only the first listed move. */
@@ -226,7 +244,11 @@ async function userMove(from,to,promo){
         if(after&&after.length){
           const mine=-cpPawns(after[0].cp*100);
           drop=wc(best)-wc(mine);
-          if(drop<0.1){ await accept(fen,m,uci,null,0.5,`Off book but playable (about ${Math.abs(best-mine).toFixed(1)} pawns from the top move).`); return }
+          if(drop<0.1){
+            /* past the end of the book, a move as good as Stockfish's is simply right */
+            if(S.outBook&&!(bk&&bk.rows.length)) await accept(fen,m,uci,null,1,`Out of book: as good as Stockfish’s choice${a[0].uci.slice(0,4)===uci.slice(0,4)?'':' ('+sanOf(fen,a[0].uci)+')'}.`);
+            else await accept(fen,m,uci,null,0.5,`Off book but playable (about ${Math.abs(best-mine).toFixed(1)} pawns from the top move).`);
+            return }
           verdictText=`${m.san} loses about ${(best-mine).toFixed(1)} pawns. Best here: ${top?sanOf(fen,top.uci):sanOf(fen,a[0].uci)}.`;
         }
       }else if(top){ verdictText=`Not a book move. Elite players prefer ${sanOf(fen,top.uci)}.` }
@@ -273,6 +295,10 @@ function endLine(msg){
   $('o-status').innerHTML+=missTxtSafe(missTxt);
   const nx=document.createElement('button'); nx.className='btn primary endnext'; nx.textContent='Next line (N)';
   nx.addEventListener('click',newLine); $('o-status').appendChild(nx);
+  /* a banner on the board itself, so the end of the line is obvious on a phone */
+  const box=$('o-boardbox'); box.classList.remove('end-good','end-warn'); box.classList.add(S.misses.length?'end-warn':'end-good');
+  $('o-endtext').textContent=(S.misses.length?`${msg} ${S.misses.length} miss${S.misses.length>1?'es':''}`:`${msg} ✓ All right`)+(training()?'':` · ${delta>=0?'+':''}${delta}`);
+  $('o-endbar').hidden=false;
   draw(null); renderSide(); renderBook();
 }
 const missTxtSafe=h=>h; /* built from escaped parts above */
@@ -386,6 +412,7 @@ function init(){
   $('o-pick').addEventListener('click',()=>{ const pop=$('o-pop'); pop.hidden=!pop.hidden; $('o-pick').setAttribute('aria-expanded',String(!pop.hidden)); if(!pop.hidden){ renderList($('o-search').value); $('o-search').focus() } });
   $('o-search').addEventListener('input',e=>renderList(e.target.value));
   $('o-newline').addEventListener('click',newLine);
+  $('o-endnext').addEventListener('click',newLine);
   $('o-hint').addEventListener('click',hint);
   $('o-flip').addEventListener('click',()=>board.flip());
   $('o-import').addEventListener('click',openImport);

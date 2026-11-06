@@ -415,6 +415,32 @@ section('t16: Calculation — enter the whole line, graded against the solution'
   assert(/different first move that works/.test(w.document.getElementById('cc-status').textContent),'an equally good first move (by Stockfish) gets half credit');
 }
 
+section('t17: past the end of the book, Stockfish plays on; the end of a line shows on the board');
+{
+  let W=null;
+  const {w}=await makePage({analyse:async(fen,depth,mpv)=>{ const g=new W.Chess(fen); const ms=g.moves({verbose:true});
+    return ms.slice(0,mpv||1).map((m,i)=>({uci:m.from+m.to+(m.promotion||''),cp:0.2-i*0.01,mate:null})) }});
+  W=w; await sleep(200);
+  w.Settings.set('olevel','masters'); w.Settings.set('olen','short');
+  w.OpeningsTab.selectOpening('preset-english'); const S=w.OpeningsTab.state;
+  for(let i=0;i<60&&S.busy;i++) await sleep(50);
+  assert(S.log.length===2&&S.log[1].san==='e5','the book answers 1.c4 with ...e5');
+  const play=async san=>{ const m=new w.Chess(S.g.fen()).move(san); await w.OpeningsTab.userMove(m.from,m.to); for(let i=0;i<120&&S.phase!=='done'&&(S.busy||S.phase==='busy'||S.g.turn()!=='w');i++) await sleep(50) };
+  const seen=[]; const st=()=>seen.push(w.document.getElementById('o-status').textContent);
+  await play('Nc3'); st(); await play('g3'); st();
+  assert(S.log.length>=6&&S.phase!=='done','after the book ends the opponent keeps playing ('+S.log.map(e=>e.san).join(' ')+')');
+  w.Settings.set('olen','medium');
+  for(let k=0;k<8&&S.phase!=='done';k++){ await play(new w.Chess(S.g.fen()).moves()[0]); st() }
+  assert(seen.some(x=>/Out of book: Stockfish plays on/.test(x)),'past the book (and the named lines) Stockfish takes over, and says so');
+  assert(S.scored.length>=6&&S.scored.slice(-3).every(x=>x.s===1),'moves as good as Stockfish\u2019s count as right past the book (scores '+S.scored.map(x=>x.s).join(',')+')');
+  assert(S.phase==='done'&&/Line complete/.test(S.endMsg),'the line runs to its full length (medium = 8 of your moves): '+S.log.length+' plies');
+  const bar=w.document.getElementById('o-endbar');
+  assert(!bar.hidden&&/Line complete/.test(bar.textContent)&&w.document.getElementById('o-boardbox').className.includes('end-'),'a banner on the board shows the line is over');
+  w.document.getElementById('o-endnext').click(); await sleep(50);
+  assert(bar.hidden,'Next line hides the banner');
+  w.Settings.set('olen','long');
+}
+
 section('t8: data sanity — puzzles legal, demo book and names consistent');
 {
   const tactics=JSON.parse(fs.readFileSync(path.join(H.SITE,'data','tactics.json'),'utf8'));
