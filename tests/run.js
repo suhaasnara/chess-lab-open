@@ -336,6 +336,32 @@ section('t14: Today — a daily session from your drills, puzzles and openings')
   assert(w.document.body.dataset.view==='drills'&&w.DrillsTab.state.cur&&w.DrillsTab.state.cur.id==='a-4','Continue opens the next item (the first drill)');
 }
 
+section('t15: Punish the mistake and Play it out');
+{
+  const {w}=await makePage({analyse:async()=>[{uci:'a4b3',cp:0.4,mate:null}]});
+  const moves='e4 e5 Nf3 Nc6 Bb5 a6 Ba4 b5 Bb3 Nf6 d3 Be7'.split(' ');
+  const evs=[0.3,0.25,0.35,0.3,0.35,0.3,0.35,3.2,0.4,0.45,0.4,0.42];  /* 4...b5?! made +3.2 for you, 5.Bb3 let it go */
+  const mk=w.AnalyzeTab.markGame({color:'w',result:'1/2-1/2',moves,analysis:null},evs);
+  assert(mk.punish.length===1&&mk.punish[0].opp==='b5'&&mk.punish[0].san==='Bb3'&&mk.punish[0].verdict==='missed','4...b5 is their mistake and 5.Bb3 missed the punishment');
+  assert(mk.punish[0].fen.startsWith('r1bqkbnr/2pp1ppp/p1n5/1p2p3/B3P3/5N2'),'the drill position is after their mistake');
+  const evs2=evs.slice(); evs2[8]=3.1;
+  assert(w.AnalyzeTab.markGame({color:'w',result:'1-0',moves,analysis:null},evs2).punish[0].verdict==='punished','keeping the advantage counts as punished');
+  const d={id:'p12345678',kind:'punish',fen:mk.punish[0].fen,played:'Bb3',playedUci:'a4b3',best:null,drop:mk.punish[0].drop,before:3.2,oppMove:'b5',
+    date:'2026-11-01',opp:'Opponent2',site:'lichess',url:'https://lichess.org/x',color:'w'};
+  w.Store.put('adrills',[d,{id:'a00000001',fen:'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',played:'a3',playedUci:'a2a3',best:'e2e4',drop:0.2,before:0.2,date:'2026-11-01',opp:'O',color:'w'}]);
+  w.location.hash='#drills'; await sleep(60);
+  const chips=[...w.document.querySelectorAll('#d-kinds .chip')].map(c=>c.textContent);
+  assert(chips.join('|')==='All (2)|Your mistakes (1)|Punish the mistake (1)','drill filters: All / Your mistakes / Punish');
+  w.document.querySelectorAll('#d-kinds .chip')[2].click(); await sleep(20);
+  assert(w.document.querySelectorAll('#d-list .drill').length===1,'the Punish filter shows the punish drill only');
+  w.DrillsTab.load(d); await sleep(20);
+  assert(/b5 was a mistake\. Punish it\./.test(w.document.getElementById('d-status').textContent),'the drill says what to punish');
+  assert(!w.TodayTab.plan||!(w.Store.del('today'),w.TodayTab.plan().drills.includes('p12345678')),'Today leaves Punish drills out');
+  w.DrillsTab.playOut(); await sleep(120);
+  const P=w.PlayTab.state;
+  assert(w.document.body.dataset.view==='play'&&P.start===d.fen&&P.me==='w'&&P.goal==='win','Play it out starts from the drill, goal: convert (+3.2)');
+}
+
 section('t8: data sanity — puzzles legal, demo book and names consistent');
 {
   const tactics=JSON.parse(fs.readFileSync(path.join(H.SITE,'data','tactics.json'),'utf8'));

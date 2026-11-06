@@ -199,8 +199,9 @@
 <section id="drills" hidden>
   <div class="grid">
     <div>
-      <p class="note" style="margin:0 0 10px">Drills are made from your own mistakes by <b>Analyze my games</b>:
-         find the move you should have played.</p>
+      <p class="note" style="margin:0 0 10px">Made by <b>Analyze my games</b> from your own games: <b>Your mistakes</b> (find the move
+         you should have played) and <b>Punish the mistake</b> (your opponent erred; find the move that makes them pay).</p>
+      <div class="chips" id="d-kinds" style="margin-bottom:10px"></div>
       <div class="list" id="d-list"></div>
     </div>
     <div class="panel">
@@ -209,6 +210,7 @@
         <div class="boardtools">
           <button class="btn sm primary" id="d-next">Next <kbd>N</kbd></button>
           <button class="btn sm" id="d-show">Show the answer</button>
+          <button class="btn sm" id="d-playout" title="Continue the game from here against Stockfish">Play it out</button>
           <button class="btn sm" id="d-flip">Flip <kbd>F</kbd></button>
           <a class="btn sm" id="d-lichess" target="_blank" rel="noopener">Lichess &#8599;</a>
         </div>

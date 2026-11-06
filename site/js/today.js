@@ -11,7 +11,7 @@ const dayStart=()=>{ const d=new Date(); d.setHours(0,0,0,0); return d.getTime()
 const REVIEW=[3,7,21];   /* days before a solved drill comes back, by how many times it was solved */
 
 function pickDrills(){
-  const all=Store.get('adrills')||[], p=Store.get('adrills-progress')||{}, now=Date.now();
+  const all=(Store.get('adrills')||[]).filter(d=>d.kind!=='punish'), p=Store.get('adrills-progress')||{}, now=Date.now();
   const fresh=all.filter(d=>!p[d.id]);
   const missed=all.filter(d=>p[d.id]&&!p[d.id].ok&&p[d.id].t<dayStart()).sort((a,b)=>p[a.id].t-p[b.id].t);
   const due=all.filter(d=>{ const e=p[d.id]; if(!e||!e.ok) return false;

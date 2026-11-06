@@ -86,7 +86,7 @@ async function evalsFor(game,budget,onStep){
 /* Marks for the user's moves: winning-chance drops (White-side evals, kit thresholds 0.1/0.2/0.3 on the -1..1 scale). */
 function markGame(game,evs){
   const sign=game.color==='w'?1:-1;
-  const out={inacc:0,mist:0,blun:0,drops:[],conv:null,save:null};
+  const out={inacc:0,mist:0,blun:0,drops:[],conv:null,save:null,punish:[]};
   let prev=0.2; /* a shade for White at the start */
   let reachedWin=false,reachedLoss=false;
   const g=new Chess(); const fens=[g.fen()];
@@ -97,6 +97,19 @@ function markGame(game,evs){
     const cur=evs[i];
     if(prev*sign>=2) reachedWin=true;
     if(prev*sign<=-2) reachedLoss=true;
+    /* Punish the mistake (the private kit's rule): an opponent move that cost them >= 0.2 winning chances
+       and >= 0.7 pawns, with the position before it under +5 for you; then your reply: punished (< 0.1 lost),
+       partly (0.1-0.2) or missed (>= 0.2). */
+    if(!moverIsMe&&i+1<n&&prev*sign<5){
+      const oppDrop=(wc(prev)-wc(cur))*sign*-1, pawns=(prev-cur)*sign*-1;
+      if(oppDrop>=0.2&&pawns>=0.7){
+        const replyDrop=(wc(cur)-wc(evs[i+1]))*sign;
+        const verdict=replyDrop<0.1?'punished':replyDrop<0.2?'partly':'missed';
+        out.punish.push({ply:i+1,fen:fens[i+1],san:game.moves[i+1],opp:game.moves[i],oppDrop:+oppDrop.toFixed(2),
+          drop:+Math.max(0,replyDrop).toFixed(2),before:cur,after:evs[i+1],verdict,
+          best:game.analysis&&game.analysis[i+1]&&game.analysis[i+1].best||null});
+      }
+    }
     if(moverIsMe){
       const drop=(wc(prev)-wc(cur))*sign;
       if(drop>=0.1){
@@ -153,6 +166,8 @@ function renderReport(user,site,rows,total,final){
     const o=ops.get(key)||{n:0,s:0,blun:0}; o.n++; o.s+=r.marks.score; o.blun+=r.marks.blun+r.marks.mist; ops.set(key,o) }
   const opRows=[...ops.entries()].sort((a,b)=>b[1].n-a[1].n).slice(0,10);
   const mistakes=rows.flatMap(r=>r.marks.drops.map(d=>({...d,game:r.game}))).sort((a,b)=>b.drop-a.drop);
+  const pun=rows.flatMap(r=>r.marks.punish.map(d=>({...d,game:r.game})));
+  const toPunish=pun.filter(p=>p.verdict!=='punished').sort((a,b)=>b.drop-a.drop);
   $('a-report').innerHTML=`
   <div class="stats">
     <div class="stat"><b>${rows.length}</b><span class="note">games analyzed${final?'':' of '+total+'…'}</span></div>
@@ -160,6 +175,7 @@ function renderReport(user,site,rows,total,final){
     <div class="stat"><b>${blun} / ${mist}</b><span class="note">blunders / mistakes (yours)</span></div>
     <div class="stat"><b>${conv==null?'—':conv+'%'}</b><span class="note">conversion from +2 (${convs.length} games)</span></div>
     <div class="stat"><b>${save==null?'—':save+'%'}</b><span class="note">saves from −2 (${saves.length} games)</span></div>
+    <div class="stat"><b>${pun.length?pun.length-toPunish.length+' / '+pun.length:'—'}</b><span class="note">opponents’ mistakes you punished</span></div>
   </div>
   <div class="repgrid">
     <div class="card"><span class="label">Openings in these games</span>
@@ -170,7 +186,8 @@ function renderReport(user,site,rows,total,final){
         <span>${esc(m.san)} <span class="note">vs ${esc(m.game.color==='w'?m.game.black:m.game.white)}</span></span>
         <span class="pill ${m.drop>=0.3?'bad':'warn'}">−${Math.round(m.drop*100)}%</span>
         <a class="note" href="${esc(m.game.url)}" target="_blank" rel="noopener">game ↗</a></div>`).join('')||'<p class="note">None found. Clean play!</p>'}</div>
-      ${final&&mistakes.length?`<div class="btns" style="margin-top:10px"><button class="btn primary" id="a-savedrills">Save ${Math.min(mistakes.length,40)} drills from these</button></div>`:''}
+      ${final&&(mistakes.length||toPunish.length)?`<div class="btns" style="margin-top:10px"><button class="btn primary" id="a-savedrills">Save ${Math.min(mistakes.length,40)+Math.min(toPunish.length,20)} drills</button></div>
+        <p class="note">Your ${Math.min(mistakes.length,40)} costliest moves, plus ${Math.min(toPunish.length,20)} “Punish the mistake” positions where your opponent erred and you didn’t make them pay.</p>`:''}
     </div>
   </div>`;
   const sd=$('a-savedrills');
@@ -182,6 +199,13 @@ function renderReport(user,site,rows,total,final){
       const id=await drillId('a',m.fen,uci);
       if(drills.some(d=>d.id===id)) continue;
       drills.push({id,fen:m.fen,played:m.san,playedUci:uci,best:m.best,drop:m.drop,before:m.before,
+        date:m.game.date,opp:m.game.color==='w'?m.game.black:m.game.white,site:m.game.site,url:m.game.url,color:m.game.color});
+    }
+    for(const m of toPunish.slice(0,20)){
+      const uci=uciOf(m.fen,m.san); if(!uci) continue;
+      const id=await drillId('p',m.fen,uci);
+      if(drills.some(d=>d.id===id)) continue;
+      drills.push({id,kind:'punish',fen:m.fen,played:m.san,playedUci:uci,best:m.best,drop:m.drop,before:m.before,oppMove:m.opp,oppDrop:m.oppDrop,verdict:m.verdict,
         date:m.game.date,opp:m.game.color==='w'?m.game.black:m.game.white,site:m.game.site,url:m.game.url,color:m.game.color});
     }
     Store.put('adrills',drills);

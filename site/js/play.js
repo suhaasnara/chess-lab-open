@@ -6,12 +6,12 @@
 'use strict';
 (function(){
 let board=null;
-const S={g:null,me:'w',elo:1800,blind:false,peeks:0,over:false,busy:false,resignArm:false,moves:[]};
+const S={g:null,me:'w',elo:1800,blind:false,peeks:0,over:false,busy:false,resignArm:false,moves:[],start:null,goal:null,label:''};
 
 function games(){ return Store.get('play-games')||[] }
 function saveGame(result,reason){
   const list=games();
-  list.unshift({t:Date.now(),me:S.me,elo:S.elo,blind:S.blind,peeks:S.peeks,result,reason,moves:S.moves.join(' ')});
+  list.unshift({t:Date.now(),me:S.me,elo:S.elo,blind:S.blind,peeks:S.peeks,result,reason,moves:S.moves.join(' '),fen:S.start||undefined,goal:S.goal||undefined,label:S.label||undefined});
   Store.put('play-games',list.slice(0,30)); renderGames();
 }
 function renderGames(){
@@ -20,11 +20,12 @@ function renderGames(){
   const W=list.filter(g=>g.result==='win').length,D=list.filter(g=>g.result==='draw').length,L=list.length-W-D;
   el.innerHTML=(list.length?`<p class="note">${W} wins · ${D} draws · ${L} losses</p>`:'<p class="note">No games yet.</p>')+
     list.slice(0,12).map(g=>`<div class="gamerow"><span class="src">${new Date(g.t).toISOString().slice(0,10)}</span>
-      <span>${g.me==='w'?'White':'Black'} vs Stockfish${g.elo==='max'?'':' ('+g.elo+')'}${g.blind?' · blindfold'+(g.peeks?' ('+g.peeks+' peeks)':''):''}</span>
+      <span>${g.goal?'Play it out ('+(g.goal==='win'?'convert':'hold')+') · ':''}${g.me==='w'?'White':'Black'} vs Stockfish${g.elo==='max'?'':' ('+g.elo+')'}${g.blind?' · blindfold'+(g.peeks?' ('+g.peeks+' peeks)':''):''}</span>
       <span class="pill ${g.result==='win'?'good':g.result==='draw'?'none':'bad'}">${g.result}</span>
-      <a class="note" href="https://lichess.org/analysis/pgn/${encodeURIComponent(g.moves)}" target="_blank" rel="noopener">review ↗</a></div>`).join('');
+      <a class="note" href="${g.fen?'https://lichess.org/analysis/'+encodeURIComponent(g.fen.replace(/ /g,'_')):'https://lichess.org/analysis/pgn/'+encodeURIComponent(g.moves)}" target="_blank" rel="noopener">review ↗</a></div>`).join('');
 }
 function newGame(){
+  S.start=null; S.goal=null; S.label='';
   S.g=new Chess(); S.moves=[]; S.over=false; S.busy=false; S.resignArm=false; S.peeks=0;
   S.elo=$('pl-elo').value==='max'?'max':+$('pl-elo').value;
   const c=$('pl-color').value; S.me=c==='random'?(Math.random()<0.5?'w':'b'):c;
@@ -33,6 +34,17 @@ function newGame(){
   board.set(S.g,{orient:S.me,last:null});
   renderMoves();
   status('', 'New game.',`You are ${S.me==='w'?'White':'Black'} vs Stockfish${S.elo==='max'?' at full strength':' ('+S.elo+')'}${S.blind?' — blindfold':''}.`);
+  if(S.g.turn()!==S.me) botMove();
+}
+/* From a drill: same strength setting, no blindfold; goal 'win' (convert) or 'hold' (don't lose). */
+function fromPosition(fen,me,goal,label){
+  S.g=new Chess(fen); S.start=fen; S.goal=goal; S.label=label||''; S.moves=[]; S.over=false; S.busy=false; S.resignArm=false; S.peeks=0;
+  S.elo=$('pl-elo').value==='max'?'max':+$('pl-elo').value; S.me=me; S.blind=false;
+  $('pl-board').classList.remove('blind');
+  board.set(S.g,{orient:S.me,last:null});
+  renderMoves();
+  status('',goal==='win'?'Play it out: convert the advantage.':'Play it out: hold the position.',
+    `${S.label?S.label+' · ':''}you are ${S.me==='w'?'White':'Black'} vs Stockfish${S.elo==='max'?' at full strength':' ('+S.elo+')'}. ${goal==='win'?'Win it.':'Don’t lose it.'}`);
   if(S.g.turn()!==S.me) botMove();
 }
 async function botMove(){
@@ -75,8 +87,9 @@ function endGame(result,reason){
   S.over=true;
   $('pl-board').classList.remove('blind');
   board.set(S.g,{last:null,orient:S.me,locked:true});
-  status(result==='win'?'good':result==='draw'?'':'bad',
-    result==='win'?'You won!':result==='draw'?'Draw.':'Stockfish wins.',
+  const met=S.goal?(S.goal==='win'?result==='win':result!=='loss'):null;
+  status(result==='win'||met?'good':result==='draw'?'':'bad',
+    (result==='win'?'You won!':result==='draw'?'Draw.':'Stockfish wins.')+(S.goal?(met?' Goal met ✓':' Goal missed'):''),
     reason+(S.blind?` · blindfold${S.peeks?', '+S.peeks+' peeks':''}`:'')+'. The pieces are back; review below.');
   saveGame(result,reason);
 }
@@ -118,5 +131,5 @@ function init(){
     $('pl-movein').value=''; userMove(mv.from,mv.to,mv.promotion);
   });
 }
-window.PlayTab={init,newGame,userMove,resign,peek,get state(){return S}};
+window.PlayTab={init,newGame,fromPosition,userMove,resign,peek,get state(){return S}};
 })();
