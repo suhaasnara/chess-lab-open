@@ -36,8 +36,8 @@ and Guess-the-move on an annotated game.
 
 | Part | Source | License |
 | --- | --- | --- |
-| Opening book (live) | [Lichess opening explorer API](https://lichess.org/api#tag/Opening-Explorer), queried from the visitor's browser. Since October 2026 the explorer needs a Lichess login: visitors click **Connect Lichess** (OAuth with PKCE, no scopes; the token stays in their browser and goes only to Lichess). Without it, the trainer falls back to the CC0 demo lines, checked move by move with Stockfish | not redistributed |
-| Opening book (static, optional) | build your own with `tools/build_masters.py` from the [Lichess Elite Database](https://database.nikonoel.fr/) or [Lichess broadcast games](https://database.lichess.org/#broadcast) | CC0 |
+| Opening book, elite level (`site/data/masters.json`) | [Lichess Elite Database](https://database.nikonoel.fr/) (Lichess games, 2500+ vs 2300+), built by `tools/build_masters.py` | CC0 |
+| Opening books, club levels 1000–2200+ (`site/data/club/*.json`) | [Lichess open database](https://database.lichess.org/), rated rapid + classical games by the players' average rating, built by `tools/build_club.py` | CC0 |
 | Opening names + offline demo book | [lichess-org/chess-openings](https://github.com/lichess-org/chess-openings) | CC0 |
 | Puzzles | [Lichess puzzle database](https://database.lichess.org/#puzzles) (rebuild with `tools/pick_puzzles.py`) | CC0 |
 | Engine | [Stockfish](https://stockfishchess.org/) 18 lite single-thread WebAssembly, via [stockfish.js](https://github.com/nmrugg/stockfish.js) | GPL-3.0 (`site/sf/Copying.txt`) |
@@ -46,6 +46,10 @@ and Guess-the-move on an annotated game.
 | Board | Lichess "maple" | AGPLv3+ |
 
 Full notices in [CREDITS.md](CREDITS.md). The page code is MIT ([LICENSE](LICENSE)).
+
+All books ship with the site: no accounts, no live API calls. Rebuild them with the
+**Build opening books** workflow (Actions tab → Run workflow); it downloads the CC0 sources,
+builds every book and uploads them as an artifact to check and commit.
 
 ## Run it locally
 

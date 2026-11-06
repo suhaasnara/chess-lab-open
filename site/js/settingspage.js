@@ -3,12 +3,12 @@
 (function(){
 const ROWS=[
   {k:'board',label:'Board colour',opts:[['maple','Maple (Lichess image)'],['brown','Brown'],['blue','Blue'],['green','Green'],['grey','Grey']]},
-  {k:'olevel',label:'Opponent level (openings)',note:'Masters, or Lichess rapid and classical games by rating band, 1000 to 2200+ (live from the Lichess opening explorer, which needs a free Lichess login: connect on the Openings tab). Also on the Openings tab.',
+  {k:'olevel',label:'Opponent level (openings)',note:'Lichess Elite games (2500+ vs 2300+), or Lichess rapid and classical games by rating band, 1000 to 2200+. All books ship with the site; no account needed. Also on the Openings tab.',
    opts:Book.ORDER.slice().reverse().map(k=>[k,Book.levelLabel(k)])},
   {k:'olen',label:'Line length',note:'How many of your moves an opening line lasts.',
    opts:[['short','Short (5)'],['medium','Medium (8)'],['long','Long (12)'],['vlong','Very long (20)'],['max','Max (30)']]},
   {k:'omode',label:'Openings mode',opts:[['rated','Rated'],['training','Training (no rating)']]},
-  {k:'oshare',label:'Book move threshold',note:'A preset move below this masters’ share counts as rare (half credit).',
+  {k:'oshare',label:'Book move threshold',note:'A preset move below this share of elite games counts as rare (half credit).',
    opts:[['1','1%'],['3','3%'],['5','5%'],['10','10%']]},
   {k:'sfDepth',label:'Stockfish depth for checks',opts:[['auto','Auto'],['12','12'],['14','14'],['16','16'],['18','18']]},
 ];

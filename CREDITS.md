@@ -45,16 +45,13 @@ cburnett instead.)
   [Lichess puzzle database](https://database.lichess.org/#puzzles), **CC0 1.0**.
   Each puzzle links to its source game on lichess.org. Rebuild or extend the
   selection with `tools/pick_puzzles.py`.
-- **Opening book at runtime** — the page queries the
-  [Lichess opening explorer](https://lichess.org/api#tag/Opening-Explorer)
-  (masters database, and Lichess rapid/classical games by rating band) live from
-  the visitor's browser. Nothing from it is stored in or redistributed with this
-  repo. Thank you, Lichess. Consider [donating](https://lichess.org/patron).
-- **Optional static book** — `tools/build_masters.py` builds one from the
-  [Lichess Elite Database](https://database.nikonoel.fr/) (CC0, repackaged
-  Lichess games by nikonoel) or
-  [Lichess broadcast games](https://database.lichess.org/#broadcast) (CC0).
-  Do not build it from commercial databases or TWIC: not redistributable.
+- **Opening books** (`site/data/masters.json`, `site/data/club/*.json`) — built by
+  `.github/workflows/build-books.yml` with `tools/build_masters.py` from the
+  [Lichess Elite Database](https://database.nikonoel.fr/) (CC0, Lichess games repackaged by
+  nikonoel) and `tools/build_club.py` from the
+  [Lichess open database](https://database.lichess.org/) (**CC0 1.0**): position and move
+  counts only. Thank you, Lichess. Consider [donating](https://lichess.org/patron).
+  Do not build them from commercial databases or TWIC: not redistributable.
 
 ## Analyze my games
 

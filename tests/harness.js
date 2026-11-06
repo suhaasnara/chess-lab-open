@@ -6,10 +6,10 @@ const {JSDOM}=require('jsdom');
 const fs=require('fs'), path=require('path');
 const SITE=path.join(__dirname,'..','site');
 
-const SCRIPTS=['vendor/chess.js','js/shared.js','js/lichess.js','js/book.js','js/openings.js','js/tactics.js',
+const SCRIPTS=['vendor/chess.js','js/shared.js','js/book.js','js/openings.js','js/tactics.js',
   'js/analyze.js','js/drills.js','js/play.js','js/gtm.js','js/progress.js','js/settingspage.js','js/router.js'];
 
-/* A small masters book for the explorer mock, keyed by 'board side'. */
+/* A small book standing in for the static books (data/masters.json, data/club/*.json), keyed by 'board side'. */
 const EXPLORER={
   'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w':[
     ['e2e4',4000,3000,3000],['d2d4',3500,3200,3300],['g1f3',1000,900,800],['c2c4',900,800,700]],
@@ -21,18 +21,20 @@ const EXPLORER={
   'rnbqkbnr/pppp1ppp/8/4p3/2P5/8/PP1PPPPP/RNBQKBNR w':[['b1c3',1500,1100,900],['g1f3',400,300,300]],
   'rnbqkbnr/pppp1ppp/8/4p3/2P5/2N5/PP1PPPPP/R1BQKBNR b':[['g8f6',900,700,600]],
 };
-function explorerAnswer(fen){
-  const k=fen.split(' ').slice(0,2).join(' ');
-  const rows=EXPLORER[k]||[];
-  return {moves:rows.map(r=>({uci:r[0],white:r[1],draws:r[2],black:r[3]}))};
+/* the mock book in the static format: { posId: [[uci, games, white, draws, black]] } */
+function staticBook(w){
+  const out={};
+  for(const k in EXPLORER){
+    const fen=k+' KQkq - 0 1';
+    out[w.posId(w.normKey(fen))]=EXPLORER[k].map(r=>[r[0],r[1]+r[2]+r[3],r[1],r[2],r[3]]);
+  }
+  return out;
 }
 
 async function makePage(opts={}){
   const html=fs.readFileSync(path.join(SITE,'index.html'),'utf8');
   const dom=new JSDOM(html,{url:'https://chess-lab-open.test/',runScripts:'dangerously',pretendToBeVisual:true});
   const w=dom.window;
-  /* by default the visitor is connected to Lichess (the explorer needs a login since Oct 2026) */
-  if(!opts.noLichess) w.localStorage.setItem('clo-lichess',JSON.stringify({token:'lip_test',exp:Date.now()+864e5,user:'tester'}));
   if(opts.url) dom.reconfigure({url:opts.url});
   w.TextEncoder=TextEncoder;
   try{ Object.defineProperty(w,'crypto',{value:require('crypto').webcrypto}) }catch(e){}
@@ -40,9 +42,9 @@ async function makePage(opts={}){
   w.fetch=async(url,init)=>{
     url=String(url);
     if(opts.fetch){ const r=await opts.fetch(url,init); if(r) return r }
-    if(url.includes('explorer.lichess.ovh')){
-      const fen=decodeURIComponent((url.match(/fen=([^&]+)/)||[])[1]||'');
-      return okJson(explorerAnswer(fen));
+    if(/data\/(masters|club\/b\d\d)\.json/.test(url)){
+      if(opts.noBooks) return {ok:false,status:404,json:async()=>{throw new Error('404')},text:async()=>''};
+      return okJson(staticBook(w));
     }
     const m=url.match(/^https:\/\/chess-lab-open\.test\/(.+)$/)||url.match(/^(?!https?:)(.+)$/);
     if(m){

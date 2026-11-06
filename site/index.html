@@ -14,7 +14,7 @@
 <header class="hero">
   <div class="inner">
     <h1>Chess Lab Open</h1>
-    <p>An open-source chess trainer that runs on your own games: train your openings against the masters&rsquo; book,
+    <p>An open-source chess trainer that runs on your own games: train your openings against real games from strong players,
        sharpen tactics, and get a report card from your Lichess or Chess.com games &mdash; all in your browser, nothing uploaded.
        By <a href="https://suhaasnarayanan.com/chess">Suhaas Narayanan</a>
        (<a href="https://www.chess.com/member/CoachSuhaas">CoachSuhaas</a> on Chess.com,
@@ -60,10 +60,10 @@
           <button id="o-training" aria-pressed="false">Training</button>
         </div>
         <div class="olevel">
-          <label for="o-level"><span class="label">Opponent</span> <b id="o-levelname">Masters</b></label>
+          <label for="o-level"><span class="label">Opponent</span> <b id="o-levelname">Elite 2500+</b></label>
           <input type="range" id="o-level" min="0" max="7" step="1" value="7" aria-describedby="o-levelhelp">
-          <div class="olevelends" id="o-levelhelp"><span>1000</span><span>Masters</span></div>
-          <div class="oacct" id="o-acct"></div>
+          <div class="olevelends" id="o-levelhelp"><span>1000</span><span>Elite 2500+</span></div>
+          <p class="note oacct" id="o-acct"></p>
         </div>
         <h2 id="o-name" style="margin-top:8px">&nbsp;</h2>
         <div class="ohrate" id="o-rate"></div>
@@ -91,7 +91,7 @@
     </div>
     <div class="oright">
       <div class="card" id="o-bookcard">
-        <span class="label" id="o-booklabel">Masters&rsquo; book</span>
+        <span class="label" id="o-booklabel">Elite book</span>
         <div id="o-bookrows"><p class="note">The book shows here after each line (and live in Training mode).</p></div>
       </div>
       <div class="card" id="o-factcard">
@@ -294,7 +294,7 @@
     <p class="note" style="margin-top:14px">Engine: Stockfish 18 (lite, WebAssembly), GPL-3.0 &mdash; served with this site;
        source at <a href="https://github.com/official-stockfish/Stockfish">github.com/official-stockfish/Stockfish</a> and
        <a href="https://github.com/nmrugg/stockfish.js">nmrugg/stockfish.js</a>.
-       Book data: <a href="https://lichess.org">Lichess</a> opening explorer and CC0 databases. See CREDITS.</p>
+       Book data: the <a href="https://database.nikonoel.fr/">Lichess Elite Database</a> and the <a href="https://database.lichess.org/">Lichess open database</a> (CC0), built into static books that ship with the site. See CREDITS.</p>
   </div>
 </section>
 
@@ -310,7 +310,6 @@
 
 <script src="vendor/chess.js"></script>
 <script src="js/shared.js"></script>
-<script src="js/lichess.js"></script>
 <script src="js/book.js"></script>
 <script src="js/openings.js"></script>
 <script src="js/tactics.js"></script>
