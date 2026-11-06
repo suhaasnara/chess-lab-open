@@ -21,8 +21,8 @@ BANNED_PATHS = [
     r'(^|/)bands(/|$)', r'\.hce$', r'(^|/)everyone\.json$', r'(^|/)punish', r'(^|/)olm',
 ]
 # sha256 of lowercase single tokens and two-word pairs that must never appear.
-# One former entry was removed by the owner's explicit choice: the opponent in the
-# published Guess-the-move game agreed-to-publish pick (site/data/gtm/).
+# Entries removed by the owner's explicit choice: the opponents in the Guess-the-move
+# games he picked to publish (site/data/gtm/; game 1 on 5 Nov 2026, game 10 on 6 Nov 2026).
 HASHES = set("""
 040deb56c7878b689c1a91cd0d10e60298166739a77065ecf10850cc7ba7cbcb
 05534b135a1caf94f9ea6619efee043317a6f2e0cdb79b05c5e9a3e9b0108aff
@@ -35,7 +35,6 @@ HASHES = set("""
 18df1942faa5e51a3c38cc5b3bb0cce61f16bef72ac7aec94827d294208a9d25
 27de43bd5f8d3d1ddc84ad7ed955dfce06c00fc680c2987bfc9f201ce98f0940
 2bf0e43fa9ecf29cf3bf83b6b91fe3f9eb7a016c35066200aa877b906b7d9c56
-2df7411c9ef06577838ed640e9dfd52c0130e53e3ee7f45cfae631a13fde5a18
 364dc2bd4e595c6b1c524c4eeafc0fd9c1a339829f611e12ab23fde68d0c4f48
 3bc242bda85348a0487c5a9b7df03cda613482b1a56b57d458463e9b510741ad
 3d7a01b1c01de03dfaf3cea419274b52da29ef657cb89d492bedd4d5b2441ee4
@@ -69,7 +68,6 @@ c562de0b114cd4dff6fb59bb78ca38536db06915be91a2a8e7d388520417cdeb
 d21e358d22c7f89ddcbc12f66dbc18b1b2ca5371f678d3e33e80457f3f0c626c
 dbbeffcbf8d07d2b60a124647258602fb91858e784f66f129c9322dcb740411e
 e52884dcb7e6df2f24e561a30654f60e4c61e95fb91b776b2ca1585dfca15577
-e9b50ca49bc8428f4f407e4846916061395c4487ef7a8158445968bdd8a3691d
 eb1a477c9ead49e25ab6c24159c810f4fa1ae055b47c197db627de82f878c3e7
 eb35adcf5c8bbbce97fa4b297238c0518138b5327ca10704f1791f749479d6ba
 ee49465a8dded72415b192f76b2168a5af44075513fded2ccfdbc31c2de535e8
