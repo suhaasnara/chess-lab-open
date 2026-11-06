@@ -163,6 +163,15 @@
    "text": "Mutual blockade: whoever has to move first loses ground. Keep the opposition and do not let your king be pushed off the pawn."
   },
   {
+   "id": "kp-protected",
+   "group": "pawn",
+   "title": "Protected passed pawn",
+   "fen": "8/8/3k4/2pP4/2P5/3K4/8/8 w - - 0 1",
+   "goal": "win",
+   "end": "convert",
+   "text": "Your d-pawn is protected, so the black king can never leave it alone. Walk your king around to the other side and win the c-pawn, then the rest follows."
+  },
+  {
    "id": "r-lucena",
    "group": "rook",
    "title": "Lucena: building a bridge",
@@ -223,6 +232,18 @@
    "text": "The pawn is one step from queening. Find the checks and the right square so the rook can stop it in time."
   },
   {
+   "id": "r-shortside",
+   "group": "rook",
+   "title": "Short-side defence: checks from the side",
+   "fen": "5k2/8/3KP3/8/8/8/7R/r7 b - - 0 1",
+   "goal": "draw",
+   "end": "hold:12",
+   "text": "Your king stands on the short side of the pawn, so your rook belongs on the long side: from three or more files away it can check the white king from the side until it gives up shielding the pawn.",
+   "prefer": [
+    "a1a6"
+   ]
+  },
+  {
    "id": "q-vsp-center",
    "group": "queen",
    "title": "Queen against a centre pawn",
@@ -259,6 +280,15 @@
    "text": "Keep your king close to your queen so the rook cannot give endless checks, and push the defending king to the edge."
   },
   {
+   "id": "q-vsp-rook",
+   "group": "queen",
+   "title": "Queen against a rook pawn",
+   "fen": "7K/8/8/8/8/8/pk1Q4/8 b - - 0 1",
+   "goal": "draw",
+   "end": "hold:10",
+   "text": "With a rook pawn on the 7th and the white king far away, head for the corner: when the queen takes away your moves it is stalemate, so White can never bring the king closer."
+  },
+  {
    "id": "m-wrongb",
    "group": "minor",
    "title": "The wrong bishop",
@@ -284,6 +314,15 @@
    "goal": "draw",
    "end": "hold:12",
    "text": "Two connected pawns are fast, but a bishop on their diagonal plus the king in front can hold them."
+  },
+  {
+   "id": "m-rightb",
+   "group": "minor",
+   "title": "The right bishop",
+   "fen": "7k/8/6K1/7P/8/8/8/4B3 w - - 0 1",
+   "goal": "win",
+   "end": "convert",
+   "text": "The twin of the wrong bishop: here the bishop controls h8, the queening square. Keep the black king boxed in the corner without stalemating it, take the g7 square, and walk the pawn in."
   },
   {
    "id": "x-rvb",
