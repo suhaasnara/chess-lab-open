@@ -9,28 +9,44 @@ the private data: everything here runs on open databases and on games you fetch
 yourself from your own accounts, entirely in your browser. No server, no
 accounts, no uploads: progress lives in localStorage with JSON export/import.
 
-## What it does (v0.1)
+## What it does
 
-- **Openings** — train preset openings against the masters' book, or import your
-  own repertoire as a PGN (Lichess study / Chessable export) and drill it. The
-  opponent plays the book's replies; an *Opponent level* setting switches the
-  book from masters to Lichess club games by rating band. Each opening gets a
-  rating: every move you find is scored against a difficulty derived from the
-  masters' share of the right move.
+- **Today** — a short daily session built from your own progress: up to three
+  drills from your games (new first, then misses, then reviews at 3 / 7 / 21 days),
+  five puzzles near your puzzle rating and one opening line (your lowest-rated
+  opening). It ticks off as you go, with a streak counter.
+- **Openings** — train preset openings, or import your own repertoire as a PGN
+  (Lichess study / Chessable export) and drill it. The opponent plays real replies
+  from books built from Lichess games: an **Opponent level** slider runs from
+  Lichess 1000 up to Elite 2500+, and the book card shows your level's moves next
+  to the elite book's. Each opening gets a rating: every move you find is scored
+  against a difficulty from the elite share of the right move. No account needed.
 - **Tactics** — a CC0 puzzle library from the Lichess puzzle database, with a
   puzzle rating (Elo against each puzzle's Lichess rating, first attempt only).
+- **Calculation** — see the whole line before you play it: on the long puzzles
+  (4+ moves for you) you enter your moves and the replies you expect, against a
+  clock, then submit. Scored by how far your line follows the solution; a
+  different first move counts if Stockfish rates it as good.
 - **Analyze my games** — type a Lichess or Chess.com username; your recent
   rapid + classical games are fetched from the public API in your browser.
   Lichess games reuse Lichess's stored server analysis where present; Chess.com
   has no stored evals, so its window is capped at the last 25 rapid games and
-  Stockfish (WebAssembly) analyzes them in the browser. You get a lite report
-  card (score, blunders, conversion from +2, saves from −2, openings) and can
-  save your mistakes as drills. There's a "Try it with CoachSuhaas" demo button.
-- **Drills** — replay the positions where you went wrong and find a better
-  move, judged by Stockfish (within 0.1 winning chances of the best line counts).
-
-Planned next (v0.2): play vs Stockfish at a chosen strength, blindfold mode,
-and Guess-the-move on an annotated game.
+  Stockfish (WebAssembly) analyzes them in the browser. You get a report card
+  (score, blunders, conversion from +2, saves from −2, how often you punished
+  your opponents' mistakes, openings) and can save drills. There's a
+  "Try it with CoachSuhaas" demo button.
+- **Drills** — two kinds: **Your mistakes** (find the move you should have played)
+  and **Punish the mistake** (your opponent erred and you let it go; find the move
+  that makes them pay). Judged by Stockfish (within 0.1 winning chances of the
+  best line counts). **Play it out** continues any drill against Stockfish: convert
+  the advantage, or hold the position.
+- **Play** — games against Stockfish from 1400 to full strength, with a blindfold
+  mode (counted peeks).
+- **Guess the move** — play through games from the winner's side and guess each
+  move (2 points for key moves): five of Suhaas's tournament games, checked clean
+  at depth 20+. A Moves panel marks your guesses, and an eval graph appears after
+  the game.
+- **Progress** — totals and per-opening ratings, with JSON export/import.
 
 ## Data sources
 
