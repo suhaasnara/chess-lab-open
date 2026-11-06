@@ -262,11 +262,11 @@ function endLine(msg){
     const K=st.n2<R2_PROV?40:16;
     const w=Math.min(1,S.scored.length/4);
     delta=Math.round(K*w*(meanS-E));
-    st.rating+=delta; st.n2++; st.lines++;
+    st.rating+=delta; st.n2++; st.lines++; st.last=Date.now();
     st.history.push({t:Date.now(),r:st.rating,m:training()?'t':'r'});
     if(st.history.length>200) st.history=st.history.slice(-200);
     saveStats(S.op.id,st);
-  }else if(training()){ st.lines++; saveStats(S.op.id,st) }
+  }else if(training()){ st.lines++; st.last=Date.now(); saveStats(S.op.id,st) }
   S.endMsg=msg;
   const missTxt=S.misses.length?`<br>${S.misses.length} miss${S.misses.length>1?'es':''}: ${S.misses.map(x=>`${esc(x.played)}${x.answer?' (prep: '+esc(x.answer)+')':''}`).join(', ')}`:'<br>Every move you played was right.';
   status(S.misses.length?'warn':'good',`${msg}${training()?'':` · ${delta>=0?'+':''}${delta} rating`}`,'');

@@ -10,8 +10,8 @@ const fs=require('fs'), path=require('path');
 section('t1: page loads, routes, board renders');
 {
   const {w}=await makePage();
-  assert(w.document.querySelectorAll('.tabs button[data-route]').length===8,'eight tabs');
-  assert(w.document.body.dataset.view==='openings','openings is the default view');
+  assert(w.document.querySelectorAll('.tabs button[data-route]').length===9,'nine tabs');
+  assert(w.document.body.dataset.view==='today','Today is the default view');
   assert(w.document.querySelectorAll('#o-board .sq').length===64,'the openings board has 64 squares');
   w.location.hash='#tactics'; await sleep(60);
   assert(w.document.body.dataset.view==='tactics','routing to tactics works');
@@ -311,6 +311,29 @@ section('t13: no book file — named lines, and the opponent only plays moves St
   await sleep(250);
   const bk=await w.Book.moves('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1','masters');
   assert(bk&&bk.source==='elite'&&bk.rows[0].uci==='e2e4'&&bk.total===25100,'with the book file, real game counts answer (start position: '+(bk&&bk.total)+' games)');
+}
+
+section('t14: Today — a daily session from your drills, puzzles and openings');
+{
+  const {w}=await makePage();
+  for(let i=0;i<40&&!(w.TacticsTab.lib||[]).length;i++) await sleep(100);
+  const D=[1,2,3,4].map(i=>({id:'a-'+i,fen:'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',played:'a6',best:'e7e5',drop:0.2,opp:'x'+i,date:'2026-10-0'+i,color:'b'}));
+  w.Store.put('adrills',D);
+  const old=Date.now()-30*864e5;
+  w.Store.put('adrills-progress',{'a-1':{tries:1,ok:true,okN:1,t:old},'a-2':{tries:1,t:Date.now()-2*864e5},'a-3':{tries:1,ok:true,okN:1,t:Date.now()-864e5}});
+  w.Store.del('today');
+  const t=w.TodayTab.plan();
+  assert(t.drills.join()==='a-4,a-2,a-1','drills: new first, then a miss, then a review that is due (not the one solved yesterday)');
+  assert(t.puzzles.length===5&&new Set(t.puzzles).size===5,'five different puzzles');
+  assert(!!w.OpeningsTab.openings().find(o=>o.id===t.opening),'one opening line');
+  assert(w.TodayTab.plan().drills.join()===t.drills.join(),'the plan stays fixed for the day');
+  w.location.hash='#today'; await sleep(80);
+  assert(w.document.querySelectorAll('#td-list .drill').length===9&&/0<\/b> of 9 done/.test(w.document.getElementById('td-head').innerHTML),'the list shows 9 items, none done');
+  const tp=w.Store.get('tactics-progress')||{}; tp[t.puzzles[0]]={ok:true,t:Date.now()}; w.Store.put('tactics-progress',tp);
+  w.TodayTab.render();
+  assert(/1<\/b> of 9 done/.test(w.document.getElementById('td-head').innerHTML),'a puzzle solved today ticks off');
+  w.document.getElementById('td-go').click(); await sleep(120);
+  assert(w.document.body.dataset.view==='drills'&&w.DrillsTab.state.cur&&w.DrillsTab.state.cur.id==='a-4','Continue opens the next item (the first drill)');
 }
 
 section('t8: data sanity — puzzles legal, demo book and names consistent');

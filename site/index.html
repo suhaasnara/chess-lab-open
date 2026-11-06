@@ -24,6 +24,7 @@
 
 <nav class="tabs" aria-label="Sections">
   <div class="inner">
+    <button data-route="today">Today</button>
     <button data-route="openings">Openings</button>
     <button data-route="tactics">Tactics</button>
     <button data-route="analyze">Analyze my games</button>
@@ -37,6 +38,22 @@
 </nav>
 
 <main class="inner">
+
+<!-- ================= Today ================= -->
+<section id="today" hidden>
+  <div class="tdwrap">
+    <div class="card">
+      <span class="label">Today</span>
+      <h2 style="margin:6px 0 4px">Your session</h2>
+      <p class="note" style="margin:0 0 10px">A few drills from your own games, five puzzles near your rating and one opening line. Made fresh each day from your progress in this browser.</p>
+      <div id="td-head" class="tdhead"></div>
+      <div class="prog"><i id="td-bar" style="width:0%"></i></div>
+      <div class="btns" style="margin-top:12px"><button class="btn primary" id="td-go">Start today’s session</button></div>
+      <p class="note" id="td-note" style="margin-top:10px"></p>
+    </div>
+    <div class="list" id="td-list" style="margin-top:12px"></div>
+  </div>
+</section>
 
 <!-- ================= Openings ================= -->
 <section id="openings" hidden>
@@ -317,6 +334,7 @@
 <script src="js/drills.js"></script>
 <script src="js/play.js"></script>
 <script src="js/gtm.js"></script>
+<script src="js/today.js"></script>
 <script src="js/progress.js"></script>
 <script src="js/settingspage.js"></script>
 <script src="js/router.js"></script>

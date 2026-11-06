@@ -9,7 +9,7 @@ const DEPTH=13;
 
 const drills=()=>Store.get('adrills')||[];
 const prog=()=>Store.get('adrills-progress')||{};
-function saveResult(id,ok){ const p=prog(); const e=p[id]||{tries:0}; e.tries++; if(ok) e.ok=true; e.t=Date.now(); p[id]=e; Store.put('adrills-progress',p); renderL() }
+function saveResult(id,ok){ const p=prog(); const e=p[id]||{tries:0}; e.tries++; if(ok){ e.ok=true; e.okN=(e.okN||0)+1 } e.t=Date.now(); p[id]=e; Store.put('adrills-progress',p); renderL() }
 
 function renderL(){
   const el=$('d-list'); el.innerHTML='';
