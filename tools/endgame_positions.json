@@ -187,7 +187,13 @@
    "fen": "4k3/7r/8/4PK2/8/8/8/3R4 b - - 0 1",
    "goal": "draw",
    "end": "hold:15",
-   "text": "Keep your rook on your third rank until the pawn advances to it; then go to the back of the board and check from behind."
+   "text": "Keep your rook on your third rank until the pawn advances to it; then go to the back of the board and check from behind.",
+   "prefer": [
+    "h7h6",
+    "h6h1",
+    "h6a6",
+    "h6b6"
+   ]
   },
   {
    "id": "r-vancura",

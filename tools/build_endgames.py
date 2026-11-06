@@ -49,6 +49,8 @@ def res(cat):
 def metric(m):
     return (abs(m['dtm']) if m.get('dtm') is not None else 10000 + abs(m.get('dtz') or 0))
 
+PREFER = []
+
 def user_node(b, goal):
     d = tb(b.fen())
     ms = d.get('moves') or []
@@ -62,6 +64,9 @@ def user_node(b, goal):
     else:
         node = {'b': '', 'w': ' '.join(m['uci'] for m in W), 'd': ' '.join(m['uci'] for m in D)}
         good = [m['uci'] for m in D]
+    good.sort(key=lambda u: (u not in PREFER, PREFER.index(u) if u in PREFER else 0))   # the textbook moves first (stored line, then expansion)
+    if goal == 'win' and W:
+        good = [u for u in good if u in bset] + [u for u in good if u not in bset]
     return {k: v for k, v in node.items() if v}, good
 
 def finished(b, prev, mv, goal, end, depth):
@@ -76,6 +81,7 @@ def finished(b, prev, mv, goal, end, depth):
 
 def build(p, budget):
     goal, end = p['goal'], p['end']
+    PREFER[:] = p.get('prefer', [])
     root = chess.Board(p['fen'])
     d = tb(root.fen())
     cat = d.get('category')
@@ -169,7 +175,7 @@ def main(src, out, budget, minutes=100):
                   open(out, 'w'), separators=(',', ':'), ensure_ascii=False)
     for p in spec['positions']:
         old = prev.get(p['id'])
-        if old and old['fen'] == p['fen'] and old['goal'] == p['goal'] and old['end'] == p['end']:
+        if old and all(old.get(k) == p.get(k) for k in ('fen', 'goal', 'end', 'prefer')):
             q = dict(old); q.update({k: p[k] for k in ('title', 'text', 'group')}); outp.append(q); continue
         if time.time() > stop:
             print(f"TIME: {p['id']} not built (rerun to continue)", flush=True); continue
