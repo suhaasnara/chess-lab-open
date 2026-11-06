@@ -8,7 +8,8 @@ For every position: the tablebase result (checked against the position's goal; a
 and the position is left out), and a tree the page can use with no network:
   user nodes  key -> {"b": best moves, "w": other winning moves, "d": drawing moves}  (UCI, space-joined;
                      any other legal move throws the result away)
-  reply nodes key -> "uci"   the tablebase's best defence (longest resistance) after a user move
+  reply nodes key -> "uci"   the tablebase's best defence (longest resistance) after a user move; in drawn exercises,
+                     the reply that keeps the most material among those with the same result (keep_material)
 The main line (best move, best reply, ...) is built first and in full, then other good user moves
 breadth-first until the budget of user nodes per position is used. key = placement, side, castling,
 en-passant square only when an en-passant capture is legal (python-chess fen(en_passant='legal')).
@@ -79,8 +80,27 @@ def finished(b, prev, mv, goal, end, depth):
         return True
     return False
 
+VAL = {chess.PAWN: 1, chess.KNIGHT: 3, chess.BISHOP: 3, chess.ROOK: 5, chess.QUEEN: 9, chess.KING: 0}
+GOAL = ['']
+
+def keep_material(b, cands):
+    """In a drawn exercise every reply of the stronger side draws, and the tablebase lists first one that often just
+    gives material back (Qxa2+ Kxa2, or the king walking away from its pawn). Among the replies with the same result,
+    play the one that keeps the most material after the defender's best immediate capture, so the user has to hold
+    against a side still trying. Ties keep the tablebase's order."""
+    me = b.turn
+    def score(u):
+        nb = b.copy(); nb.push(chess.Move.from_uci(u))
+        mat = sum(VAL[pc.piece_type] * (1 if pc.color == me else -1) for pc in nb.piece_map().values())
+        loss = max([VAL[nb.piece_at(m.to_square).piece_type] for m in nb.legal_moves
+                    if nb.is_capture(m) and nb.piece_at(m.to_square)] or [0])
+        return mat - loss
+    best = max(score(u) for u in cands)
+    return next(u for u in cands if score(u) == best)
+
 def build(p, budget):
     goal, end = p['goal'], p['end']
+    GOAL[0] = goal
     PREFER[:] = p.get('prefer', [])
     root = chess.Board(p['fen'])
     d = tb(root.fen())
@@ -109,8 +129,11 @@ def build(p, budget):
         ms = tb(b.fen()).get('moves') or []
         if not ms:
             return None
-        nodes[k] = ms[0]['uci']
-        return ms[0]['uci']
+        u = ms[0]['uci']
+        if GOAL[0] == 'draw':
+            u = keep_material(b, [m['uci'] for m in ms if m['category'] == ms[0]['category']])
+        nodes[k] = u
+        return u
 
     # main line, in full
     b, depth = root.copy(), 0
