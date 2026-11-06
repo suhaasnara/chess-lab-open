@@ -155,10 +155,24 @@ def build(p, budget):
             q.append((nb, depth + 1))
     return {'line': line, 'nodes': nodes}, info
 
-def main(src, out, budget):
+def main(src, out, budget, minutes=100):
     spec = json.load(open(src))
     outp, bad = [], []
+    # keep positions already built (a rerun after a time-out continues where it stopped)
+    try:
+        prev = {q['id']: q for q in json.load(open(out))['positions']}
+    except Exception:
+        prev = {}
+    stop = time.time() + minutes * 60
+    def save():
+        json.dump({'source': 'Lichess tablebase (Syzygy), tablebase.lichess.ovh', 'groups': spec['groups'], 'positions': outp},
+                  open(out, 'w'), separators=(',', ':'), ensure_ascii=False)
     for p in spec['positions']:
+        old = prev.get(p['id'])
+        if old and old['fen'] == p['fen'] and old['goal'] == p['goal'] and old['end'] == p['end']:
+            q = dict(old); q.update({k: p[k] for k in ('title', 'text', 'group')}); outp.append(q); continue
+        if time.time() > stop:
+            print(f"TIME: {p['id']} not built (rerun to continue)", flush=True); continue
         t0 = time.time()
         tree, info = build(p, budget)
         if tree is None:
@@ -166,18 +180,19 @@ def main(src, out, budget):
             print(f"MISMATCH {p['id']}: goal {p['goal']}, tablebase says {info}", flush=True)
             continue
         q = dict(p); q['tb'] = info; q.update(tree)
-        outp.append(q)
+        outp.append(q); save()
         print(f"{p['id']}: {info['cat']} dtz {info['dtz']} dtm {info['dtm']}; line {len(tree['line'])} plies, "
               f"{len(tree['nodes'])} nodes, {time.time() - t0:.0f}s", flush=True)
-    json.dump({'source': 'Lichess tablebase (Syzygy), tablebase.lichess.ovh', 'groups': spec['groups'], 'positions': outp},
-              open(out, 'w'), separators=(',', ':'), ensure_ascii=False)
+    save()
     print(f'{len(outp)} positions -> {out}; {len(bad)} left out')
 
 if __name__ == '__main__':
     a = sys.argv[1:]
-    budget = 120
+    budget, minutes = 120, 100
     if '--budget' in a:
         i = a.index('--budget'); budget = int(a[i + 1]); del a[i:i + 2]
+    if '--minutes' in a:
+        i = a.index('--minutes'); minutes = float(a[i + 1]); del a[i:i + 2]
     if len(a) != 2:
         print(__doc__); sys.exit(2)
-    main(a[0], a[1], budget)
+    main(a[0], a[1], budget, minutes)

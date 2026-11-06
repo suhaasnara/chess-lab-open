@@ -8,6 +8,9 @@ on:
       budget:
         description: 'User positions stored per exercise'
         default: '120'
+      resume:
+        description: 'Review branch of an earlier run to continue from (endgames/<run id>), or empty'
+        default: ''
 
 permissions:
   contents: write
@@ -15,7 +18,7 @@ permissions:
 jobs:
   endgames:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -27,8 +30,11 @@ jobs:
                    "https://lichess.org/api/study/W2RFGlmS.pgn"; do
             echo "== $u"; curl -s -D - -o /dev/null -H "Origin: https://suhaasnarayanan.com" "$u" | grep -i -E "^HTTP|access-control" || true
           done
+      - name: Start from an earlier run
+        if: inputs.resume != ''
+        run: git fetch origin "${{ inputs.resume }}" && git show FETCH_HEAD:site/data/endgames.json > site/data/endgames.json && ls -la site/data/endgames.json
       - name: Build
-        run: python3 tools/build_endgames.py tools/endgame_positions.json site/data/endgames.json --budget ${{ inputs.budget }} && ls -la site/data/endgames.json
+        run: python3 tools/build_endgames.py tools/endgame_positions.json site/data/endgames.json --budget ${{ inputs.budget }} --minutes 95 && ls -la site/data/endgames.json
       - name: Push the review branch
         run: |
           git config user.name "github-actions[bot]"
