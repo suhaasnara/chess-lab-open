@@ -14,12 +14,22 @@ on:
       club_games:
         description: 'Games kept per rating band'
         default: '150000'
+      bands:
+        description: 'Club bands to build (space-separated ids)'
+        default: 'b10 b12 b14 b16 b18 b20 b22'
+      masters:
+        description: 'Build the elite (masters) book too? yes/no'
+        default: 'yes'
+      minutes:
+        description: 'Stop reading a band after this many minutes and keep what it has'
+        default: '110'
 
 permissions:
   contents: read
 
 jobs:
   masters:
+    if: inputs.masters == 'yes'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
@@ -56,16 +66,23 @@ jobs:
           - { id: b22, lo: 2200, hi: 4000 }
     steps:
       - uses: actions/checkout@v4
+        if: contains(format(' {0} ', inputs.bands), format(' {0} ', matrix.band.id))
       - uses: actions/setup-python@v5
+        if: contains(format(' {0} ', inputs.bands), format(' {0} ', matrix.band.id))
         with: { python-version: '3.12' }
-      - run: pip install chess==1.11.2 && sudo apt-get install -y -q zstd
+      - if: contains(format(' {0} ', inputs.bands), format(' {0} ', matrix.band.id))
+        run: pip install chess==1.11.2 && sudo apt-get install -y -q zstd
       - name: Stream the Lichess open database (https://database.lichess.org/, CC0) and build the band
+        if: contains(format(' {0} ', inputs.bands), format(' {0} ', matrix.band.id))
         shell: bash
         run: |
           set +o pipefail
-          curl -sSL "https://database.lichess.org/standard/lichess_db_standard_rated_${{ inputs.club_month }}.pgn.zst" \
+          # rare bands (2200+) may not reach the game count in time: stop the download after
+          # the time limit, so the builder sees the end of input and writes what it has
+          timeout ${{ inputs.minutes }}m curl -sSL "https://database.lichess.org/standard/lichess_db_standard_rated_${{ inputs.club_month }}.pgn.zst" \
             | zstd -dc 2>/dev/null \
             | (cd tools && python3 build_club.py ../${{ matrix.band.id }}.json --lo ${{ matrix.band.lo }} --hi ${{ matrix.band.hi }} --games ${{ inputs.club_games }})
           ls -la ${{ matrix.band.id }}.json
       - uses: actions/upload-artifact@v4
+        if: contains(format(' {0} ', inputs.bands), format(' {0} ', matrix.band.id))
         with: { name: 'book-${{ matrix.band.id }}', path: '${{ matrix.band.id }}.json', retention-days: 7 }
