@@ -13,10 +13,17 @@
 window.Book=(()=>{
   const EXPLORER='https://explorer.lichess.ovh';
   /* Opponent levels: masters book, or Lichess rapid+classical games by rating bucket. */
+  /* Lichess explorer rating buckets: 1000 = 1000–1199, ... 2200 = 2200–2499, 2500 = 2500+ (Lichess ratings). */
   const LEVELS={masters:{label:'Masters'},
     b22:{label:'Club 2200+',ratings:'2200,2500'},
     b20:{label:'Club 2000–2200',ratings:'2000'},
-    b18:{label:'Club 1800–2000',ratings:'1800'}};
+    b18:{label:'Club 1800–2000',ratings:'1800'},
+    b16:{label:'Club 1600–1800',ratings:'1600'},
+    b14:{label:'Club 1400–1600',ratings:'1400'},
+    b12:{label:'Club 1200–1400',ratings:'1200'},
+    b10:{label:'Club 1000–1200',ratings:'1000'}};
+  /* weakest to strongest: the order of the Opponent slider */
+  const ORDER=['b10','b12','b14','b16','b18','b20','b22','masters'];
   let NAMES=null, DEMO=null, STATIC=null, staticTried=false;
   let online=true, lastError='';
   const cache=new Map(); /* key: posId|level -> rows */
@@ -34,7 +41,10 @@ window.Book=(()=>{
     const url=lv.ratings
       ?`${EXPLORER}/lichess?variant=standard&speeds=rapid,classical&ratings=${lv.ratings}&moves=14&topGames=0&recentGames=0&fen=${encodeURIComponent(fen)}`
       :`${EXPLORER}/masters?moves=14&topGames=0&fen=${encodeURIComponent(fen)}`;
-    const r=await fetch(url);
+    const tok=window.LichessAuth&&LichessAuth.token;
+    if(!tok) throw new Error('explorer needs a Lichess login');
+    const r=await fetch(url,{headers:{Authorization:'Bearer '+tok}});
+    if(r.status===401){ LichessAuth.invalidate(); throw new Error('explorer 401: Lichess login expired') }
     if(r.status===429){ await new Promise(res=>setTimeout(res,20000)); return explorer(fen,level) }
     if(!r.ok) throw new Error('explorer '+r.status);
     const j=await r.json();
@@ -48,15 +58,15 @@ window.Book=(()=>{
     out.rows.forEach((r,i)=>{ r.san=ent[i][1]; r.share=1/out.rows.length });
     out.demo=true; return out;
   }
-  /* The book at a position. level: 'masters' (default) | 'b22' | 'b20' | 'b18'.
+  /* The book at a position. level: 'masters' (default) or a club band from LEVELS.
      Returns {total, rows:[{uci,san?,games,w,d,b,share}], source, demo?} or null when nothing covers it. */
   async function moves(fen,level='masters'){
-    await Promise.all([namesP,demoP,staticP]);
+    await Promise.all([namesP,demoP,staticP,window.LichessAuth?LichessAuth.ready:null]);
     const k=key(fen)+'|'+level;
     if(cache.has(k)) return cache.get(k);
     let out=null;
     if(STATIC&&level==='masters'){ const rows=STATIC[key(fen)]; if(rows){ out=fromRows(rows); out.source='static' } }
-    if(!out&&online){
+    if(!out&&online&&window.LichessAuth&&LichessAuth.token){
       try{ out=await explorer(fen,level); out.source=LEVELS[level]&&LEVELS[level].ratings?'club':'masters' }
       catch(e){ online=false; lastError=String(e&&e.message||e); setTimeout(()=>{online=true},30000) }
     }
@@ -81,9 +91,11 @@ window.Book=(()=>{
     for(const f of fens){ const n=NAMES[posId(normKey(f))]; if(n) best=n }
     return best; /* [eco, name] */
   }
+  /* a new login (or logout) changes what the explorer answers: start fresh */
+  if(window.LichessAuth) LichessAuth.onChange(()=>{ cache.clear(); online=true; lastError='' });
   function levelLabel(lv){ return (LEVELS[lv]||LEVELS.masters).label }
-  return {moves,oppMoves,nameOf,levelLabel,LEVELS,
+  return {moves,oppMoves,nameOf,levelLabel,LEVELS,ORDER,
     get online(){return online}, get lastError(){return lastError},
-    get hasStatic(){return !!STATIC},
+    get hasStatic(){return !!STATIC}, get live(){return !!(window.LichessAuth&&LichessAuth.token)&&online},
     ready:()=>Promise.all([namesP,demoP,staticP])};
 })();

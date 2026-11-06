@@ -267,6 +267,83 @@ section('t11: guess the move — every published game is sound, eval graph after
   assert(/Range [+-]/.test(w.document.getElementById('g-graphnote').textContent),'the note gives the eval range');
 }
 
+section('t12: opponent level — slider on the Openings tab, 1000 to Masters, explorer bands');
+{
+  const urls=[];
+  const {w}=await makePage({fetch:async(u)=>{ if(u.includes('explorer.lichess.ovh')) urls.push(u); return null }});
+  await sleep(250);
+  const B=w.Book, sl=w.document.getElementById('o-level');
+  assert(B.ORDER.length===8&&B.ORDER[0]==='b10'&&B.ORDER[7]==='masters','eight levels, weakest first');
+  assert(B.ORDER.every(k=>B.LEVELS[k]),'every slider level is defined');
+  assert(sl&&sl.value==='7'&&w.document.getElementById('o-levelname').textContent==='Masters','the slider starts at Masters');
+  sl.value='2'; sl.dispatchEvent(new w.Event('input'));
+  assert(w.document.getElementById('o-levelname').textContent==='Club 1400–1600','moving the slider updates its label');
+  sl.dispatchEvent(new w.Event('change')); await sleep(50);
+  assert(w.Settings.get('olevel')==='b14','releasing the slider saves the level');
+  const sel=w.document.querySelector('#s-rows select[data-k="olevel"]');
+  assert(sel&&sel.value==='b14'&&sel.options.length===8,'Settings shows the same level, with all eight options');
+  await B.oppMoves('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1');
+  assert(urls.some(u=>/\/lichess\?.*ratings=1400&/.test(u)&&/speeds=rapid,classical/.test(u)),'the opponent book asks the explorer for the 1400 band');
+  sel.value='b10'; sel.dispatchEvent(new w.Event('change')); await sleep(50);
+  assert(sl.value==='0'&&w.document.getElementById('o-levelname').textContent==='Club 1000–1200','changing it in Settings moves the slider');
+  w.Settings.set('olevel','masters'); w.OpeningsTab.syncLevel();
+}
+
+section('t13: Lichess login — the explorer needs a token; demo fallback is engine-checked');
+{
+  /* not connected: no explorer calls, demo book, a Connect button */
+  const calls=[];
+  const {w}=await makePage({noLichess:true,fetch:async(u)=>{ calls.push(u); return null },
+    analyse:async(fen)=>{ /* after 1.e4 e5 2.Nf3 Nc6 3.Bb5: a6 is fine (+0.3 for White), a5 is worse (+0.9) */
+      const b=fen.split(' ')[0];
+      if(b==='r1bqkbnr/1ppp1ppp/2n5/pB2p3/4P3/5N2/PPPP1PPP/RNBQK2R') return [{uci:'x',cp:0.9,mate:null}];
+      return [{uci:'x',cp:0.3,mate:null}] }});
+  await sleep(250);
+  const B=w.Book;
+  const bk=await B.moves('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1','masters');
+  assert(!calls.some(u=>u.includes('explorer.lichess.ovh')),'without a Lichess login the explorer is not called');
+  assert(bk&&bk.demo,'the demo book answers instead');
+  w.OpeningsTab.syncLevel();
+  assert(!!w.document.getElementById('o-lin'),'a Connect Lichess button is shown');
+  const ruy='r1bqkbnr/pppp1ppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 3 3';
+  const ok=await w.OpeningsTab.soundDemoMoves(ruy,['a7a6','a7a5']);
+  assert(ok.map(x=>x.uci).join()==='a7a6','Stockfish drops the dubious demo move (3...a5) and keeps 3...a6');
+  /* the login redirect */
+  let went=null; w.LichessAuth.go=u=>{ went=u };
+  await w.LichessAuth.login();
+  const q=new URL(went).searchParams, saved=JSON.parse(w.sessionStorage.getItem('clo-lichess-pkce'));
+  const want=Buffer.from(require('crypto').createHash('sha256').update(saved.verifier).digest()).toString('base64').replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  assert(went.startsWith('https://lichess.org/oauth?')&&q.get('response_type')==='code'&&q.get('code_challenge_method')==='S256'&&q.get('client_id')==='chess-lab-open'&&!q.get('scope')&&q.get('state')===saved.state,'Connect sends you to Lichess with PKCE, your state and no scopes');
+  assert(q.get('code_challenge')===want,'the code challenge is SHA-256 of the saved verifier');
+}
+{
+  /* coming back from Lichess: the code is exchanged for a token, then the explorer gets it */
+  const seen={};
+  const okJ=o=>({ok:true,status:200,json:async()=>o,text:async()=>JSON.stringify(o)});
+  const {w}=await makePage({noLichess:true,
+    fetch:async(u,init)=>{
+      if(u==='https://lichess.org/api/token'&&init&&init.method==='POST'){ seen.body=String(init.body); return okJ({token_type:'Bearer',access_token:'lip_new',expires_in:31536000}) }
+      if(u==='https://lichess.org/api/account') return okJ({username:'Tester'});
+      if(u.includes('explorer.lichess.ovh')){ seen.auth=init&&init.headers&&init.headers.Authorization; return null }
+      return null }});
+  await sleep(100);
+  w.history.replaceState(null,'','/?code=abc&state=st1');
+  w.sessionStorage.setItem('clo-lichess-pkce',JSON.stringify({verifier:'v123',state:'st1',hash:'#openings'}));
+  const r=await w.LichessAuth.handleRedirect();
+  assert(r&&r.ok&&w.LichessAuth.token==='lip_new'&&w.LichessAuth.user==='Tester','the code is exchanged for a token');
+  assert(/grant_type=authorization_code/.test(seen.body)&&/code_verifier=v123/.test(seen.body)&&/client_id=chess-lab-open/.test(seen.body),'the token request carries the PKCE verifier');
+  assert(!/code=/.test(w.location.search),'the code is cleaned from the address bar');
+  await w.Book.moves('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1','b14');
+  assert(seen.auth==='Bearer lip_new','explorer requests carry the token');
+}
+{
+  /* a revoked token: the explorer says 401, the token is forgotten, the demo book takes over */
+  const {w}=await makePage({fetch:async(u)=>u.includes('explorer.lichess.ovh')?{ok:false,status:401,json:async()=>({}),text:async()=>''}:null});
+  await sleep(200);
+  const bk=await w.Book.moves('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1','masters');
+  assert(w.LichessAuth.token===null&&bk&&bk.demo,'a refused token is dropped and the demo book answers');
+}
+
 section('t8: data sanity — puzzles legal, demo book and names consistent');
 {
   const tactics=JSON.parse(fs.readFileSync(path.join(H.SITE,'data','tactics.json'),'utf8'));

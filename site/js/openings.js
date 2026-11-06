@@ -144,9 +144,15 @@ async function opponentMove(){
   }else{
     const bk=await Book.oppMoves(fen);
     if(!bk||!bk.rows.length||(!bk.demo&&bk.total<20)) return endLine('The book runs out here.');
-    const rows=bk.rows.filter(r=>bk.demo||r.share>=0.01);
-    uci=pick(rows.map(r=>r.uci),rows.map(r=>Math.pow(Math.max(r.share,0.005),0.75)));
-    if(bk.demo) note='Demo book (offline): named lines only';
+    if(bk.demo){
+      /* the demo book has no game counts: keep only the named moves Stockfish rates as sound */
+      const ok=await soundDemoMoves(fen,bk.rows.map(r=>r.uci));
+      uci=pick(ok.map(x=>x.uci),ok.map(x=>x.w));
+      note='Demo book: named lines, checked by Stockfish. Connect Lichess for the real book.';
+    }else{
+      const rows=bk.rows.filter(r=>r.share>=0.01);
+      uci=pick(rows.map(r=>r.uci),rows.map(r=>Math.pow(Math.max(r.share,0.005),0.75)));
+    }
   }
   if(!uci) return endLine('The book runs out here.');
   const m=S.g.move({from:uci.slice(0,2),to:uci.slice(2,4),promotion:uci[4]||'q'});
@@ -156,6 +162,22 @@ async function opponentMove(){
   draw();
   status('','Your move.',note);
   renderSide(); renderBook();
+}
+/* Demo-book moves Stockfish rates within 0.06 winning chances of the best of them (depth 12),
+   weighted toward the best. Without the engine, only the first listed move. */
+async function soundDemoMoves(fen,ucis){
+  if(ucis.length<=1||SharedEngine.failed) return ucis.slice(0,1).map(u=>({uci:u,w:1}));
+  const out=[];
+  for(const u of ucis){
+    const g=new Chess(fen); const m=g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'}); if(!m) continue;
+    const a=await SharedEngine.analyse(g.fen(),12,1,6000).catch(()=>null);
+    if(!a||!a.length) continue;
+    const mover=a[0].mate!=null?(a[0].mate>0?-15:15):-a[0].cp;   /* pawns, from the mover's side */
+    out.push({uci:u,c:wc(mover)});
+  }
+  if(!out.length) return ucis.slice(0,1).map(u=>({uci:u,w:1}));
+  const best=Math.max(...out.map(x=>x.c));
+  return out.filter(x=>best-x.c<=0.06).map(x=>({uci:x.uci,w:Math.exp(-(best-x.c)/0.02)}));
 }
 const fenKeyU=(fen,u)=>posId(normKey(fen))+'|'+u;
 function pick(items,weights){
@@ -262,6 +284,7 @@ function status(tone,head,rest){
 
 /* ---------- Side panel ---------- */
 function renderSide(){
+  renderAcct();
   if(!S.op){ $('o-name').textContent=' '; return }
   const names=Book.nameOf(S.fens);
   $('o-name').textContent=S.op.name;
@@ -286,7 +309,7 @@ function renderSide(){
   facts.innerHTML=`<dt>Opening</dt><dd>${names?esc(names[1])+' <span class="note">('+esc(names[0])+')</span>':'—'}</dd>
     <dt>Side</dt><dd>${side()==='white'?'White':'Black'}</dd>
     <dt>Opponent</dt><dd>${esc(Book.levelLabel(Settings.get('olevel')))}</dd>
-    <dt>Book</dt><dd>${Book.hasStatic?'Static (your build)':Book.online?'Lichess explorer (live)':'Demo lines (offline)'}</dd>`;
+    <dt>Book</dt><dd>${Book.live?'Lichess explorer (live)':Book.hasStatic?'Static masters book':'Demo lines (no game counts)'}</dd>`;
   const lk=$('o-lichess');
   lk.href='https://lichess.org/analysis/pgn/'+encodeURIComponent(S.log.map(e=>e.san).join(' '));
 }
@@ -338,6 +361,23 @@ function doImport(){
   }catch(e){ $('o-reperr').textContent=String(e.message||e) }
 }
 
+function renderAcct(){
+  const el=$('o-acct'); if(!el) return;
+  if(LichessAuth.token){
+    el.innerHTML=`<span class="note">Lichess book: connected${LichessAuth.user?' as <b>'+esc(LichessAuth.user)+'</b>':''}.</span> <button class="linkbtn" id="o-lout">Disconnect</button>`;
+    $('o-lout').addEventListener('click',()=>LichessAuth.logout());
+  }else{
+    const lv=Settings.get('olevel');
+    el.innerHTML=`<span class="note">${lv!=='masters'?'Club levels need':'The full book needs'} a free Lichess login (Lichess requires it for its opening explorer). Your login stays in this browser.</span>
+      <button class="btn sm" id="o-lin">Connect Lichess</button>`;
+    $('o-lin').addEventListener('click',()=>LichessAuth.login());
+  }
+}
+function syncLevel(){
+  const lv=Settings.get('olevel'); const i=Math.max(0,Book.ORDER.indexOf(Book.LEVELS[lv]?lv:'masters'));
+  $('o-level').value=String(i); $('o-levelname').textContent=Book.levelLabel(Book.ORDER[i]);
+  renderSide(); renderBook();
+}
 /* ---------- Wiring ---------- */
 function init(){
   board=makeBoard($('o-board'),{onMove:userMove});
@@ -351,6 +391,13 @@ function init(){
   $('o-repcancel').addEventListener('click',()=>{ $('o-importmodal').hidden=true });
   $('o-rated').addEventListener('click',()=>{ Settings.set('omode','rated'); modeBtns() });
   $('o-training').addEventListener('click',()=>{ Settings.set('omode','training'); modeBtns(); renderBook() });
+  /* Opponent level slider: weakest (Lichess 1000) to Masters; same setting as Settings → Opponent level */
+  const lvl=$('o-level');
+  lvl.addEventListener('input',()=>{ $('o-levelname').textContent=Book.levelLabel(Book.ORDER[+lvl.value]) });
+  lvl.addEventListener('change',()=>{ Settings.set('olevel',Book.ORDER[+lvl.value]); syncLevel(); if(window.SettingsTab&&SettingsTab.refresh) SettingsTab.refresh() });
+  syncLevel();
+  LichessAuth.onChange(()=>{ renderSide(); renderBook() });
+  LichessAuth.ready.then(r=>{ if(r&&!r.ok) status('warn','Lichess login didn’t complete.',esc(r.why||'')); renderSide() });
   function modeBtns(){ const t=training(); $('o-rated').setAttribute('aria-pressed',String(!t)); $('o-training').setAttribute('aria-pressed',String(t)); renderSide() }
   modeBtns();
   $('o-moveform').addEventListener('submit',e=>{
@@ -372,5 +419,5 @@ function init(){
   renderList();
   board.set(new Chess(),{orient:'w',locked:true});
 }
-window.OpeningsTab={init,get state(){return S},selectOpening,newLine,userMove,parseRepPGN,moveDifficulty,openings,stats};
+window.OpeningsTab={init,syncLevel,soundDemoMoves,get state(){return S},selectOpening,newLine,userMove,parseRepPGN,moveDifficulty,openings,stats};
 })();

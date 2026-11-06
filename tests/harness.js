@@ -6,7 +6,7 @@ const {JSDOM}=require('jsdom');
 const fs=require('fs'), path=require('path');
 const SITE=path.join(__dirname,'..','site');
 
-const SCRIPTS=['vendor/chess.js','js/shared.js','js/book.js','js/openings.js','js/tactics.js',
+const SCRIPTS=['vendor/chess.js','js/shared.js','js/lichess.js','js/book.js','js/openings.js','js/tactics.js',
   'js/analyze.js','js/drills.js','js/play.js','js/gtm.js','js/progress.js','js/settingspage.js','js/router.js'];
 
 /* A small masters book for the explorer mock, keyed by 'board side'. */
@@ -31,6 +31,9 @@ async function makePage(opts={}){
   const html=fs.readFileSync(path.join(SITE,'index.html'),'utf8');
   const dom=new JSDOM(html,{url:'https://chess-lab-open.test/',runScripts:'dangerously',pretendToBeVisual:true});
   const w=dom.window;
+  /* by default the visitor is connected to Lichess (the explorer needs a login since Oct 2026) */
+  if(!opts.noLichess) w.localStorage.setItem('clo-lichess',JSON.stringify({token:'lip_test',exp:Date.now()+864e5,user:'tester'}));
+  if(opts.url) dom.reconfigure({url:opts.url});
   w.TextEncoder=TextEncoder;
   try{ Object.defineProperty(w,'crypto',{value:require('crypto').webcrypto}) }catch(e){}
   w.confirm=()=>true;

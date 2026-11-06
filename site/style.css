@@ -213,3 +213,11 @@ footer .inner{padding-block:18px;font-size:.85rem;color:var(--muted)}
 .evgraph{margin-top:8px;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
 .evgraph svg{display:block;width:100%;height:auto}
 #g-graphcard{margin-top:12px}
+
+/* Openings: opponent level slider */
+.olevel{margin-top:10px}
+.olevel label{display:flex;align-items:baseline;gap:8px;font-size:.92rem;color:var(--navy)}
+.olevel input[type=range]{width:100%;margin:6px 0 0;accent-color:var(--navy)}
+.olevelends{display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted)}
+.oacct{margin-top:8px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:.88rem}
+.linkbtn{border:0;background:none;padding:0;color:var(--blue);text-decoration:underline;cursor:pointer;font:inherit}

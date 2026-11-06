@@ -3,8 +3,8 @@
 (function(){
 const ROWS=[
   {k:'board',label:'Board colour',opts:[['maple','Maple (Lichess image)'],['brown','Brown'],['blue','Blue'],['green','Green'],['grey','Grey']]},
-  {k:'olevel',label:'Opponent level (openings)',note:'Masters, or Lichess club games by rating band (live from the opening explorer).',
-   opts:[['masters','Masters'],['b22','Club 2200+'],['b20','Club 2000–2200'],['b18','Club 1800–2000']]},
+  {k:'olevel',label:'Opponent level (openings)',note:'Masters, or Lichess rapid and classical games by rating band, 1000 to 2200+ (live from the Lichess opening explorer, which needs a free Lichess login: connect on the Openings tab). Also on the Openings tab.',
+   opts:Book.ORDER.slice().reverse().map(k=>[k,Book.levelLabel(k)])},
   {k:'olen',label:'Line length',note:'How many of your moves an opening line lasts.',
    opts:[['short','Short (5)'],['medium','Medium (8)'],['long','Long (12)'],['vlong','Very long (20)'],['max','Max (30)']]},
   {k:'omode',label:'Openings mode',opts:[['rated','Rated'],['training','Training (no rating)']]},
@@ -19,10 +19,12 @@ function init(){
     const sel=document.createElement('select');
     for(const [v,name] of r.opts){ const o=document.createElement('option'); o.value=v; o.textContent=name; sel.appendChild(o) }
     sel.value=String(Settings.get(r.k));
-    sel.addEventListener('change',()=>Settings.set(r.k,sel.value));
+    sel.dataset.k=r.k;
+    sel.addEventListener('change',()=>{ Settings.set(r.k,sel.value); if(r.k==='olevel'&&window.OpeningsTab&&OpeningsTab.syncLevel) OpeningsTab.syncLevel() });
     row.innerHTML=`<span>${esc(r.label)}${r.note?`<br><span class="note">${esc(r.note)}</span>`:''}</span>`;
     row.appendChild(sel); el.appendChild(row);
   }
 }
-window.SettingsTab={init};
+function refresh(){ document.querySelectorAll('#s-rows select[data-k]').forEach(s=>{ s.value=String(Settings.get(s.dataset.k)) }) }
+window.SettingsTab={init,refresh};
 })();

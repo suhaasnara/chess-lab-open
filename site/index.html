@@ -59,6 +59,12 @@
           <button id="o-rated" aria-pressed="true">Rated</button>
           <button id="o-training" aria-pressed="false">Training</button>
         </div>
+        <div class="olevel">
+          <label for="o-level"><span class="label">Opponent</span> <b id="o-levelname">Masters</b></label>
+          <input type="range" id="o-level" min="0" max="7" step="1" value="7" aria-describedby="o-levelhelp">
+          <div class="olevelends" id="o-levelhelp"><span>1000</span><span>Masters</span></div>
+          <div class="oacct" id="o-acct"></div>
+        </div>
         <h2 id="o-name" style="margin-top:8px">&nbsp;</h2>
         <div class="ohrate" id="o-rate"></div>
         <div class="btns" id="o-sidebtns" style="margin-top:8px"></div>
@@ -304,6 +310,7 @@
 
 <script src="vendor/chess.js"></script>
 <script src="js/shared.js"></script>
+<script src="js/lichess.js"></script>
 <script src="js/book.js"></script>
 <script src="js/openings.js"></script>
 <script src="js/tactics.js"></script>
