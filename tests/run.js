@@ -1,3 +1,4 @@
+const crypto=require('crypto');
 /* Chess Lab Open — headless tests (jsdom), run with: npm test */
 'use strict';
 const H=require('./harness');
@@ -232,6 +233,38 @@ section('t10: guess the move — theory auto-plays, guesses are scored, result s
   assert(legal,'every move of the published game is legal ('+g.moves.length+' plies)');
   assert(g.evs.length===g.moves.length,'an eval is stored for every ply');
   assert(g.maxpts>0&&Object.keys(g.m).length>0,'scoring data is present (max '+g.maxpts+' pts)');
+}
+
+section('t11: guess the move — every published game is sound, eval graph after the game');
+{
+  const {w}=await makePage({analyse:async()=>[{uci:'g1f3',cp:0.3,mate:null}]});
+  await sleep(250);
+  const idx=await w.fetch('data/gtm/index.json').then(r=>r.json());
+  const ids=new Set();
+  for(const e of idx){
+    const g=await w.fetch('data/gtm/'+e.file).then(r=>r.json());
+    const id='g-'+crypto.createHash('sha1').update(g.white+'|'+g.black+'|'+g.date).digest('hex').slice(0,8);
+    assert(g.id===id&&e.id===id&&!ids.has(id),e.file+': id follows the sha1(White|Black|Date) rule and is unique');
+    ids.add(id);
+    const chk=new w.Chess(); let ok=true; for(const san of g.moves){ if(!chk.move(san)){ ok=false; break } }
+    const expect=[]; for(let i=g.theory;i<g.moves.length;i++) if((i%2===0?'w':'b')===g.winner) expect.push(String(i));
+    const sum=Object.values(g.m).reduce((a,v)=>a+v.pts,0);
+    assert(ok&&g.evs.length===g.moves.length,e.file+': legal moves, one eval per ply ('+g.moves.length+')');
+    assert(expect.every(k=>g.m[k])&&Object.keys(g.m).length===expect.length,e.file+': scoring data for exactly the winner\'s moves after theory');
+    assert(sum===g.maxpts&&e.meta.includes(g.maxpts+' pts'),e.file+': max points add up ('+g.maxpts+')');
+    assert(((g.result==='1-0')===(g.winner==='w'))&&g.result!=='1/2-1/2',e.file+': the winner matches the result');
+  }
+  await w.GtmTab.load(idx[1].file); await sleep(50);
+  const card=w.document.getElementById('g-graphcard');
+  assert(card.hidden===true,'the eval graph stays hidden during the game (no spoilers)');
+  const S=w.GtmTab.state;
+  S.rows=[{ply:S.game.theory+(S.game.winner==='w'?(S.game.theory%2):1-(S.game.theory%2)),n:1,game:'x',guess:'x',earned:2,max:2},{ply:S.game.moves.length-1,n:2,game:'y',guess:'z',earned:0,max:1}];
+  w.GtmTab.drawGraph();
+  const svg=w.document.querySelector('#g-graph svg');
+  assert(card.hidden===false&&!!svg,'the eval graph shows after the game');
+  assert(svg.querySelectorAll('circle').length===2,'one dot per guessed move');
+  assert(svg.querySelector('circle').getAttribute('fill')==='var(--good)'&&svg.querySelectorAll('circle')[1].getAttribute('fill')==='var(--bad)','dots are coloured by points earned');
+  assert(/Range [+-]/.test(w.document.getElementById('g-graphnote').textContent),'the note gives the eval range');
 }
 
 section('t8: data sanity — puzzles legal, demo book and names consistent');

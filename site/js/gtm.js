@@ -30,6 +30,7 @@ async function load(file){
   if(!game){ status('bad','Could not load the game.',''); return }
   S.game=game; S.g=new Chess(); S.ply=0; S.pts=0; S.got=0; S.missed=0; S.alsoGood=0; S.done=false; S.busy=false; S.hintStage=0; S.rows=[];
   const me=game.winner;
+  $('g-graphcard').hidden=true; $('g-tablewrap').hidden=true;
   board.set(S.g,{orient:me,last:null});
   $('g-facts').innerHTML=`<dt>White</dt><dd>${esc(game.white)}${game.we?' ('+esc(game.we)+')':''}</dd>
     <dt>Black</dt><dd>${esc(game.black)}${game.be?' ('+esc(game.be)+')':''}</dd>
@@ -93,7 +94,7 @@ async function userMove(from,to,promo){
     }else{ S.missed++; verdict=['warn',`The game went ${esc(g.moves[S.ply])}.`] }
   }else{ S.missed++; verdict=['warn',`The game went ${esc(g.moves[S.ply])}.`] }
   S.pts+=earned;
-  S.rows.push({n:Math.floor(S.ply/2)+1,game:g.moves[S.ply],guess:m.san,earned,max:info.pts});
+  S.rows.push({ply:S.ply,n:Math.floor(S.ply/2)+1,game:g.moves[S.ply],guess:m.san,earned,max:info.pts});
   /* the game move is what stays on the board */
   applyMove(g.moves[S.ply],'me'); S.ply++;
   board.flash([gameMove.from,gameMove.to],earned>0?'good':'bad');
@@ -110,7 +111,7 @@ function hint(){
   if(S.hintStage===0){ S.hintStage=1; board.setHint(gm.from); status('warn','Hint: this piece moves.','H again shows the move — then it earns nothing.') }
   else{
     board.setHint(gm.from,gm.to); status('warn','It was '+g.moves[S.ply]+'.','No points for this one.');
-    S.missed++; S.rows.push({n:Math.floor(S.ply/2)+1,game:g.moves[S.ply],guess:'(shown)',earned:0,max:(g.m[String(S.ply)]||{}).pts||1});
+    S.missed++; S.rows.push({ply:S.ply,n:Math.floor(S.ply/2)+1,game:g.moves[S.ply],guess:'(shown)',earned:0,max:(g.m[String(S.ply)]||{}).pts||1});
     applyMove(g.moves[S.ply],'me'); S.ply++; renderScore(); setTimeout(next,900);
   }
 }
@@ -123,7 +124,38 @@ function endGame(){
   t.innerHTML='<tr><th>#</th><th>Game</th><th>You</th><th>Pts</th></tr>'+
     S.rows.map(r=>`<tr><td>${r.n}</td><td>${esc(r.game)}</td><td>${esc(r.guess)}</td><td>${r.earned}/${r.max}</td></tr>`).join('');
   $('g-tablewrap').hidden=false;
+  drawGraph();
   renderList();
+}
+/* Eval graph, shown after the game so it can't give moves away.
+   y = winning chances from White's side (the kit's -1..1 scale), x = ply.
+   Dots mark the winner's moves after theory: green = full points, amber = partial, red = missed. */
+function drawGraph(){
+  const g=S.game, ev=g.evs||[]; if(!ev.length) return;
+  const W=320,H=140,P=6, n=ev.length;
+  const X=i=>P+(W-2*P)*(n>1?i/(n-1):0), Y=v=>H/2-(H/2-P)*v;
+  const c=i=>wc((ev[i]||0)/100);
+  const pts=ev.map((_,i)=>[X(i),Y(c(i))]);
+  const line=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  const area=`M${X(0)} ${H/2} `+pts.map(p=>'L'+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ')+` L${X(n-1)} ${H/2} Z`;
+  const pawns=cp=>Math.abs(cp)>=9000?(cp>0?'#M':'-#M'):(cp>=0?'+':'')+(cp/100).toFixed(2);
+  const byPly={}; for(const r of S.rows) byPly[r.ply]=r;
+  let dots='';
+  for(const k in byPly){
+    const r=byPly[k], i=+k; if(i>=n) continue;
+    const col=r.earned>=r.max&&r.max>0?'var(--good)':r.earned>0?'var(--warn)':(r.max===0?'var(--muted)':'var(--bad)');
+    dots+=`<circle cx="${X(i).toFixed(1)}" cy="${Y(c(i)).toFixed(1)}" r="${r.max===2?4.2:3}" fill="${col}" stroke="#fff" stroke-width="1"><title>${r.n}${i%2?'…':'.'}${esc(r.game)} (${pawns(ev[i])}) — you: ${esc(r.guess)}, ${r.earned}/${r.max}</title></circle>`;
+  }
+  const th=g.theory>0?`<rect x="${P}" y="${P}" width="${Math.max(0,X(g.theory-1)-P).toFixed(1)}" height="${H-2*P}" fill="var(--band)"/>`:'';
+  $('g-graph').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Evaluation through the game, White's side">
+    <rect x="0" y="0" width="${W}" height="${H}" fill="var(--white)"/>${th}
+    <path d="${area}" fill="var(--callout)"/>
+    <line x1="${P}" y1="${H/2}" x2="${W-P}" y2="${H/2}" stroke="var(--line)" stroke-width="1"/>
+    <path d="${line}" fill="none" stroke="var(--navy)" stroke-width="1.6" vector-effect="non-scaling-stroke"/>
+    ${dots}</svg>`;
+  const fin=ev.filter(v=>Math.abs(v)<9000), lo=fin.length?Math.min(...fin):0, hi=fin.length?Math.max(...fin):0;
+  $('g-graphnote').textContent=`Above the line favours White, below favours Black (engine, depth 20+). Range ${pawns(lo)} to ${pawns(hi)}. Shaded: theory. Dots: your guesses (green full points, amber partial, red missed; bigger = key move).`;
+  $('g-graphcard').hidden=false;
 }
 function renderScore(){
   $('g-score').innerHTML=S.game?`<b>${S.pts}</b><span class="note"> / ${S.game.maxpts} points</span>`:'';
@@ -144,5 +176,5 @@ function init(){
     if(e.key==='f'||e.key==='F') board.flip();
   });
 }
-window.GtmTab={init,load,userMove,hint,get state(){return S}};
+window.GtmTab={init,load,userMove,hint,drawGraph,get state(){return S}};
 })();
