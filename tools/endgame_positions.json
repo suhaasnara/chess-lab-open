@@ -322,7 +322,7 @@
    "fen": "7k/8/6K1/7P/8/8/8/4B3 w - - 0 1",
    "goal": "win",
    "end": "convert",
-   "text": "The twin of the wrong bishop: here the bishop controls h8, the queening square. Keep the black king boxed in the corner without stalemating it, take the g7 square, and walk the pawn in."
+   "text": "The twin of the wrong bishop: here the bishop controls h8, the queening square. Keep the black king boxed in the corner without stalemating it and take g7 away from it; the pawn and bishop finish the job (often with mate)."
   },
   {
    "id": "x-rvb",
