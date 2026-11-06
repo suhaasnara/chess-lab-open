@@ -1,6 +1,6 @@
 name: Books to a review branch
 # Run by hand with the id of a finished "Build opening books" run. Copies its book artifacts
-# into site/data/ on a new branch books/<run id> for review. main is never touched: the books
+# into site/data/ on a new branch books/<run id>-<this run id> for review. main is never touched: the books
 # reach the live site only when someone merges or copies them over after checking them.
 on:
   workflow_dispatch:
@@ -32,7 +32,7 @@ jobs:
           ls -la site/data site/data/club
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -b "books/${{ inputs.run_id }}"
+          git checkout -b "books/${{ inputs.run_id }}-${{ github.run_id }}"
           git add site/data/masters.json site/data/club
           git commit -m "Opening books from build run ${{ inputs.run_id }} (for review)"
-          git push origin "books/${{ inputs.run_id }}"
+          git push origin "books/${{ inputs.run_id }}-${{ github.run_id }}"
