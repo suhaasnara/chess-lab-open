@@ -92,9 +92,15 @@ def keep_material(b, cands):
     def score(u):
         nb = b.copy(); nb.push(chess.Move.from_uci(u))
         mat = sum(VAL[pc.piece_type] * (1 if pc.color == me else -1) for pc in nb.piece_map().values())
-        loss = max([VAL[nb.piece_at(m.to_square).piece_type] for m in nb.legal_moves
-                    if nb.is_capture(m) and nb.piece_at(m.to_square)] or [0])
-        return mat - loss
+        def gain(m):   # what the defender wins with m, net of an immediate recapture (a one-step exchange count)
+            g = (VAL[nb.piece_at(m.to_square).piece_type] if nb.piece_at(m.to_square) else 0) + (8 if m.promotion else 0)
+            if g == 0:
+                return 0
+            after = nb.copy(); after.push(m)
+            if after.is_attacked_by(me, m.to_square):
+                g -= VAL[m.promotion or nb.piece_at(m.from_square).piece_type]
+            return max(g, 0)
+        return mat - max([gain(m) for m in nb.legal_moves] or [0])
     best = max(score(u) for u in cands)
     return next(u for u in cands if score(u) == best)
 
