@@ -1,0 +1,31 @@
+name: Build calculation set
+# Run by hand. Downloads the Lichess puzzle database (CC0), picks hard, long exercises with
+# tools/pick_calc.py and pushes site/data/calc.json to a review branch calc/<run id>.
+# main is never touched: copy the file over after checking it.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  calc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install zstandard==0.23.0
+      - name: Download the Lichess puzzle database (https://database.lichess.org/#puzzles, CC0)
+        run: curl -sSfL -o puzzles.csv.zst https://database.lichess.org/lichess_db_puzzle.csv.zst && ls -la puzzles.csv.zst
+      - name: Pick the exercises
+        run: python3 tools/pick_calc.py puzzles.csv.zst site/data/calc.json && ls -la site/data/calc.json
+      - name: Push the review branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "calc/${{ github.run_id }}"
+          git add site/data/calc.json
+          git commit -m "Calculation set from the Lichess puzzle database (for review)"
+          git push origin "calc/${{ github.run_id }}"
