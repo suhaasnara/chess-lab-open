@@ -10,7 +10,7 @@ const fs=require('fs'), path=require('path');
 section('t1: page loads, routes, board renders');
 {
   const {w}=await makePage();
-  assert(w.document.querySelectorAll('.tabs button[data-route]').length===10,'ten tabs');
+  assert(w.document.querySelectorAll('.tabs button[data-route]').length===11,'eleven tabs');
   assert(w.document.body.dataset.view==='today','Today is the default view');
   assert(w.document.querySelectorAll('#o-board .sq').length===64,'the openings board has 64 squares');
   w.location.hash='#tactics'; await sleep(60);
@@ -337,10 +337,10 @@ section('t14: Today — a daily session from your drills, puzzles and openings')
   w.Store.put('today',{...t,drills:[]});
   assert(w.TodayTab.plan().drills.length===3,'drills saved after an empty-drill plan join today\u2019s plan');
   w.location.hash='#today'; await sleep(80);
-  assert(w.document.querySelectorAll('#td-list .drill').length===9&&/0<\/b> of 9 done/.test(w.document.getElementById('td-head').innerHTML),'the list shows 9 items, none done');
+  assert(w.document.querySelectorAll('#td-list .drill').length===10&&/0<\/b> of 10 done/.test(w.document.getElementById('td-head').innerHTML),'the list shows 10 items (with the endgame), none done');
   const tp=w.Store.get('tactics-progress')||{}; tp[t.puzzles[0]]={ok:true,t:Date.now()}; w.Store.put('tactics-progress',tp);
   w.TodayTab.render();
-  assert(/1<\/b> of 9 done/.test(w.document.getElementById('td-head').innerHTML),'a puzzle solved today ticks off');
+  assert(/1<\/b> of 10 done/.test(w.document.getElementById('td-head').innerHTML),'a puzzle solved today ticks off');
   w.document.getElementById('td-go').click(); await sleep(120);
   assert(w.document.body.dataset.view==='drills'&&w.DrillsTab.state.cur&&w.DrillsTab.state.cur.id==='a-4','Continue opens the next item (the first drill)');
 }
@@ -531,6 +531,95 @@ section('t8: data sanity — puzzles legal, demo book and names consistent');
   let illegal=0, checked=0;
   for(const k of Object.keys(demo).slice(0,200)){ for(const [u,san] of demo[k]){ checked++ } }
   assert(checked>0,'demo book rows readable');
+}
+
+section('t21: Endgames — tablebase grading, mistakes, take back, live fallback, Today');
+{
+  const fen0='4k3/8/4K3/8/4P3/8/8/8 w - - 0 1';
+  const {w:w0}=await makePage();
+  const k=f=>w0.normKey(f);
+  const g=new w0.Chess(fen0); g.move('e5'); const f1=g.fen(); g.move('Kf8'); const f2=g.fen();
+  const DATA={groups:[['pawn','King and pawn']],positions:[
+    {id:'t-kp',group:'pawn',title:'Test key squares',fen:fen0,goal:'win',end:'convert',text:'idea',tb:{cat:'win',dtz:9,dtm:21},
+     line:['e4e5','e8f8','e6d7'],nodes:{[k(fen0)]:{b:'e4e5',w:'e6d6 e6f6'},[k(f1)]:'e8f8',[k(f2)]:{b:'e6d7',w:'e6f6',d:'e6e7'}}},
+    {id:'t-hold',group:'pawn',title:'Test hold',fen:'8/8/4k3/8/4PK2/8/8/8 b - - 0 1',goal:'draw',end:'hold:1',text:'',tb:{cat:'draw'},line:[],nodes:{}}]};
+  let tbCalls=0;
+  const {w}=await makePage({fetch:async url=>{
+    if(/data\/endgames\.json/.test(url)) return {ok:true,status:200,json:async()=>DATA};
+    if(/tablebase\.lichess\.ovh/.test(url)){ tbCalls++; const f=decodeURIComponent(url.split('fen=')[1]); const gg=new w0.Chess(f);
+      const ms=gg.moves({verbose:true}).map(m=>({uci:m.from+m.to,category:m.to==='f6'?'draw':'loss',dtz:5,dtm:m.to==='f5'?11:15}));
+      ms.sort((a,b)=>(a.category==='loss'?0:1)-(b.category==='loss'?0:1)||a.dtm-b.dtm);
+      return {ok:true,status:200,json:async()=>({category:'draw',moves:ms})} }
+    return null }});
+  const E=w.EndgamesTab; await sleep(50);
+  assert(E.data&&E.data.positions.length===2,'the endgame set loads');
+  assert(w.document.querySelectorAll('#eg-list .drill').length===2&&/King and pawn/.test(w.document.getElementById('eg-list').textContent),'the list shows positions under their group');
+  E.load(E.byId('t-kp'));
+  assert(/White to play and win/.test(w.document.getElementById('eg-status').textContent),'the goal is stated');
+  await E.userMove('e4','e5'); await sleep(400);
+  assert(E.state.hist.length===2&&E.state.hist[0].gr==='best'&&E.state.hist[1].u==='e8f8','the best move is graded from the stored tree and the stored reply is played');
+  const before=tbCalls; await E.userMove('e6','f6'); await sleep(50);
+  assert(E.state.hist[2].gr==='good'&&/slower/.test(w.document.getElementById('eg-status').textContent),'a winning but slower move says so');
+  /* after Kf6 the tree has no entry: the live tablebase answers */
+  assert(tbCalls>before,'off the stored tree, the live tablebase is asked');
+  E.load(E.byId('t-kp')); await E.userMove('e6','d5'); await sleep(50);
+  assert(E.state.phase==='mistake'&&/win slip/.test(w.document.getElementById('eg-status').textContent),'a move outside the tree\'s good moves throws the win and is caught');
+  let p=w.Store.get('endgame-progress')||{};
+  assert(p['t-kp']&&p['t-kp'].tries===1&&!p['t-kp'].ok,'the miss is recorded at once');
+  E.takeBack();
+  assert(E.state.phase==='play'&&E.state.hist.length===0&&E.state.g.fen()===fen0,'take back returns to the position before the mistake');
+  assert(w.document.querySelector('#endgames .endbar').hidden,'the mistake banner is cleared');
+  /* a held draw finishes the exercise and counts */
+  E.load(E.byId('t-hold')); await E.userMove('e6','f6'); await sleep(400);
+  p=w.Store.get('endgame-progress');
+  assert(E.state.phase==='done'&&p['t-hold'].ok&&p['t-hold'].okN===1,'holding for the required moves solves it (live tablebase grades it)');
+  assert(!w.document.querySelector('#endgames .endbar').hidden&&/Held/.test(w.document.querySelector('#endgames .endbar').textContent),'the result banner shows on the board');
+  E.load(E.byId('t-kp')); E.solution();
+  assert(/Best play/.test(w.document.getElementById('eg-moves').textContent)&&/e5/.test(w.document.getElementById('eg-moves').textContent),'Solution shows the tablebase line');
+  const items=w.TodayTab.items(); 
+  assert(items.some(x=>x.kind==='endgame'),'Today includes one endgame');
+  w.ProgressTab.render();
+  assert(/endgames solved/.test(w.document.getElementById('p-stats').textContent),'Progress counts endgames solved');
+}
+
+section('t22: Endgame data — every stored move legal, goals met');
+{
+  const fp=path.join(H.SITE,'data','endgames.json');
+  if(!fs.existsSync(fp)) console.log('   (no data/endgames.json yet)');
+  else{
+    const d=JSON.parse(fs.readFileSync(fp,'utf8')); const {w}=await makePage();
+    let bad=0, nodes=0;
+    for(const z of d.positions){
+      const g=new w.Chess(z.fen); if(!g) { bad++; continue }
+      for(const u of z.line){ if(!g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'})){ bad++; break } }
+      if(!['win','draw'].includes(z.goal)||!z.tb) bad++;
+      if(z.goal==='win'&&z.tb.cat!=='win') bad++;
+      nodes+=Object.keys(z.nodes).length;
+      const rootKey=w.normKey(z.fen); if(!z.nodes[rootKey]) bad++;
+    }
+    assert(bad===0,`${d.positions.length} endgames: legal lines, goals match the tablebase, root stored (${nodes} stored positions)`);
+  }
+}
+
+section('t23: Openings — import a Lichess study by link');
+{
+  const PGN='[Event "My Caro: Advance"]\n[StudyName "My Caro"]\n[ChapterName "Advance"]\n[Orientation "black"]\n\n1. e4 c6 2. d4 d5 3. e5 Bf5 *\n\n[Event "My Caro: Exchange"]\n[StudyName "My Caro"]\n[Orientation "black"]\n\n1. e4 c6 2. d4 d5 3. exd5 cxd5 *\n';
+  let asked='';
+  const {w}=await makePage({fetch:async url=>{ if(/lichess\.org\/api\/study/.test(url)){ asked=url;
+    if(/PRIVATE1/.test(url)) return {ok:false,status:403,text:async()=>''};
+    return {ok:true,status:200,text:async()=>PGN} } return null }});
+  const O=w.OpeningsTab, $=id=>w.document.getElementById(id);
+  assert(O.studyApi('https://lichess.org/study/AbCdEf12')==='https://lichess.org/api/study/AbCdEf12.pgn'&&
+         O.studyApi('lichess.org/study/AbCdEf12/Zz9Yy8Xx#3')==='https://lichess.org/api/study/AbCdEf12/Zz9Yy8Xx.pgn'&&!O.studyApi('https://lichess.org/abc'),'study and chapter links map to the public export');
+  $('o-studyurl').value='https://lichess.org/study/PRIVATE1';
+  await O.fetchStudy();
+  assert(/public or unlisted/.test($('o-reperr').textContent),'a private study gets a clear message');
+  $('o-studyurl').value='https://lichess.org/study/AbCdEf12'; $('o-repname').value='';
+  await O.fetchStudy();
+  assert($('o-repname').value==='My Caro'&&$('o-repside').value==='black'&&/2 chapters/.test($('o-reperr').textContent),'name and side come from the study');
+  await O.doImport(); await sleep(50);
+  const idx=w.Store.get('reps-index')||[];
+  assert(idx.some(r=>r.name==='My Caro'&&r.side==='black'&&r.positions>=4),'the study imports as a repertoire');
 }
 
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));

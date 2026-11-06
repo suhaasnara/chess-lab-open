@@ -270,3 +270,8 @@ footer .inner{padding-block:18px;font-size:.85rem;color:var(--muted)}
 .pchart .hit{fill:transparent}.pchart .pt:hover .dot{r:6}
 .pchart .bar{fill:var(--navy)}.pchart .pt:hover .bar{fill:var(--blue)}
 .pchart .lv0{fill:var(--band);stroke:var(--line)}.pchart .lv1{fill:#c9d8ee}.pchart .lv2{fill:#8fb0dc}.pchart .lv3{fill:#3f6fae}.pchart .lv4{fill:var(--navy)}
+
+/* Endgames */
+.eghead{margin:8px 2px 0}
+#eg-list .eghead:first-child{margin-top:0}
+.ccline sup{font-size:.7em;margin-left:1px}

@@ -39,6 +39,7 @@ function activity(el){
   for(const v of Object.values(Store.get('tactics-progress')||{})) if(v.t) ts.push(v.t);
   for(const v of Object.values(Store.get('adrills-progress')||{})) if(v.t) ts.push(v.t);
   for(const v of Object.values(Store.get('calc-progress')||{})) if(v.t) ts.push(v.t);
+  for(const v of Object.values(Store.get('endgame-progress')||{})) if(v.t) ts.push(v.t);
   for(const o of OpeningsTab.openings()) for(const h of OpeningsTab.stats(o.id).history) ts.push(h.t);
   for(const g of Store.get('play-games')||[]) ts.push(g.t);
   const key=t=>{ const d=new Date(t); return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate() };
@@ -76,11 +77,13 @@ function render(){
   const tac=Store.get('tac-rating')||{r:null,n:0};
   const tsolved=Object.values(Store.get('tactics-progress')||{}).filter(x=>x.ok).length;
   const dr=Store.get('adrills')||[]; const dp=Store.get('adrills-progress')||{};
+  const eg=window.EndgamesTab?EndgamesTab.stats():{solved:0,total:0};
   $('p-stats').innerHTML=`
     <div class="stat"><b>${withStats.reduce((a,x)=>a+x.st.lines,0)}</b><span class="note">opening lines trained</span></div>
     <div class="stat"><b>${tac.n?tac.r:'–'}</b><span class="note">puzzle rating (${tac.n} rated)</span></div>
     <div class="stat"><b>${tsolved}</b><span class="note">puzzles solved</span></div>
-    <div class="stat"><b>${Object.values(dp).filter(x=>x.ok).length} / ${dr.length}</b><span class="note">game drills solved</span></div>`;
+    <div class="stat"><b>${Object.values(dp).filter(x=>x.ok).length} / ${dr.length}</b><span class="note">game drills solved</span></div>
+    <div class="stat"><b>${eg.solved} / ${eg.total||'–'}</b><span class="note">endgames solved</span></div>`;
   const t=$('p-table');
   t.innerHTML='<tr><th>Opening</th><th>Side</th><th>Lines</th><th>Rating</th><th>Last trained</th></tr>'+
     withStats.sort((a,b)=>b.st.lines-a.st.lines).map(({o,st})=>{

@@ -44,6 +44,7 @@
     <button data-route="openings">Openings</button>
     <button data-route="tactics">Tactics</button>
     <button data-route="calc">Calculation</button>
+    <button data-route="endgames">Endgames</button>
     <button data-route="analyze">Analyze my games</button>
     <button data-route="drills">Drills</button>
     <button data-route="play">Play</button>
@@ -65,9 +66,9 @@
       <h2 style="margin:6px 0 8px">How Chess Lab Open works</h2>
       <ul class="welcomelist">
         <li><b>Start with your own games.</b> In <a href="#analyze">Analyze my games</a>, type your Lichess or Chess.com username: you get a report card and drills from your mistakes (and the ones your opponents got away with).</li>
-        <li><b>Come back to <a href="#today">Today</a>.</b> A short daily session: a few of your drills, five puzzles near your rating, one opening line.</li>
+        <li><b>Come back to <a href="#today">Today</a>.</b> A short daily session: a few of your drills, five puzzles near your rating, one endgame, one opening line.</li>
         <li><b><a href="#openings">Openings</a>:</b> pick an opening or paste your repertoire as a PGN. The opponent plays real moves from Lichess games at the level you set, from 1000 to Elite, then Stockfish takes over.</li>
-        <li><b><a href="#tactics">Tactics</a>, <a href="#calc">Calculation</a>, <a href="#play">Play</a> and <a href="#guess">Guess the move</a></b> for everything else.</li>
+        <li><b><a href="#tactics">Tactics</a>, <a href="#calc">Calculation</a>, <a href="#endgames">Endgames</a>, <a href="#play">Play</a> and <a href="#guess">Guess the move</a></b> for everything else.</li>
         <li><b>Private by design:</b> no account, nothing uploaded. Your progress stays in this browser (Progress → Export to move it).</li>
       </ul>
       <div class="btns" style="margin-top:10px"><a class="btn primary" href="#analyze" id="welcome-go">Analyze my games</a><button class="btn" id="welcome-ok">Got it</button></div>
@@ -75,7 +76,7 @@
     <div class="card">
       <span class="label">Today</span>
       <h2 style="margin:6px 0 4px">Your session</h2>
-      <p class="note" style="margin:0 0 10px">A few drills from your own games, five puzzles near your rating and one opening line. Made fresh each day from your progress in this browser.</p>
+      <p class="note" style="margin:0 0 10px">A few drills from your own games, five puzzles near your rating, one endgame and one opening line. Made fresh each day from your progress in this browser.</p>
       <div id="td-head" class="tdhead"></div>
       <div class="prog"><i id="td-bar" style="width:0%"></i></div>
       <div class="btns" style="margin-top:12px"><button class="btn primary" id="td-go">Start today’s session</button></div>
@@ -153,8 +154,10 @@
   <div class="modal" id="o-importmodal" hidden>
     <div class="card">
       <h2>Import a repertoire</h2>
-      <p class="note">Paste a PGN export of your repertoire (Lichess study, Chessable course export, or any PGN with variations).
+      <p class="note">Paste a PGN of your repertoire (Lichess study, Chessable course export, or any PGN with variations), or the link to a public or unlisted Lichess study (one chapter or the whole study).
          It is parsed in your browser and stored only on this device.</p>
+      <div class="moverow" style="margin:0 0 8px"><input type="text" id="o-studyurl" placeholder="Or a Lichess study link: https://lichess.org/study/…" aria-label="Lichess study link">
+        <button class="btn" id="o-studyget">Fetch</button></div>
       <textarea id="o-pgnbox" rows="8" placeholder="[Event &quot;...&quot;]&#10;&#10;1. e4 e5 2. Nf3 ..."></textarea>
       <div class="row2" style="margin-top:8px">
         <label class="field">Name <input type="text" id="o-repname" placeholder="My 1.e4 repertoire"></label>
@@ -232,6 +235,41 @@
         <div class="status" id="cc-status" aria-live="polite">Pick an exercise from the list, or press Next.</div>
         <div class="card"><span class="label">Line <span class="evalchip" id="cc-clock" style="float:right">0:00</span></span><div class="ccline" id="cc-line"></div></div>
         <div class="card"><span class="label">The exercise</span><dl class="facts" id="cc-facts"></dl></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= Endgames ================= -->
+<section id="endgames" hidden>
+  <div class="grid">
+    <div>
+      <p class="note" style="margin:0 0 10px">Textbook endings against perfect defence. Every move is graded by the
+         <a href="https://lichess.org/blog/W3WeMyQAACQAdfAL/7-piece-syzygy-tablebases-are-complete" target="_blank" rel="noopener">Lichess tablebase</a>:
+         best, still winning, or the result thrown away.</p>
+      <div id="eg-groups" style="margin-bottom:10px"></div>
+      <div class="list" id="eg-list"></div>
+    </div>
+    <div class="panel">
+      <div class="boardwrap">
+        <div class="board" id="eg-board" role="grid" aria-label="Chess board"></div>
+        <div class="boardtools">
+          <button class="btn sm" id="eg-back">Take back <kbd>←</kbd></button>
+          <button class="btn sm" id="eg-hint">Hint <kbd>H</kbd></button>
+          <button class="btn sm" id="eg-sol">Solution</button>
+          <button class="btn sm" id="eg-prev" aria-label="Back through the solution" hidden>&#8592;</button>
+          <button class="btn sm" id="eg-fwd" aria-label="Forward through the solution" hidden>&#8594;</button>
+          <span class="evalchip" id="eg-step" hidden></span>
+          <button class="btn sm" id="eg-retry">Retry</button>
+          <button class="btn sm" id="eg-next">Next <kbd>N</kbd></button>
+          <button class="btn sm" id="eg-flip">Flip <kbd>F</kbd></button>
+        </div>
+      </div>
+      <div class="side">
+        <div class="status" id="eg-status" aria-live="polite">Pick an endgame from the list, or press Next.</div>
+        <p class="note" id="eg-tip" hidden></p>
+        <div class="card"><span class="label">Moves</span><div class="ccline" id="eg-moves"></div></div>
+        <div class="card"><span class="label">The idea</span><p id="eg-text" style="margin:6px 0 0;font-size:.92rem"></p><dl class="facts" id="eg-facts"></dl></div>
       </div>
     </div>
   </div>
@@ -406,6 +444,7 @@
 <script src="js/openings.js?v=__V__"></script>
 <script src="js/tactics.js?v=__V__"></script>
 <script src="js/calc.js?v=__V__"></script>
+<script src="js/endgames.js?v=__V__"></script>
 <script src="js/analyze.js?v=__V__"></script>
 <script src="js/drills.js?v=__V__"></script>
 <script src="js/play.js?v=__V__"></script>

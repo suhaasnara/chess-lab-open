@@ -1,6 +1,6 @@
 /* Chess Lab Open — Today: a short daily session built from your own progress.
    Up to 3 drills from your games (new first, then misses, then spaced reviews at 3 / 7 / 21 days),
-   5 puzzles near your puzzle rating, and one opening line (your lowest-rated opening, else a preset).
+   5 puzzles near your puzzle rating, one endgame (new ones in order, then reviews), and one opening line (your lowest-rated opening, else a preset).
    The plan is fixed for the day once made; items tick off as you do them in their own tabs.
    Everything lives in this browser (localStorage). */
 'use strict';
@@ -35,8 +35,10 @@ function pickOpening(){
 function plan(){
   let t=Store.get('today');
   /* remake the plan on a new day, when the puzzle library arrives late, or when drills get saved after an empty-drill plan */
-  if(!t||t.date!==dayKey()||(!t.puzzles.length&&(TacticsTab.lib||[]).length)||(!t.drills.length&&pickDrills().length)){
-    t={date:dayKey(),drills:pickDrills(),puzzles:pickPuzzles(),opening:pickOpening()};
+  if(!t||t.date!==dayKey()||(!t.puzzles.length&&(TacticsTab.lib||[]).length)||(!t.drills.length&&pickDrills().length)||(t.endgame===undefined&&EndgamesTab.data)||(t.endgame===null&&EndgamesTab.pickToday())){
+    const keep=t&&t.date===dayKey()?t:null;
+    t={date:dayKey(),drills:pickDrills(),puzzles:pickPuzzles(),endgame:EndgamesTab.pickToday(),opening:pickOpening()};
+    if(keep){ t.drills=keep.drills.length?keep.drills:t.drills; t.puzzles=keep.puzzles.length?keep.puzzles:t.puzzles; t.opening=keep.opening }
     Store.put('today',t);
   }
   return t;
@@ -50,6 +52,9 @@ function items(){
     title:'Drill: vs '+d.opp,meta:`${d.date} · you played ${d.played}`}) }
   for(const id of t.puzzles){ const z=L.find(x=>x.id===id); if(z) out.push({kind:'puzzle',id,obj:z,done:!!(tp[id]&&tp[id].t>=s),
     title:'Puzzle '+(z.rating||''),meta:(z.motif||'')+(z.themes&&z.themes.length?' · '+z.themes.slice(0,2).join(', '):'')}) }
+  const eg=t.endgame&&EndgamesTab.byId(t.endgame), ep=Store.get('endgame-progress')||{};
+  if(eg) out.push({kind:'endgame',id:eg.id,obj:eg,done:!!(ep[eg.id]&&ep[eg.id].t>=s),
+    title:'Endgame: '+eg.title,meta:(eg.goal==='win'?'win it':'hold the draw')+' against perfect defence'});
   const o=O.find(x=>x.id===t.opening);
   if(o){ const st=OpeningsTab.stats(o.id); out.push({kind:'opening',id:o.id,obj:o,done:!!(st.last&&st.last>=s),
     title:'Opening line: '+o.name,meta:st.lines?`rating ${st.rating} · ${st.lines} lines`:'new for you'}) }
@@ -58,6 +63,7 @@ function items(){
 function start(it){
   if(it.kind==='drill'){ location.hash='#drills'; setTimeout(()=>DrillsTab.load(it.obj),30) }
   else if(it.kind==='puzzle'){ location.hash='#tactics'; setTimeout(()=>TacticsTab.load(it.obj),30) }
+  else if(it.kind==='endgame'){ location.hash='#endgames'; setTimeout(()=>EndgamesTab.load(it.obj),30) }
   else { location.hash='#openings'; setTimeout(()=>OpeningsTab.selectOpening(it.id),30) }
 }
 function streak(all,done){
@@ -79,7 +85,7 @@ function render(){
   el.innerHTML='';
   for(const it of list){
     const b=document.createElement('button'); b.className='drill'+(it.done?' done':'');
-    b.innerHTML=`<span class="src">${it.done?'✓':it.kind==='drill'?'D':it.kind==='puzzle'?'P':'O'}</span><span><span class="opp">${esc(it.title)}</span><br><span class="meta">${esc(it.meta)}</span></span><span class="evalchip">&#9654;</span>`;
+    b.innerHTML=`<span class="src">${it.done?'✓':it.kind==='drill'?'D':it.kind==='puzzle'?'P':it.kind==='endgame'?'E':'O'}</span><span><span class="opp">${esc(it.title)}</span><br><span class="meta">${esc(it.meta)}</span></span><span class="evalchip">&#9654;</span>`;
     b.addEventListener('click',()=>start(it));
     el.appendChild(b);
   }
@@ -99,7 +105,7 @@ function init(){
   $('welcome-go').addEventListener('click',dismiss);
   $('help-open').addEventListener('click',()=>{ location.hash='#today'; welcome(true); setTimeout(()=>{ const e=$('welcome'); if(e.scrollIntoView) e.scrollIntoView({block:'start'}) },30) });
   /* the puzzle library loads after this page: rebuild an empty plan once it is there */
-  let tries=0; const wait=setInterval(()=>{ tries++; if((TacticsTab.lib||[]).length||tries>40){ clearInterval(wait); if(document.body.dataset.view==='today') render() } },250);
+  let tries=0; const wait=setInterval(()=>{ tries++; if(((TacticsTab.lib||[]).length&&EndgamesTab.data)||tries>40){ clearInterval(wait); if(document.body.dataset.view==='today') render() } },250);
 }
 window.TodayTab={init,render,plan,items,start};
 })();

@@ -48,6 +48,10 @@ cburnett instead.)
   [Lichess puzzle database](https://database.lichess.org/#puzzles), **CC0 1.0**.
   Each puzzle links to its source game on lichess.org. Rebuild or extend the
   selection with `tools/pick_puzzles.py`.
+- **Endgames** (`site/data/endgames.json`) — textbook positions set up by hand; every result,
+  best move and best defence comes from the [Lichess tablebase](https://tablebase.lichess.ovh)
+  (Syzygy 7-piece tables by Ronald de Man and contributors), queried by `tools/build_endgames.py`
+  and, for positions off the stored lines, live from the page.
 - **Opening books** (`site/data/masters.json`, `site/data/club/*.json`) — built by
   `.github/workflows/build-books.yml` with `tools/build_masters.py` from the
   [Lichess Elite Database](https://database.nikonoel.fr/) (CC0, Lichess games repackaged by

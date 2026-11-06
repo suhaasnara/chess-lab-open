@@ -6,7 +6,7 @@ const {JSDOM}=require('jsdom');
 const fs=require('fs'), path=require('path');
 const SITE=path.join(__dirname,'..','site');
 
-const SCRIPTS=['vendor/chess.js','js/shared.js','js/book.js','js/openings.js','js/tactics.js','js/calc.js',
+const SCRIPTS=['vendor/chess.js','js/shared.js','js/book.js','js/openings.js','js/tactics.js','js/calc.js','js/endgames.js',
   'js/analyze.js','js/drills.js','js/play.js','js/gtm.js','js/today.js','js/progress.js','js/settingspage.js','js/router.js'];
 
 /* A small book standing in for the static books (data/masters.json, data/club/*.json), keyed by 'board side'. */

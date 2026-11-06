@@ -380,7 +380,30 @@ async function hint(){
 
 /* ---------- Import ---------- */
 function openImport(){ $('o-importmodal').hidden=false; $('o-reperr').textContent='' }
-function doImport(){
+/* A Lichess study link -> its PGN (public API, no login; private studies are refused by Lichess). */
+function studyApi(url){
+  const m=String(url).trim().match(/lichess\.org\/study\/([A-Za-z0-9]{8})(?:\/([A-Za-z0-9]{8}))?/);
+  return m?'https://lichess.org/api/study/'+m[1]+(m[2]?'/'+m[2]:'')+'.pgn':null;
+}
+async function fetchStudy(){
+  const api=studyApi($('o-studyurl').value); const err=$('o-reperr');
+  if(!api){ err.textContent='That is not a Lichess study link (https://lichess.org/study/…).'; return false }
+  err.textContent='Fetching the study…';
+  try{
+    const r=await fetch(api); if(r.status===403||r.status===404){ err.textContent='Lichess would not share that study: make it public or unlisted, then try again.'; return false }
+    if(!r.ok) throw new Error('Lichess answered '+r.status);
+    const pgn=await r.text(); if(!/\d\.\s*[A-Za-z]/.test(pgn)) throw new Error('the study has no moves');
+    $('o-pgnbox').value=pgn;
+    const tag=k=>{ const m=pgn.match(new RegExp('\\['+k+' "([^"]*)"\\]')); return m?m[1]:'' };
+    if(!$('o-repname').value.trim()) $('o-repname').value=(tag('StudyName')||tag('Event')||'').slice(0,60);
+    const o=tag('Orientation'); if(o==='black'||o==='white') $('o-repside').value=o;
+    const n=(pgn.match(/\[Event /g)||[]).length;
+    err.textContent=`Fetched ${n} chapter${n===1?'':'s'}. Check the name and side, then Import.`; return true;
+  }catch(e){ err.textContent='Could not fetch the study ('+(e.message||e)+').'; return false }
+}
+async function doImport(){
+  if(!$('o-pgnbox').value.trim()&&$('o-studyurl').value.trim()){ if(!await fetchStudy()) return }
+  if(studyApi($('o-pgnbox').value)&&$('o-pgnbox').value.trim().length<200){ $('o-studyurl').value=$('o-pgnbox').value.trim(); $('o-pgnbox').value=''; if(!await fetchStudy()) return }
   const text=$('o-pgnbox').value;
   const name=$('o-repname').value.trim()||'My repertoire';
   const sideV=$('o-repside').value;
@@ -389,7 +412,7 @@ function doImport(){
     const id='imp-'+Date.now().toString(36);
     Store.put('rep-'+id,{name,side:sideV,pos:Object.fromEntries(Object.entries(r.pos).map(([k,v])=>[k,v.join(' ')]))});
     const idx=repIndex(); idx.push({id,name,side:sideV,positions:r.positions}); Store.put('reps-index',idx);
-    $('o-importmodal').hidden=true; $('o-pgnbox').value='';
+    $('o-importmodal').hidden=true; $('o-pgnbox').value=''; $('o-studyurl').value='';
     renderList(); selectOpening(id);
   }catch(e){ $('o-reperr').textContent=String(e.message||e) }
 }
@@ -417,6 +440,8 @@ function init(){
   $('o-flip').addEventListener('click',()=>board.flip());
   $('o-import').addEventListener('click',openImport);
   $('o-repsave').addEventListener('click',doImport);
+  $('o-studyget').addEventListener('click',fetchStudy);
+  $('o-studyurl').addEventListener('keydown',e=>{ if(e.key==='Enter') fetchStudy() });
   $('o-repcancel').addEventListener('click',()=>{ $('o-importmodal').hidden=true });
   $('o-rated').addEventListener('click',()=>{ Settings.set('omode','rated'); modeBtns() });
   $('o-training').addEventListener('click',()=>{ Settings.set('omode','training'); modeBtns(); renderBook() });
@@ -446,5 +471,5 @@ function init(){
   renderList();
   board.set(new Chess(),{orient:'w',locked:true});
 }
-window.OpeningsTab={init,syncLevel,soundDemoMoves,get state(){return S},selectOpening,newLine,userMove,parseRepPGN,moveDifficulty,openings,stats};
+window.OpeningsTab={init,studyApi,fetchStudy,doImport,syncLevel,soundDemoMoves,get state(){return S},selectOpening,newLine,userMove,parseRepPGN,moveDifficulty,openings,stats};
 })();

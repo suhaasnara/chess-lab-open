@@ -16,7 +16,7 @@ accounts, no uploads: progress lives in localStorage with JSON export/import.
   five puzzles near your puzzle rating and one opening line (your lowest-rated
   opening). It ticks off as you go, with a streak counter.
 - **Openings** — train preset openings, or import your own repertoire as a PGN
-  (Lichess study / Chessable export) and drill it. The opponent plays real replies
+  (Lichess study / Chessable export), or paste the link to a public Lichess study, and drill it. The opponent plays real replies
   from books built from Lichess games: an **Opponent level** slider runs from
   Lichess 1000 up to Elite 2500+, and the book card shows your level's moves next
   to the elite book's. Each opening gets a rating: every move you find is scored
@@ -27,6 +27,10 @@ accounts, no uploads: progress lives in localStorage with JSON export/import.
   Lichess puzzles (rated 2200–2800, 4 to 13 moves for you) you enter your moves and
   the replies you expect, against a clock, then submit. Scored by how far your line follows the solution; a
   different first move counts if Stockfish rates it as good.
+- **Endgames** — 31 textbook endings (basic mates, king and pawn, Lucena, Philidor,
+  Vančura, queen against pawn and rook, minor pieces) played against perfect defence. Every move
+  is graded by the Lichess tablebase (best, still winning, or the result thrown away), from stored
+  lines first and the live tablebase API after; Stockfish only when neither answers. Spaced review.
 - **Analyze my games** — type a Lichess or Chess.com username; your recent
   rapid + classical games are fetched from the public API in your browser.
   Lichess games reuse Lichess's stored server analysis where present; Chess.com
@@ -54,6 +58,7 @@ accounts, no uploads: progress lives in localStorage with JSON export/import.
 | --- | --- | --- |
 | Opening book, elite level (`site/data/masters.json`) | [Lichess Elite Database](https://database.nikonoel.fr/) (Lichess games, 2500+ vs 2300+), built by `tools/build_masters.py` | CC0 |
 | Opening books, club levels 1000–2200+ (`site/data/club/*.json`) | [Lichess open database](https://database.lichess.org/), rated rapid + classical games by the players' average rating, built by `tools/build_club.py` | CC0 |
+| Endgame positions and their graded trees (`site/data/endgames.json`) | Positions set up by hand (`tools/endgame_positions.json`); results and best moves from the [Lichess tablebase API](https://tablebase.lichess.ovh) (Syzygy tables), built by `tools/build_endgames.py` (workflow *Build endgame set*) | facts from a free public API |
 | Calculation exercises (`site/data/calc.json`) | [Lichess puzzle database](https://database.lichess.org/#puzzles), picked by `tools/pick_calc.py` (workflow *Build calculation set*) | CC0 |
 | Opening names + offline demo book | [lichess-org/chess-openings](https://github.com/lichess-org/chess-openings) | CC0 |
 | Puzzles | [Lichess puzzle database](https://database.lichess.org/#puzzles) (rebuild with `tools/pick_puzzles.py`) | CC0 |
