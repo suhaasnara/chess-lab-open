@@ -316,19 +316,26 @@ function renderSide(){
 async function renderBook(){
   const el=$('o-bookrows');
   const show=training()||S.phase==='done';
-  $('o-booklabel').textContent=Book.levelLabel(Settings.get('olevel'))+' book';
+  const lv=Settings.get('olevel');
+  $('o-booklabel').textContent=lv==='masters'?'Elite book':'Book: '+Book.levelLabel(lv)+' and Elite';
   if(!S.op){ el.innerHTML='<p class="note">Pick an opening to see the book.</p>'; return }
   if(!show){ el.innerHTML='<p class="note">The book shows here after the line (Rated mode).</p>'; return }
-  const bk=await Book.oppMoves(S.g?S.g.fen():START);
-  if(!bk){ el.innerHTML='<p class="note">No book data for this position.</p>'; return }
-  el.innerHTML=(bk.demo?'<p class="note">Offline demo book: named lines, no game counts.</p>':'')+
+  const fen=S.g?S.g.fen():START;
+  /* with a club level on: that level's moves first, then the elite book's (as in the private kit) */
+  const books=[];
+  if(lv!=='masters'){ const c=await Book.moves(fen,lv); if(c&&!c.demo) books.push([Book.levelLabel(lv),c]) }
+  const e=await Book.moves(fen,'masters'); if(e) books.push([e.demo?'Named lines':Book.levelLabel('masters'),e]);
+  if(!books.length){ el.innerHTML='<p class="note">No book data for this position.</p>'; return }
+  const table=(title,bk)=>`<div class="booksec"><div class="note booktitle">${esc(title)}${bk.total?' · '+bk.total.toLocaleString()+' games':''}</div>`+
+    (bk.demo?'<p class="note">No game counts here: named lines only.</p>':'')+
     bk.rows.slice(0,8).map(r=>{
       const tot=r.games||1, pw=Math.round(100*r.w/tot), pd=Math.round(100*r.d/tot), pb=100-pw-pd;
-      return `<div class="bookrow"><span class="mv">${esc(r.san||sanOf(S.g?S.g.fen():START,r.uci))}</span>
+      return `<div class="bookrow"><span class="mv">${esc(r.san||sanOf(fen,r.uci))}</span>
         <span class="wdl" title="${pw}% / ${pd}% / ${pb}%"><i class="w" style="width:${pw}%"></i><i class="d" style="width:${pd}%"></i><i class="b" style="width:${pb}%"></i></span>
         <span class="note">${r.games?Math.round(r.share*100)+'%':''}</span>
         <span class="note">${r.games?r.games.toLocaleString():''}</span></div>`;
-    }).join('');
+    }).join('')+'</div>';
+  el.innerHTML=books.map(([t,b])=>table(t,b)).join('');
 }
 
 /* ---------- Hint ---------- */

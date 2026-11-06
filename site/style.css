@@ -230,3 +230,11 @@ footer .inner{padding-block:18px;font-size:.85rem;color:var(--muted)}
 /* Calculation */
 .ccline{margin-top:6px;line-height:1.7;font-variant-numeric:tabular-nums}
 .ccline .ok{color:var(--good);font-weight:600}.ccline .miss{color:var(--bad);text-decoration:line-through}
+
+/* book card: one section per book */
+.booksec+.booksec{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+.booktitle{font-weight:600;margin-bottom:4px}
+
+/* Guess the move: moves so far */
+.gmoves{max-height:180px;overflow:auto;line-height:1.7}
+.gmoves .ok{color:var(--good)}.gmoves .inacc{color:var(--warn)}.gmoves .miss{color:var(--bad)}

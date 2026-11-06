@@ -226,6 +226,9 @@ section('t10: guess the move — theory auto-plays, guesses are scored, result s
   const before=S.pts;
   await w.GtmTab.userMove(gm.from,gm.to,gm.promotion); await sleep(100);
   assert(S.pts>before,'guessing the game move earns points');
+  await sleep(20);
+  const mv=w.document.getElementById('g-moves').textContent;
+  assert(mv.includes(S.game.moves[S.ply-1]+' ✓')&&!mv.includes(S.game.moves[S.ply+1]||'~~'),'the Moves panel shows the game so far with your ✓, nothing ahead');
   /* data sanity on the published game file */
   const g=S.game;
   const chk=new w.Chess();
@@ -285,6 +288,10 @@ section('t12: opponent level — slider on the Openings tab, 1000 to Elite, stat
   const bk=await B.oppMoves('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1');
   assert(urls.some(u=>/data\/club\/b14\.json$/.test(u))&&bk&&bk.level==='b14'&&bk.source==='club','the opponent plays from the 1400–1600 book file');
   assert(!urls.some(u=>/^https?:/.test(u)&&!u.startsWith('https://chess-lab-open.test/')),'no outside service is called (no accounts, no live API)');
+  w.Settings.set('omode','training'); w.OpeningsTab.selectOpening('preset-english'); await sleep(300);
+  const secs=[...w.document.querySelectorAll('#o-bookrows .booktitle')].map(x=>x.textContent);
+  assert(secs.length===2&&/^Club 1400–1600/.test(secs[0])&&/^Elite 2500\+/.test(secs[1]),'the book card shows the club level, then the elite book: '+secs.join(' | '));
+  w.Settings.set('omode','rated');
   sel.value='b10'; sel.dispatchEvent(new w.Event('change')); await sleep(50);
   assert(sl.value==='0'&&w.document.getElementById('o-levelname').textContent==='Club 1000–1200','changing it in Settings moves the slider');
   w.Settings.set('olevel','masters'); w.OpeningsTab.syncLevel();

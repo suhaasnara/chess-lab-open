@@ -38,7 +38,7 @@ async function load(file){
     <dt>Opening</dt><dd>${game.opening?esc(game.opening[1])+' <span class="note">('+esc(game.opening[0])+')</span>':'—'}</dd>
     <dt>Result</dt><dd>${esc(game.result)}</dd>`;
   status('','Loading the opening…',`You play the winner’s side (${me==='w'?'White':'Black'}). The first ${game.theory} plies are known theory and play themselves.`);
-  renderList(); renderScore();
+  renderList(); renderScore(); renderMoves();
   playTheory();
 }
 function playTheory(){
@@ -52,6 +52,7 @@ function playTheory(){
 function applyMove(san,who){
   const m=S.g.move(san);
   if(m) board.set(S.g,{last:{from:m.from,to:m.to},orient:board.orient});
+  setTimeout(renderMoves,0);
   return m;
 }
 /* advance to the next decision: opponent moves auto-play; the winner's move waits for a guess */
@@ -156,6 +157,23 @@ function drawGraph(){
   const fin=ev.filter(v=>Math.abs(v)<9000), lo=fin.length?Math.min(...fin):0, hi=fin.length?Math.max(...fin):0;
   $('g-graphnote').textContent=`Above the line favours White, below favours Black (engine, depth 20+). Range ${pawns(lo)} to ${pawns(hi)}. Shaded: theory. Dots: your guesses (green full points, amber partial, red missed; bigger = key move).`;
   $('g-graphcard').hidden=false;
+}
+/* The game so far (never past the current move): your moves marked ✓ (game move) / ≈ (just as good) / ✗ (missed), "book" for theory. */
+function renderMoves(){
+  const el=$('g-moves'); if(!el) return;
+  const g=S.game; if(!g){ el.innerHTML=''; return }
+  const byPly={}; for(const r of S.rows) byPly[r.ply]=r;
+  let html='';
+  for(let i=0;i<S.ply;i++){
+    if(i%2===0) html+=`<span class="note">${i/2+1}.</span> `;
+    const r=byPly[i], mine=(i%2===0?'w':'b')===g.winner;
+    let mark='', cls='';
+    if(i<g.theory) mark=mine?' <span class="note">book</span>':'';
+    else if(r){ if(r.guess===g.moves[i]){ mark=' ✓'; cls='ok' } else if(r.earned>0){ mark=' ≈'; cls='inacc' } else { mark=' ✗'; cls='miss' } }
+    html+=`<b class="${cls}" title="${r&&r.guess!==g.moves[i]?'you: '+esc(r.guess):''}">${esc(g.moves[i])}</b>${mark} `;
+  }
+  el.innerHTML=html||'<span class="note">The moves appear as the game goes.</span>';
+  el.scrollTop=el.scrollHeight;
 }
 function renderScore(){
   $('g-score').innerHTML=S.game?`<b>${S.pts}</b><span class="note"> / ${S.game.maxpts} points</span>`:'';
