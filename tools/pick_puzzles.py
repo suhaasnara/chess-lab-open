@@ -11,8 +11,10 @@ Seeded, so a rerun picks the same puzzles.
 """
 import csv, io, json, random, sys
 
-RATING_LO, RATING_HI = 1700, 2900
-PER_CELL = 10
+import os
+# override with environment variables, e.g. PER_CELL=40 RATING_LO=1200 for a bigger, wider library
+RATING_LO, RATING_HI = int(os.environ.get('RATING_LO', 1700)), int(os.environ.get('RATING_HI', 2900))
+PER_CELL = int(os.environ.get('PER_CELL', 10))
 # most specific first: the first match becomes the puzzle's motif
 THEMES = ['smotheredMate','backRankMate','doubleCheck','discoveredAttack','skewer','fork','pin',
           'deflection','attraction','interference','clearance','xRayAttack','zugzwang','quietMove',

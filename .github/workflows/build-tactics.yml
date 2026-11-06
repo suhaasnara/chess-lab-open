@@ -1,0 +1,45 @@
+name: Build tactics library
+# Run by hand. Downloads the Lichess puzzle database (CC0), picks a library with
+# tools/pick_puzzles.py and pushes it to a review branch tactics/<run id> as
+# site/data/tactics-new.json. main is never touched: merge it over after checking.
+on:
+  workflow_dispatch:
+    inputs:
+      per_cell:
+        description: 'Puzzles per motif x 200-point band'
+        default: '40'
+      rating_lo:
+        description: 'Lowest puzzle rating'
+        default: '1200'
+      rating_hi:
+        description: 'Highest puzzle rating'
+        default: '2900'
+
+permissions:
+  contents: write
+
+jobs:
+  tactics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install zstandard==0.23.0
+      - name: Download the Lichess puzzle database (https://database.lichess.org/#puzzles, CC0)
+        run: curl -sSfL -o puzzles.csv.zst https://database.lichess.org/lichess_db_puzzle.csv.zst
+      - name: Pick the library
+        env:
+          PER_CELL: ${{ inputs.per_cell }}
+          RATING_LO: ${{ inputs.rating_lo }}
+          RATING_HI: ${{ inputs.rating_hi }}
+        run: python3 tools/pick_puzzles.py puzzles.csv.zst site/data/tactics-new.json && ls -la site/data/tactics-new.json
+      - name: Push the review branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "tactics/${{ github.run_id }}"
+          git add site/data/tactics-new.json
+          git commit -m "Tactics library from the Lichess puzzle database (for review)"
+          git push origin "tactics/${{ github.run_id }}"
