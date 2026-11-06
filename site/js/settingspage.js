@@ -19,7 +19,7 @@ function init(){
     const sel=document.createElement('select');
     for(const [v,name] of r.opts){ const o=document.createElement('option'); o.value=v; o.textContent=name; sel.appendChild(o) }
     sel.value=String(Settings.get(r.k));
-    sel.dataset.k=r.k;
+    sel.dataset.k=r.k; sel.setAttribute('aria-label',r.label);
     sel.addEventListener('change',()=>{ Settings.set(r.k,sel.value); if(r.k==='olevel'&&window.OpeningsTab&&OpeningsTab.syncLevel) OpeningsTab.syncLevel() });
     row.innerHTML=`<span>${esc(r.label)}${r.note?`<br><span class="note">${esc(r.note)}</span>`:''}</span>`;
     row.appendChild(sel); el.appendChild(row);

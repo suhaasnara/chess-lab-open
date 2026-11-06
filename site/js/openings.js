@@ -219,7 +219,7 @@ async function userMove(from,to,promo){
       S.misses.push({fen,played:m.san,answer:file.map(u=>sanOf(fen,u)).join(' or ')});
       if(!S.scored.some(s=>s.fen===fen)) S.scored.push({fen,s:0,d:await moveDifficulty(fen,file),miss:true});
       board.flash([from,to],'bad');
-      status('bad',`${m.san} isn’t in your repertoire.`,`Try again, or press H for a hint${file.length?` — your file gives ${file.length>1?file.length+' moves':sanOf(fen,file[0])} here`:''}.`);
+      status('bad',`${m.san} isn’t in your repertoire.`,`Try again, or use Hint (H)${file.length?` — your file gives ${file.length>1?file.length+' moves':sanOf(fen,file[0])} here`:''}.`);
       return;
     }
   }else{
@@ -256,7 +256,7 @@ async function userMove(from,to,promo){
       S.misses.push({fen,played:m.san,answer:top?sanOf(fen,top.uci):'',drop});
       if(!S.scored.some(s=>s.fen===fen)) S.scored.push({fen,s:0,d:await moveDifficulty(fen),miss:true});
       board.flash([from,to],'bad');
-      status('bad',verdictText,'Try again, or press H for a hint.');
+      status('bad',verdictText,'Try again, or use Hint (H).');
       return;
     }
   }
@@ -311,7 +311,7 @@ function status(tone,head,rest){
 /* ---------- Side panel ---------- */
 function renderSide(){
   renderAcct();
-  if(!S.op){ $('o-name').textContent=' '; return }
+  if(!S.op){ $('o-name').textContent='Choose an opening'; return }
   const names=Book.nameOf(S.fens);
   $('o-name').textContent=S.op.name;
   const st=stats(S.op.id);
@@ -373,7 +373,7 @@ async function hint(){
   else{ const bk=await Book.moves(fen,'masters'); u=bk&&bk.rows.length?bk.rows.reduce((a,b)=>a.share>=b.share?a:b).uci:null;
     if(!u){ const a=await SharedEngine.analyse(fen,12,1,6000).catch(()=>null); u=a&&a[0]&&a[0].uci } }
   if(!u){ status('warn','No hint here.',''); return }
-  if(S.hintStage===0){ S.hintStage=1; board.setHint(u.slice(0,2)); status('warn','Hint: this piece moves.','Press H again for the move.') }
+  if(S.hintStage===0){ S.hintStage=1; board.setHint(u.slice(0,2)); status('warn','Hint: this piece moves.','Hint again (H) shows the move.') }
   else{ board.setHint(u.slice(0,2),u.slice(2,4)); status('warn','Answer: '+sanOf(fen,u),'That move earns no rating now.');
     if(!S.scored.some(s=>s.fen===fen)) S.scored.push({fen,s:0,d:await moveDifficulty(fen),hint:true}) }
 }

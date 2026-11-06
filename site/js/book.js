@@ -33,7 +33,7 @@ window.Book=(()=>{
     if(!loading[lv]) loading[lv]=load(LEVELS[lv].file).then(j=>{STATIC[lv]=j}).catch(()=>{STATIC[lv]=null});
     return loading[lv];
   }
-  const mastersP=staticBook('masters');
+  /* the Elite book (6 MB) loads when Openings or Analyze first needs it, not on every visit */
 
   const key=fen=>posId(normKey(fen));
   function fromRows(rows){ const total=rows.reduce((a,r)=>a+r[1],0);
@@ -80,5 +80,5 @@ window.Book=(()=>{
   return {moves,oppMoves,nameOf,levelLabel,LEVELS,ORDER,
     hasBook:lv=>!!STATIC[LEVELS[lv]?lv:'masters'],
     get hasStatic(){return !!STATIC.masters},
-    ready:()=>Promise.all([namesP,demoP,mastersP])};
+    ready:()=>Promise.all([namesP,demoP,staticBook('masters')])};
 })();

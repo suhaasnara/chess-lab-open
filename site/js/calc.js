@@ -120,9 +120,6 @@ function init(){
   board=makeBoard($('cc-board'),{onMove:userMove});
   endbar=endBanner($('cc-board'),()=>next(),'Next exercise');
   board.set(new Chess(),{locked:true});
-  fetch('data/calc.json').then(r=>{ if(!r.ok) throw 0; return r.json() })
-    .catch(()=>fetch('data/tactics.json').then(r=>r.json()))
-    .then(j=>{ LIB=j; renderList() }).catch(()=>{ LIB=[]; renderList() });
   $('cc-submit').addEventListener('click',submit);
   $('cc-undo').addEventListener('click',undo);
   $('cc-reset').addEventListener('click',reset);
@@ -141,5 +138,13 @@ function init(){
     if(e.key==='Enter'&&!S.sub) submit();
   });
 }
-window.CalcTab={init,load,userMove,undo,reset,submit,next,get state(){return S},get lib(){return LIB}};
+/* data/calc.json loads the first time Calculation or Progress is opened (not on every visit). */
+let libP=null;
+function ensure(){
+  if(!libP) libP=fetch('data/calc.json').then(r=>{ if(!r.ok) throw 0; return r.json() })
+    .catch(()=>fetch('data/tactics.json').then(r=>r.json()))
+    .then(j=>{ LIB=j; renderList() }).catch(()=>{ LIB=[]; renderList() });
+  return libP;
+}
+window.CalcTab={ensure,init,load,userMove,undo,reset,submit,next,get state(){return S},get lib(){return LIB}};
 })();

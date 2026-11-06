@@ -56,6 +56,7 @@
 </nav>
 
 <main class="inner">
+<h1 class="sr-only" id="view-title"></h1>
 
 <!-- ================= Today ================= -->
 <section id="today" hidden>
@@ -113,7 +114,7 @@
           <div class="olevelends" id="o-levelhelp"><span>1000</span><span>Elite 2500+</span></div>
           <p class="note oacct" id="o-acct"></p>
         </div>
-        <h2 id="o-name" style="margin-top:8px">&nbsp;</h2>
+        <h2 id="o-name" style="margin-top:8px">Choose an opening</h2>
         <div class="ohrate" id="o-rate"></div>
         <div class="btns" id="o-sidebtns" style="margin-top:8px"></div>
       </div>
@@ -125,7 +126,7 @@
     </div>
     <div class="boardwrap">
       <div class="boardbox" id="o-boardbox">
-        <div class="board" id="o-board" role="grid" aria-label="Chess board"></div>
+        <div class="board" id="o-board" role="group" aria-label="Chess board"></div>
         <div class="endbar" id="o-endbar" hidden><span id="o-endtext"></span><button class="btn sm primary" id="o-endnext">Next line</button></div>
       </div>
       <div class="evalbar" id="o-evalbar" hidden><i style="width:50%"></i></div>
@@ -191,7 +192,7 @@
     </div>
     <div class="panel">
       <div class="boardwrap">
-        <div class="board" id="t-board" role="grid" aria-label="Chess board"></div>
+        <div class="board" id="t-board" role="group" aria-label="Chess board"></div>
         <div class="boardtools">
           <button class="btn sm primary" id="t-next">Next <kbd>N</kbd></button>
           <button class="btn sm" id="t-hint">Hint <kbd>H</kbd></button>
@@ -218,7 +219,7 @@
     </div>
     <div class="panel">
       <div class="boardwrap">
-        <div class="board" id="cc-board" role="grid" aria-label="Chess board"></div>
+        <div class="board" id="cc-board" role="group" aria-label="Chess board"></div>
         <div class="boardtools">
           <button class="btn sm primary" id="cc-submit">Submit <kbd>↵</kbd></button>
           <button class="btn sm" id="cc-undo">Undo <kbd>←</kbd></button>
@@ -252,7 +253,7 @@
     </div>
     <div class="panel">
       <div class="boardwrap">
-        <div class="board" id="eg-board" role="grid" aria-label="Chess board"></div>
+        <div class="board" id="eg-board" role="group" aria-label="Chess board"></div>
         <div class="boardtools">
           <button class="btn sm" id="eg-back">Take back <kbd>←</kbd></button>
           <button class="btn sm" id="eg-hint">Hint <kbd>H</kbd></button>
@@ -310,7 +311,7 @@
     </div>
     <div class="panel">
       <div class="boardwrap">
-        <div class="board" id="d-board" role="grid" aria-label="Chess board"></div>
+        <div class="board" id="d-board" role="group" aria-label="Chess board"></div>
         <div class="boardtools">
           <button class="btn sm primary" id="d-next">Next <kbd>N</kbd></button>
           <button class="btn sm" id="d-show">Show the answer</button>
@@ -333,15 +334,15 @@
     <div>
       <div class="card">
         <span class="label">New game</span>
-        <div class="field" style="margin-top:8px">Strength
+        <label class="field" style="margin-top:8px">Strength
           <select id="pl-elo">
             <option value="1400">Stockfish 1400</option><option value="1600">1600</option>
             <option value="1800" selected>1800</option><option value="2000">2000</option>
             <option value="2200">2200</option><option value="2400">2400</option>
             <option value="2600">2600</option><option value="max">Full strength</option>
-          </select></div>
-        <div class="field" style="margin-top:8px">Your side
-          <select id="pl-color"><option value="w">White</option><option value="b">Black</option><option value="random">Random</option></select></div>
+          </select></label>
+        <label class="field" style="margin-top:8px">Your side
+          <select id="pl-color"><option value="w">White</option><option value="b">Black</option><option value="random">Random</option></select></label>
         <label class="toggle"><input type="checkbox" id="pl-blind"> Blindfold (no pieces shown)</label>
         <div class="btns" style="margin-top:10px"><button class="btn primary" id="pl-new">Start</button></div>
       </div>
@@ -349,7 +350,7 @@
     </div>
     <div class="panel">
       <div class="boardwrap">
-        <div class="board" id="pl-board" role="grid" aria-label="Chess board"></div>
+        <div class="board" id="pl-board" role="group" aria-label="Chess board"></div>
         <p class="note" id="pl-strip" style="margin:6px 0 0;min-height:1.2em"></p>
         <div class="boardtools">
           <button class="btn sm" id="pl-peek">Peek</button>
@@ -379,7 +380,7 @@
     </div>
     <div class="panel">
       <div class="boardwrap">
-        <div class="board" id="g-board" role="grid" aria-label="Chess board"></div>
+        <div class="board" id="g-board" role="group" aria-label="Chess board"></div>
         <div class="boardtools">
           <button class="btn sm" id="g-hint">Hint <kbd>H</kbd></button>
           <button class="btn sm" id="g-restart">Restart game</button>

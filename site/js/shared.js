@@ -168,14 +168,14 @@ function makeBoard(el,opts={}){
       const file=B.orient==='w'?c:7-c, rank=B.orient==='w'?7-r:r;
       const sq=files[file]+(rank+1);
       const d=document.createElement('div');
-      d.className='sq '+((file+rank)%2?'l':'d'); d.dataset.sq=sq; d.setAttribute('role','gridcell');
+      d.className='sq '+((file+rank)%2?'l':'d'); d.dataset.sq=sq; d.setAttribute('role','button');
       if(B.last&&(B.last.from===sq||B.last.to===sq)) d.classList.add('last');
       if(B.sel===sq) d.classList.add('sel');
       if(B.hint===sq) d.classList.add('hint');
       if(B.hintTo===sq) d.classList.add('hintto');
       const t=legal.find(m=>m.to===sq); if(t){d.classList.add('tgt'); if(t.captured) d.classList.add('cap')}
       const p=g.get(sq);
-      if(p){const s=document.createElement('span'); s.className='pc '+p.color+p.type.toUpperCase(); d.appendChild(s); d.setAttribute('aria-label',sq+' '+(p.color==='w'?'white ':'black ')+p.type)}
+      if(p){const s=document.createElement('span'); s.className='pc '+p.color+p.type.toUpperCase(); d.appendChild(s); d.setAttribute('aria-label',sq+' '+(p.color==='w'?'white ':'black ')+({p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'}[p.type]))}
       else d.setAttribute('aria-label',sq);
       if(r===7){const k=document.createElement('span');k.className='coord f';k.textContent=files[file];d.appendChild(k)}
       if(c===7){const k=document.createElement('span');k.className='coord r';k.textContent=rank+1;d.appendChild(k)}

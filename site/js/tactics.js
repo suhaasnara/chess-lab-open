@@ -90,7 +90,7 @@ function userMove(from,to,promo){
   if(!hit&&!test.in_checkmate()){
     if(S.step===(S.cur.pre!==false?1:0)&&!S.failedFirst&&!S.usedHint){ S.failedFirst=true; saveResult(S.cur.id,false) }
     board.flash([from,to],'bad');
-    status('bad',`${m.san} isn’t it.`,'Try again, or press H for a hint.');
+    status('bad',`${m.san} isn’t it.`,'Try again, or use Hint (H).');
     return;
   }
   S.g.move({from,to,promotion:promo||'q'});

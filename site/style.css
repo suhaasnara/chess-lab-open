@@ -289,3 +289,4 @@ footer .inner{padding-block:18px;font-size:.85rem;color:var(--muted)}
 /* Phones: the tab row scrolls sideways; a fade at the right edge shows there are more tabs. */
 @media (max-width:860px){.tabs .inner{scrollbar-width:none;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent)}.tabs .inner::-webkit-scrollbar{display:none}}
 .evalchip:empty{display:none}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}

@@ -374,9 +374,9 @@ section('t15: Punish the mistake and Play it out');
 section('t16: Calculation — enter the whole line, graded against the solution');
 {
   const {w}=await makePage({analyse:async()=>[{uci:'x',cp:-9,mate:null}]});
+  w.location.hash='#calc'; await sleep(60);
   for(let i=0;i<40&&!(w.CalcTab.lib||[]).length;i++) await sleep(100);
   const C=w.CalcTab;
-  w.location.hash='#calc'; await sleep(60);
   const n=w.document.querySelectorAll('#cc-list .drill').length;
   const calc=JSON.parse(fs.readFileSync(path.join(H.SITE,'data','calc.json'),'utf8'));
   let ok=true; for(const z of calc){ const g=new w.Chess(z.fen); for(const u of z.moves){ if(!g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'})){ ok=false; break } } }
@@ -459,7 +459,8 @@ section('t18: result banner on every board');
   w.DrillsTab.refresh(); w.DrillsTab.next(); await sleep(20);
   await w.DrillsTab.userMove('e1','g1'); await sleep(80);
   assert(!bar('d-board').hidden&&/Solved/.test(bar('d-board').textContent),'Drills: a solved drill shows the banner');
-  /* Calculation */
+  /* Calculation (its data loads when the tab is first opened) */
+  w.CalcTab.ensure();
   for(let i=0;i<40&&!(w.CalcTab.lib||[]).length;i++) await sleep(100);
   const c=w.CalcTab.lib[0]; w.CalcTab.load(c); await sleep(20);
   for(const u of c.moves.slice(1)) w.CalcTab.userMove(u.slice(0,2),u.slice(2,4),u[4]);
@@ -486,6 +487,7 @@ section('t19: first-visit guide and link preview');
 section('t20: Progress charts');
 {
   const {w}=await makePage();
+  w.CalcTab.ensure();
   for(let i=0;i<40&&!(w.CalcTab.lib||[]).length;i++) await sleep(100);
   const D=864e5, now=Date.now();
   w.Store.put('stats-preset-italian',{rating:1850,lines:3,n2:3,history:[{t:now-3*D,r:1810,m:'r'},{t:now-2*D,r:1830,m:'r'},{t:now-D,r:1850,m:'r'}]});
