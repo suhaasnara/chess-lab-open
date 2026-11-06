@@ -169,7 +169,7 @@ async function userMove(from,to,promo){
     gr.g==='good'&&bestSan?` ${bestSan} was faster.`:'');
   await new Promise(r=>setTimeout(r,300));
   const r=await bestReply(S.g.fen()); if(S.cur!==z) return;
-  if(!r){ S.busy=false; buttons(); return }
+  if(!r){ S.busy=false; S.phase='done'; status('warn','No reply here.',' Neither the tablebase nor Stockfish answered (are you offline?). Retry, or show the solution.'); buttons(); return }
   const rm=S.g.move(U(r)); S.hist.push({u:r,fen:null});
   board.set(S.g,{last:rm?{from:rm.from,to:rm.to}:null,locked:false}); renderMoves();
   const e2=over(); S.busy=false;
