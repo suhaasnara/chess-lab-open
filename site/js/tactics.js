@@ -5,7 +5,7 @@
 (function(){
 let LIB=null, board=null;
 const S={cur:null,g:null,step:0,solved:false,failedFirst:false,usedHint:false,hintStage:0,motif:'All',band:'All',status:'All'};
-const BANDS=[['All','Any rating'],['1700','1700–1999'],['2000','2000–2299'],['2300','2300+']];
+const BANDS=[['All','Any rating'],['1200','1200–1499'],['1500','1500–1799'],['1800','1800–2099'],['2100','2100–2399'],['2400','2400+']];
 const STATUSES=['All','Unsolved','Missed','Solved'];
 
 function prog(){ return Store.get('tactics-progress')||{} }
@@ -26,7 +26,7 @@ function filtered(){
   const p=prog();
   return LIB.filter(z=>{
     if(S.motif!=='All'&&z.motif!==S.motif) return false;
-    if(S.band!=='All'){ const lo=+S.band, hi=lo===2300?9999:lo+299; if(!(z.rating>=lo&&z.rating<=hi)) return false }
+    if(S.band!=='All'){ const lo=+S.band, hi=lo===2400?9999:lo+299; if(!(z.rating>=lo&&z.rating<=hi)) return false }
     const st=p[z.id];
     if(S.status==='Unsolved'&&st) return false;
     if(S.status==='Missed'&&!(st&&!st.ok)) return false;
@@ -41,7 +41,9 @@ function daily(list){
   return list.map(z=>[h(seed+z.id),z]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
 }
 function renderFilters(){
-  const motifs=['All',...new Set(LIB.map(z=>z.motif).filter(Boolean))].slice(0,18);
+  /* the 18 most common motifs */
+  const cnt={}; for(const z of LIB) if(z.motif) cnt[z.motif]=(cnt[z.motif]||0)+1;
+  const motifs=['All',...Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]).slice(0,17)];
   const mk=(el,items,cur,fn,label)=>{ el.innerHTML='';
     for(const it of items){ const name=Array.isArray(it)?it[1]:it, val=Array.isArray(it)?it[0]:it;
       const b=document.createElement('button'); b.className='chip'; b.textContent=name; b.setAttribute('aria-pressed',String(val===cur));

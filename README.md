@@ -21,8 +21,8 @@ accounts, no uploads: progress lives in localStorage with JSON export/import.
   Lichess 1000 up to Elite 2500+, and the book card shows your level's moves next
   to the elite book's. Each opening gets a rating: every move you find is scored
   against a difficulty from the elite share of the right move. No account needed.
-- **Tactics** — a CC0 puzzle library from the Lichess puzzle database, with a
-  puzzle rating (Elo against each puzzle's Lichess rating, first attempt only).
+- **Tactics** — 11,260 CC0 puzzles from the Lichess puzzle database (rated 1200–2900,
+  33 motifs, filter by motif and rating), with a puzzle rating (Elo against each puzzle's Lichess rating, first attempt only).
 - **Calculation** — see the whole line before you play it: on 1,092 hard, long
   Lichess puzzles (rated 2200–2800, 4 to 13 moves for you) you enter your moves and
   the replies you expect, against a clock, then submit. Scored by how far your line follows the solution; a
