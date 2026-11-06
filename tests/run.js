@@ -10,7 +10,7 @@ const fs=require('fs'), path=require('path');
 section('t1: page loads, routes, board renders');
 {
   const {w}=await makePage();
-  assert(w.document.querySelectorAll('.tabs button[data-route]').length===9,'nine tabs');
+  assert(w.document.querySelectorAll('.tabs button[data-route]').length===10,'ten tabs');
   assert(w.document.body.dataset.view==='today','Today is the default view');
   assert(w.document.querySelectorAll('#o-board .sq').length===64,'the openings board has 64 squares');
   w.location.hash='#tactics'; await sleep(60);
@@ -360,6 +360,45 @@ section('t15: Punish the mistake and Play it out');
   w.DrillsTab.playOut(); await sleep(120);
   const P=w.PlayTab.state;
   assert(w.document.body.dataset.view==='play'&&P.start===d.fen&&P.me==='w'&&P.goal==='win','Play it out starts from the drill, goal: convert (+3.2)');
+}
+
+section('t16: Calculation — enter the whole line, graded against the solution');
+{
+  const {w}=await makePage({analyse:async()=>[{uci:'x',cp:-9,mate:null}]});
+  for(let i=0;i<40&&!(w.CalcTab.lib||[]).length;i++) await sleep(100);
+  const C=w.CalcTab;
+  w.location.hash='#calc'; await sleep(60);
+  const n=w.document.querySelectorAll('#cc-list .drill').length;
+  assert(n>50&&C.lib.filter(z=>Math.floor(z.moves.length/2)>=4).length>=n,'exercises are the long puzzles (4+ moves for you): '+n+' at 4 moves');
+  const z=C.lib.find(z=>Math.floor(z.moves.length/2)===4);
+  C.load(z); await sleep(20);
+  const sol=z.moves.slice(1), play=u=>C.userMove(u.slice(0,2),u.slice(2,4),u[4]);
+  for(const u of sol) play(u);
+  assert(C.state.line.length===sol.length,'both sides\u2019 moves go into the line ('+sol.length+' plies)');
+  await C.submit(); await sleep(30);
+  assert(/Solved/.test(w.document.getElementById('cc-status').textContent)&&w.Store.get('calc-progress')[z.id].score===1,'the full solution scores 100%');
+  assert(/Solution/.test(w.document.getElementById('cc-line').textContent),'after Submit the card shows your line beside the solution');
+  /* half a line */
+  const z2=C.lib.find(x=>Math.floor(x.moves.length/2)===4&&x!==z);
+  C.load(z2); await sleep(20);
+  for(const u of z2.moves.slice(1,4)) C.userMove(u.slice(0,2),u.slice(2,4),u[4]);
+  C.undo(); C.userMove(z2.moves[3].slice(0,2),z2.moves[3].slice(2,4),z2.moves[3][4]);
+  await C.submit(); await sleep(30);
+  assert(/You saw 3 of 7 plies/.test(w.document.getElementById('cc-status').textContent),'a partial line scores how far it follows the solution (with undo working)');
+  const v0=C.state.view; w.document.getElementById('cc-fwd').click(); w.document.getElementById('cc-fwd').click();
+  assert(C.state.view===v0+2&&/2 \/ 7/.test(w.document.getElementById('cc-step').textContent),'→ steps through the solution');
+  /* a wrong first move that the engine rates far worse */
+  const z3=C.lib.find(x=>Math.floor(x.moves.length/2)===4&&x!==z&&x!==z2);
+  C.load(z3); await sleep(20);
+  const solFen=(()=>{ const g=new w.Chess(C.state.start); const u=z3.moves[1]; g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'}); return g.fen() })();
+  w.SharedEngine.analyse=async f=>f===solFen?[{uci:'x',cp:-9,mate:null}]:[{uci:'x',cp:3,mate:null}];
+  const wrong=C.state.g.moves({verbose:true}).find(m=>(m.from+m.to)!==z3.moves[1].slice(0,4));
+  C.userMove(wrong.from,wrong.to); await C.submit(); await sleep(30);
+  assert(/Not the right first move/.test(w.document.getElementById('cc-status').textContent),'a wrong first move fails');
+  /* a different first move the engine rates as good as the solution's */
+  w.SharedEngine.analyse=async()=>[{uci:'x',cp:-9,mate:null}];
+  C.load(z3); await sleep(20); C.userMove(wrong.from,wrong.to); await C.submit(); await sleep(30);
+  assert(/different first move that works/.test(w.document.getElementById('cc-status').textContent),'an equally good first move (by Stockfish) gets half credit');
 }
 
 section('t8: data sanity — puzzles legal, demo book and names consistent');

@@ -226,3 +226,7 @@ footer .inner{padding-block:18px;font-size:.85rem;color:var(--muted)}
 .tdwrap{max-width:720px;margin:0 auto}
 .tdhead{margin:4px 0 8px;font-size:.95rem}
 .drill.done{opacity:.6}.drill.done .src{color:var(--good)}
+
+/* Calculation */
+.ccline{margin-top:6px;line-height:1.7;font-variant-numeric:tabular-nums}
+.ccline .ok{color:var(--good);font-weight:600}.ccline .miss{color:var(--bad);text-decoration:line-through}

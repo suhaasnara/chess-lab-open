@@ -27,6 +27,7 @@
     <button data-route="today">Today</button>
     <button data-route="openings">Openings</button>
     <button data-route="tactics">Tactics</button>
+    <button data-route="calc">Calculation</button>
     <button data-route="analyze">Analyze my games</button>
     <button data-route="drills">Drills</button>
     <button data-route="play">Play</button>
@@ -166,6 +167,39 @@
       <div class="side">
         <div class="status" id="t-status-box" aria-live="polite">Pick a puzzle on the left, or press Next.</div>
         <div class="card"><span class="label">About this puzzle</span><dl class="facts" id="t-facts"></dl></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= Calculation ================= -->
+<section id="calc" hidden>
+  <div class="grid">
+    <div>
+      <p class="note" style="margin:0 0 10px">See the whole line before you play it: enter your moves <b>and</b> the replies you expect,
+         then Submit. Long Lichess puzzles (4+ moves for you), graded against the solution, with Stockfish judging other first moves.</p>
+      <div class="chips" id="cc-lens" style="margin-bottom:10px"></div>
+      <div class="list" id="cc-list"></div>
+    </div>
+    <div class="panel">
+      <div class="boardwrap">
+        <div class="board" id="cc-board" role="grid" aria-label="Chess board"></div>
+        <div class="boardtools">
+          <button class="btn sm primary" id="cc-submit">Submit <kbd>↵</kbd></button>
+          <button class="btn sm" id="cc-undo">Undo <kbd>←</kbd></button>
+          <button class="btn sm" id="cc-reset">Reset</button>
+          <button class="btn sm" id="cc-prev" aria-label="Back through the solution">&#8592;</button>
+          <button class="btn sm" id="cc-fwd" aria-label="Forward through the solution">&#8594;</button>
+          <span class="evalchip" id="cc-step"></span>
+          <button class="btn sm" id="cc-next">Next <kbd>N</kbd></button>
+          <button class="btn sm" id="cc-flip">Flip <kbd>F</kbd></button>
+          <a class="btn sm" id="cc-lichess" target="_blank" rel="noopener">Lichess &#8599;</a>
+        </div>
+      </div>
+      <div class="side">
+        <div class="status" id="cc-status" aria-live="polite">Pick an exercise on the left.</div>
+        <div class="card"><span class="label">Your line <span class="evalchip" id="cc-clock" style="float:right">0:00</span></span><div class="ccline" id="cc-line"></div></div>
+        <div class="card"><span class="label">The exercise</span><dl class="facts" id="cc-facts"></dl></div>
       </div>
     </div>
   </div>
@@ -332,6 +366,7 @@
 <script src="js/book.js"></script>
 <script src="js/openings.js"></script>
 <script src="js/tactics.js"></script>
+<script src="js/calc.js"></script>
 <script src="js/analyze.js"></script>
 <script src="js/drills.js"></script>
 <script src="js/play.js"></script>
