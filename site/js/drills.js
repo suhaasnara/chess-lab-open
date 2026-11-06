@@ -3,7 +3,7 @@
    of the best line counts, the kit's rule). Drill ids: 'a' + sha1(fen|playedUci)[:8]. */
 'use strict';
 (function(){
-let board=null;
+let board=null, endbar=null;
 const S={cur:null,g:null,done:false,busy:false,kind:'all'};
 const KINDS=[['all','All'],['mine','Your mistakes'],['punish','Punish the mistake']];
 const isPunish=d=>d.kind==='punish';
@@ -33,6 +33,7 @@ function renderL(){
   if(!el.children.length) el.innerHTML='<p class="empty">No drills yet. Run <b>Analyze my games</b> first and save drills from your mistakes.</p>';
 }
 function load(d){
+  if(endbar) endbar.hide();
   S.cur=d; S.g=new Chess(d.fen); S.done=false; S.busy=false;
   board.set(S.g,{last:null,orient:d.color});
   if(isPunish(d)) status('',`${d.oppMove} was a mistake. Punish it.`,`${S.g.turn()==='w'?'White':'Black'} to move. In the game you played ${d.played}, which let them off (−${Math.round(d.drop*100)}% of the chance they gave you).`);
@@ -73,6 +74,7 @@ function finish(m,ok,text){
   board.flash([m.from,m.to],'good');
   status('good',`${m.san} ✓`,text||'');
   saveResult(S.cur.id,true);
+  endbar.show('good',`${m.san} ✓ Solved`,'Next drill');
 }
 async function show(){
   if(!S.cur||S.done) return;
@@ -81,6 +83,7 @@ async function show(){
   if(!u){ status('warn','No stored answer and no engine.',''); return }
   board.setHint(u.slice(0,2),u.slice(2,4));
   status('warn','Answer: '+sanOf(S.g.fen(),u),'Shown answers don’t count as solved.');
+  endbar.show('warn','Answer: '+sanOf(S.g.fen(),u),'Next drill');
   saveResult(S.cur.id,false);
 }
 /* Play it out: continue from the drill position against Stockfish (Play tab). The goal comes from the eval
@@ -96,6 +99,7 @@ function status(tone,head,rest){ const el=$('d-status'); el.className='status'+(
 
 function init(){
   board=makeBoard($('d-board'),{onMove:userMove});
+  endbar=endBanner($('d-board'),()=>next(),'Next drill');
   board.set(new Chess(),{locked:true});
   renderL();
   $('d-next').addEventListener('click',next);

@@ -5,7 +5,7 @@
    Theory plies auto-play. First answer keeps its score. */
 'use strict';
 (function(){
-let board=null, INDEX=null;
+let board=null, INDEX=null, endbar=null;
 const S={game:null,g:null,ply:0,pts:0,got:0,missed:0,alsoGood:0,done:false,busy:false,hintStage:0,rows:[],answered:false};
 
 function results(){ return Store.get('gtm-results')||{} }
@@ -28,6 +28,7 @@ function renderList(){
 async function load(file){
   const game=await fetch('data/gtm/'+file).then(r=>r.json()).catch(()=>null);
   if(!game){ status('bad','Could not load the game.',''); return }
+  if(endbar) endbar.hide();
   S.game=game; S.g=new Chess(); S.ply=0; S.pts=0; S.got=0; S.missed=0; S.alsoGood=0; S.done=false; S.busy=false; S.hintStage=0; S.rows=[];
   const me=game.winner;
   $('g-graphcard').hidden=true; $('g-tablewrap').hidden=true;
@@ -119,6 +120,8 @@ function hint(){
 function endGame(){
   S.done=true; saveResult();
   const g=S.game;
+  const pct=g.maxpts?S.pts/g.maxpts:0;
+  endbar.show(pct>=0.8?'good':pct>=0.5?'warn':'bad',`Game over · ${S.pts} of ${g.maxpts} points (${Math.round(pct*100)}%)`,'Next game');
   status('good',`Game over: ${g.result}. ${S.pts} of ${g.maxpts} points.`,
     `${S.got} matched · ${S.alsoGood} just as good · ${S.missed} missed.`);
   const t=$('g-table');
@@ -182,6 +185,7 @@ function status(tone,head,rest){ const el=$('g-status'); el.className='status'+(
 
 function init(){
   board=makeBoard($('g-board'),{onMove:userMove});
+  endbar=endBanner($('g-board'),()=>{ const i=(INDEX||[]).findIndex(e=>S.game&&e.id===S.game.id); const e=INDEX[(i+1)%INDEX.length]; if(e) load(e.file) },'Next game');
   board.set(new Chess(),{locked:true});
   fetch('data/gtm/index.json').then(r=>r.json()).then(j=>{ INDEX=j; renderList() }).catch(()=>{ INDEX=[]; renderList() });
   $('g-hint').addEventListener('click',hint);

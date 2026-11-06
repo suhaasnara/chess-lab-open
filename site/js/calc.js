@@ -7,7 +7,7 @@
    Then step through the solution with ← →. Progress stays in this browser. */
 'use strict';
 (function(){
-let board=null, LIB=null;
+let board=null, LIB=null, endbar=null;
 const S={cur:null,start:null,g:null,line:[],sub:false,t0:0,tick:null,len:'all',hard:'2200',view:0,busy:false};
 const prog=()=>Store.get('calc-progress')||{};
 const mine=z=>Math.floor(z.moves.length/2);                 /* the solver's moves (the first move is the setup) */
@@ -38,6 +38,7 @@ function renderList(){
 }
 function fmt(s){ return Math.floor(s/60)+':'+String(s%60).padStart(2,'0') }
 function load(z){
+  if(endbar) endbar.hide();
   S.cur=z; S.line=[]; S.sub=false; S.view=0; S.busy=false;
   const g=new Chess(z.fen); const u=z.moves[0]; const m=g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'});
   S.start=g.fen(); S.g=new Chess(S.start); S.last=m?{from:m.from,to:m.to}:null;
@@ -98,6 +99,7 @@ async function submit(){
   const p=prog(); const prev=p[z.id]; p[z.id]={score:Math.max(score,prev?prev.score:0),t:Date.now(),secs,tries:(prev?prev.tries:0)+1}; Store.put('calc-progress',p);
   const ss=sanLine(S.start,sol);
   status(tone,head,`${fmt(secs)} · the solution is below; step through it with ← →.`);
+  endbar.show(tone==='bad'?'bad':score>=1?'good':'warn',`${head} ${Math.round(score*100)}% · ${fmt(secs)}`,'Next exercise');
   $('cc-line').innerHTML=`<div><span class="label">Your line</span><br>${numbered(S.start,sanLine(S.start,S.line),i=>i<k?'ok':'miss')}</div>
     <div style="margin-top:8px"><span class="label">Solution</span><br>${numbered(S.start,ss,i=>i<k?'ok':'')}</div>`;
   S.view=0; showView(); renderLine(); renderList();
@@ -116,6 +118,7 @@ function status(tone,head,rest){ const el=$('cc-status'); el.className='status'+
 
 function init(){
   board=makeBoard($('cc-board'),{onMove:userMove});
+  endbar=endBanner($('cc-board'),()=>next(),'Next exercise');
   board.set(new Chess(),{locked:true});
   fetch('data/calc.json').then(r=>{ if(!r.ok) throw 0; return r.json() })
     .catch(()=>fetch('data/tactics.json').then(r=>r.json()))
@@ -125,13 +128,14 @@ function init(){
   $('cc-reset').addEventListener('click',reset);
   $('cc-next').addEventListener('click',next);
   $('cc-flip').addEventListener('click',()=>board.flip());
-  $('cc-prev').addEventListener('click',()=>{ S.view--; showView() });
-  $('cc-fwd').addEventListener('click',()=>{ S.view++; showView() });
+  /* stepping through the solution moves the result banner out of the way */
+  $('cc-prev').addEventListener('click',()=>{ S.view--; endbar.hide(); showView() });
+  $('cc-fwd').addEventListener('click',()=>{ S.view++; endbar.hide(); showView() });
   document.addEventListener('keydown',e=>{
     if(document.body.dataset.view!=='calc') return;
     if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
-    if(e.key==='ArrowLeft'){ if(S.sub){ S.view--; showView() } else undo() }
-    if(e.key==='ArrowRight'&&S.sub){ S.view++; showView() }
+    if(e.key==='ArrowLeft'){ if(S.sub){ S.view--; endbar.hide(); showView() } else undo() }
+    if(e.key==='ArrowRight'&&S.sub){ S.view++; endbar.hide(); showView() }
     if(e.key==='n'||e.key==='N') next();
     if(e.key==='f'||e.key==='F') board.flip();
     if(e.key==='Enter'&&!S.sub) submit();

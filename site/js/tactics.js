@@ -3,7 +3,7 @@
    first attempt only (a hint counts as a miss); K = 32 for the first 30 puzzles, then 16. */
 'use strict';
 (function(){
-let LIB=null, board=null;
+let LIB=null, board=null, endbar=null;
 const S={cur:null,g:null,step:0,solved:false,failedFirst:false,usedHint:false,hintStage:0,motif:'All',band:'All',status:'All'};
 const BANDS=[['All','Any rating'],['1200','1200–1499'],['1500','1500–1799'],['1800','1800–2099'],['2100','2100–2399'],['2400','2400+']];
 const STATUSES=['All','Unsolved','Missed','Solved'];
@@ -66,6 +66,7 @@ function renderL(){
 }
 
 function load(z){
+  if(endbar) endbar.hide();
   S.cur=z; S.g=new Chess(z.fen); S.step=0; S.solved=false; S.failedFirst=false; S.usedHint=false; S.hintStage=0;
   let last=null;
   /* Lichess puzzles: the first move of the solution is the opponent's setup move. */
@@ -100,6 +101,8 @@ function userMove(from,to,promo){
     S.solved=true;
     if(!S.failedFirst&&!S.usedHint) saveResult(S.cur.id,true);
     status('good','Solved!',S.failedFirst||S.usedHint?'(no rating: not a clean first try)':'');
+    const clean=!S.failedFirst&&!S.usedHint;
+    endbar.show(clean?'good':'warn',clean?'Solved ✓ first try':'Solved, not first try','Next puzzle');
     renderL(); return;
   }
   setTimeout(()=>{ const u=reply; const mm=S.g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'});
@@ -124,6 +127,7 @@ function status(tone,head,rest){ const el=$('t-status-box'); el.className='statu
 
 function init(){
   board=makeBoard($('t-board'),{onMove:userMove});
+  endbar=endBanner($('t-board'),()=>next(),'Next puzzle');
   board.set(new Chess(),{locked:true});
   fetch('data/tactics.json').then(r=>r.json()).then(j=>{ LIB=j; renderHeader(); renderFilters(); renderL() })
     .catch(()=>{ $('t-list').innerHTML='<p class="empty">The puzzle library could not load.</p>'; LIB=[] });

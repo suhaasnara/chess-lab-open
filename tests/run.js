@@ -441,6 +441,34 @@ section('t17: past the end of the book, Stockfish plays on; the end of a line sh
   w.Settings.set('olen','long');
 }
 
+section('t18: result banner on every board');
+{
+  const {w}=await makePage({analyse:async()=>[{uci:'e1g1',cp:0.4,mate:null}]});
+  for(let i=0;i<40&&!(w.TacticsTab.lib||[]).length;i++) await sleep(100);
+  const bar=id=>w.document.getElementById(id).parentElement.querySelector('.endbar');
+  /* Tactics: a clean solve */
+  const z=w.TacticsTab.lib.find(p=>p.moves.length===2);
+  w.TacticsTab.load(z); await sleep(20);
+  const e=z.moves[w.TacticsTab.state.step]; await w.TacticsTab.userMove(e.slice(0,2),e.slice(2,4),e[4]); await sleep(50);
+  assert(!bar('t-board').hidden&&/Solved ✓ first try/.test(bar('t-board').textContent)&&w.document.getElementById('t-board').parentElement.className.includes('end-good'),'Tactics: a clean solve shows a green banner on the board');
+  bar('t-board').querySelector('button').click(); await sleep(30);
+  assert(bar('t-board').hidden&&w.TacticsTab.state.cur!==z,'Tactics: Next puzzle loads another and hides the banner');
+  /* Drills */
+  const fen='r1bqkb1r/1ppp1ppp/p1n2n2/4p3/B3P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 5';
+  w.Store.put('adrills',[{id:'a12345678',fen,played:'Ke2',playedUci:'e1e2',best:'e1g1',drop:0.35,date:'2026-11-01',opp:'O',color:'w'}]);
+  w.DrillsTab.refresh(); w.DrillsTab.next(); await sleep(20);
+  await w.DrillsTab.userMove('e1','g1'); await sleep(80);
+  assert(!bar('d-board').hidden&&/Solved/.test(bar('d-board').textContent),'Drills: a solved drill shows the banner');
+  /* Calculation */
+  for(let i=0;i<40&&!(w.CalcTab.lib||[]).length;i++) await sleep(100);
+  const c=w.CalcTab.lib[0]; w.CalcTab.load(c); await sleep(20);
+  for(const u of c.moves.slice(1)) w.CalcTab.userMove(u.slice(0,2),u.slice(2,4),u[4]);
+  await w.CalcTab.submit(); await sleep(30);
+  assert(!bar('cc-board').hidden&&/100%/.test(bar('cc-board').textContent),'Calculation: the score shows on the board');
+  w.CalcTab.load(w.CalcTab.lib[1]); await sleep(20);
+  assert(bar('cc-board').hidden,'loading the next exercise hides it');
+}
+
 section('t8: data sanity — puzzles legal, demo book and names consistent');
 {
   const tactics=JSON.parse(fs.readFileSync(path.join(H.SITE,'data','tactics.json'),'utf8'));

@@ -137,6 +137,24 @@ window.SharedEngine=(()=>{
 /* ---------- Board component ----------
    makeBoard(el, opts) -> {set(game,{last,orient}), setHint(sq,to), flash(squares,tone), orient}.
    opts.onMove(from,to,promo) is called for the user's move attempt; tap a piece then a square, or drag. */
+/* A result banner on a board: a coloured frame plus a bar with the result and a Next button, so the end
+   of an exercise is obvious on a phone. Wraps the board in .boardbox (the board re-renders its own
+   children only). Tap the result text to hide the bar and see the whole board. */
+function endBanner(boardEl,onNext,label){
+  let box=boardEl.parentElement;
+  if(!box.classList.contains('boardbox')){ box=document.createElement('div'); box.className='boardbox'; boardEl.parentNode.insertBefore(box,boardEl); box.appendChild(boardEl) }
+  const bar=document.createElement('div'); bar.className='endbar'; bar.hidden=true;
+  bar.innerHTML='<span class="endtext" title="Tap to hide"></span><button class="btn sm primary"></button>';
+  box.appendChild(bar);
+  const api={onNext,
+    show(tone,text,btn){ box.classList.remove('end-good','end-warn','end-bad'); box.classList.add('end-'+tone);
+      bar.querySelector('.endtext').textContent=text; bar.querySelector('button').textContent=btn||label||'Next'; bar.hidden=false },
+    hide(){ bar.hidden=true; box.classList.remove('end-good','end-warn','end-bad') },
+    get shown(){ return !bar.hidden }, get text(){ return bar.querySelector('.endtext').textContent }};
+  bar.querySelector('button').addEventListener('click',()=>{ api.hide(); api.onNext&&api.onNext() });
+  bar.querySelector('.endtext').addEventListener('click',()=>{ bar.hidden=true });
+  return api;
+}
 function makeBoard(el,opts={}){
   const B={game:null,last:null,orient:'w',sel:null,hint:null,hintTo:null,locked:false};
   function render(){

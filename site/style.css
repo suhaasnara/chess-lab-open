@@ -248,3 +248,5 @@ footer .inner{padding-block:18px;font-size:.85rem;color:var(--muted)}
   padding:10px 12px;border-radius:var(--radius);color:#fff;font-weight:600;font-size:1rem;box-shadow:0 4px 14px rgba(19,40,74,.35)}
 .end-good .endbar{background:var(--good)}.end-warn .endbar{background:var(--warn)}
 .endbar .btn{background:#fff;color:var(--navy);border-color:#fff;flex:none}
+.boardbox.end-bad .board{box-shadow:0 0 0 4px var(--bad)}.end-bad .endbar{background:var(--bad)}
+.endbar .endtext{cursor:pointer}
