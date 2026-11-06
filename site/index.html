@@ -363,6 +363,12 @@
 <!-- ================= Progress ================= -->
 <section id="progress" hidden>
   <div class="stats" id="p-stats"></div>
+  <div class="pcharts">
+    <div class="card"><div class="pchead"><span class="label">Opening rating</span><select id="p-op" aria-label="Opening"></select></div><div id="p-opchart" class="pchart"></div></div>
+    <div class="card"><span class="label">Puzzle rating</span><div id="p-tacchart" class="pchart"></div></div>
+    <div class="card"><span class="label">Calculation by difficulty</span><div id="p-calcchart" class="pchart"></div></div>
+    <div class="card"><span class="label">Activity, last 12 weeks</span><div id="p-activity" class="pchart"></div></div>
+  </div>
   <div class="tablewrap"><table id="p-table"></table></div>
   <div class="btns" style="margin-top:14px">
     <button class="btn" id="p-export">Export progress (JSON)</button>

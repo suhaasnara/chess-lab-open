@@ -483,6 +483,32 @@ section('t19: first-visit guide and link preview');
   assert(meta('twitter:card')==='summary_large_image'&&/Chess Lab Open/.test(meta('og:title')),'Open Graph and Twitter tags are set');
 }
 
+section('t20: Progress charts');
+{
+  const {w}=await makePage();
+  for(let i=0;i<40&&!(w.CalcTab.lib||[]).length;i++) await sleep(100);
+  const D=864e5, now=Date.now();
+  w.Store.put('stats-preset-italian',{rating:1850,lines:3,n2:3,history:[{t:now-3*D,r:1810,m:'r'},{t:now-2*D,r:1830,m:'r'},{t:now-D,r:1850,m:'r'}]});
+  w.Store.put('tac-history',[{t:now-2*D,r:1990},{t:now-D,r:2010},{t:now,r:2030}]);
+  const lib=w.CalcTab.lib; w.Store.put('calc-progress',{[lib[0].id]:{score:1,t:now},[lib[lib.length-1].id]:{score:0.5,t:now-D}});
+  w.location.hash='#progress'; await sleep(80);
+  const q=s=>w.document.querySelector(s);
+  assert(q('#p-op').value==='preset-italian'&&q('#p-opchart svg .line')&&q('#p-opchart svg').querySelectorAll('.dot').length===3,'opening rating: a line through 3 points for the Italian');
+  assert(/1850/.test(q('#p-opchart svg').textContent),'the latest rating is labelled');
+  assert(q('#p-tacchart svg .line')&&/2030/.test(q('#p-tacchart').textContent),'puzzle rating: a line, latest 2030');
+  const bars=q('#p-calcchart svg').querySelectorAll('.bar').length;
+  assert(bars===2&&/100%/.test(q('#p-calcchart').textContent),'calculation: one bar per difficulty band you have tried ('+bars+')');
+  assert(/\d+ days? with practice/.test(q('#p-activity').textContent)&&q('#p-activity svg').querySelectorAll('rect').length>=78,'activity: a 12-week day grid with a count');
+  /* the puzzle rating history is recorded by Tactics */
+  const z=w.TacticsTab.lib.find(p=>p.moves.length===2); w.TacticsTab.load(z);
+  const e=z.moves[w.TacticsTab.state.step]; await w.TacticsTab.userMove(e.slice(0,2),e.slice(2,4),e[4]); await sleep(30);
+  assert(w.Store.get('tac-history').length===4,'a rated solve adds a point to the puzzle rating history');
+}
+{
+  const {w}=await makePage(); w.location.hash='#progress'; await sleep(80);
+  assert(/Train a few lines/.test(w.document.getElementById('p-opchart').textContent)&&/Solve a few puzzles/.test(w.document.getElementById('p-tacchart').textContent),'empty charts say what to do first');
+}
+
 section('t8: data sanity — puzzles legal, demo book and names consistent');
 {
   const tactics=JSON.parse(fs.readFileSync(path.join(H.SITE,'data','tactics.json'),'utf8'));

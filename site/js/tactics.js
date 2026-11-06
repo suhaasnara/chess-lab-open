@@ -14,7 +14,8 @@ function saveResult(id,ok){
   const p=prog(); p[id]={ok,t:Date.now()}; Store.put('tactics-progress',p);
   const rt=rating(); const pz=LIB.find(x=>x.id===id);
   if(pz&&pz.rating){ const K=rt.n<30?32:16; const E=1/(1+Math.pow(10,(pz.rating-rt.r)/400));
-    rt.r=Math.round(rt.r+K*((ok?1:0)-E)); rt.n++; Store.put('tac-rating',rt) }
+    rt.r=Math.round(rt.r+K*((ok?1:0)-E)); rt.n++; Store.put('tac-rating',rt);
+    const h=Store.get('tac-history')||[]; h.push({t:Date.now(),r:rt.r}); Store.put('tac-history',h.slice(-500)) }
   renderHeader();
 }
 function renderHeader(){
