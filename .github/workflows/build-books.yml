@@ -1,0 +1,71 @@
+name: Build opening books
+# Run by hand (Actions tab -> Build opening books -> Run workflow). Builds the static books the
+# Openings tab reads, from CC0 sources only, and uploads them as a workflow artifact for review.
+# Nothing is committed automatically: download the artifact, check it, then commit site/data/.
+on:
+  workflow_dispatch:
+    inputs:
+      elite_months:
+        description: 'Lichess Elite Database months for the masters book (space-separated YYYY-MM)'
+        default: '2025-09 2025-10 2025-11'
+      club_month:
+        description: 'Lichess open database month for the club books (YYYY-MM)'
+        default: '2026-09'
+      club_games:
+        description: 'Games kept per rating band'
+        default: '150000'
+
+permissions:
+  contents: read
+
+jobs:
+  masters:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install chess==1.11.2
+      - name: Download the Lichess Elite Database (https://database.nikonoel.fr/, CC0 Lichess games)
+        run: |
+          mkdir elite
+          for m in ${{ inputs.elite_months }}; do
+            curl -sSfL -o "elite/$m.zip" "https://database.nikonoel.fr/lichess_elite_$m.zip"
+            unzip -o -q "elite/$m.zip" -d elite && rm "elite/$m.zip"
+          done
+          ls -la elite
+      - name: Build masters.json
+        run: cd tools && python3 build_masters.py ../masters.json ../elite/*.pgn && ls -la ../masters.json
+      - uses: actions/upload-artifact@v4
+        with: { name: book-masters, path: masters.json, retention-days: 7 }
+
+  club:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        band:
+          - { id: b10, lo: 1000, hi: 1200 }
+          - { id: b12, lo: 1200, hi: 1400 }
+          - { id: b14, lo: 1400, hi: 1600 }
+          - { id: b16, lo: 1600, hi: 1800 }
+          - { id: b18, lo: 1800, hi: 2000 }
+          - { id: b20, lo: 2000, hi: 2200 }
+          - { id: b22, lo: 2200, hi: 4000 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install chess==1.11.2 && sudo apt-get install -y -q zstd
+      - name: Stream the Lichess open database (https://database.lichess.org/, CC0) and build the band
+        shell: bash
+        run: |
+          set +o pipefail
+          curl -sSL "https://database.lichess.org/standard/lichess_db_standard_rated_${{ inputs.club_month }}.pgn.zst" \
+            | zstd -dc 2>/dev/null \
+            | (cd tools && python3 build_club.py ../${{ matrix.band.id }}.json --lo ${{ matrix.band.lo }} --hi ${{ matrix.band.hi }} --games ${{ inputs.club_games }})
+          ls -la ${{ matrix.band.id }}.json
+      - uses: actions/upload-artifact@v4
+        with: { name: 'book-${{ matrix.band.id }}', path: '${{ matrix.band.id }}.json', retention-days: 7 }
