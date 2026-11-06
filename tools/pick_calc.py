@@ -14,6 +14,8 @@ import csv, io, json, random, sys
 MIN_RATING, MIN_MOVES = 2200, 4
 PER_CELL = 60
 SKIP = {'mateIn1', 'mateIn2', 'oneMove', 'short'}
+NOT_MOTIF = {'long', 'veryLong', 'middlegame', 'endgame', 'advantage', 'crushing', 'mate', 'master',
+             'masterVsMaster', 'superGM', 'opening'}
 
 def main(src, out_path):
     rng = random.Random(2026)
@@ -37,8 +39,7 @@ def main(src, out_path):
                 continue
             cell = cells.setdefault((rating // 100 * 100, min(n, 7)), [])
             cell.append({'id': row['PuzzleId'], 'fen': row['FEN'], 'moves': moves, 'rating': rating,
-                         'motif': next((t for t in themes if t not in ('long', 'veryLong', 'middlegame', 'endgame',
-                                        'advantage', 'crushing', 'mate')), themes[0] if themes else ''),
+                         'motif': next((t for t in themes if t not in NOT_MOTIF), themes[0] if themes else ''),
                          'themes': themes[:5], 'url': 'https://lichess.org/training/' + row['PuzzleId']})
             if len(cell) > PER_CELL * 30:
                 rng.shuffle(cell); del cell[PER_CELL * 10:]

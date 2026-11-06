@@ -73,7 +73,7 @@ textarea{width:100%;min-height:72px;border:1px solid var(--line);border-radius:v
 .side{display:flex;flex-direction:column;gap:12px}
 .list{display:flex;flex-direction:column;gap:6px;max-height:calc(100vh - 210px);overflow:auto;padding:2px}
 @media (max-width:1040px){.panel{grid-template-columns:minmax(0,1fr)}}
-@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}.list{max-height:300px}}
+@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}.list{max-height:300px}.grid>.panel{order:-1}}
 
 /* List items */
 .drill{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;text-align:left;width:100%;background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:9px 12px;cursor:pointer;color:var(--ink)}
@@ -238,3 +238,4 @@ footer .inner{padding-block:18px;font-size:.85rem;color:var(--muted)}
 /* Guess the move: moves so far */
 .gmoves{max-height:180px;overflow:auto;line-height:1.7}
 .gmoves .ok{color:var(--good)}.gmoves .inacc{color:var(--warn)}.gmoves .miss{color:var(--bad)}
+.ccfilters .chips+.chips{margin-top:6px}

@@ -1,5 +1,6 @@
 /* Chess Lab Open — Calculation: see the whole line before you play it.
-   Exercises are the long Lichess puzzles (CC0) in data/tactics.json: 4 or more moves for the solver.
+   Exercises: data/calc.json, hard long Lichess puzzles (CC0, rating 2200+, 4+ moves for the solver,
+   built by tools/pick_calc.py); without it, the long puzzles in data/tactics.json.
    You enter the full line on a free board (both sides' moves), against a running clock, then Submit.
    Grading: how far your line follows the solution (every ply, both sides); a different first move is
    checked by Stockfish and counts if it is within 0.1 winning chances of the solution's move.
@@ -7,19 +8,25 @@
 'use strict';
 (function(){
 let board=null, LIB=null;
-const S={cur:null,start:null,g:null,line:[],sub:false,t0:0,tick:null,len:'4',view:0,busy:false};
+const S={cur:null,start:null,g:null,line:[],sub:false,t0:0,tick:null,len:'all',hard:'2200',view:0,busy:false};
 const prog=()=>Store.get('calc-progress')||{};
 const mine=z=>Math.floor(z.moves.length/2);                 /* the solver's moves (the first move is the setup) */
-const LENS=[['4','4 moves'],['5','5 moves'],['6','6+ moves'],['all','All']];
+const LENS=[['all','Any length'],['4','4 moves'],['5','5 moves'],['6','6+ moves']];
+const HARD=[['0','All'],['2200','2200+'],['2400','2400+'],['2600','2600+']];
 
 function list(){
   if(!LIB) return [];
-  return LIB.filter(z=>mine(z)>=4&&(S.len==='all'||(S.len==='6'?mine(z)>=6:mine(z)===+S.len))).sort((a,b)=>a.rating-b.rating);
+  return LIB.filter(z=>mine(z)>=4&&z.rating>=+S.hard&&(S.len==='all'||(S.len==='6'?mine(z)>=6:mine(z)===+S.len))).sort((a,b)=>a.rating-b.rating);
 }
 function renderList(){
   const ch=$('cc-lens'); ch.innerHTML='';
-  for(const [v,n] of LENS){ const b=document.createElement('button'); b.className='chip'; b.textContent=n; b.setAttribute('aria-pressed',String(S.len===v));
-    b.addEventListener('click',()=>{ S.len=v; renderList() }); ch.appendChild(b) }
+  const row=(opts,key)=>{ const r=document.createElement('div'); r.className='chips';
+    for(const [v,n] of opts){ const b=document.createElement('button'); b.className='chip'; b.textContent=n; b.setAttribute('aria-pressed',String(S[key]===v));
+      b.addEventListener('click',()=>{ S[key]=v; renderList() }); r.appendChild(b) }
+    ch.appendChild(r) };
+  row(HARD,'hard'); row(LENS,'len');
+  const n=list().length; const c=document.createElement('p'); c.className='note'; c.style.margin='6px 0 0';
+  c.textContent=LIB?n.toLocaleString()+' exercises':''; ch.appendChild(c);
   const el=$('cc-list'); el.innerHTML=''; const p=prog();
   for(const z of list()){
     const r=p[z.id];
@@ -110,7 +117,9 @@ function status(tone,head,rest){ const el=$('cc-status'); el.className='status'+
 function init(){
   board=makeBoard($('cc-board'),{onMove:userMove});
   board.set(new Chess(),{locked:true});
-  fetch('data/tactics.json').then(r=>r.json()).then(j=>{ LIB=j; renderList() }).catch(()=>{ LIB=[]; renderList() });
+  fetch('data/calc.json').then(r=>{ if(!r.ok) throw 0; return r.json() })
+    .catch(()=>fetch('data/tactics.json').then(r=>r.json()))
+    .then(j=>{ LIB=j; renderList() }).catch(()=>{ LIB=[]; renderList() });
   $('cc-submit').addEventListener('click',submit);
   $('cc-undo').addEventListener('click',undo);
   $('cc-reset').addEventListener('click',reset);

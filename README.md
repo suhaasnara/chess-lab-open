@@ -23,9 +23,9 @@ accounts, no uploads: progress lives in localStorage with JSON export/import.
   against a difficulty from the elite share of the right move. No account needed.
 - **Tactics** — a CC0 puzzle library from the Lichess puzzle database, with a
   puzzle rating (Elo against each puzzle's Lichess rating, first attempt only).
-- **Calculation** — see the whole line before you play it: on the long puzzles
-  (4+ moves for you) you enter your moves and the replies you expect, against a
-  clock, then submit. Scored by how far your line follows the solution; a
+- **Calculation** — see the whole line before you play it: on 1,092 hard, long
+  Lichess puzzles (rated 2200–2800, 4 to 13 moves for you) you enter your moves and
+  the replies you expect, against a clock, then submit. Scored by how far your line follows the solution; a
   different first move counts if Stockfish rates it as good.
 - **Analyze my games** — type a Lichess or Chess.com username; your recent
   rapid + classical games are fetched from the public API in your browser.
@@ -54,6 +54,7 @@ accounts, no uploads: progress lives in localStorage with JSON export/import.
 | --- | --- | --- |
 | Opening book, elite level (`site/data/masters.json`) | [Lichess Elite Database](https://database.nikonoel.fr/) (Lichess games, 2500+ vs 2300+), built by `tools/build_masters.py` | CC0 |
 | Opening books, club levels 1000–2200+ (`site/data/club/*.json`) | [Lichess open database](https://database.lichess.org/), rated rapid + classical games by the players' average rating, built by `tools/build_club.py` | CC0 |
+| Calculation exercises (`site/data/calc.json`) | [Lichess puzzle database](https://database.lichess.org/#puzzles), picked by `tools/pick_calc.py` (workflow *Build calculation set*) | CC0 |
 | Opening names + offline demo book | [lichess-org/chess-openings](https://github.com/lichess-org/chess-openings) | CC0 |
 | Puzzles | [Lichess puzzle database](https://database.lichess.org/#puzzles) (rebuild with `tools/pick_puzzles.py`) | CC0 |
 | Engine | [Stockfish](https://stockfishchess.org/) 18 lite single-thread WebAssembly, via [stockfish.js](https://github.com/nmrugg/stockfish.js) | GPL-3.0 (`site/sf/Copying.txt`) |

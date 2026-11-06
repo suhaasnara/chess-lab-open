@@ -41,6 +41,9 @@ cburnett instead.)
   `site/data/demo-book.json`) — built by `tools/build_openings.py` from
   [lichess-org/chess-openings](https://github.com/lichess-org/chess-openings),
   **CC0 1.0** (public domain).
+- **Calculation exercises** (`site/data/calc.json`) — hard, long puzzles from the
+  [Lichess puzzle database](https://database.lichess.org/#puzzles), **CC0 1.0**, picked by
+  `tools/pick_calc.py`.
 - **Puzzles** (`site/data/tactics.json`) — from the
   [Lichess puzzle database](https://database.lichess.org/#puzzles), **CC0 1.0**.
   Each puzzle links to its source game on lichess.org. Rebuild or extend the

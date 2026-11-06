@@ -376,7 +376,12 @@ section('t16: Calculation — enter the whole line, graded against the solution'
   const C=w.CalcTab;
   w.location.hash='#calc'; await sleep(60);
   const n=w.document.querySelectorAll('#cc-list .drill').length;
-  assert(n>50&&C.lib.filter(z=>Math.floor(z.moves.length/2)>=4).length>=n,'exercises are the long puzzles (4+ moves for you): '+n+' at 4 moves');
+  const calc=JSON.parse(fs.readFileSync(path.join(H.SITE,'data','calc.json'),'utf8'));
+  let ok=true; for(const z of calc){ const g=new w.Chess(z.fen); for(const u of z.moves){ if(!g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'})){ ok=false; break } } }
+  assert(calc.length>1000&&ok&&calc.every(z=>z.rating>=2200&&Math.floor(z.moves.length/2)>=4)&&new Set(calc.map(z=>z.id)).size===calc.length,'calc.json: '+calc.length+' exercises, all 2200+, 4+ moves, every move legal, unique ids');
+  assert(C.lib.length===calc.length,'Calculation loads calc.json');
+  const listed=C.lib.filter(z=>Math.floor(z.moves.length/2)>=4&&z.rating>=2200).length;
+  assert(n>50&&n===listed,'by default the list is the hard long exercises (2200+, 4+ moves for you): '+n);
   const z=C.lib.find(z=>Math.floor(z.moves.length/2)===4);
   C.load(z); await sleep(20);
   const sol=z.moves.slice(1), play=u=>C.userMove(u.slice(0,2),u.slice(2,4),u[4]);
