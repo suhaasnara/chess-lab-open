@@ -34,7 +34,8 @@ function pickOpening(){
 }
 function plan(){
   let t=Store.get('today');
-  if(!t||t.date!==dayKey()||(!t.puzzles.length&&(TacticsTab.lib||[]).length)){
+  /* remake the plan on a new day, when the puzzle library arrives late, or when drills get saved after an empty-drill plan */
+  if(!t||t.date!==dayKey()||(!t.puzzles.length&&(TacticsTab.lib||[]).length)||(!t.drills.length&&pickDrills().length)){
     t={date:dayKey(),drills:pickDrills(),puzzles:pickPuzzles(),opening:pickOpening()};
     Store.put('today',t);
   }

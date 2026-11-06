@@ -334,6 +334,8 @@ section('t14: Today — a daily session from your drills, puzzles and openings')
   assert(t.puzzles.length===5&&new Set(t.puzzles).size===5,'five different puzzles');
   assert(!!w.OpeningsTab.openings().find(o=>o.id===t.opening),'one opening line');
   assert(w.TodayTab.plan().drills.join()===t.drills.join(),'the plan stays fixed for the day');
+  w.Store.put('today',{...t,drills:[]});
+  assert(w.TodayTab.plan().drills.length===3,'drills saved after an empty-drill plan join today\u2019s plan');
   w.location.hash='#today'; await sleep(80);
   assert(w.document.querySelectorAll('#td-list .drill').length===9&&/0<\/b> of 9 done/.test(w.document.getElementById('td-head').innerHTML),'the list shows 9 items, none done');
   const tp=w.Store.get('tactics-progress')||{}; tp[t.puzzles[0]]={ok:true,t:Date.now()}; w.Store.put('tactics-progress',tp);
