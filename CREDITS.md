@@ -71,3 +71,5 @@ cburnett instead.)
 - [Libre Caslon Text](https://fonts.google.com/specimen/Libre+Caslon+Text) and
   [Source Sans 3](https://fonts.google.com/specimen/Source+Sans+3), served from
   Google Fonts under the SIL Open Font License.
+  The link-preview image `site/assets/og.jpg` is rendered with the same two fonts (embedding is allowed
+  under the OFL) and the site's own board and pieces.
