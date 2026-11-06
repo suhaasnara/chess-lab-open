@@ -1,0 +1,39 @@
+name: Build endgame set
+# Run by hand. Checks tools/endgame_positions.json against the Lichess tablebase and builds
+# site/data/endgames.json (results + trees for offline use), then pushes it to a review branch
+# endgames/<run id>. main is never touched: copy the file over after checking it.
+on:
+  workflow_dispatch:
+    inputs:
+      budget:
+        description: 'User positions stored per exercise'
+        default: '120'
+
+permissions:
+  contents: write
+
+jobs:
+  endgames:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install chess==1.11.2
+      - name: Browser access checks (CORS headers the site relies on)
+        run: |
+          for u in "https://tablebase.lichess.ovh/standard?fen=8/8/8/8/8/4k3/4P3/4K3_w_-_-_0_1" \
+                   "https://lichess.org/api/study/W2RFGlmS.pgn"; do
+            echo "== $u"; curl -s -D - -o /dev/null -H "Origin: https://suhaasnarayanan.com" "$u" | grep -i -E "^HTTP|access-control" || true
+          done
+      - name: Build
+        run: python3 tools/build_endgames.py tools/endgame_positions.json site/data/endgames.json --budget ${{ inputs.budget }} && ls -la site/data/endgames.json
+      - name: Push the review branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "endgames/${{ github.run_id }}"
+          git add site/data/endgames.json
+          git commit -m "Endgame set from the Lichess tablebase (for review)"
+          git push origin "endgames/${{ github.run_id }}"

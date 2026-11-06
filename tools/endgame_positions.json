@@ -1,0 +1,382 @@
+{
+ "about": "Endgame trainer positions for Chess Lab Open: standard textbook endings, set up by hand. goal: win | draw (for the side to move). end: mate = finish with checkmate; convert = any capture or promotion that keeps the win also counts; hold:N = keep the draw for N of your moves. tools/build_endgames.py checks every goal against the Lichess tablebase.",
+ "groups": [
+  [
+   "mates",
+   "Basic mates"
+  ],
+  [
+   "pawn",
+   "King and pawn"
+  ],
+  [
+   "rook",
+   "Rook endings"
+  ],
+  [
+   "queen",
+   "Queen endings"
+  ],
+  [
+   "minor",
+   "Minor pieces"
+  ],
+  [
+   "mixed",
+   "Piece against piece"
+  ]
+ ],
+ "positions": [
+  {
+   "id": "kqk",
+   "group": "mates",
+   "title": "Queen mate",
+   "fen": "8/8/8/4k3/8/8/8/KQ6 w - - 0 1",
+   "goal": "win",
+   "end": "mate",
+   "text": "Box the king in with the queen a knight's jump away, shrink the box, then bring your king over. Watch for stalemate: never leave the king with no squares when it is not in check."
+  },
+  {
+   "id": "krk",
+   "group": "mates",
+   "title": "Rook mate",
+   "fen": "8/8/8/4k3/8/8/8/R3K3 w - - 0 1",
+   "goal": "win",
+   "end": "mate",
+   "text": "Use the rook to cut the king off along a rank or file, bring your king up opposite it, and push the box in one line at a time. A waiting rook move gains the opposition when you need it."
+  },
+  {
+   "id": "kbbk",
+   "group": "mates",
+   "title": "Two bishops mate",
+   "fen": "8/8/8/4k3/8/8/8/2B1KB2 w - - 0 1",
+   "goal": "win",
+   "end": "mate",
+   "text": "Side by side, the bishops make a wall the king cannot cross. Drive it to the edge, then into a corner, with your king close behind."
+  },
+  {
+   "id": "kbnk",
+   "group": "mates",
+   "title": "Bishop and knight mate",
+   "fen": "8/8/8/4k3/8/8/8/1N2KB2 w - - 0 1",
+   "goal": "win",
+   "end": "mate",
+   "text": "The hardest basic mate. Mate only works in a corner of your bishop's colour, so first drive the king to the edge, then walk it along the edge into that corner (the knight's W manoeuvre)."
+  },
+  {
+   "id": "kbnk2",
+   "group": "mates",
+   "title": "Bishop and knight: the wrong corner",
+   "fen": "7k/8/5K2/8/8/8/8/1N3B2 w - - 0 1",
+   "goal": "win",
+   "end": "mate",
+   "text": "The king sits in the corner your bishop cannot cover. Push it along the edge to the right corner without letting it escape back to the middle."
+  },
+  {
+   "id": "kp-keysq",
+   "group": "pawn",
+   "title": "Key squares",
+   "fen": "4k3/8/4K3/8/4P3/8/8/8 w - - 0 1",
+   "goal": "win",
+   "end": "convert",
+   "text": "Your king already stands on a key square in front of the pawn. Keep it in front and the pawn walks home; push the pawn too early and it is a draw."
+  },
+  {
+   "id": "kp-opp",
+   "group": "pawn",
+   "title": "King in front of the pawn",
+   "fen": "8/8/8/3k4/8/4K3/4P3/8 w - - 0 1",
+   "goal": "win",
+   "end": "convert",
+   "text": "Lead with the king, not the pawn. Reach one of the key squares two ranks in front of the pawn and the win is automatic."
+  },
+  {
+   "id": "kp-opp2",
+   "group": "pawn",
+   "title": "Opposition: the waiting move",
+   "fen": "8/8/4k3/8/8/4K3/4P3/8 w - - 0 1",
+   "goal": "win",
+   "end": "convert",
+   "text": "The kings face each other. Use the spare pawn move at the right moment to hand the move to Black, so his king has to give way."
+  },
+  {
+   "id": "kp-hold",
+   "group": "pawn",
+   "title": "Hold with the opposition",
+   "fen": "8/8/4k3/8/4PK2/8/8/8 b - - 0 1",
+   "goal": "draw",
+   "end": "hold:15",
+   "text": "Stay in front of the pawn and take the opposition every time the white king steps up. When the pawn reaches the 7th with check, go straight back, not to the side."
+  },
+  {
+   "id": "kp-hold2",
+   "group": "pawn",
+   "title": "Back to the right square",
+   "fen": "8/4k3/8/3PK3/8/8/8/8 b - - 0 1",
+   "goal": "draw",
+   "end": "hold:15",
+   "text": "Only one square keeps the draw here: answer the white king's approach with the opposition, and retreat straight back, never diagonally away from the pawn."
+  },
+  {
+   "id": "kp-rook",
+   "group": "pawn",
+   "title": "The rook pawn",
+   "fen": "8/8/2k5/8/8/8/P7/5K2 b - - 0 1",
+   "goal": "draw",
+   "end": "hold:15",
+   "text": "Against a rook pawn, reaching the corner in front of it is enough: the king can never be driven out. Head for a8."
+  },
+  {
+   "id": "kp-square",
+   "group": "pawn",
+   "title": "The square of the pawn",
+   "fen": "8/8/8/8/3k4/8/7P/K7 b - - 0 1",
+   "goal": "draw",
+   "end": "hold:15",
+   "text": "Draw the square from the pawn to its queening square (counting the double step). If your king can step into it, you catch the pawn."
+  },
+  {
+   "id": "kp-reti",
+   "group": "pawn",
+   "title": "Réti's draw",
+   "fen": "7K/8/k1P5/7p/8/8/8/8 w - - 0 1",
+   "goal": "draw",
+   "end": "hold:12",
+   "text": "It looks hopeless, but a king that walks diagonally chases two goals at once: catching the h-pawn and supporting its own pawn."
+  },
+  {
+   "id": "kp-outside",
+   "group": "pawn",
+   "title": "Outside passed pawn",
+   "fen": "8/8/4k3/6p1/P3K1P1/8/8/8 w - - 0 1",
+   "goal": "win",
+   "end": "convert",
+   "text": "A passed pawn far from the other pawns is a decoy. Use it to drag the enemy king away, then march into the other side."
+  },
+  {
+   "id": "kp-tri",
+   "group": "pawn",
+   "title": "Triangulation",
+   "fen": "8/8/1k6/2p5/2P5/K7/8/8 w - - 0 1",
+   "goal": "draw",
+   "end": "hold:12",
+   "text": "Mutual blockade: whoever has to move first loses ground. Keep the opposition and do not let your king be pushed off the pawn."
+  },
+  {
+   "id": "r-lucena",
+   "group": "rook",
+   "title": "Lucena: building a bridge",
+   "fen": "1K6/1P1k4/8/8/8/8/r7/2R5 w - - 0 1",
+   "goal": "win",
+   "end": "convert",
+   "text": "Cut the black king off by a file, bring your rook to the 4th rank, then walk your king out; the rook blocks the checks (the bridge)."
+  },
+  {
+   "id": "r-lucena2",
+   "group": "rook",
+   "title": "Lucena: the checks",
+   "fen": "3K4/3P1k2/8/8/8/8/2r5/4R3 w - - 0 1",
+   "goal": "win",
+   "end": "convert",
+   "text": "The same idea from the other side: first push the enemy king one more file away with a check, then build the bridge on the 4th rank."
+  },
+  {
+   "id": "r-philidor",
+   "group": "rook",
+   "title": "Philidor: third-rank defence",
+   "fen": "4k3/7r/8/4PK2/8/8/8/3R4 b - - 0 1",
+   "goal": "draw",
+   "end": "hold:15",
+   "text": "Keep your rook on your third rank until the pawn advances to it; then go to the back of the board and check from behind."
+  },
+  {
+   "id": "r-backrank",
+   "group": "rook",
+   "title": "Back-rank defence",
+   "fen": "4k3/8/4K3/4P3/8/8/8/r6R b - - 0 1",
+   "goal": "draw",
+   "end": "hold:15",
+   "text": "With your king in front of the pawn, the rook checks from far away. The short side is for your king; your rook belongs on the long side."
+  },
+  {
+   "id": "r-shortside",
+   "group": "rook",
+   "title": "Long-side checks",
+   "fen": "5k2/8/4K3/4P3/8/8/8/2r4R b - - 0 1",
+   "goal": "draw",
+   "end": "hold:15",
+   "text": "Checks from the side work only from at least three files away. Put the rook on the long side of the pawn and check."
+  },
+  {
+   "id": "r-vancura",
+   "group": "rook",
+   "title": "Vančura position",
+   "fen": "8/8/R7/P5k1/8/5r2/8/6K1 b - - 0 1",
+   "goal": "draw",
+   "end": "hold:15",
+   "text": "Against an a-pawn with the rook in front of it, attack the pawn from the side (on the f-file here) and check from behind as soon as the white king comes out."
+  },
+  {
+   "id": "r-cutoff",
+   "group": "rook",
+   "title": "King cut off",
+   "fen": "8/8/8/1k6/8/4P3/4K3/7R w - - 0 1",
+   "goal": "win",
+   "end": "convert",
+   "text": "Cut the defending king off from the pawn with your rook along a file, then advance king and pawn together."
+  },
+  {
+   "id": "r-vsp",
+   "group": "rook",
+   "title": "Rook against pawn",
+   "fen": "8/8/8/8/1R6/8/5pk1/2K5 w - - 0 1",
+   "goal": "draw",
+   "end": "hold:10",
+   "text": "The pawn is one step from queening. Find the checks and the right square so the rook can stop it in time."
+  },
+  {
+   "id": "r-vsp2",
+   "group": "rook",
+   "title": "Rook against pawn: shouldering",
+   "fen": "8/8/8/8/2k5/2p5/8/K3R3 b - - 0 1",
+   "goal": "draw",
+   "end": "hold:10",
+   "text": "Push the pawn with your king in front of it and keep the white king away. One move in the wrong order and the rook wins the pawn."
+  },
+  {
+   "id": "r-7th",
+   "group": "rook",
+   "title": "Rook on the seventh",
+   "fen": "6k1/1R6/8/8/8/8/5ppp/6K1 w - - 0 1",
+   "goal": "draw",
+   "end": "hold:12",
+   "text": "A rook on the 7th rank can keep the enemy king boxed and pick up pawns. Keep checking or attacking; do not let Black consolidate."
+  },
+  {
+   "id": "q-vsp-center",
+   "group": "queen",
+   "title": "Queen against a centre pawn",
+   "fen": "8/8/8/8/8/8/3pk3/1Q5K w - - 0 1",
+   "goal": "win",
+   "end": "convert",
+   "text": "Check and pin until the king has to stand in front of its own pawn; each time it does, bring your king one step closer."
+  },
+  {
+   "id": "q-vsp-bishop",
+   "group": "queen",
+   "title": "Queen against a bishop pawn",
+   "fen": "K7/8/8/8/8/1Q6/5pk1/8 b - - 0 1",
+   "goal": "draw",
+   "end": "hold:12",
+   "text": "With a bishop pawn the defender has a stalemate trick: when the queen blocks, go to the corner and let the queen take the pawn only with stalemate."
+  },
+  {
+   "id": "q-vsp-rook",
+   "group": "queen",
+   "title": "Queen against a rook pawn",
+   "fen": "8/8/8/8/8/2Q5/pk6/7K b - - 0 1",
+   "goal": "draw",
+   "end": "hold:12",
+   "text": "A rook pawn on the 7th is a draw if the enemy king is far away: step into the corner and dare the queen to stalemate you."
+  },
+  {
+   "id": "q-vsr",
+   "group": "queen",
+   "title": "Queen against rook",
+   "fen": "3k4/3r4/3K4/8/8/8/8/7Q w - - 0 1",
+   "goal": "win",
+   "end": "convert",
+   "text": "Philidor's position: a quiet queen move puts Black in zugzwang, and the rook has to leave its king. Win the rook with a fork or a skewer."
+  },
+  {
+   "id": "q-vsr2",
+   "group": "queen",
+   "title": "Queen against rook: the defender's checks",
+   "fen": "8/8/8/2k5/8/2r5/8/3QK3 w - - 0 1",
+   "goal": "win",
+   "end": "convert",
+   "text": "Keep your king close to your queen so the rook cannot give endless checks, and push the defending king to the edge."
+  },
+  {
+   "id": "m-wrongb",
+   "group": "minor",
+   "title": "The wrong bishop",
+   "fen": "8/k7/8/P7/8/8/8/1KB5 b - - 0 1",
+   "goal": "draw",
+   "end": "hold:15",
+   "text": "Bishop and rook pawn cannot win if the queening square is the other colour from the bishop. Get your king to the corner and stay there."
+  },
+  {
+   "id": "m-oppb",
+   "group": "minor",
+   "title": "Opposite-coloured bishops",
+   "fen": "8/8/3bk3/8/8/3BP3/4K3/8 b - - 0 1",
+   "goal": "draw",
+   "end": "hold:15",
+   "text": "Control the square in front of the pawn with your bishop or king; the white bishop can never take it away."
+  },
+  {
+   "id": "m-bvp",
+   "group": "minor",
+   "title": "Bishop stops the pawns",
+   "fen": "8/8/8/6k1/5pp1/8/4K3/B7 w - - 0 1",
+   "goal": "draw",
+   "end": "hold:12",
+   "text": "Two connected pawns are fast, but a bishop on their diagonal plus the king in front can hold them."
+  },
+  {
+   "id": "m-nvp",
+   "group": "minor",
+   "title": "Knight against a rook pawn",
+   "fen": "8/8/8/8/8/k7/p7/2N1K3 w - - 0 1",
+   "goal": "draw",
+   "end": "hold:12",
+   "text": "A knight stops a rook pawn by guarding its queening square or the square in front of it. Keep it near the corner."
+  },
+  {
+   "id": "m-bn-win",
+   "group": "minor",
+   "title": "Bishop and pawn: the right bishop",
+   "fen": "k7/8/1K6/P7/8/8/8/4B3 w - - 0 1",
+   "goal": "win",
+   "end": "convert",
+   "text": "With the bishop that covers the queening square, keep the king boxed in the corner, avoid stalemate and push."
+  },
+  {
+   "id": "x-rvb",
+   "group": "mixed",
+   "title": "Rook against bishop",
+   "fen": "8/8/8/4k3/8/3b4/8/3RK3 b - - 0 1",
+   "goal": "draw",
+   "end": "hold:15",
+   "text": "Run to the corner that is not the colour of your bishop; the rook cannot break it. The other corner loses."
+  },
+  {
+   "id": "x-rvn",
+   "group": "mixed",
+   "title": "Rook against knight",
+   "fen": "8/8/8/4k3/8/4n3/8/3RK3 b - - 0 1",
+   "goal": "draw",
+   "end": "hold:15",
+   "text": "Keep the knight next to your king. A knight that wanders off is trapped or lost to a fork."
+  },
+  {
+   "id": "x-rbvr",
+   "group": "mixed",
+   "title": "Rook and bishop against rook",
+   "fen": "8/8/8/4k3/8/8/2r5/R3KB2 b - - 0 1",
+   "goal": "draw",
+   "end": "hold:15",
+   "text": "Theoretically drawn but hard to hold in practice. Stay out of the Philidor mating net: keep your king off the edge where you can."
+  },
+  {
+   "id": "x-qvq",
+   "group": "mixed",
+   "title": "Queen and pawn against queen",
+   "fen": "8/8/8/8/2k5/8/1P1q4/K6Q w - - 0 1",
+   "goal": "win",
+   "end": "convert",
+   "text": "Use your queen to shield your king from checks and push the pawn when a check can be answered by a cross-check."
+  }
+ ]
+}
