@@ -4,7 +4,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Chess Lab Open</title>
-<meta name="description" content="An open-source, bring-your-own-data chess trainer: openings, tactics and a report card on your own games. By Suhaas Narayanan.">
+<meta name="description" content="A free, open-source chess trainer: openings against real games from 1000 to Elite, 11,000 puzzles, hard calculation, and drills from your own Lichess or Chess.com games. No account, nothing uploaded. By Suhaas Narayanan.">
+<link rel="canonical" href="https://suhaasnarayanan.com/chess-lab-open/">
+<link rel="icon" type="image/svg+xml" href="assets/pieces/cburnett/wN.svg">
+<meta name="theme-color" content="#13284a">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Suhaas Narayanan">
+<meta property="og:title" content="Chess Lab Open — a free, open-source chess trainer">
+<meta property="og:description" content="Openings against real games from 1000 to Elite, 11,000 puzzles, hard calculation, and drills from your own games. No account, nothing uploaded.">
+<meta property="og:url" content="https://suhaasnarayanan.com/chess-lab-open/">
+<meta property="og:image" content="https://suhaasnarayanan.com/chess-lab-open/assets/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Chess Lab Open: a chess board with the Ruy Lopez and a list of what the trainer does">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Chess Lab Open — a free, open-source chess trainer">
+<meta name="twitter:description" content="Openings against real games, 11,000 puzzles, hard calculation and drills from your own games. No account.">
+<meta name="twitter:image" content="https://suhaasnarayanan.com/chess-lab-open/assets/og.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap">
 <link rel="stylesheet" href="style.css?v=__V__">
@@ -14,11 +30,11 @@
 <header class="hero">
   <div class="inner">
     <h1>Chess Lab Open</h1>
-    <p>An open-source chess trainer that runs on your own games: train your openings against real games from strong players,
-       sharpen tactics, and get a report card from your Lichess or Chess.com games &mdash; all in your browser, nothing uploaded.
+    <p>A free, open-source chess trainer: openings against real games, tactics, calculation, and drills from your own
+       Lichess or Chess.com games. It all runs in your browser; nothing is uploaded.
        By <a href="https://suhaasnarayanan.com/chess">Suhaas Narayanan</a>
        (<a href="https://www.chess.com/member/CoachSuhaas">CoachSuhaas</a> on Chess.com,
-       <a href="https://lichess.org/@/suhaasn">suhaasn</a> on Lichess).</p>
+       <a href="https://lichess.org/@/suhaasn">suhaasn</a> on Lichess). <button class="linkbtn herohelp" id="help-open">How it works</button></p>
   </div>
 </header>
 
@@ -43,6 +59,19 @@
 <!-- ================= Today ================= -->
 <section id="today" hidden>
   <div class="tdwrap">
+    <div class="card welcome" id="welcome" hidden>
+      <button class="linkbtn welcomex" id="welcome-x" aria-label="Close">Close ✕</button>
+      <span class="label">New here?</span>
+      <h2 style="margin:6px 0 8px">How Chess Lab Open works</h2>
+      <ul class="welcomelist">
+        <li><b>Start with your own games.</b> In <a href="#analyze">Analyze my games</a>, type your Lichess or Chess.com username: you get a report card and drills from your mistakes (and the ones your opponents got away with).</li>
+        <li><b>Come back to <a href="#today">Today</a>.</b> A short daily session: a few of your drills, five puzzles near your rating, one opening line.</li>
+        <li><b><a href="#openings">Openings</a>:</b> pick an opening or paste your repertoire as a PGN. The opponent plays real moves from Lichess games at the level you set, from 1000 to Elite, then Stockfish takes over.</li>
+        <li><b><a href="#tactics">Tactics</a>, <a href="#calc">Calculation</a>, <a href="#play">Play</a> and <a href="#guess">Guess the move</a></b> for everything else.</li>
+        <li><b>Private by design:</b> no account, nothing uploaded. Your progress stays in this browser (Progress → Export to move it).</li>
+      </ul>
+      <div class="btns" style="margin-top:10px"><a class="btn primary" href="#analyze" id="welcome-go">Analyze my games</a><button class="btn" id="welcome-ok">Got it</button></div>
+    </div>
     <div class="card">
       <span class="label">Today</span>
       <h2 style="margin:6px 0 4px">Your session</h2>

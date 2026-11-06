@@ -250,3 +250,9 @@ footer .inner{padding-block:18px;font-size:.85rem;color:var(--muted)}
 .endbar .btn{background:#fff;color:var(--navy);border-color:#fff;flex:none}
 .boardbox.end-bad .board{box-shadow:0 0 0 4px var(--bad)}.end-bad .endbar{background:var(--bad)}
 .endbar .endtext{cursor:pointer}
+
+/* first-visit guide */
+.welcome{position:relative;margin-bottom:12px;border-top:3px solid var(--brass)}
+.welcomex{position:absolute;top:12px;right:14px;font-size:.85rem}
+.welcomelist{margin:0;padding-left:18px;line-height:1.55}.welcomelist li{margin:4px 0}
+.hero .linkbtn.herohelp{color:var(--brass-light);font-size:inherit}

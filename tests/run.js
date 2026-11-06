@@ -469,6 +469,20 @@ section('t18: result banner on every board');
   assert(bar('cc-board').hidden,'loading the next exercise hides it');
 }
 
+section('t19: first-visit guide and link preview');
+{
+  const {w}=await makePage(); await sleep(100);
+  const el=w.document.getElementById('welcome');
+  assert(!el.hidden,'a first visit shows the guide on Today');
+  w.document.getElementById('welcome-ok').click();
+  assert(el.hidden&&w.localStorage.getItem('clo-welcome')==='seen','Got it hides it and remembers');
+  w.document.getElementById('help-open').click(); await sleep(60);
+  assert(!el.hidden&&w.document.body.dataset.view==='today','How it works (header) brings it back');
+  const meta=n=>{ const m=w.document.querySelector(`meta[property="${n}"],meta[name="${n}"]`); return m&&m.content };
+  assert(/^https:\/\/suhaasnarayanan\.com\/chess-lab-open\/assets\/og\.jpg$/.test(meta('og:image'))&&fs.existsSync(path.join(H.SITE,'assets','og.jpg')),'og:image points at the preview image, which exists');
+  assert(meta('twitter:card')==='summary_large_image'&&/Chess Lab Open/.test(meta('og:title')),'Open Graph and Twitter tags are set');
+}
+
 section('t8: data sanity — puzzles legal, demo book and names consistent');
 {
   const tactics=JSON.parse(fs.readFileSync(path.join(H.SITE,'data','tactics.json'),'utf8'));

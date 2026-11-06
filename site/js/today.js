@@ -86,7 +86,18 @@ function render(){
   const nd=(Store.get('adrills')||[]).length;
   $('td-note').innerHTML=nd?'':'Drills from your own games appear here once you run <a href="#analyze">Analyze my games</a> and save some.';
 }
+/* First visit: a short guide on Today (dismissable; "How it works" in the header brings it back). */
+function welcome(show){
+  const el=$('welcome'); if(!el) return;
+  let seen=false; try{ seen=localStorage.getItem('clo-welcome')==='seen' }catch(e){}
+  el.hidden=show===true?false:seen;
+}
+function dismiss(){ try{ localStorage.setItem('clo-welcome','seen') }catch(e){} $('welcome').hidden=true }
 function init(){
+  welcome();
+  $('welcome-x').addEventListener('click',dismiss); $('welcome-ok').addEventListener('click',dismiss);
+  $('welcome-go').addEventListener('click',dismiss);
+  $('help-open').addEventListener('click',()=>{ location.hash='#today'; welcome(true); setTimeout(()=>{ const e=$('welcome'); if(e.scrollIntoView) e.scrollIntoView({block:'start'}) },30) });
   /* the puzzle library loads after this page: rebuild an empty plan once it is there */
   let tries=0; const wait=setInterval(()=>{ tries++; if((TacticsTab.lib||[]).length||tries>40){ clearInterval(wait); if(document.body.dataset.view==='today') render() } },250);
 }
