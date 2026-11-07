@@ -49,5 +49,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "gtm/${{ github.run_id }}"
-          git add -f gtm-candidates.tsv site/data/gtm 2>/dev/null || true
+          git add site/data/gtm
+          if [ -f gtm-candidates.tsv ]; then git add -f gtm-candidates.tsv; fi
           git commit -m "Guess the move from broadcasts (${{ inputs.mode }}, for review)" && git push origin "gtm/${{ github.run_id }}"
