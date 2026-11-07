@@ -27,8 +27,8 @@ accounts, no uploads: progress lives in localStorage with JSON export/import.
   Lichess puzzles (rated 2200–2800, 4 to 13 moves for you) you enter your moves and
   the replies you expect, against a clock, then submit. Scored by how far your line follows the solution; a
   different first move counts if Stockfish rates it as good.
-- **Endgames** — 31 textbook endings (basic mates, king and pawn, Lucena, Philidor,
-  Vančura, queen against pawn and rook, minor pieces) played against perfect defence. Every move
+- **Endgames** — 39 textbook endings (basic mates, king and pawn, Lucena, Philidor,
+  Vančura, Saavedra, queen against pawn and rook, minor pieces, rook against pawns) played against perfect defence. Every move
   is graded by the Lichess tablebase (best, still winning, or the result thrown away), from stored
   lines first and the live tablebase API after; Stockfish only when neither answers. Spaced review.
 - **Analyze my games** — type a Lichess or Chess.com username; your recent
