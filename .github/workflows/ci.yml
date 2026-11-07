@@ -1,7 +1,7 @@
 name: CI
 on:
   push:
-    branches: [main, parity-1]
+    branches: [main, parity-1, positions]
   pull_request:
 
 jobs:
