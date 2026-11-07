@@ -1,0 +1,53 @@
+name: Guess the move from master games
+# Run by hand. Source: the Lichess broadcast database (CC0), https://database.lichess.org/ .
+#   mode=list : lists decisive classical games between 2700+ players for the given months -> review branch gtm/<run id> (gtm-candidates.tsv)
+#   mode=build: builds the games in `select` (JSON list of {white, black, date}) with tools/build_gtm.py as
+#               site/data/gtm/<first_file>, <first_file+1>, ... -> review branch gtm/<run id>. No PGN is committed.
+on:
+  workflow_dispatch:
+    inputs:
+      mode: { description: 'list or build', default: 'list' }
+      months: { description: 'Broadcast months, space-separated YYYY-MM', default: '2024-04 2024-11 2024-12' }
+      select: { description: 'build: JSON [{"white":"Gukesh","black":"Ding","date":"2024.11.27"}, ...]', default: '[]' }
+      first_file: { description: 'build: number of the first new gameN.json', default: '11' }
+      min_elo: { description: 'list: both players at least this rating', default: '2700' }
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install chess==1.11.2 && sudo apt-get install -y -q zstd stockfish && (stockfish quit </dev/null | head -1 || true)
+      - name: Download the broadcast months
+        run: |
+          mkdir bc
+          for m in ${{ inputs.months }}; do
+            curl -sSfL -o bc/$m.pgn.zst "https://database.lichess.org/broadcast/lichess_db_broadcast_$m.pgn.zst" && zstd -dq --rm bc/$m.pgn.zst || echo "no file for $m"
+          done
+          ls -la bc
+      - name: List candidates
+        if: inputs.mode == 'list'
+        run: cat bc/*.pgn | python3 tools/broadcast_games.py list gtm-candidates.tsv --min-elo ${{ inputs.min_elo }} && head -5 gtm-candidates.tsv
+      - name: Build the selected games
+        if: inputs.mode == 'build'
+        run: |
+          echo '${{ inputs.select }}' > select.json
+          cat bc/*.pgn | python3 tools/broadcast_games.py pick /tmp/picked.pgn select.json
+          n=$(python3 -c "import json;print(len(json.load(open('select.json'))))"); f=${{ inputs.first_file }}
+          for i in $(seq 0 $((n-1))); do
+            python3 tools/build_gtm.py /tmp/picked.pgn $i site/data/gtm/game$((f+i)).json --evdepth 22 --mdepth 14
+          done
+          ls -la site/data/gtm
+      - name: Push the review branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "gtm/${{ github.run_id }}"
+          git add -f gtm-candidates.tsv site/data/gtm 2>/dev/null || true
+          git commit -m "Guess the move from broadcasts (${{ inputs.mode }}, for review)" && git push origin "gtm/${{ github.run_id }}"
