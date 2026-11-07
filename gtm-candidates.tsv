@@ -1,0 +1,289 @@
+White	Black	WElo	BElo	Result	Event	Round	Date	Plies~	Opening	TC
+Carlsen, Magnus	Rapport, Richard	2823	2708	1-0	GRENKE Chess Classic - Matches	1.2	2024.04.01	202	French Defense: Winawer Variation, Poisoned Pawn Variation	
+Praggnanandhaa R	Gukesh D	2747	2743	0-1	FIDE Candidates 2024	2	2024.04.04	132	Queen's Gambit Declined	40/7200:1800+30
+Nakamura, Hikaru	Vidit, Santosh Gujrathi	2789	2727	0-1	FIDE Candidates 2024	2	2024.04.04	116	Ruy Lopez: Berlin Defense	40/7200:1800+30
+Nepomniachtchi, Ian	Firouzja, Alireza	2758	2760	1-0	FIDE Candidates 2024	2	2024.04.04	178	Ruy Lopez: Berlin Defense	40/7200:1800+30
+Vidit, Santosh Gujrathi	Praggnanandhaa R	2727	2747	0-1	FIDE Candidates 2024	3	2024.04.05	180	Ruy Lopez: Morphy Defense, Schliemann Defense Deferred	40/7200:1800+30
+Nepomniachtchi, Ian	Vidit, Santosh Gujrathi	2758	2727	1-0	FIDE Candidates 2024	4	2024.04.07	174	Ruy Lopez: Berlin Defense, Berlin Wall	40/7200:1800+30
+Firouzja, Alireza	Nakamura, Hikaru	2760	2789	0-1	FIDE Candidates 2024	5	2024.04.09	252	Italian Game: Classical Variation, Giuoco Pianissimo	40/7200:1800+30
+Vidit, Santosh Gujrathi	Firouzja, Alireza	2727	2760	1-0	FIDE Candidates 2024	6	2024.04.10	158	Sicilian Defense: Classical Variation, Anti-Sozin Variation	40/7200:1800+30
+Firouzja, Alireza	Gukesh D	2760	2743	1-0	FIDE Candidates 2024	7	2024.04.11	158	Indian Defense	40/7200:1800+30
+Vidit, Santosh Gujrathi	Gukesh D	2727	2743	0-1	FIDE Candidates 2024	8	2024.04.13	152	Italian Game: Two Knights Defense, Modern Bishop's Opening	40/7200:1800+30
+Nakamura, Hikaru	Caruana, Fabiano	2789	2803	1-0	FIDE Candidates 2024	8	2024.04.13	138	Ruy Lopez: Morphy Defense, Anderssen Variation	40/7200:1800+30
+Vidit, Santosh Gujrathi	Nakamura, Hikaru	2727	2789	1-0	FIDE Candidates 2024	9	2024.04.14	142	Italian Game: Two Knights Defense, Modern Bishop's Opening	40/7200:1800+30
+Caruana, Fabiano	Firouzja, Alireza	2803	2760	1-0	FIDE Candidates 2024	10	2024.04.15	186	Sicilian Defense: Najdorf Variation, Freak Attack	40/7200:1800+30
+Praggnanandhaa R	Nakamura, Hikaru	2747	2789	0-1	FIDE Candidates 2024	11	2024.04.17	216	Queen's Pawn Game: Symmetrical Variation	40/7200:1800+30
+Vidit, Santosh Gujrathi	Nepomniachtchi, Ian	2727	2758	0-1	FIDE Candidates 2024	11	2024.04.17	268	Petrov's Defense: Paulsen Attack	40/7200:1800+30
+Nakamura, Hikaru	Firouzja, Alireza	2789	2760	1-0	FIDE Candidates 2024	12	2024.04.18	206	French Defense: Exchange Variation	40/7200:1800+30
+Caruana, Fabiano	Vidit, Santosh Gujrathi	2803	2727	1-0	FIDE Candidates 2024	12	2024.04.18	206	Italian Game: Classical Variation, Giuoco Pianissimo	40/7200:1800+30
+Praggnanandhaa R	Caruana, Fabiano	2747	2803	0-1	FIDE Candidates 2024	13	2024.04.20	356	Sicilian Defense: Nyezhmetdinov-Rossolimo Attack	40/7200:1800+30
+Gukesh D	Firouzja, Alireza	2743	2760	1-0	FIDE Candidates 2024	13	2024.04.20	250	Ruy Lopez: Berlin Defense	40/7200:1800+30
+Vachier-Lagrave, Maxime	Maghsoodloo, Parham	2737	2712	1-0	Chennai Grand Masters -Masters 2024	1.2	????.??.??	200	Sicilian Defense: Kan Variation	90mins+30secs increment from move no.1
+Vidit, Santosh Gujrathi	Erigaisi Arjun	2739	2799	0-1	Chennai Grand Masters -Masters 2024	1.3	????.??.??	384	Sicilian Defense: Kramnik Variation	90mins+30secs increment from move no.1
+Maghsoodloo, Parham	Vidit, Santosh Gujrathi	2712	2739	1-0	Chennai Grand Masters -Masters 2024	2.3	????.??.??	178	Ruy Lopez: Berlin Defense	90mins+30secs increment from move no.1
+Aronian, Levon	Maghsoodloo, Parham	2739	2712	1-0	Chennai Grand Masters -Masters 2024	3.3	2024.11.07	182	Sicilian Defense: Moscow Variation	90mins+30secs increment from move no.1
+Aronian, Levon	Vachier-Lagrave, Maxime	2739	2737	1-0	Chennai Grand Masters -Masters 2024	5.2	2024.11.09	174	Indian Defense: Anti-Grünfeld, Alekhine Variation	90mins+30secs increment from move no.1
+Aravindh, Chithambaram VR.	Erigaisi Arjun	2706	2799	1-0	Chennai Grand Masters -Masters 2024	6.2	2024.11.11	190	Queen's Pawn Game: Torre Attack, Grünfeld Variation, Main Line	90mins+30secs increment from move no.1
+Maghsoodloo, Parham	Aravindh, Chithambaram VR.	2712	2706	0-1	Chennai Grand Masters -Masters 2024	7.4	2024.11.11	254	Queen's Gambit Declined: Queen's Knight Variation	90mins+30secs increment from move no.1
+Erigaisi Arjun	Aronian, Levon	2799	2739	0-1	2nd and 3rd Playoff Round 1: Erigaisi Arjun - Aronian, Levon	8.1	2024-11-11	290	English Opening: Anglo-Indian Defense, Queen's Indian Formation	
+Aronian, Levon	Erigaisi Arjun	2739	2799	0-1	2nd and 3rd Playoff Round 2: Aronian, Levon - Erigaisi Arjun	9.1	2024-11-11	246	French Defense: Exchange Variation	
+Aravindh, Chithambaram VR.	Aronian, Levon	2706	2739	1-0	Final Playoff Round 1: Aravindh, Chithambaram VR. - Aronian, Levon	11.1	2024-11-11	214	Yusupov-Rubinstein System	
+Aronian, Levon	Aravindh, Chithambaram VR.	2739	2706	0-1	Final Playoff Round 2: Aronian, Levon - Aravindh, Chithambaram VR.	12.1	2024-11-11	172	Italian Game: Giuoco Pianissimo, Italian Four Knights Variation	
+Gukesh D	Ding, Liren	2783	2728	0-1	FIDE World Championship Match 2024	1	2024.11.25	168	French Defense: Classical Variation, Steinitz Variation	40/7200:1800+30
+Caissa 1.21.2	Seer 20241122	3545	3542	1-0	TCEC Season 27 - Division P	1.1	2024.11.26	322	King's Indian Defense: Steiner Attack	3600+6
+Stockfish dev-20241122-b7f17346	Obsidian 14.06	3677	3555	1-0	TCEC Season 27 - Division P	2.3	2024.11.26	310	Sicilian Defense: Scheveningen Variation	3600+6
+Caissa 1.21.2	KomodoDragon 3.3	3545	3583	1-0	TCEC Season 27 - Division P	2.4	2024.11.26	330	Sicilian Defense: Dragon Variation, Yugoslav Attack, Sosonko Variation	3600+6
+KomodoDragon 3.3	Seer 20241122	3583	3542	1-0	TCEC Season 27 - Division P	3.1	2024.11.26	254	Slav Defense: Chebanenko Variation, Advance System	3600+6
+Stockfish dev-20241122-b7f17346	LCZero 0.31-dag-4167c1e-BT4-6147500-it332	3677	3648	1-0	TCEC Season 27 - Division P	4.2	2024.11.27	292	French Defense: MacCutcheon Variation, Tartakower Variation	3600+6
+KomodoDragon 3.3	Obsidian 14.06	3583	3555	1-0	TCEC Season 27 - Division P	4.4	2024.11.27	298	French Defense: Tarrasch Variation, Guimard Defense, Main Line	3600+6
+Obsidian 14.06	Seer 20241122	3555	3542	1-0	TCEC Season 27 - Division P	5.1	2024.11.27	386	Nimzo-Indian Defense: Normal Variation	3600+6
+Ethereal 14.40	KomodoDragon 3.3	3545	3583	1-0	TCEC Season 27 - Division P	5.2	2024.11.27	390	Nimzo-Indian Defense: Classical Variation	3600+6
+LCZero 0.31-dag-4167c1e-BT4-6147500-it332	Caissa 1.21.2	3648	3545	1-0	TCEC Season 27 - Division P	5.3	2024.11.27	276	Nimzo-Indian Defense: Rubinstein System	3600+6
+Gukesh D	Ding, Liren	2783	2728	1-0	FIDE World Championship Match 2024	3	2024.11.27	148	Queen's Pawn Game: Symmetrical Variation	40/7200:1800+30
+Berserk 20241119	KomodoDragon 3.3	3589	3583	1-0	TCEC Season 27 - Division P	7.3	2024.11.28	622	Queen's Pawn Game: Modern Defense	3600+6
+Stockfish dev-20241122-b7f17346	Caissa 1.21.2	3677	3545	1-0	TCEC Season 27 - Division P	7.4	2024.11.28	282	English Opening: Agincourt Defense	3600+6
+Stockfish dev-20241122-b7f17346	KomodoDragon 3.3	3677	3583	1-0	TCEC Season 27 - Division P	8.2	2024.11.28	422	King's Indian Defense: Makogonov Variation	3600+6
+LCZero 0.31-dag-4167c1e-BT4-6147500-it332	Ethereal 14.40	3648	3545	1-0	TCEC Season 27 - Division P	8.4	2024.11.28	298	King's Indian Defense: Orthodox Variation, Bayonet Attack, Sokolov's Line	3600+6
+LCZero 0.31-dag-4167c1e-BT4-6147500-it332	Seer 20241122	3648	3542	1-0	TCEC Season 27 - Division P	9.1	2024.11.28	342	Sicilian Defense: Najdorf Variation	3600+6
+Ethereal 14.40	Berserk 20241119	3545	3589	1-0	TCEC Season 27 - Division P	9.2	2024.11.28	334	Sicilian Defense: Kan Variation, Knight Variation	3600+6
+Obsidian 14.06	Stockfish dev-20241122-b7f17346	3555	3677	1-0	TCEC Season 27 - Division P	9.3	2024.11.28	266	Sicilian Defense: Scheveningen Variation	3600+6
+KomodoDragon 3.3	Caissa 1.21.2	3583	3545	1-0	TCEC Season 27 - Division P	9.4	2024.11.28	250	Sicilian Defense: Dragon Variation, Yugoslav Attack, Sosonko Variation	3600+6
+Stockfish dev-20241122-b7f17346	Ethereal 14.40	3677	3545	1-0	TCEC Season 27 - Division P	10.3	2024.11.29	304	Queen's Gambit Accepted: Linares Variation	3600+6
+Berserk 20241119	Seer 20241122	3589	3542	1-0	TCEC Season 27 - Division P	11.1	2024.11.29	286	French Defense: Steinitz Variation, Boleslavsky Variation	3600+6
+Obsidian 14.06	KomodoDragon 3.3	3555	3583	1-0	TCEC Season 27 - Division P	11.4	2024.11.29	340	French Defense: Tarrasch Variation, Guimard Defense, Main Line	3600+6
+KomodoDragon 3.3	Ethereal 14.40	3583	3545	1-0	TCEC Season 27 - Division P	12.2	2024.11.29	256	Nimzo-Indian Defense: Classical Variation	3600+6
+Stockfish dev-20241122-b7f17346	Berserk 20241119	3677	3589	1-0	TCEC Season 27 - Division P	12.4	2024.11.30	302	Nimzo-Indian Defense: Kmoch Variation	3600+6
+Stockfish dev-20241122-b7f17346	Seer 20241122	3677	3542	1-0	TCEC Season 27 - Division P	13.1	2024.11.30	302	Pirc Defense: Classical Variation	3600+6
+Berserk 20241119	Caissa 1.21.2	3589	3545	1-0	TCEC Season 27 - Division P	13.2	2024.11.30	458	Pirc Defense: Classical Variation	3600+6
+LCZero 0.31-dag-4167c1e-BT4-6147500-it332	KomodoDragon 3.3	3648	3583	1-0	TCEC Season 27 - Division P	13.3	2024.11.30	346	Pirc Defense: Austrian Attack	3600+6
+Seer 20241122	Ethereal 14.40	3542	3545	1-0	TCEC Season 27 - Division P	14.1	2024.11.30	346	Dutch Defense: Hopton Attack	3600+6
+Obsidian 14.06	Berserk 20241119	3555	3589	1-0	TCEC Season 27 - Division P	15.3	2024.12.01	384	Caro-Kann Defense: Endgame Offer	3600+6
+KomodoDragon 3.3	Seer 20241122	3583	3542	1-0	TCEC Season 27 - Division P	17.1	2024.12.01	382	Ruy Lopez: Closed, Chigorin Defense	3600+6
+KomodoDragon 3.3	Obsidian 14.06	3583	3555	1-0	TCEC Season 27 - Division P	18.4	2024.12.02	374	King's Indian Defense: Normal Variation, Standard Development	3600+6
+Obsidian 14.06	Seer 20241122	3555	3542	1-0	TCEC Season 27 - Division P	19.1	2024.12.02	306	Sicilian Defense: Richter-Rauzer Variation	3600+6
+LCZero 0.31-dag-4167c1e-BT4-6147500-it332	Caissa 1.21.2	3648	3545	1-0	TCEC Season 27 - Division P	19.3	2024.12.02	254	Sicilian Defense: Richter-Rauzer Variation, Modern Variation	3600+6
+Caissa 1.21.2	Berserk 20241119	3545	3589	1-0	TCEC Season 27 - Division P	20.2	2024.12.02	414	Queen's Indian Defense: Kasparov-Petrosian Variation, Hedgehog Variation	3600+6
+Obsidian 14.06	Ethereal 14.40	3555	3545	1-0	TCEC Season 27 - Division P	20.4	2024.12.02	374	Queen's Indian Defense: Kasparov-Petrosian Variation, Hedgehog Variation	3600+6
+Ethereal 14.40	Seer 20241122	3545	3542	1-0	TCEC Season 27 - Division P	21.1	2024.12.02	374	French Defense: Winawer Variation, Advance Variation	3600+6
+LCZero 0.31-dag-4167c1e-BT4-6147500-it332	Obsidian 14.06	3648	3555	1-0	TCEC Season 27 - Division P	21.2	2024.12.02	368	French Defense: Winawer Variation, Petrosian Variation	3600+6
+Berserk 20241119	KomodoDragon 3.3	3589	3583	1-0	TCEC Season 27 - Division P	21.3	2024.12.03	330	French Defense: Winawer Variation, Advance Variation	3600+6
+Stockfish dev-20241122-b7f17346	Caissa 1.21.2	3677	3545	1-0	TCEC Season 27 - Division P	21.4	2024.12.03	270	French Defense: Winawer Variation, Petrosian Variation	3600+6
+Stockfish dev-20241122-b7f17346	KomodoDragon 3.3	3677	3583	1-0	TCEC Season 27 - Division P	22.2	2024.12.03	366	Caro-Kann Defense: Karpov Variation	3600+6
+Berserk 20241119	Obsidian 14.06	3589	3555	1-0	TCEC Season 27 - Division P	22.3	2024.12.03	318	Caro-Kann Defense: Endgame Offer	3600+6
+LCZero 0.31-dag-4167c1e-BT4-6147500-it332	Ethereal 14.40	3648	3545	1-0	TCEC Season 27 - Division P	22.4	2024.12.03	290	Caro-Kann Defense: Advance Variation, Short Variation	3600+6
+LCZero 0.31-dag-4167c1e-BT4-6147500-it332	Seer 20241122	3648	3542	1-0	TCEC Season 27 - Division P	23.1	2024.12.03	410	English Opening: Symmetrical Variation, Rubinstein Variation	3600+6
+KomodoDragon 3.3	Caissa 1.21.2	3583	3545	1-0	TCEC Season 27 - Division P	23.4	2024.12.03	352	English Opening: Anglo-Indian Defense, Anglo-Grünfeld Variation	3600+6
+Stockfish dev-20241122-b7f17346	Ethereal 14.40	3677	3545	1-0	TCEC Season 27 - Division P	24.3	2024.12.04	282	Ruy Lopez: Bird Variation	3600+6
+Berserk 20241119	Seer 20241122	3589	3542	1-0	TCEC Season 27 - Division P	25.1	2024.12.04	338	King's Indian Defense: Orthodox Variation, Gligoric-Taimanov System	3600+6
+Obsidian 14.06	KomodoDragon 3.3	3555	3583	1-0	TCEC Season 27 - Division P	25.4	2024.12.04	310	King's Indian Defense: Normal Variation, Standard Development	3600+6
+Caissa 1.21.2	LCZero 0.31-dag-4167c1e-BT4-6147500-it332	3545	3648	1-0	TCEC Season 27 - Division P	26.3	2024.12.04	284	Sicilian Defense: Richter-Rauzer Variation, Modern Variation	3600+6
+Stockfish dev-20241122-b7f17346	Berserk 20241119	3677	3589	1-0	TCEC Season 27 - Division P	26.4	2024.12.04	338	Sicilian Defense: Richter-Rauzer Variation, Modern Variation	3600+6
+Stockfish dev-20241122-b7f17346	Seer 20241122	3677	3542	1-0	TCEC Season 27 - Division P	27.1	2024.12.05	346	Queen's Indian Defense: Fianchetto Variation, Nimzowitsch Variation, Timman's Line	3600+6
+Obsidian 14.06	LCZero 0.31-dag-4167c1e-BT4-6147500-it332	3555	3648	1-0	TCEC Season 27 - Division P	28.2	2024.12.05	292	French Defense: Winawer Variation, Petrosian Variation	3600+6
+KomodoDragon 3.3	Stockfish dev-20241122-b7f17346	3583	3677	1-0	TCEC Season 27 - Division P	29.2	2024.12.05	282	Modern Defense	3600+6
+Obsidian 14.06	Berserk 20241119	3555	3589	1-0	TCEC Season 27 - Division P	29.3	2024.12.05	300	Indian Defense: Normal Variation	3600+6
+Seer 20241122	LCZero 0.31-dag-4167c1e-BT4-6147500-it332	3542	3648	0-1	TCEC Season 27 - Division P	30.1	2024.12.06	256	King's Gambit Accepted: Schallopp Defense	3600+6
+KomodoDragon 3.3	Seer 20241122	3583	3542	1-0	TCEC Season 27 - Division P	31.1	2024.12.06	346	Queen's Pawn Game	3600+6
+LCZero 0.31-dag-4167c1e-BT4-6147500-it332	Berserk 20241119	3648	3589	1-0	TCEC Season 27 - Division P	31.4	2024.12.06	358	Indian Defense: Wade-Tartakower Defense	3600+6
+Stockfish dev-20241122-b7f17346	LCZero 0.31-dag-4167c1e-BT4-6147500-it332	3677	3648	1-0	TCEC Season 27 - Division P	32.2	2024.12.06	352	Sicilian Defense: Dragon Variation, Yugoslav Attack, Early Deviations	3600+6
+Obsidian 14.06	Seer 20241122	3555	3542	1-0	TCEC Season 27 - Division P	33.1	2024.12.07	314	King's Indian Defense: Kramer Variation	3600+6
+Ethereal 14.40	KomodoDragon 3.3	3545	3583	1-0	TCEC Season 27 - Division P	33.2	2024.12.07	574	Indian Defense: Anti-Grünfeld, Alekhine Variation	3600+6
+Ethereal 14.40	Seer 20241122	3545	3542	1-0	TCEC Season 27 - Division P	35.1	2024.12.07	382	Benko Gambit Accepted: Dlugy Variation	3600+6
+LCZero 0.31-dag-4167c1e-BT4-6147500-it332	Obsidian 14.06	3648	3555	1-0	TCEC Season 27 - Division P	35.2	2024.12.07	330	Benko Gambit Accepted: Fully Accepted Variation	3600+6
+Stockfish dev-20241122-b7f17346	Caissa 1.21.2	3677	3545	1-0	TCEC Season 27 - Division P	35.4	2024.12.08	318	Benko Gambit Declined: Main Line	3600+6
+Adams, Michael	Firouzja, Alireza	2704	2871	1-0	Round 1: Adams, Michael - Firouzja, Alireza	1.3	2024-12-07	230	Philidor Defense: Hanham Variation, Schlechter Variation	
+Adams, Michael	Vachier-Lagrave, Maxime	2704	2776	0-1	Round 5: Adams, Michael - Vachier-Lagrave, Maxime	5.1	2024-12-07	292	Sicilian Defense: Modern Variations	
+Stockfish dev-20241122-b7f17346	KomodoDragon 3.3	3677	3583	1-0	TCEC Season 27 - Division P	36.2	2024.12.08	330	Modern Defense	3600+6
+Berserk 20241119	Obsidian 14.06	3589	3555	1-0	TCEC Season 27 - Division P	36.3	2024.12.08	350	Indian Defense: Normal Variation	3600+6
+LCZero 0.31-dag-4167c1e-BT4-6147500-it332	Ethereal 14.40	3648	3545	1-0	TCEC Season 27 - Division P	36.4	2024.12.08	350	Indian Defense: Anti-Nimzo-Indian	3600+6
+KomodoDragon 3.3	Caissa 1.21.2	3583	3545	1-0	TCEC Season 27 - Division P	37.4	2024.12.08	352	Italian Game: Giuoco Piano	3600+6
+Gukesh D	Ding, Liren	2783	2728	1-0	FIDE World Championship Match 2024	11	2024.12.08	114	Réti Opening: Reversed Blumenfeld Gambit	40/7200:1800+30
+Caissa 1.21.2	Obsidian 14.06	3545	3555	1-0	TCEC Season 27 - Division P	38.2	2024.12.08	318	French Defense: Chigorin Variation	3600+6
+Stockfish dev-20241122-b7f17346	Ethereal 14.40	3677	3545	1-0	TCEC Season 27 - Division P	38.3	2024.12.09	430	Old Indian Defense: Janowski Variation, Fianchetto Variation	3600+6
+Berserk 20241119	Seer 20241122	3589	3542	1-0	TCEC Season 27 - Division P	39.1	2024.12.09	306	Sicilian Defense: Scheveningen Variation, English Attack, with f3	3600+6
+Ethereal 14.40	Caissa 1.21.2	3545	3545	1-0	TCEC Season 27 - Division P	39.3	2024.12.09	238	Sicilian Defense: Scheveningen Variation, Matanovic Attack	3600+6
+KomodoDragon 3.3	Ethereal 14.40	3583	3545	1-0	TCEC Season 27 - Division P	40.2	2024.12.09	606	Indian Defense: Anti-Grünfeld, Alekhine Variation	3600+6
+Stockfish dev-20241122-b7f17346	Berserk 20241119	3677	3589	1-0	TCEC Season 27 - Division P	40.4	2024.12.09	382	Indian Defense: Anti-Grünfeld, Alekhine Variation	3600+6
+Ding, Liren	Gukesh D	2728	2783	1-0	FIDE World Championship Match 2024	12	2024.12.09	154	English Opening: Agincourt Defense	40/7200:1800+30
+Stockfish dev-20241122-b7f17346	Seer 20241122	3677	3542	1-0	TCEC Season 27 - Division P	41.1	2024.12.09	330	Pterodactyl Defense: Western, Rhamphorhynchus	3600+6
+LCZero 0.31-dag-4167c1e-BT4-6147500-it332	KomodoDragon 3.3	3648	3583	1-0	TCEC Season 27 - Division P	41.3	2024.12.10	414	Modern Defense	3600+6
+Berserk 20241119	Ethereal 14.40	3589	3545	1-0	TCEC Season 27 - Division P	44.2	2024.12.11	328	Old Indian Defense	3600+6
+KomodoDragon 3.3	Seer 20241122	3583	3542	1-0	TCEC Season 27 - Division P	45.1	2024.12.11	226	French Defense: Winawer Variation, Eingorn Variation	3600+6
+LCZero 0.31-dag-4167c1e-BT4-6147500-it332	Berserk 20241119	3648	3589	1-0	TCEC Season 27 - Division P	45.4	2024.12.11	370	French Defense: Winawer Variation, Petrosian Variation	3600+6
+Stockfish dev-20241122-b7f17346	LCZero 0.31-dag-4167c1e-BT4-6147500-it332	3677	3648	1-0	TCEC Season 27 - Division P	46.2	2024.12.11	386	Kangaroo Defense	3600+6
+KomodoDragon 3.3	Obsidian 14.06	3583	3555	1-0	TCEC Season 27 - Division P	46.4	2024.12.11	394	Kangaroo Defense	3600+6
+Obsidian 14.06	Seer 20241122	3555	3542	1-0	TCEC Season 27 - Division P	47.1	2024.12.12	322	Ruy Lopez: Closed, Chigorin Defense	3600+6
+LCZero 0.31-dag-4167c1e-BT4-6147500-it332	Caissa 1.21.2	3648	3545	1-0	TCEC Season 27 - Division P	47.3	2024.12.12	350	Ruy Lopez: Closed, Chigorin Defense	3600+6
+KomodoDragon 3.3	LCZero 0.31-dag-4167c1e-BT4-6147500-it332	3583	3648	1-0	TCEC Season 27 - Division P	48.3	2024.12.12	318	King's Indian Defense: Sämisch Variation, Closed Variation	3600+6
+Ding, Liren	Gukesh D	2728	2783	0-1	FIDE World Championship Match 2024	14	2024.12.12	232	Zukertort Opening: Reversed Grünfeld	40/7200:1800+30
+Ethereal 14.40	Seer 20241122	3545	3542	1-0	TCEC Season 27 - Division P	49.1	2024.12.12	306	Sicilian Defense: Najdorf Variation	3600+6
+LCZero 0.31-dag-4167c1e-BT4-6147500-it332	Obsidian 14.06	3648	3555	1-0	TCEC Season 27 - Division P	49.2	2024.12.12	378	Sicilian Defense: Najdorf Variation	3600+6
+Berserk 20241119	KomodoDragon 3.3	3589	3583	1-0	TCEC Season 27 - Division P	49.3	2024.12.12	278	Sicilian Defense: Najdorf Variation	3600+6
+Stockfish dev-20241122-b7f17346	Caissa 1.21.2	3677	3545	1-0	TCEC Season 27 - Division P	49.4	2024.12.12	234	Sicilian Defense: Najdorf Variation	3600+6
+Seer 20241122	Caissa 1.21.2	3542	3545	1-0	TCEC Season 27 - Division P	50.1	2024.12.13	376	Alekhine Defense: Modern Variation, Main Line	3600+6
+Stockfish dev-20241122-b7f17346	KomodoDragon 3.3	3677	3583	1-0	TCEC Season 27 - Division P	50.2	2024.12.13	338	Nimzowitsch Defense: Williams Variation	3600+6
+LCZero 0.31-dag-4167c1e-BT4-6147500-it332	Ethereal 14.40	3648	3545	1-0	TCEC Season 27 - Division P	50.4	2024.12.13	374	Alekhine Defense: Modern Variation, Alburt Variation	3600+6
+LCZero 0.31-dag-4167c1e-BT4-6147500-it332	Seer 20241122	3648	3542	1-0	TCEC Season 27 - Division P	51.1	2024.12.13	314	Old Indian Defense: Normal Variation	3600+6
+Seer 20241122	KomodoDragon 3.3	3542	3583	1-0	TCEC Season 27 - Division P	52.1	2024.12.13	398	French Defense: Winawer Variation, Eingorn Variation	3600+6
+Stockfish dev-20241122-b7f17346	Ethereal 14.40	3677	3545	1-0	TCEC Season 27 - Division P	52.3	2024.12.13	286	French Defense: Tarrasch Variation, Guimard Defense, Main Line	3600+6
+Berserk 20241119	LCZero 0.31-dag-4167c1e-BT4-6147500-it332	3589	3648	1-0	TCEC Season 27 - Division P	52.4	2024.12.14	270	French Defense: Winawer Variation, Petrosian Variation	3600+6
+Berserk 20241119	Seer 20241122	3589	3542	1-0	TCEC Season 27 - Division P	53.1	2024.12.14	326	Kangaroo Defense	3600+6
+Stockfish dev-20241122-b7f17346	Berserk 20241119	3677	3589	1-0	TCEC Season 27 - Division P	54.4	2024.12.14	350	Ruy Lopez: Closed, Chigorin Defense	3600+6
+Stockfish dev-20241122-b7f17346	Seer 20241122	3677	3542	1-0	TCEC Season 27 - Division P	55.1	2024.12.14	370	King's Indian Defense: Sämisch Variation, Closed Variation	3600+6
+Berserk 20241119	Caissa 1.21.2	3589	3545	1-0	TCEC Season 27 - Division P	55.2	2024.12.15	304	King's Indian Defense: Sämisch Variation, Closed Variation	3600+6
+LCZero 0.31-dag-4167c1e-BT4-6147500-it332	KomodoDragon 3.3	3648	3583	1-0	TCEC Season 27 - Division P	55.3	2024.12.15	306	King's Indian Defense: Sämisch Variation, Closed Variation	3600+6
+Ethereal 14.40	Obsidian 14.06	3545	3555	1-0	TCEC Season 27 - Division P	55.4	2024.12.15	342	King's Indian Defense: Sämisch Variation, Closed Variation	3600+6
+KomodoDragon 3.3	Berserk 20241119	3583	3589	1-0	TCEC Season 27 - Division P	56.3	2024.12.15	344	Sicilian Defense: Najdorf Variation	3600+6
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	2.1	2024.12.16	304	Alekhine Defense: Modern Variation, Main Line	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	4.1	2024.12.16	374	Nimzo-Indian Defense: Rubinstein System, Rubinstein Variation, Main Line	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Superfinal	7.1	2024.12.17	374	Torre Attack: Classical Defense	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	10.1	2024.12.17	262	Queen's Gambit Declined	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Superfinal	11.1	2024.12.17	374	French Defense: Winawer Variation, Advance Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	14.1	2024.12.18	284	King's Indian Defense: Orthodox Variation, Classical System	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	20.1	2024.12.19	336	Modern Defense: Averbakh System	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Superfinal	21.1	2024.12.19	264	Queen's Indian Defense: Fianchetto Variation, Nimzowitsch Variation, Nimzowitsch Attack	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	24.1	2024.12.20	302	Benoni Defense: Czech Benoni Defense	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	26.1	2024.12.20	442	Queen's Indian Accelerated	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	28.1	2024.12.21	254	Scandinavian Defense: Modern Variation	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Superfinal	33.1	2024.12.22	366	Pirc Defense: Austrian Attack, Dragon Formation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	34.1	2024.12.22	210	Pirc Defense: Austrian Attack, Dragon Formation	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Superfinal	35.1	2024.12.22	274	Slav Defense: Steiner Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	36.1	2024.12.22	374	Slav Defense: Steiner Variation	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Superfinal	37.1	2024.12.22	494	Benoni Defense: Hromádka System	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Superfinal	39.1	2024.12.23	344	Zukertort Opening: Kingside Fianchetto	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	40.1	2024.12.23	450	Zukertort Opening: Kingside Fianchetto	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	42.1	2024.12.23	252	Alekhine Defense: Modern Variation, Flohr Variation	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Superfinal	43.1	2024.12.23	256	Catalan Opening: Open Defense	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	44.1	2024.12.24	312	Catalan Opening: Open Defense	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	46.1	2024.12.24	264	Sicilian Defense: Scheveningen Variation, Keres Attack	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Superfinal	47.1	2024.12.24	322	French Defense: Winawer Variation, Advance Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	48.1	2024.12.24	350	French Defense: Winawer Variation, Advance Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	52.1	2024.12.25	318	Queen's Pawn Game: Krause Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	54.1	2024.12.25	270	Vienna Game: Anderssen Defense	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Superfinal	55.1	2024.12.25	214	Nimzo-Indian Defense: Sämisch Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	56.1	2024.12.26	226	Nimzo-Indian Defense: Sämisch Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	58.1	2024.12.26	338	Ruy Lopez: Closed, Flohr System	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Superfinal	59.1	2024.12.26	294	King's Indian Defense: Fianchetto Variation, Classical Fianchetto	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	60.1	2024.12.26	386	King's Indian Defense: Fianchetto Variation, Classical Fianchetto	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Superfinal	63.1	2024.12.27	364	French Defense: Tarrasch Variation, Pawn Center Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	64.1	2024.12.27	290	French Defense: Tarrasch Variation, Pawn Center Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	68.1	2024.12.28	298	Ruy Lopez: Exchange Variation, Bronstein Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	70.1	2024.12.28	406	Sicilian Defense: Najdorf Variation	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Superfinal	71.1	2024.12.28	350	King's Indian Defense	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	72.1	2024.12.29	362	King's Indian Defense	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Superfinal	73.1	2024.12.29	442	Ruy Lopez: Closed, Chigorin Defense	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	74.1	2024.12.29	342	Ruy Lopez: Closed, Chigorin Defense	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Superfinal	75.1	2024.12.29	326	Caro-Kann Defense: Two Knights Attack	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	76.1	2024.12.29	248	Caro-Kann Defense: Two Knights Attack	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Superfinal	79.1	2024.12.30	312	Benoni Defense: Taimanov Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	80.1	2024.12.30	252	Benoni Defense: Taimanov Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	82.1	2024.12.30	330	Sicilian Defense: Richter-Rauzer Variation, Classical Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	84.1	2024.12.31	376	Pirc Defense: Classical Variation, Quiet System, Czech Defense	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Superfinal	85.1	2024.12.31	370	English Opening	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	86.1	2024.12.31	346	English Opening	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Superfinal	87.1	2024.12.31	334	French Defense: Winawer Variation, Advance Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	88.1	2024.12.31	248	French Defense: Winawer Variation, Advance Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	90.1	2025.01.01	440	Ruy Lopez: Open, Bernstein Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	92.1	2025.01.01	242	King's Indian Defense: Steiner Attack	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Superfinal	94.1	2025.01.02	334	Sicilian Defense: Scheveningen Variation, Classical Variation	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	0-1	TCEC Season 27 - Superfinal	97.1	2025.01.02	248	Alekhine Defense: Maróczy Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	1.1	2025.01.03	338	Alekhine Defense: Modern Variation, Main Line	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	3.1	2025.01.03	474	Nimzo-Indian Defense: Rubinstein System, Rubinstein Variation, Main Line	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	7.1	2025.01.04	458	Torre Attack: Classical Defense	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	8.1	2025.01.04	480	Torre Attack: Classical Defense	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	9.1	2025.01.04	446	Queen's Gambit Declined	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	12.1	2025.01.05	342	French Defense: Winawer Variation, Advance Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	13.1	2025.01.05	414	King's Indian Defense: Orthodox Variation, Classical System	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	15.1	2025.01.05	386	Old Indian Defense: Tartakower-Indian	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	17.1	2025.01.06	358	Sicilian Defense: Dragon Variation, Yugoslav Attack, Old Line	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	19.1	2025.01.06	312	Modern Defense: Averbakh System	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	20.1	2025.01.06	274	Modern Defense: Averbakh System	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	21.1	2025.01.06	288	Queen's Indian Defense: Fianchetto Variation, Nimzowitsch Variation, Nimzowitsch Attack	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	23.1	2025.01.07	358	Benoni Defense: Czech Benoni Defense	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	24.1	2025.01.07	274	Benoni Defense: Czech Benoni Defense	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	25.1	2025.01.07	486	Queen's Indian Accelerated	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	27.1	2025.01.07	448	Scandinavian Defense: Modern Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	31.1	2025.01.08	242	King's Indian Defense: Fianchetto Variation, Simagin Variation	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	32.1	2025.01.08	310	King's Indian Defense: Fianchetto Variation, Simagin Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	33.1	2025.01.09	214	Pirc Defense: Austrian Attack, Dragon Formation	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	34.1	2025.01.09	250	Pirc Defense: Austrian Attack, Dragon Formation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	35.1	2025.01.09	560	Slav Defense: Steiner Variation	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	36.1	2025.01.09	476	Slav Defense: Steiner Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	37.1	2025.01.09	454	Benoni Defense: Hromádka System	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	39.1	2025.01.10	254	Zukertort Opening: Kingside Fianchetto	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	40.1	2025.01.10	292	Zukertort Opening: Kingside Fianchetto	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	41.1	2025.01.10	322	Alekhine Defense: Modern Variation, Flohr Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	43.1	2025.01.10	394	Catalan Opening: Open Defense	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	46.1	2025.01.11	308	Sicilian Defense: Scheveningen Variation, Keres Attack	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	47.1	2025.01.11	418	French Defense: Winawer Variation, Advance Variation	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	48.1	2025.01.11	266	French Defense: Winawer Variation, Advance Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	51.1	2025.01.12	450	Queen's Pawn Game: Krause Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	53.1	2025.01.12	298	Vienna Game: Anderssen Defense	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	55.1	2025.01.13	262	Nimzo-Indian Defense: Sämisch Variation	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	56.1	2025.01.13	298	Nimzo-Indian Defense: Sämisch Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	59.1	2025.01.13	394	King's Indian Defense: Fianchetto Variation, Classical Fianchetto	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	60.1	2025.01.14	310	King's Indian Defense: Fianchetto Variation, Classical Fianchetto	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	65.1	2025.01.15	434	Nimzo-Indian Defense: Sämisch Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	67.1	2025.01.15	320	Ruy Lopez: Exchange Variation, Bronstein Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	71.1	2025.01.16	394	King's Indian Defense	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	72.1	2025.01.16	366	King's Indian Defense	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	73.1	2025.01.16	370	Ruy Lopez: Closed, Chigorin Defense	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	75.1	2025.01.16	362	Caro-Kann Defense: Two Knights Attack	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	79.1	2025.01.17	326	Benoni Defense: Taimanov Variation	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	80.1	2025.01.17	286	Benoni Defense: Taimanov Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	81.1	2025.01.17	360	Sicilian Defense: Richter-Rauzer Variation, Classical Variation	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	82.1	2025.01.18	326	Sicilian Defense: Richter-Rauzer Variation, Classical Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	85.1	2025.01.18	358	English Opening	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	86.1	2025.01.18	274	English Opening	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	87.1	2025.01.19	304	French Defense: Winawer Variation, Advance Variation	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	88.1	2025.01.19	316	French Defense: Winawer Variation, Advance Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	89.1	2025.01.19	298	Ruy Lopez: Open, Bernstein Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	91.1	2025.01.19	506	King's Indian Defense: Steiner Attack	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	92.1	2025.01.19	346	King's Indian Defense: Steiner Attack	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	93.1	2025.01.20	310	Sicilian Defense: Scheveningen Variation, Classical Variation	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	94.1	2025.01.20	346	Sicilian Defense: Scheveningen Variation, Classical Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	95.1	2025.01.20	566	Modern Defense: Averbakh System	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	96.1	2025.01.20	276	Modern Defense: Averbakh System	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	0-1	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	97.1	2025.01.20	280	Alekhine Defense: Maróczy Variation	7200+12
+Stockfish dev-20241208-cf10644d	LCZero 0.31-dag-f7fb268-BT4-6147500-it332	3683	3652	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	99.1	2025.01.21	406	King's Indian Defense: Orthodox Variation, Modern System	7200+12
+LCZero 0.31-dag-f7fb268-BT4-6147500-it332	Stockfish dev-20241208-cf10644d	3652	3683	1-0	TCEC Season 27 - Altsufi Kibitzer Ponder Bonus	100.1	2025.01.21	282	King's Indian Defense: Orthodox Variation, Modern System	7200+12
+Gukesh D	Giri, Anish	2777	2731	1-0	Tata Steel Chess Tournament 2025 Masters	1.4	2025.01.18	166	Zukertort Opening: Reversed Grünfeld	
+Praggnanandhaa R	Erigaisi Arjun	2741	2801	1-0	Tata Steel Chess Tournament 2025 Masters	3.3	2025.01.20	238	Catalan Opening: Open Defense	
+Erigaisi Arjun	Fedoseev, Vladimir	2801	2717	0-1	Tata Steel Chess Tournament 2025 Masters	4.7	2025.01.21	156	Queen's Gambit Declined: Three Knights Variation	
+Fedoseev, Vladimir	Caruana, Fabiano	2717	2803	1-0	Tata Steel Chess Tournament 2025 Masters	5.3	2025.01.22	238	Queen's Gambit Declined: Ragozin Defense	
+Gukesh D	Keymer, Vincent	2777	2733	1-0	Tata Steel Chess Tournament 2025 Masters	5.6	2025.01.22	286	Nimzo-Indian Defense: Normal Variation	
+Fedoseev, Vladimir	Keymer, Vincent	2717	2733	1-0	Tata Steel Chess Tournament 2025 Masters	7.6	2025.01.25	202	Semi-Slav Defense	
+Keymer, Vincent	Caruana, Fabiano	2733	2803	0-1	Tata Steel Chess Tournament 2025 Masters	8.6	2025.01.26	240	Queen's Gambit Declined: Exchange Variation, Positional Variation	
+Giri, Anish	Praggnanandhaa R	2731	2741	1-0	Tata Steel Chess Tournament 2025 Masters	9.5	2025.01.28	250	Indian Defense: Anti-Nimzo-Indian	
+Praggnanandhaa R	Fedoseev, Vladimir	2741	2717	1-0	Tata Steel Chess Tournament 2025 Masters	10.3	2025.01.29	178	Tarrasch Defense: Two Knights Variation	
+Caruana, Fabiano	Praggnanandhaa R	2803	2741	0-1	Tata Steel Chess Tournament 2025 Masters	11.5	2025.01.31	148	Queen's Gambit Declined: Exchange Variation, Positional Variation	
+Gukesh D	Carlsen, Magnus	2776	2837	1-0	Norway Chess 2025	11.3		246	Ruy Lopez: Berlin Defense	
+Erigaisi Arjun	Wei, Yi	2782	2758	1-0	Norway Chess 2025	12.1		138	Queen's Gambit Declined: Semi-Tarrasch Defense	
+Gukesh D	Erigaisi Arjun	2776	2782	1-0	Norway Chess 2025	13.1		366	Pirc Defense: Classical Variation	
+Caruana, Fabiano	Wei, Yi	2777	2758	1-0	Norway Chess 2025	13.3		218	Zukertort Opening	
+Carlsen, Magnus	Nakamura, Hikaru	2837	2804	1-0	Norway Chess 2025	14.2		158	Slav Defense: Two Knights Attack	
+Erigaisi Arjun	Caruana, Fabiano	2782	2777	1-0	Norway Chess 2025	15.1		282	Queen's Gambit Declined: Ragozin Defense	
+Nakamura, Hikaru	Gukesh D	2804	2776	1-0	Norway Chess 2025	15.3		198	Scotch Game: Schmidt Variation	
+Wei, Yi	Carlsen, Magnus	2758	2837	1-0	Norway Chess 2025	16.2		186	Bishop's Opening: Berlin Defense	
+Gukesh D	Wei, Yi	2776	2758	1-0	Norway Chess 2025	17.2		158	Petrov's Defense: Nimzowitsch Attack	
+Carlsen, Magnus	Caruana, Fabiano	2837	2777	1-0	Norway Chess 2025	17.3		206	Catalan Opening: Open Defense, Classical Line	
+Nakamura, Hikaru	Erigaisi Arjun	2804	2782	1-0	Norway Chess 2025	18.1		190	Ruy Lopez: Classical Variation, Central Variation	
+Caruana, Fabiano	Gukesh D	2777	2776	1-0	Norway Chess 2025	19.2		198	Italian Game: Two Knights Defense, Modern Bishop's Opening	
+Erigaisi Arjun	Carlsen, Magnus	2782	2837	1-0	Norway Chess 2025	20.1		134	King's Indian Defense: Normal Variation, Standard Development	
+Wei, Yi	Nakamura, Hikaru	2758	2804	1-0	Norway Chess 2025	20.3		136	Bishop's Opening: Berlin Defense	
+Nepomniachtchi, Ian	Sindarov, Javokhir	2757	2710	0-1	Round 1: Nepomniachtchi, Ian - Sindarov, Javokhir	1.4		168	Italian Game: Classical Variation, Giuoco Pianissimo, with h6	
+Abdusattorov, Nodirbek	Rapport, Richard	2767	2714	1-0	Round 3: Abdusattorov, Nodirbek - Rapport, Richard	3.4		214	Sicilian Defense: Sozin Attack, Main Line	
+Praggnanandhaa R	Sindarov, Javokhir	2767	2710	1-0	Round 4: Praggnanandhaa R - Sindarov, Javokhir	4.1		178	Semi-Slav Defense	
+Abdusattorov, Nodirbek	Aravindh, Chithambaram VR.	2767	2749	1-0	Round 5: Abdusattorov, Nodirbek - Aravindh, Chithambaram VR.	5.3		130	English Opening: Great Snake Variation	
+Sindarov, Javokhir	Rapport, Richard	2710	2714	1-0	Round 5: Sindarov, Javokhir - Rapport, Richard	5.5		222	Benoni Defense	
+Praggnanandhaa R	Rapport, Richard	2767	2714	0-1	Round 6: Praggnanandhaa R - Rapport, Richard	6.1		148	King's Indian Defense: Sämisch Variation, Bobotsov-Korchnoi-Petrosian Variation	
+Sindarov, Javokhir	Aravindh, Chithambaram VR.	2710	2749	1-0	Round 7: Sindarov, Javokhir - Aravindh, Chithambaram VR.	7.4		166	King's Indian Defense: Petrosian Variation, Stein Defense	
+Praggnanandhaa R	Erigaisi Arjun	2767	2782	1-0	Round 8: Praggnanandhaa R - Erigaisi Arjun	8.1		114	English Opening: Adorjan Defense	
+Aravindh, Chithambaram VR.	Rapport, Richard	2749	2714	0-1	Round 8: Aravindh, Chithambaram VR. - Rapport, Richard	8.2		176	Sicilian Defense: Kan Variation, Polugaevsky Variation	
+Abdusattorov, Nodirbek	Praggnanandhaa R	2767	2767	0-1	Round 9: Abdusattorov, Nodirbek - Praggnanandhaa R	9.1		196	Sicilian Defense: Four Knights Variation	
+Praggnanandhaa R	Abdusattorov, Nodirbek	2767	2767	1-0	Tiebreak: Praggnanandhaa R - Abdusattorov, Nodirbek	11.1		162	Queen's Pawn Game: Colle System, Anti-Colle	
+Sindarov, Javokhir	Praggnanandhaa R	2710	2767	1-0	Tiebreak: Sindarov, Javokhir - Praggnanandhaa R	12.1		266	Scandinavian Defense: Main Line	
+Abdusattorov, Nodirbek	Praggnanandhaa R	2767	2767	1-0	Tiebreak: Abdusattorov, Nodirbek - Praggnanandhaa R	14.1		408	King's Knight Opening: Konstantinopolsky	
+Praggnanandhaa R	Sindarov, Javokhir	2767	2710	1-0	Tiebreak: Praggnanandhaa R - Sindarov, Javokhir	15.1		150	King's Indian Defense: Normal Variation, King's Knight Variation	
+Sindarov, Javokhir	Praggnanandhaa R	2710	2767	0-1	Tiebreak 2: Sindarov, Javokhir - Praggnanandhaa R	17.1		202	Scandinavian Defense: Main Line	
+Abdusattorov, Nodirbek	Sindarov, Javokhir	2767	2710	0-1	Tiebreak 2: Abdusattorov, Nodirbek - Sindarov, Javokhir	18.1		172	King's Knight Opening: Konstantinopolsky	
