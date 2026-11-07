@@ -372,7 +372,10 @@ footer .inner{padding-block:18px;font-size:.85rem;color:var(--muted)}
 .wbar{flex:0 1 220px;height:5px;border-radius:3px;background:var(--line);overflow:hidden}.wbar i{display:block;height:100%;background:var(--blue-bg)}
 .wabm{margin:4px 0 6px;padding-left:18px}.watags summary{cursor:pointer}
 a.drill{text-decoration:none}
-@media (min-width:861px) and (max-width:1240px){.tabs button{padding:13px 7px;font-size:.88rem}.tabs .setlab{display:none}}
+@media (min-width:861px){.tabs .setlab{display:none}}
+@media (min-width:861px) and (max-width:1320px){.tabs button{padding:13px 7px;font-size:.88rem}}
+@media (min-width:861px) and (max-width:1120px){.tabs button{padding:13px 4px;font-size:.84rem}.tabs .inner{gap:2px}}
+@media (min-width:861px) and (max-width:960px){.tabs button{padding:13px 3px;font-size:.8rem}}   /* 13 tabs since Players + Watch: no sideways scroll above 860 px (Settings = the gear, labelled for screen readers) */
 /* board display settings */
 body.no-coords .coord{display:none}body.no-last .sq.last{background:none}body.no-dests .sq.tgt::after{display:none}body.no-dests .sq.tgt:hover{background:none}
 .npgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}#o-npboard{max-width:420px}
