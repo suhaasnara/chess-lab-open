@@ -452,6 +452,10 @@ function init(){
   syncLevel();
   function modeBtns(){ const t=training(); $('o-rated').setAttribute('aria-pressed',String(!t)); $('o-training').setAttribute('aria-pressed',String(t)); renderSide() }
   modeBtns();
+  // the type-a-move box is hidden by default (keeps the board and its buttons on screen); the choice is remembered
+  const typeOn=on=>{ $('o-moveform').hidden=!on; $('o-type').setAttribute('aria-pressed',String(on)); try{ localStorage.setItem('clo-typing',on?'1':'0') }catch(e){} };
+  try{ if(localStorage.getItem('clo-typing')==='1') typeOn(true) }catch(e){}
+  $('o-type').addEventListener('click',()=>{ const on=$('o-moveform').hidden; typeOn(on); if(on) $('o-movein').focus() });
   $('o-moveform').addEventListener('submit',e=>{
     e.preventDefault(); const txt=$('o-movein').value; $('o-moveerr').textContent='';
     if(!txt.trim())return;

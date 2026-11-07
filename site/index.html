@@ -134,9 +134,10 @@
         <button class="btn sm primary" id="o-newline">Next line <kbd>N</kbd></button>
         <button class="btn sm" id="o-hint">Hint <kbd>H</kbd></button>
         <button class="btn sm" id="o-flip">Flip <kbd>F</kbd></button>
+        <button class="btn sm icon" id="o-type" type="button" aria-pressed="false" aria-controls="o-moveform" title="Type moves instead of dragging" aria-label="Type a move">&#9000;</button>
         <a class="btn sm" id="o-lichess" target="_blank" rel="noopener">Lichess &#8599;</a>
       </div>
-      <form class="moveform" id="o-moveform">
+      <form class="moveform" id="o-moveform" hidden>
         <div class="moverow"><input id="o-movein" placeholder="Type a move (Nf3, e4, O-O)" aria-label="Type a move"><button class="btn">Play</button></div>
         <p class="note err" id="o-moveerr"></p>
       </form>
