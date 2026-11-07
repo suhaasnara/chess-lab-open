@@ -16,6 +16,7 @@ This file records where the two stand (as of the `parity-1` branch, November 202
 | Move marks and evaluation signs | `$1`–`$19`, `$146` and the rest as !, ?, !!, ??, !?, ?!, □, =, ∞, ⩲, ⩱, ±, ∓, +−, −+, N … beside the moves of imported repertoires and Guess-the-move games. |
 | Dark mode | Settings → Theme. Only colour variables change (`--head`, `--on-navy`, `--blue-bg` as in the private site). Open defaults to Match device; the private site defaults to Light. Dark text colours are checked for 4.5:1 contrast in the tests. |
 | Opening trainer | Rated/Training, opponent level 1000 → Elite, rating v2, line length, the PGN's own notes beside the move list (Training live, Rated at the end), take back, ← → through the line, Arrange, start lines per repertoire, Sidelines in repertoires (Realistic / Balanced / Sidelines first, the same weighting: share × games that stay in your file, recent-line damping, missed lines first), trappy opponent, minimum share, eval bar, Stockfish info after a line, Statistics with the average end-of-line eval. FEN-start PGNs. |
+| Custom positions | "+ New position" (both sides' moves or a FEN, name, side; rename/edit, delete), "Save this position" from the trainer, and "Anything as White / Black" from move 1. Stored as `custom-<id>` like the private site's custom openings, in localStorage and the progress export. |
 | Players | Same idea and the same sheet shape, on the visitor's data: any Lichess or Chess.com username, games fetched by the browser. What they play with each colour, an explorer board, Train vs (their moves while their games go, then the book), a printable pre-round sheet with the line to expect against your imported repertoire. |
 | Watch | Same library logic (series, Resume/Continue, position, watched, Watched up to here, notes with timestamp links, bookmarks, tag edits, deep links and no embeds), on videos the visitor adds. |
 | Guess the move | Scoring, notes after each move, Show the game, arrows keys, eval graph; plus your own PGNs (notes, side lines, marks, arrows), judged live by Stockfish. |
@@ -42,7 +43,7 @@ These would fit Open as they are; they were left for a later pass:
 1. **Board and input settings**: piece animation speed, coordinates on/off, last-move and move-dot toggles, board
    size, sounds, opponent delay, auto-next after a clean line.
 2. **Opening trainer extras**: "Never play this reply" (skip a reply in a repertoire), a review queue of your
-   repertoire mistakes, custom openings from a position ("+ New opening"), "Play as" the other side of a preset,
+   repertoire mistakes, "Play as" the other side of a preset,
    captured pieces beside the board, the move-list eval column, "Show mistakes after a line" (all / mistakes only).
 3. **Players**: opening names per line in the explorer, a rating/time-window filter, and your own notes on a player.
 4. **Watch on Today**: the private site's balanced daily plan (resume + one video from two other topics). Open shows

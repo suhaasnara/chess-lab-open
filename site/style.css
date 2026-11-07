@@ -375,3 +375,6 @@ a.drill{text-decoration:none}
 @media (min-width:861px) and (max-width:1240px){.tabs button{padding:13px 7px;font-size:.88rem}.tabs .setlab{display:none}}
 /* board display settings */
 body.no-coords .coord{display:none}body.no-last .sq.last{background:none}body.no-dests .sq.tgt::after{display:none}body.no-dests .sq.tgt:hover{background:none}
+.npgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}#o-npboard{max-width:420px}
+@media (max-width:700px){.npgrid{grid-template-columns:minmax(0,1fr)}}
+.drill.newpos{border-style:dashed}

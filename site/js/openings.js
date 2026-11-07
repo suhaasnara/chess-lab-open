@@ -9,6 +9,10 @@
 'use strict';
 (function(){
 const START='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+/* "Anything": no PGN needed. Start from move 1; the opponent plays the book at your level, your moves are judged as in presets.
+   Fixed ids, so their ratings and stats stay. */
+const ANY=[{id:'preset-any-white',name:'Anything as White',side:'white',moves:[],any:true},
+  {id:'preset-any-black',name:'Anything as Black',side:'black',moves:[],any:true}];
 const PRESETS=[
   {id:'preset-italian',name:'Italian Game',side:'white',moves:['e4','e5','Nf3','Nc6','Bc4']},
   {id:'preset-spanish',name:'Ruy Lopez (Spanish)',side:'white',moves:['e4','e5','Nf3','Nc6','Bb5']},
@@ -117,12 +121,29 @@ function openings(){
   const reps=repIndex().map(r=>({...r,rep:true,moves:repStart(r.id),startFen:r.startFen||null}));
   /* Players (the Players tab): you against their moves, one entry per colour you have */
   const pls=(Store.get('players-index')||[]).flatMap(p=>['w','b'].map(c=>({id:'pl-'+p.id+'-'+c,name:'vs '+p.name,side:c==='w'?'white':'black',player:p.id,their:c==='w'?'b':'w',moves:[]})));
-  return [...reps,...PRESETS,...pls];
+  return [...ANY,...customs(),...reps,...PRESETS,...pls];
 }
+/* ---------- Your own positions (Store custom-<id> = {name, side, moves:[SAN], fen?}) ---------- */
+function customs(){ return Store.keys().filter(k=>k.startsWith('custom-')).map(k=>{ const v=Store.get(k)||{};
+  return {id:k,custom:true,name:v.name||'My position',side:v.side==='black'?'black':'white',moves:Array.isArray(v.moves)?v.moves:[],startFen:v.fen||null,t:v.t||0} })
+  .sort((a,b)=>a.t-b.t) }
+/* Check and store a custom opening; returns its id. Moves must be legal from the start (or from fen). */
+function saveCustom({name,side,moves,fen},id){
+  name=String(name||'').trim(); if(!name) throw new Error('Give the position a name.');
+  let g; if(fen){ let ok=false; try{ ok=new Chess().validate_fen(fen).valid }catch(e){} if(!ok) throw new Error('That FEN is not a legal position.'); g=new Chess(fen) } else g=new Chess();
+  const ms=[]; for(const s of moves||[]){ const m=g.move(s,{sloppy:true}); if(!m) throw new Error(`${s} is not legal there.`); ms.push(m.san) }
+  if(g.game_over()) throw new Error('The game is already over in that position.');
+  id=id||'custom-'+Date.now().toString(36)+Math.floor(Math.random()*1296).toString(36);
+  const prev=Store.get(id)||{};
+  Store.put(id,{name:name.slice(0,80),side:side==='black'?'black':'white',moves:ms,fen:fen&&normKey(fen)!==normKey(START)?fen:undefined,t:prev.t||Date.now()});
+  if(!Store.get(id)) throw new Error('This browser has no room left to store it.');
+  return id;
+}
+function deleteCustom(id){ for(const k of ['','stats-','ostart-']) Store.del(k+id); if(S.op&&S.op.id===id){ S.op=null; $('o-pickname').textContent='Choose an opening' } renderList(); renderSide() }
 function ordered(ops){ const ids=(Store.get('olist')||{}).ids||[]; if(!ids.length) return ops; const at=new Map(ids.map((id,i)=>[id,i]));
   return ops.map((o,i)=>[o,at.has(o.id)?at.get(o.id):1e6+i]).sort((a,b)=>a[1]-b[1]).map(x=>x[0]) }
 function saveOrder(ids){ const all=ordered(openings()).map(o=>o.id); Store.put('olist',{ids:ids.concat(all.filter(id=>!ids.includes(id)))}) }
-const listText=o=>[o.name,o.side,o.rep?'repertoire rep':o.player?'player opponent vs':'preset book'].join(' ').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+const listText=o=>[o.name,o.side,o.rep?'repertoire rep':o.player?'player opponent vs':o.custom?'mine position custom':o.any?'anything any preset book':'preset book'].join(' ').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
 function startText(ms,fen){ const n=ms.length; if(!n) return 'move 1'; const t=(fen||START).split(' '), off=t[1]==='b'?1:0, n0=+t[5]||1;
   const i=Math.max(0,n-2); return ms.slice(i).map((m,j)=>{ const ply=i+j+off; return (ply%2===0?(n0+ply/2)+'.':j===0?(n0+Math.floor(ply/2))+'…':'')+m }).join(' ') }
 function renderList(filter){
@@ -137,12 +158,47 @@ function renderList(filter){
     const st=stats(o.id);
     if(o.player&&!q.length&&!st.lines&&!(S.op&&S.op.id===o.id)) continue;   /* players show once trained (or found by search) */
     const b=document.createElement('button'); b.className='drill'; b.dataset.id=o.id; b.setAttribute('aria-current',S.op&&S.op.id===o.id?'true':'false');
-    const from=o.rep&&o.moves.length?` · from ${esc(startText(o.moves,o.startFen))}`:'';
-    b.innerHTML=`<span class="src">${o.rep?'Rep':o.player?'Player':'Book'}</span><span><span class="opp">${esc(o.name)}</span><br><span class="meta">${o.side==='white'?'White':'Black'}${from}${st.lines?` · ${st.lines} lines · ${st.rating}`:''}</span></span><span class="evalchip">&#9654;</span>`;
+    const from=(o.rep||o.custom)&&(o.moves.length||o.startFen)?` · from ${esc(startText(o.moves,o.startFen))}`:'';
+    b.innerHTML=`<span class="src">${o.rep?'Rep':o.player?'Player':o.custom?'Mine':o.any?'Any':'Book'}</span><span><span class="opp">${esc(o.name)}</span><br><span class="meta">${o.side==='white'?'White':'Black'}${from}${st.lines?` · ${st.lines} lines · ${st.rating}`:''}</span></span><span class="evalchip">&#9654;</span>`;
     b.addEventListener('click',()=>{ selectOpening(o.id); setPop(false) });
     el.appendChild(b);
   }
-  if(!el.children.length) el.innerHTML='<p class="empty">Nothing matches. Import a repertoire below.</p>';
+  if(!el.children.length) el.innerHTML='<p class="empty">Nothing matches. Import a repertoire below, or make a new position.</p>';
+  if(!q.length){ const n=document.createElement('button'); n.className='drill newpos'; n.id='o-newpos';
+    n.innerHTML='<span class="src">+</span><span><span class="opp">New position</span><br><span class="meta">Play the moves of both sides, then train from there</span></span><span class="evalchip">&#9654;</span>';
+    n.addEventListener('click',()=>{ setPop(false); openNew() }); el.insertBefore(n,el.firstChild) }
+}
+/* ---------- New position: a setup board (both sides' moves, or a FEN), a name and your side ---------- */
+const NP={g:null,fen:null,board:null,edit:null};
+function openNew(op){
+  NP.edit=op&&op.custom?op.id:null; NP.fen=op&&op.startFen||null; NP.g=new Chess(NP.fen||undefined);
+  for(const m of (op&&op.moves)||[]) NP.g.move(m,{sloppy:true});
+  $('o-npname').value=op?op.name:''; $('o-npside').value=op?op.side:'white'; $('o-npfen').value=NP.fen||''; $('o-nperr').textContent='';
+  $('o-nptitle').textContent=NP.edit?'Edit position':'New position';
+  $('o-newmodal').hidden=false;
+  if(!NP.board) NP.board=makeBoard($('o-npboard'),{onMove:(f,t,pr)=>{ const m=NP.g.move({from:f,to:t,promotion:pr||'q'}); if(m) renderNew() }});
+  NP.orient=null; renderNew();
+}
+function renderNew(){
+  const h=NP.g.history({verbose:true}), last=h[h.length-1];
+  NP.board.set(NP.g,{last:last?{from:last.from,to:last.to}:null,orient:NP.orient||($('o-npside').value==='black'?'b':'w')});
+  const sans=h.map(m=>m.san), t=(NP.fen||START).split(' '), off=t[1]==='b'?1:0, n0=+t[5]||1;
+  $('o-npmoves').textContent=sans.length?sans.map((m,i)=>{ const ply=i+off; return (ply%2===0?(n0+ply/2)+'. ':i===0?(n0+Math.floor(ply/2))+'… ':'')+m }).join(' '):(NP.fen?'From your FEN':'Starting position');
+  if(!$('o-npname').value.trim()||$('o-npname').dataset.auto==='1'){ const nm=!NP.fen&&Book.nameOf([START,...(()=>{ const g=new Chess(), f=[]; for(const s of sans){ g.move(s); f.push(g.fen()) } return f })()]);
+    if(nm){ $('o-npname').value=nm[1]; $('o-npname').dataset.auto='1' } }
+}
+function saveNew(){
+  try{ const id=saveCustom({name:$('o-npname').value,side:$('o-npside').value,moves:NP.g.history(),fen:NP.fen},NP.edit||undefined);
+    $('o-newmodal').hidden=true; if(location.hash==='#openings/new') history.replaceState(null,'','#openings'); renderList(); selectOpening(id); return id }
+  catch(e){ $('o-nperr').textContent=String(e.message||e); return null }
+}
+/* Save this position: the moves on the board in this line become a new position of your own (your side). */
+function saveCurrent(name){
+  if(!S.op||!S.g) return null; const v=browsing()?S.browse:S.log.length, ms=S.log.slice(0,v).map(x=>x.san);
+  const nm=Book.nameOf(S.fens.slice(0,v+1)); const def=(nm?nm[1]:S.op.name)+(ms.length?' after '+startText(ms,startFen()):'');
+  if(name===undefined){ name=window.prompt('Name for this position:',def); if(name===null) return null }
+  try{ const id=saveCustom({name:name||def,side:side(),moves:ms,fen:S.op.startFen||null}); renderList(); status('good','Saved as '+(name||def)+'.','It is in the openings list (Mine).'); return id }
+  catch(e){ status('bad','Could not save it.',String(e.message||e)); return null }
 }
 /* Arrange: drag the grip (mouse or finger) or use the arrows; saved at once. */
 function renderArrange(){
@@ -160,7 +216,7 @@ function setPop(on){ const p=$('o-pop'); p.hidden=!on; $('o-pick').setAttribute(
 function firstListed(){ return ordered(openings())[0] }
 function selectOpening(id){
   const o=openings().find(x=>x.id===id)||firstListed(); if(!o) return;
-  S.op=o; $('o-pickname').textContent=o.name; $('o-picklab').textContent=`${o.side==='white'?'White':'Black'} · ${o.rep?'repertoire':o.player?'vs a player':'opening'}`;
+  S.op=o; $('o-pickname').textContent=o.name; $('o-picklab').textContent=`${o.side==='white'?'White':'Black'} · ${o.rep?'repertoire':o.player?'vs a player':o.custom?'your position':o.any?'any opening':'opening'}`;
   if(o.rep) Book.moves(START,'b22');   /* club shares for prepared sidelines the elite book leaves out */
   newLine();
 }
@@ -499,6 +555,11 @@ function renderSide(){
   $('o-rate').innerHTML=training()?'<span class="note">Training mode: the rating doesn’t move.</span>'
     :`<b>${st.rating}</b><span class="delta ${delta>0?'up':delta<0?'down':''}">${delta?(delta>0?'+':'')+delta+' this line':''}</span><span class="note">· ${st.lines} lines</span>`;
   const btns=$('o-sidebtns'); btns.innerHTML='';
+  { const b=document.createElement('button'); b.className='btn sm'; b.id='o-savepos'; b.textContent='Save this position'; b.title='Make the moves on the board a position of your own, to train from';
+    b.disabled=!S.g; b.addEventListener('click',()=>saveCurrent()); btns.appendChild(b) }
+  if(S.op.custom){ const e=document.createElement('button'); e.className='btn sm'; e.id='o-editpos'; e.textContent='Rename or edit'; e.addEventListener('click',()=>openNew(S.op)); btns.appendChild(e);
+    const d=document.createElement('button'); d.className='btn sm'; d.id='o-delpos'; d.textContent='Delete position';
+    d.addEventListener('click',()=>{ if(confirm('Delete this position and its stats?')) deleteCustom(S.op.id) }); btns.appendChild(d) }
   if(S.op.rep){
     /* start lines from the position on the board (moves you can step back to with ←) */
     const v=browsing()?S.browse:S.log.length, ms=S.log.slice(0,v).map(x=>x.san), cur=S.op.moves||[];
@@ -705,6 +766,18 @@ function init(){
   $('o-next').addEventListener('click',()=>{ if(browsing()) browse(S.browse+1) });
   $('o-flip').addEventListener('click',()=>{ board.flip(); S.orientSet=board.orient!==myColor(); Shapes.auto($('o-board'),noteShapes()) });
   $('o-import').addEventListener('click',openImport);
+  $('o-npundo').addEventListener('click',()=>{ NP.g.undo(); renderNew() });
+  $('o-npreset').addEventListener('click',()=>{ NP.g=new Chess(NP.fen||undefined); renderNew() });
+  $('o-npflip').addEventListener('click',()=>{ NP.orient=NP.board.orient==='w'?'b':'w'; renderNew() });
+  $('o-npside').addEventListener('change',()=>{ NP.orient=null; renderNew() });
+  $('o-npname').addEventListener('input',()=>{ $('o-npname').dataset.auto='' });
+  $('o-npfenload').addEventListener('click',()=>{ const f=$('o-npfen').value.trim(); let ok=!f; if(f){ try{ ok=new Chess().validate_fen(f).valid }catch(e){} }
+    if(!ok){ $('o-nperr').textContent='That FEN is not a legal position.'; return } NP.fen=f||null; NP.g=new Chess(f||undefined); $('o-nperr').textContent='';
+    if(f) $('o-npside').value=NP.g.turn()==='w'?'white':'black'; renderNew() });
+  $('o-npsave').addEventListener('click',saveNew);
+  $('o-npcancel').addEventListener('click',()=>{ $('o-newmodal').hidden=true; if(location.hash==='#openings/new') history.replaceState(null,'','#openings') });
+  $('o-newmodal').addEventListener('click',e=>{ if(e.target.id==='o-newmodal') $('o-npcancel').click() });
+  const hashNew=()=>{ if(location.hash==='#openings/new') openNew() }; addEventListener('hashchange',hashNew); setTimeout(hashNew,0);
   $('o-statsbtn').addEventListener('click',openStats);
   $('o-gear').addEventListener('click',openSettings);
   $('o-repsave').addEventListener('click',doImport);
@@ -750,9 +823,9 @@ function init(){
   });
   document.addEventListener('keydown',e=>{
     if(document.body.dataset.view!=='openings') return;
-    if(e.key==='Escape'){ for(const id of ['o-setmodal','o-statsmodal','o-importmodal']) $(id).hidden=true; if(!$('o-pop').hidden) setPop(false); return }
+    if(e.key==='Escape'){ for(const id of ['o-setmodal','o-statsmodal','o-importmodal','o-newmodal']) $(id).hidden=true; if(!$('o-pop').hidden) setPop(false); return }
     if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)||e.altKey||e.ctrlKey||e.metaKey) return;
-    if(!$('o-setmodal').hidden||!$('o-statsmodal').hidden||!$('o-importmodal').hidden) return;
+    if(!$('o-setmodal').hidden||!$('o-statsmodal').hidden||!$('o-importmodal').hidden||!$('o-newmodal').hidden) return;
     const k=e.key.length===1?e.key.toLowerCase():e.key; let used=true;
     if(k==='n') newLine(); else if(k==='h') hint(); else if(k==='f') $('o-flip').click(); else if(k==='b') takeBack();
     else if(k==='ArrowLeft') browse((browsing()?S.browse:S.log.length)-1); else if(k==='ArrowRight'){ if(browsing()) browse(S.browse+1) }
@@ -763,6 +836,6 @@ function init(){
   renderList();
   board.set(new Chess(),{orient:'w',locked:true});
 }
-window.OpeningsTab={init,studyApi,fetchStudy,doImport,syncLevel,soundDemoMoves,get state(){return S},selectOpening,newLine,userMove,parseRepPGN,moveDifficulty,openings,stats,
+window.OpeningsTab={init,customs,saveCustom,deleteCustom,openNew,saveNew,saveCurrent,studyApi,fetchStudy,doImport,syncLevel,soundDemoMoves,get state(){return S},selectOpening,newLine,userMove,parseRepPGN,moveDifficulty,openings,stats,
   takeBack,canTakeBack,browse,annAt,repPick,ordered,saveOrder,setArrange,moveItem,renderStats,openStats,openSettings,firstListed};
 })();

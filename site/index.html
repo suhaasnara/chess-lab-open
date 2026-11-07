@@ -193,6 +193,23 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
       </div>
     </div>
   </div>
+  <div class="modal" id="o-newmodal" hidden role="dialog" aria-modal="true" aria-labelledby="o-nptitle">
+    <div class="card wide">
+      <div class="mhead"><h2 id="o-nptitle">New position</h2><button class="btn sm" id="o-npcancel" aria-label="Close">Close ✕</button></div>
+      <p class="note" style="margin:0 0 8px">Play the moves of both sides to reach the position you want to train (none = the starting position), or paste a FEN. The opponent then plays real replies from the book at your level.</p>
+      <div class="npgrid">
+        <div><div class="board" id="o-npboard" role="group" aria-label="Setup board"></div>
+          <div class="boardtools"><button class="btn sm" id="o-npundo">Undo</button><button class="btn sm" id="o-npreset">Reset</button><button class="btn sm" id="o-npflip">Flip</button></div></div>
+        <div class="side">
+          <div><span class="label">Moves</span><p class="mono" id="o-npmoves" style="margin:4px 0 0"></p></div>
+          <label class="field">Name <input type="text" id="o-npname" placeholder="e.g. Alekhine Defence"></label>
+          <label class="field">I play <select id="o-npside"><option value="white">White</option><option value="black">Black</option></select></label>
+          <label class="field">FEN (optional, for a position not from the start)<span class="moverow"><input type="text" id="o-npfen" placeholder="rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1" spellcheck="false"><button class="btn sm" id="o-npfenload" type="button">Load</button></span></label>
+          <div class="btns"><button class="btn primary" id="o-npsave">Save and train</button><span class="note err" id="o-nperr"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="modal" id="o-setmodal" hidden role="dialog" aria-modal="true" aria-labelledby="o-settitle">
     <div class="card">
       <div class="mhead"><h2 id="o-settitle">Trainer settings</h2><button class="btn sm" id="o-setclose" aria-label="Close">Close ✕</button></div>

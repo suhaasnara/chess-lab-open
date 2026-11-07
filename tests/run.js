@@ -947,6 +947,83 @@ section('t33: board display settings and auto-next');
   w.Settings.set('autoNext',false); w.Settings.set('olen','long');
 }
 
+
+section('t34: Anything as White / Black — no PGN needed');
+{
+  let W=null;
+  const {w}=await makePage({analyse:async(fen,depth,mpv)=>{ const ms=new W.Chess(fen).moves({verbose:true}); return ms.slice(0,mpv||1).map((m,i)=>({uci:m.from+m.to+(m.promotion||''),cp:0.2-i*0.01,mate:null})) }});
+  W=w;
+  const O=w.OpeningsTab, $=id=>w.document.getElementById(id);
+  const ops=O.ordered(O.openings());
+  assert(ops[0].id==='preset-any-white'&&ops[1].id==='preset-any-black'&&ops[0].name==='Anything as White','the two Anything entries lead the list');
+  O.renderStats&&null; w.document.getElementById('o-pick').click(); await sleep(20);
+  assert($('o-list').querySelector('[data-id="preset-any-black"]')&&$('o-newpos'),'they are in the drop-down, with + New position');
+  w.document.getElementById('o-pick').click();
+  O.selectOpening('preset-any-black'); await sleep(500);
+  const S=O.state;
+  assert(S.op.side==='black'&&S.log.length===1&&S.log[0].who==='opp'&&['e4','d4','Nf3','c4'].includes(S.log[0].san),'as Black from move 1: the book plays White’s first move ('+(S.log[0]&&S.log[0].san)+')');
+  O.selectOpening('preset-any-white'); await sleep(100);
+  assert(S.log.length===0&&S.g.turn()==='w','as White: your move at move 1');
+  await O.userMove('e2','e4'); await sleep(900);
+  assert(S.log[0].ok==='ok'&&S.log.length===2,'1.e4 is judged by the book and the opponent answers from it');
+  w.Settings.set('olen','short');
+  for(let k=0;k<8&&S.phase!=='done';k++){ const bk=await w.Book.moves(S.g.fen(),'masters'); const u=bk?bk.rows[0].uci:new w.Chess(S.g.fen()).moves({verbose:true}).map(m=>m.from+m.to)[0];
+    await O.userMove(u.slice(0,2),u.slice(2,4)); for(let i=0;i<60&&S.phase!=='done'&&(S.busy||S.g.turn()!=='w');i++) await sleep(50) }
+  assert(S.phase==='done'&&S.userMoves===5&&/Line complete/.test(S.endMsg),'the line runs to the line length (short = 5 of your moves; book, then Stockfish): '+S.log.map(x=>x.san).join(' '));
+  assert(O.stats('preset-any-white').lines===1,'stats are kept under the fixed id preset-any-white');
+  w.Settings.set('olen','long');
+}
+
+section('t35: New position — set up, save, train, rename, delete, export');
+{
+  const {w}=await makePage({analyse:async()=>[{uci:'b1c3',cp:0.3,mate:null}]});
+  const O=w.OpeningsTab, $=id=>w.document.getElementById(id);
+  w.location.hash='#openings/new'; await sleep(60);
+  assert(!$('o-newmodal').hidden&&$('o-npboard').querySelectorAll('.sq').length===64,'#openings/new opens the setup board');
+  /* play both sides: 1.e4 Nf6 (the Alekhine) */
+  const mv=(f,t)=>{ /* the setup board takes moves like any board */ const g=new w.Chess(); return [f,t] };
+  const tap=sq=>$('o-npboard').querySelector(`.sq[data-sq="${sq}"]`).dispatchEvent(new w.MouseEvent('pointerdown',{bubbles:true,button:0}));
+  tap('e2'); tap('e4'); tap('g8'); tap('f6'); tap('d2'); tap('d4'); await sleep(10);
+  assert(/1\. e4 Nf6 2\. d4/.test($('o-npmoves').textContent),'both sides’ moves: '+$('o-npmoves').textContent);
+  $('o-npundo').click(); assert(/1\. e4 Nf6$/.test($('o-npmoves').textContent.trim()),'Undo takes one move back');
+  $('o-npname').value='My Alekhine'; $('o-npname').dataset.auto=''; $('o-npside').value='black';
+  const id=O.saveNew(); await sleep(400);
+  assert(id&&/^custom-/.test(id)&&$('o-newmodal').hidden,'Save stores it as a custom opening');
+  const S=O.state;
+  assert(S.op.id===id&&S.op.custom&&S.log.slice(0,2).map(x=>x.san).join(' ')==='e4 Nf6'&&S.log[2]&&S.log[2].who==='opp','it trains like a preset: from 1.e4 Nf6, the book plays White’s 2nd move ('+S.log.map(x=>x.san).join(' ')+')');
+  assert(O.ordered(O.openings()).some(o=>o.id===id&&o.name==='My Alekhine'),'listed with the openings');
+  const ex=w.Store.exportAll(); assert(ex[id]&&ex[id].moves.join(' ')==='e4 Nf6'&&ex[id].side==='black','included in the progress export');
+  /* rename */
+  $('o-editpos').click(); await sleep(10); assert(!$('o-newmodal').hidden&&$('o-npname').value==='My Alekhine','Rename or edit reopens it');
+  $('o-npname').value='Alekhine, 2.d4'; O.saveNew(); await sleep(50);
+  assert(w.Store.get(id).name==='Alekhine, 2.d4'&&O.customs().length===1,'renamed in place (same id)');
+  /* zero moves, and a FEN */
+  const z=O.saveCustom({name:'Start',side:'white',moves:[]}); assert(w.Store.get(z).moves.length===0,'zero moves is the starting position');
+  const f=O.saveCustom({name:'From a FEN',side:'black',moves:[],fen:'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1'});
+  O.selectOpening(f); await sleep(50); assert(S.g.fen().startsWith('rnbqkbnr/pppppppp/8/8/4P3')&&S.g.turn()==='b','a FEN position starts there');
+  let err=''; try{ O.saveCustom({name:'x',side:'white',moves:['e4','e4']}) }catch(e){ err=e.message } assert(/not legal/.test(err),'illegal moves are refused');
+  try{ O.saveCustom({name:'',side:'white',moves:[]}) }catch(e){ err=e.message } assert(/name/.test(err),'a name is required');
+  /* import restores it */
+  w.Store.del(id); w.Store.importAll(ex); assert(w.Store.get(id)&&w.Store.get(id).name==='My Alekhine','importing progress brings it back');
+  O.selectOpening(id); await sleep(50); O.deleteCustom(id);
+  assert(!w.Store.get(id)&&!O.openings().some(o=>o.id===id),'Delete removes it');
+}
+
+section('t36: Save this position — from the trainer');
+{
+  const {w}=await makePage({analyse:async()=>[{uci:'b1c3',cp:0.3,mate:null}]});
+  const O=w.OpeningsTab, $=id=>w.document.getElementById(id);
+  O.selectOpening('preset-english'); await sleep(400);
+  const S=O.state; assert(S.log.map(x=>x.san).join(' ')==='c4 e5','1.c4 e5 on the board');
+  w.prompt=(q,d)=>{ w.__asked=d; return 'English with e5' };
+  assert($('o-savepos')&&!$('o-savepos').disabled,'Save this position is offered');
+  $('o-savepos').click(); await sleep(20);
+  const c=O.customs(); assert(c.length===1&&c[0].name==='English with e5'&&c[0].moves.join(' ')==='c4 e5'&&c[0].side==='white','the moves on the board become a position of your own, your side');
+  assert(/English/.test(w.__asked||''),'the suggested name comes from the opening ('+w.__asked+')');
+  O.browse(1); w.prompt=()=>null; $('o-savepos').click(); assert(O.customs().length===1,'Cancel saves nothing');
+  const id2=O.saveCurrent('Just 1.c4'); assert(w.Store.get(id2).moves.join(' ')==='c4','while browsing, it saves the position shown');
+}
+
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));
 process.exit(H.failures?1:0);
 })().catch(e=>{ console.error('Test run crashed:',e); process.exit(1) });

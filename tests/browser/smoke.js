@@ -136,6 +136,17 @@ async function waitFor(page,fn,arg,ms=20000){ try{ await page.waitForFunction(fn
   }
   await page.screenshot({path:path.join(OUT,'openings-line.png')});
 
+  /* ---- Anything as Black, and a new position set up with the mouse ---- */
+  if(await page.evaluate(()=>!!OpeningsTab.customs)){
+    await page.evaluate(()=>OpeningsTab.selectOpening('preset-any-black'));
+    check('Anything as Black: the book plays White\'s first move',await waitFor(page,()=>{ const S=OpeningsTab.state; return S.op.id==='preset-any-black'&&S.log.length===1&&S.phase==='await' },null,20000));
+    await page.click('#o-pick'); await page.click('#o-newpos'); await sleep(150);
+    for(const [f,t] of [['e2','e4'],['g8','f6']]) await tap('o-npboard',f,t);
+    await page.fill('#o-npname','Smoke Alekhine'); await page.selectOption('#o-npside','black'); await page.click('#o-npsave');
+    check('New position: set up with the mouse, saved and trained',await waitFor(page,()=>{ const S=OpeningsTab.state; return S.op&&S.op.custom&&S.op.name==='Smoke Alekhine'&&S.log.length>=3&&S.phase==='await' },null,20000),await page.evaluate(()=>OpeningsTab.state.log.map(x=>x.san).join(' ')));
+    await page.screenshot({path:path.join(OUT,'openings-custom.png')});
+  } else soft('New position / Anything entries',false);
+
   /* ---- Tactics: the solution's first move with the mouse ---- */
   await go('tactics');
   await waitFor(page,()=>!!TacticsTab.lib&&TacticsTab.lib.length,null,20000);

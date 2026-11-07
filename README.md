@@ -28,6 +28,11 @@ accounts, no uploads: progress lives in localStorage with JSON export/import.
   come up; the ⚙ holds the trainer settings (line length, the opponent's minimum share, trappy lines, eval bar,
   Stockfish info after a line, depth); **Statistics** lists every opening you've trained with its average
   end-of-line eval.
+  **No PGN? No problem:** *Anything as White* and *Anything as Black* (top of the list) start from move 1 and
+  the opponent plays real replies from the book at your level, with your moves judged as in the presets.
+  **+ New position** opens a setup board (play both sides' moves, or paste a FEN; undo, reset, flip), a name and
+  your side: it is saved in this browser (and in the progress export) and trains like a preset; rename or delete it
+  any time. **Save this position** in the trainer turns the moves on the board into a new position of your own.
 - **Tactics** — 11,260 CC0 puzzles from the Lichess puzzle database (rated 1200–2900,
   33 motifs, filter by motif and rating), with a puzzle rating (Elo against each puzzle's Lichess rating, first attempt only).
 - **Calculation** — see the whole line before you play it: on 1,092 hard, long
