@@ -204,7 +204,7 @@ def main(src, out, budget, minutes=100):
                   open(out, 'w'), separators=(',', ':'), ensure_ascii=False)
     for p in spec['positions']:
         old = prev.get(p['id'])
-        if old and all(old.get(k) == p.get(k) for k in ('fen', 'goal', 'end', 'prefer', 'rev'))   # rev: bump to force a rebuild:
+        if old and all(old.get(k) == p.get(k) for k in ('fen', 'goal', 'end', 'prefer', 'rev')):   # rev: bump to force a rebuild
             q = dict(old); q.update({k: p[k] for k in ('title', 'text', 'group')}); outp.append(q); continue
         if time.time() > stop:
             print(f"TIME: {p['id']} not built (rerun to continue)", flush=True); continue
