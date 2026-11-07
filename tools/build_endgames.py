@@ -81,6 +81,7 @@ def finished(b, prev, mv, goal, end, depth):
         return True
     return False
 
+PREFLINE = {}
 VAL = {chess.PAWN: 1, chess.KNIGHT: 3, chess.BISHOP: 3, chess.ROOK: 5, chess.QUEEN: 9, chess.KING: 0}
 GOAL = ['']
 
@@ -110,6 +111,13 @@ def build(p, budget):
     GOAL[0] = goal
     PREFER[:] = p.get('prefer', [])
     root = chess.Board(p['fen'])
+    PREFLINE.clear()   # prefer replayed from the start as far as it stays legal: position key -> the textbook move there
+    pb = root.copy()
+    for u in PREFER:
+        mv = chess.Move.from_uci(u)
+        if mv not in pb.legal_moves:
+            break
+        PREFLINE[key(pb)] = u; pb.push(mv)
     d = tb(root.fen())
     cat = d.get('category')
     want = {'win': ('win',), 'draw': ('draw', 'blessed-loss', 'cursed-win')}[goal]
@@ -140,9 +148,9 @@ def build(p, budget):
         same = [m['uci'] for m in ms if m['category'] == ms[0]['category']]
         if GOAL[0] == 'draw':
             u = keep_material(b, same)
-        pref = [x for x in PREFER if x in same]   # a textbook defence (prefer) with the same result as the tablebase's best
-        if pref:
-            u = pref[0]
+        x = PREFLINE.get(k)   # the textbook defence in this exact position (prefer replayed as a line), if it keeps the same result
+        if x in same:
+            u = x
         nodes[k] = u
         return u
 
