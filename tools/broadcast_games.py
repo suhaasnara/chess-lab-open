@@ -42,7 +42,9 @@ def main():
             if h.get('Result') not in ('1-0', '0-1') or h.get('Variant', 'Standard') != 'Standard' or 'FEN' in h: continue
             if min(elo(h, 'WhiteElo'), elo(h, 'BlackElo')) < lo: continue
             tc = h.get('TimeControl', '')
-            if tc and tc[0].isdigit() and int(re.split(r'[+/]', tc)[0] or 0) < 3600 and '/' not in tc: continue   # classical only
+            if re.search(r'rapid|blitz|bullet|armageddon|960|freestyle', h.get('Event', '') + ' ' + h.get('Round', ''), re.I): continue
+            m = re.match(r'\s*(\d+)\s*(min)?', tc)   # classical only: base time of an hour or more (seconds, or "90mins")
+            if m and '/' not in tc and int(m.group(1)) * (60 if m.group(2) else 1) < 3600: continue
             plies = len(re.findall(r'\b\d+\.', re.sub(r'\{[^}]*\}', '', txt.split('\n\n', 1)[-1]))) * 2
             rows.append('\t'.join([h.get('White', ''), h.get('Black', ''), h.get('WhiteElo', ''), h.get('BlackElo', ''), h['Result'],
                                    h.get('Event', ''), h.get('Round', ''), h.get('Date', ''), str(plies), h.get('Opening', ''), tc]))
