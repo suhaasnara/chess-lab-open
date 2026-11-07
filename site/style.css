@@ -373,3 +373,5 @@ footer .inner{padding-block:18px;font-size:.85rem;color:var(--muted)}
 .wabm{margin:4px 0 6px;padding-left:18px}.watags summary{cursor:pointer}
 a.drill{text-decoration:none}
 @media (min-width:861px) and (max-width:1240px){.tabs button{padding:13px 7px;font-size:.88rem}.tabs .setlab{display:none}}
+/* board display settings */
+body.no-coords .coord{display:none}body.no-last .sq.last{background:none}body.no-dests .sq.tgt::after{display:none}body.no-dests .sq.tgt:hover{background:none}

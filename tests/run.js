@@ -923,6 +923,30 @@ section('t32: Players — an opponent’s public games, what they play, train vs
   assert(S.log[1]&&S.log[1].san==='c5'&&/played c5 in 3 of 3/.test($('o-status').textContent),'the opponent plays their own move (1...c5, 3 of 3 games)');
 }
 
+
+section('t33: board display settings and auto-next');
+{
+  const {w}=await makePage({analyse:async()=>[{uci:'b1c3',cp:0.3,mate:null}]});
+  const sel=k=>w.document.querySelector(`#s-rows select[data-k="${k}"]`);
+  assert(sel('coords').value==='true'&&!w.document.body.classList.contains('no-coords'),'coordinates show by default');
+  sel('coords').value='false'; sel('coords').dispatchEvent(new w.Event('change'));
+  assert(w.Settings.get('coords')===false&&w.document.body.classList.contains('no-coords'),'Hide coordinates');
+  sel('dests').value='false'; sel('dests').dispatchEvent(new w.Event('change')); assert(w.document.body.classList.contains('no-dests'),'Hide move dots');
+  sel('lastMove').value='false'; sel('lastMove').dispatchEvent(new w.Event('change')); assert(w.document.body.classList.contains('no-last'),'No last-move highlight');
+  w.Settings.set('coords',true); w.Settings.set('dests',true); w.Settings.set('lastMove',true);
+  assert(!/no-(coords|dests|last)/.test(w.document.body.className),'and back on');
+  /* auto-next after a clean line */
+  w.Settings.set('autoNext',true); w.Settings.set('olen','short');
+  const $=id=>w.document.getElementById(id);
+  $('o-pgnbox').value='[Event "A"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 *'; $('o-repname').value='Auto'; $('o-repside').value='white'; $('o-repsave').click(); await sleep(150);
+  const S=w.OpeningsTab.state; w.document.body.dataset.view='openings';
+  for(const [f,t] of [['e2','e4'],['g1','f3'],['f1','b5'],['b5','a4'],['e1','g1']]){ await w.OpeningsTab.userMove(f,t); for(let i=0;i<40&&(S.busy||S.g.turn()!=='w')&&S.phase!=='done';i++) await sleep(50) }
+  assert(S.phase==='done'&&!S.misses.length,'a clean short line ends');
+  const lid=S.lineId; await sleep(2700);
+  assert(S.lineId===lid+1,'the next line starts by itself');
+  w.Settings.set('autoNext',false); w.Settings.set('olen','long');
+}
+
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));
 process.exit(H.failures?1:0);
 })().catch(e=>{ console.error('Test run crashed:',e); process.exit(1) });

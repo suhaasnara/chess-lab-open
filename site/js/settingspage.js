@@ -5,6 +5,10 @@ const ROWS=[
   {k:'theme',label:'Theme',note:'Dark redraws the page in dark colours; the board keeps its own. Match device follows your phone or computer.',
    opts:[['auto','Match device'],['light','Light'],['dark','Dark']]},
   {k:'board',label:'Board colour',opts:[['maple','Maple (Lichess image)'],['brown','Brown'],['blue','Blue'],['green','Green'],['grey','Grey']]},
+  {k:'coords',label:'Board coordinates',opts:[['true','Show'],['false','Hide']]},
+  {k:'lastMove',label:'Highlight the last move',opts:[['true','Yes'],['false','No']]},
+  {k:'dests',label:'Show where a piece can go',opts:[['true','Yes'],['false','No']]},
+  {k:'autoNext',label:'Next line by itself',note:'After a line with no misses, the next one starts after 2.5 seconds.',opts:[['false','No'],['true','Yes']]},
   {k:'olevel',label:'Opponent level (openings)',note:'Lichess Elite games (2500+ vs 2300+), or Lichess rapid and classical games by rating band, 1000 to 2200+. All books ship with the site; no account needed. Also on the Openings tab.',
    opts:Book.ORDER.slice().reverse().map(k=>[k,Book.levelLabel(k)])},
   {k:'olen',label:'Line length',note:'How many of your moves an opening line lasts.',
@@ -24,7 +28,7 @@ function init(){
     for(const [v,name] of r.opts){ const o=document.createElement('option'); o.value=v; o.textContent=name; sel.appendChild(o) }
     sel.value=String(Settings.get(r.k));
     sel.dataset.k=r.k; sel.setAttribute('aria-label',r.label);
-    sel.addEventListener('change',()=>{ Settings.set(r.k,sel.value); if(r.k==='olevel'&&window.OpeningsTab&&OpeningsTab.syncLevel) OpeningsTab.syncLevel() });
+    sel.addEventListener('change',()=>{ Settings.set(r.k,sel.value==='true'?true:sel.value==='false'?false:sel.value); if(r.k==='olevel'&&window.OpeningsTab&&OpeningsTab.syncLevel) OpeningsTab.syncLevel() });
     row.innerHTML=`<span>${esc(r.label)}${r.note?`<br><span class="note">${esc(r.note)}</span>`:''}</span>`;
     row.appendChild(sel); el.appendChild(row);
   }

@@ -433,6 +433,7 @@ function endLine(msg){
   $('o-endbar').hidden=false;
   draw(); renderSide(); renderBook(); renderEval();
   finalEval(S.op.id,S.lineId);
+  if(!S.misses.length&&Settings.get('autoNext')){ const id=S.lineId; setTimeout(()=>{ if(S.lineId===id&&S.phase==='done'&&document.body.dataset.view==='openings') newLine() },2500) }
 }
 /* Stockfish's view of the final position (White's side): stored with the line for Statistics; shown with "Stockfish info". */
 async function finalEval(id,lid){

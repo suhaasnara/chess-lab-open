@@ -8,7 +8,7 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 /* ---------- Settings (per browser) ---------- */
 window.Settings=(()=>{
   const DEF={board:'maple',input:'tap',olevel:'masters',olen:'long',omode:'rated',sfDepth:'auto',oshare:3,theme:'auto',
-    ovariety:'balanced',ominshare:0,otrappy:false,evalCol:true,osfinfo:false};
+    ovariety:'balanced',ominshare:0,otrappy:false,evalCol:true,osfinfo:false,coords:true,lastMove:true,dests:true,autoNext:false};
   let cur={};
   try{ cur=JSON.parse(localStorage.getItem('clo-settings')||'{}') }catch(e){}
   const get=k=>cur[k]!==undefined?cur[k]:DEF[k];
@@ -16,11 +16,16 @@ window.Settings=(()=>{
      The small script in index.html's head sets it before the first paint, so a dark page never flashes light. */
   const theme=()=>{ const t=get('theme'); document.documentElement.dataset.theme=t==='light'||t==='dark'?t:'auto' };
   theme();
+  /* board display toggles: coordinates, last-move highlight, move dots */
+  const classes=()=>{ const b=document.body; if(!b) return; b.classList.toggle('no-coords',get('coords')===false||get('coords')==='false');
+    b.classList.toggle('no-last',get('lastMove')===false||get('lastMove')==='false'); b.classList.toggle('no-dests',get('dests')===false||get('dests')==='false') };
   const set=(k,v)=>{ cur[k]=v; try{ localStorage.setItem('clo-settings',JSON.stringify(cur)) }catch(e){}
     if(k==='board') document.body.dataset.board=v==='maple'?'':v;
     if(k==='theme') theme();
+    classes();
     dispatchEvent(new Event('settings-change')) };
-  document.addEventListener('DOMContentLoaded',()=>{ const b=get('board'); if(b!=='maple') document.body.dataset.board=b });
+  const boot=()=>{ const b=get('board'); if(b!=='maple') document.body.dataset.board=b; classes() };
+  if(document.body) boot(); else document.addEventListener('DOMContentLoaded',boot);
   return {DEF,get,set,all:()=>({...DEF,...cur})};
 })();
 

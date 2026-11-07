@@ -47,7 +47,8 @@ async function waitFor(page,fn,arg,ms=20000){ try{ await page.waitForFunction(fn
     const at=(m.location()&&m.location().url)||'';
     if(t==='error'){ (/fonts\.(googleapis|gstatic)|favicon/.test(txt+at)||(/Failed to load resource/.test(txt)&&at&&!at.startsWith(base))?warnings:errors).push('console.error: '+txt+(at?' @ '+at:'')) }
     else if(t==='warning') warnings.push('console.warn: '+txt) });
-  page.on('requestfailed',r=>{ const u=r.url(); (u.startsWith(base)?errors:warnings).push('request failed: '+u+' ('+(r.failure()&&r.failure().errorText)+')') });
+  /* a request the page itself abandoned (navigation, a closed page) is not a failure */
+  page.on('requestfailed',r=>{ const u=r.url(), why=(r.failure()&&r.failure().errorText)||''; (u.startsWith(base)&&!/ABORTED|NS_BINDING_ABORTED|cancel/i.test(why)?errors:warnings).push('request failed: '+u+' ('+why+')') });
   page.on('worker',w=>{ warnings.push('worker started: '+w.url().slice(0,80)) });
 
   console.log(`== ${BROWSER} ${browser.version()} at ${base}`);
