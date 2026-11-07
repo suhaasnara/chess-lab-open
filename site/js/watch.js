@@ -163,6 +163,7 @@ function init(){
   });
   /* typing in a detail field must not redraw the list under the cursor: the redraw waits for the field to lose focus */
   sec.addEventListener('focusout',()=>setTimeout(()=>{ const l=$('wa-list'); const a=document.activeElement; if(l.dataset.dirty&&!(a&&a.closest&&a.closest('#watch .wadetail'))){ delete l.dataset.dirty; render() } },50));
+  $('wa-addcard').open=!all().length;   /* the add form starts open only while the library is empty */
   $('wa-aurl').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); if($('wa-atitle').value.trim()) add(); else $('wa-atitle').focus() } });
   render();
 }

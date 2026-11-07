@@ -189,7 +189,7 @@ async function waitFor(page,fn,arg,ms=20000){ try{ await page.waitForFunction(fn
 
   /* ---- Watch: add a video by its link ---- */
   if(await page.$('#wa-aurl')){
-  await go('watch');
+  await go('watch'); await page.evaluate(()=>{ document.getElementById('wa-addcard').open=true });
   await page.fill('#wa-aurl','https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=90'); await page.fill('#wa-atitle','1. A test lecture'); await page.fill('#wa-aser','Test course');
   await page.click('#wa-asave'); await sleep(150);
   check('Watch: a video is added and deep-links at your position',await page.evaluate(()=>{ const a=document.querySelector('#wa-list a.watitle'); return !!a&&/t=90s/.test(a.href) }));
