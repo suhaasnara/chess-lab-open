@@ -121,7 +121,13 @@ async function waitFor(page,fn,arg,ms=20000){ try{ await page.waitForFunction(fn
     const oppReplied=await waitFor(page,b=>OpeningsTab.state.log.length>=b+2||OpeningsTab.state.phase==='done'||/isn.t|loses|Not a book/.test(document.getElementById('o-status').textContent),before,20000);
     check('Openings: the opponent answers again (or the miss is shown)',oppReplied);
     const tb=await page.$('#o-back');
-    if(tb){ await waitFor(page,()=>OpeningsTab.state.phase==='await'&&!OpeningsTab.state.busy,null,15000);
+    if(tb){ await waitFor(page,()=>OpeningsTab.state.phase==='await'&&!OpeningsTab.state.busy&&OpeningsTab.state.g.turn()==='w',null,15000);
+      /* make sure there is a move of yours to take back: play the elite book's top move if the last one was a miss */
+      if(!await page.evaluate(()=>OpeningsTab.canTakeBack())){
+        const top=await page.evaluate(async()=>{ const bk=await Book.moves(OpeningsTab.state.g.fen(),'masters'); const r=bk.rows.slice().sort((a,b)=>b.share-a.share)[0]; return [r.uci.slice(0,2),r.uci.slice(2,4)] });
+        const n1=await page.evaluate(()=>OpeningsTab.state.log.length);
+        await tap('o-board',top[0],top[1]);
+        await waitFor(page,n1=>OpeningsTab.state.log.length>=n1+2&&OpeningsTab.state.phase==='await'&&!OpeningsTab.state.busy,n1,20000) }
       const n0=await page.evaluate(()=>OpeningsTab.state.log.length);
       const can=await page.evaluate(()=>!document.getElementById('o-back').disabled);
       if(can){ await page.click('#o-back'); await sleep(150);
