@@ -6,7 +6,8 @@
 'use strict';
 (function(){
 let board=null, INDEX=null, endbar=null;
-const S={game:null,g:null,ply:0,pts:0,got:0,missed:0,alsoGood:0,done:false,busy:false,hintStage:0,rows:[],answered:false};
+const S={game:null,g:null,ply:0,pts:0,got:0,missed:0,alsoGood:0,done:false,busy:false,hintStage:0,rows:[],answered:false,view:null,read:false};
+/* view: the ply shown while reading the finished game (null = the live game); read: "Show the game" (no guessing, no score) */
 
 function results(){ return Store.get('gtm-results')||{} }
 function saveResult(){ const r=results(); r[S.game.id]={pts:S.pts,max:S.game.maxpts,t:Date.now()}; Store.put('gtm-results',r) }
@@ -35,7 +36,8 @@ async function load(file){
   const game=await fetch('data/gtm/'+file).then(r=>r.json()).catch(()=>null);
   if(!game){ status('bad','Could not load the game.',''); return }
   if(endbar) endbar.hide();
-  S.game=game; S.g=new Chess(); S.ply=0; S.pts=0; S.got=0; S.missed=0; S.alsoGood=0; S.done=false; S.busy=false; S.hintStage=0; S.rows=[];
+  S.game=game; S.g=new Chess(); S.ply=0; S.pts=0; S.got=0; S.missed=0; S.alsoGood=0; S.done=false; S.busy=false; S.hintStage=0; S.rows=[]; S.view=null; S.read=false; S.gen=(S.gen||0)+1;
+  readTools();
   const me=game.winner;
   $('g-graphcard').hidden=true; $('g-tablewrap').hidden=true;
   board.set(S.g,{orient:me,last:null});
@@ -50,7 +52,9 @@ async function load(file){
 }
 function playTheory(){
   const g=S.game;
+  const gen=S.gen;
   const step=()=>{
+    if(gen!==S.gen||S.read) return;
     if(S.ply<g.theory){ applyMove(g.moves[S.ply],'book'); S.ply++; setTimeout(step,340); return }
     next();
   };
@@ -65,16 +69,17 @@ function applyMove(san,who){
 /* advance to the next decision: opponent moves auto-play; the winner's move waits for a guess */
 function next(){
   const g=S.game;
+  if(S.read||S.done) return;
   if(S.ply>=g.moves.length) return endGame();
   const mover=S.ply%2===0?'w':'b';
-  if(mover!==g.winner){ setTimeout(()=>{ applyMove(g.moves[S.ply],'opp'); S.ply++; next() },520); return }
+  if(mover!==g.winner){ const gen=S.gen; setTimeout(()=>{ if(gen!==S.gen||S.read) return; applyMove(g.moves[S.ply],'opp'); S.ply++; next() },520); return }
   S.answered=false; S.hintStage=0;
   const n=Math.floor(S.ply/2)+1;
   status('',`Move ${n}: your move.`,'Guess what was played.');
 }
 async function userMove(from,to,promo){
   const g=S.game;
-  if(!g||S.done||S.busy) return;
+  if(!g||S.done||S.busy||S.read) return;
   const mover=S.ply%2===0?'w':'b';
   if(mover!==g.winner) return;
   const test=new Chess(S.g.fen()); const m=test.move({from,to,promotion:promo||'q'}); if(!m) return;
@@ -113,7 +118,7 @@ async function userMove(from,to,promo){
 }
 function hint(){
   const g=S.game;
-  if(!g||S.done||S.busy) return;
+  if(!g||S.done||S.busy||S.read) return;
   const mover=S.ply%2===0?'w':'b'; if(mover!==g.winner) return;
   const gm=new Chess(S.g.fen()).move(g.moves[S.ply]); if(!gm) return;
   if(S.hintStage===0){ S.hintStage=1; board.setHint(gm.from); status('warn','Hint: this piece moves.','H again shows the move — then it earns nothing.') }
@@ -136,6 +141,7 @@ function endGame(){
   $('g-tablewrap').hidden=false;
   drawGraph();
   renderList();
+  S.view=g.moves.length; readTools(); renderMoves();
 }
 /* Eval graph, shown after the game so it can't give moves away.
    y = winning chances from White's side (the kit's -1..1 scale), x = ply.
@@ -167,25 +173,64 @@ function drawGraph(){
   $('g-graphnote').textContent=`Above the line favours White, below favours Black (engine, depth 20+). Range ${pawns(lo)} to ${pawns(hi)}. Shaded: theory. Dots: your guesses (green full points, amber partial, red missed; bigger = key move).`;
   $('g-graphcard').hidden=false;
 }
-/* The game so far (never past the current move): your moves marked ✓ (game move) / ≈ (just as good) / ✗ (missed), "book" for theory. */
+/* The game so far (never past the current move): your moves marked ✓ (game move) / ≈ (just as good) / ✗ (missed), "book" for theory.
+   Annotated games (game.notes {ply: {t: text, v: [side lines]}}, game.intro) show each move's note right after it, side lines
+   folded. Once the game is over (or "Show the game"), every move can be clicked, and ← → Home End step through it. */
+function noteHtml(n){
+  if(!n) return '';
+  const v=(n.v||[]).length?`<details class="gvars"><summary>${n.v.length===1?'Side line':n.v.length+' side lines'}</summary>${n.v.map(x=>`<p>${esc(x)}</p>`).join('')}</details>`:'';
+  return `<div class="gnote">${n.t?`<p>${esc(n.t)}</p>`:''}${v}</div>`;
+}
 function renderMoves(){
   const el=$('g-moves'); if(!el) return;
   const g=S.game; if(!g){ el.innerHTML=''; return }
   const byPly={}; for(const r of S.rows) byPly[r.ply]=r;
-  let html='';
-  for(let i=0;i<S.ply;i++){
-    if(i%2===0) html+=`<span class="note">${i/2+1}.</span> `;
+  const notes=g.notes||{}, upto=S.done?g.moves.length:S.ply, cur=S.view==null?upto-1:S.view-1;
+  let html=g.intro?`<div class="gnote gintro"><p>${esc(g.intro)}</p></div>`:'';
+  for(let i=0;i<upto;i++){
+    if(i%2===0||notes[i-1]) html+=`<span class="note">${Math.floor(i/2)+1}${i%2?'…':'.'}</span> `;
     const r=byPly[i], mine=(i%2===0?'w':'b')===g.winner;
     let mark='', cls='';
-    if(i<g.theory) mark=mine?' <span class="note">book</span>':'';
+    if(i<g.theory) mark=mine&&!S.read?' <span class="note">book</span>':'';
     else if(r){ if(r.guess===g.moves[i]){ mark=' ✓'; cls='ok' } else if(r.earned>0){ mark=' ≈'; cls='inacc' } else { mark=' ✗'; cls='miss' } }
-    html+=`<b class="${cls}" title="${r&&r.guess!==g.moves[i]?'you: '+esc(r.guess):''}">${esc(g.moves[i])}</b>${mark} `;
+    const tag=S.done?'button':'b';
+    html+=`<${tag} class="gmv ${cls}${i===cur&&S.done?' cur':''}" data-ply="${i+1}"${S.done?' type="button"':''} title="${r&&r.guess!==g.moves[i]?'you: '+esc(r.guess):''}">${esc(g.moves[i])}</${tag}>${mark} `;
+    if(notes[i]) html+=noteHtml(notes[i]);
   }
   el.innerHTML=html||'<span class="note">The moves appear as the game goes.</span>';
-  el.scrollTop=el.scrollHeight;
+  const c=el.querySelector('.gmv.cur');
+  if(c&&S.done){   // keep the current move (and its note) in view inside the panel, without scrolling the page
+    const n=c.nextElementSibling&&c.nextElementSibling.classList.contains('gnote')?c.nextElementSibling:c;
+    const top=c.offsetTop, bot=n.offsetTop+n.offsetHeight;   // .gmoves is position:relative, so offsets are inside the panel
+    if(top<el.scrollTop) el.scrollTop=top-6; else if(bot>el.scrollTop+el.clientHeight) el.scrollTop=Math.min(top-6,bot-el.clientHeight+6) }
+  else el.scrollTop=el.scrollHeight;
+}
+/* reading a finished game: show the position after `ply` plies */
+function viewAt(ply){
+  const g=S.game; if(!g||!S.done) return;
+  ply=Math.max(0,Math.min(g.moves.length,ply)); S.view=ply;
+  const c=new Chess(); let m=null; for(let i=0;i<ply;i++) m=c.move(g.moves[i]);
+  board.set(c,{last:m?{from:m.from,to:m.to}:null,orient:board.orient,locked:true});
+  renderMoves(); readTools();
+}
+function readTools(){
+  const on=!!(S.game&&S.done), g=S.game;
+  $('g-nav').hidden=!on;
+  $('g-show').hidden=!S.game||S.done;
+  $('g-hint').hidden=on;
+  if(on){ $('g-prev').disabled=S.view<=0; $('g-next').disabled=S.view>=g.moves.length }
+}
+/* "Show the game": skip the guessing and read the annotated game from the start (no score is saved) */
+function showGame(){
+  const g=S.game; if(!g||S.done) return;
+  S.gen++; S.read=true; S.done=true; S.busy=false;
+  if(endbar) endbar.hide();
+  status('','Reading the game.',`← → (or the arrows under the board) step through the moves${g.notes&&Object.keys(g.notes).length?' and the notes':''}. No score is kept; Restart game plays it as a quiz.`);
+  drawGraph(); renderScore(); viewAt(0);
 }
 function renderScore(){
-  $('g-score').innerHTML=S.game?`<b>${S.pts}</b><span class="note"> / ${S.game.maxpts} points</span>`:'';
+  $('g-score').innerHTML=S.game&&!S.read?`<b>${S.pts}</b><span class="note"> / ${S.game.maxpts} points</span>`:'';
+  $('g-score').hidden=!S.game||S.read;
 }
 function status(tone,head,rest){ const el=$('g-status'); el.className='status'+(tone?' '+tone:''); el.innerHTML=`<strong>${esc(head)}</strong>${rest||''}` }
 
@@ -197,12 +242,22 @@ function init(){
   $('g-hint').addEventListener('click',hint);
   $('g-flip').addEventListener('click',()=>board.flip());
   $('g-restart').addEventListener('click',()=>{ if(S.game) load(INDEX.find(e=>e.id===S.game.id).file) });
+  $('g-show').addEventListener('click',showGame);
+  $('g-prev').addEventListener('click',()=>viewAt(S.view-1));
+  $('g-next').addEventListener('click',()=>viewAt(S.view+1));
+  $('g-moves').addEventListener('click',e=>{ const b=e.target.closest('.gmv'); if(b&&S.done) viewAt(+b.dataset.ply) });
   document.addEventListener('keydown',e=>{
     if(document.body.dataset.view!=='guess') return;
     if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
     if(e.key==='h'||e.key==='H') hint();
     if(e.key==='f'||e.key==='F') board.flip();
+    if(S.done&&S.game&&!e.altKey&&!e.metaKey&&!e.ctrlKey){
+      const k={ArrowLeft:-1,ArrowRight:1}[e.key];
+      if(k){ e.preventDefault(); viewAt(S.view+k) }
+      else if(e.key==='Home'){ e.preventDefault(); viewAt(0) }
+      else if(e.key==='End'){ e.preventDefault(); viewAt(S.game.moves.length) }
+    }
   });
 }
-window.GtmTab={init,load,userMove,hint,drawGraph,get state(){return S}};
+window.GtmTab={init,load,userMove,hint,drawGraph,showGame,viewAt,get state(){return S}};
 })();

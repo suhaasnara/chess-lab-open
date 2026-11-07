@@ -384,6 +384,8 @@
         <div class="board" id="g-board" role="group" aria-label="Chess board"></div>
         <div class="boardtools">
           <button class="btn sm" id="g-hint">Hint <kbd>H</kbd></button>
+          <span class="gnav" id="g-nav" hidden><button class="btn sm" id="g-prev" aria-label="Previous move">&#9664;</button><button class="btn sm" id="g-next" aria-label="Next move">&#9654;</button></span>
+          <button class="btn sm" id="g-show" hidden title="Skip the guessing and read the game">Show the game</button>
           <button class="btn sm" id="g-restart">Restart game</button>
           <button class="btn sm" id="g-flip">Flip <kbd>F</kbd></button>
           <span class="evalchip" id="g-score"></span>
@@ -391,7 +393,7 @@
       </div>
       <div class="side">
         <div class="status" id="g-status" aria-live="polite">Pick a game from the list.</div>
-        <div class="card"><span class="label">Moves</span><div class="movelist gmoves" id="g-moves"></div></div>
+        <div class="card"><span class="label">Moves and notes</span><div class="movelist gmoves" id="g-moves"></div></div>
         <div class="card"><span class="label">The game</span><dl class="facts" id="g-facts"></dl></div>
         <div class="card" id="g-graphcard" hidden><span class="label">Eval graph</span><div class="evgraph" id="g-graph"></div><p class="note" id="g-graphnote"></p></div>
         <div class="tablewrap" id="g-tablewrap" hidden><table id="g-table"></table></div>

@@ -238,7 +238,7 @@ footer .inner{padding-block:18px;font-size:.85rem;color:var(--muted)}
 .booktitle{font-weight:600;margin-bottom:4px}
 
 /* Guess the move: moves so far */
-.gmoves{max-height:180px;overflow:auto;line-height:1.7}
+.gmoves{position:relative;max-height:min(420px,calc(100vh - 330px));overflow:auto;line-height:1.7}
 .gmoves .ok{color:var(--good)}.gmoves .inacc{color:var(--warn)}.gmoves .miss{color:var(--bad)}
 .ccfilters .chips+.chips{margin-top:6px}
 
@@ -295,3 +295,11 @@ footer .inner{padding-block:18px;font-size:.85rem;color:var(--muted)}
 .btn.icon{font-size:1rem;line-height:1;padding:5px 10px}
 .btn.icon[aria-pressed="true"]{background:var(--callout);border-color:var(--blue)}
 #g-list .glabel{margin:10px 2px 2px;font-size:.72rem}#g-list .glabel:first-child{margin-top:0}
+.gmoves .gnote{margin:4px 0 8px;padding:4px 0 4px 10px;border-left:3px solid var(--line);font-size:.9rem;line-height:1.5;color:var(--ink)}
+.gmoves .gnote p{margin:2px 0}.gmoves .gintro{border-left-color:var(--brass)}
+.gmoves .gvars summary{cursor:pointer;color:var(--blue);font-size:.82rem;font-weight:600}.gmoves .gvars p{color:var(--muted);font-size:.85rem}
+.gmoves .gmv{font:inherit;font-weight:700;color:var(--navy);background:none;border:0;padding:1px 3px;border-radius:3px}
+.gmoves button.gmv{cursor:pointer}.gmoves button.gmv:hover{background:var(--band)}
+.gmoves .gmv.cur{background:var(--navy);color:var(--white)}
+.gmoves .gmv.ok{color:var(--good)}.gmoves .gmv.inacc{color:var(--warn)}.gmoves .gmv.miss{color:var(--bad)}.gmoves .gmv.cur.ok,.gmoves .gmv.cur.inacc,.gmoves .gmv.cur.miss{color:var(--white)}
+.gnav{display:inline-flex;gap:4px}

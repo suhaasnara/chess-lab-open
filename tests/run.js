@@ -624,6 +624,44 @@ section('t23: Openings — import a Lichess study by link');
   assert(idx.some(r=>r.name==='My Caro'&&r.side==='black'&&r.positions>=4),'the study imports as a repertoire');
 }
 
+section('t24: Guess the move — notes after each move, Show the game, arrow keys');
+{
+  const {w}=await makePage({analyse:async()=>[{uci:'g1f3',cp:0.3,mate:null}]});
+  await sleep(250);
+  const $=id=>w.document.getElementById(id);
+  const idx=await w.fetch('data/gtm/index.json').then(r=>r.json());
+  // a game with notes: notes only for moves already played (no spoilers)
+  let file=null, game=null;
+  for(const e of idx){ const g=await w.fetch('data/gtm/'+e.file).then(r=>r.json()); if(g.notes&&Object.keys(g.notes).length){ file=e.file; game=g; break } }
+  assert(!!file,'at least one game has notes');
+  for(const e of idx){ const g=await w.fetch('data/gtm/'+e.file).then(r=>r.json());
+    assert(Object.keys(g.notes||{}).every(k=>+k>=0&&+k<g.moves.length&&(g.notes[k].t||(g.notes[k].v||[]).length)),e.file+': notes sit on real moves'); }
+  await w.GtmTab.load(file);
+  const S=w.GtmTab.state;
+  await sleep(500+S.game.theory*360);
+  const shown=$('g-moves').querySelectorAll('.gnote:not(.gintro)').length;
+  const expect=Object.keys(game.notes).filter(k=>+k<S.ply).length;
+  assert(shown===expect,'during the game, only notes for moves already played show ('+shown+')');
+  assert(!$('g-show').hidden&&$('g-nav').hidden,'Show the game is offered; the move arrows wait');
+  // Show the game: everything visible, start position, arrows step
+  w.GtmTab.showGame(); await sleep(30);
+  assert(S.done&&S.read&&S.view===0,'Show the game starts at the beginning without a score');
+  assert($('g-moves').querySelectorAll('.gnote:not(.gintro)').length===Object.keys(game.notes).length,'every note shows when reading');
+  const key=k=>w.document.dispatchEvent(new w.KeyboardEvent('keydown',{key:k,bubbles:true}));
+  w.document.body.dataset.view='guess';
+  key('ArrowRight'); key('ArrowRight'); await sleep(10);
+  assert(S.view===2&&$('g-moves').querySelector('.gmv.cur').dataset.ply==='2','→ steps forward and marks the move');
+  key('ArrowLeft'); await sleep(10); assert(S.view===1,'← steps back');
+  key('End'); await sleep(10); assert(S.view===game.moves.length&&$('g-next').disabled,'End goes to the last move');
+  key('Home'); await sleep(10); assert(S.view===0&&$('g-prev').disabled,'Home goes to the start');
+  $('g-moves').querySelectorAll('.gmv')[5].click(); await sleep(10);
+  assert(S.view===6,'clicking a move shows that position');
+  const res=(w.Store.get('gtm-results')||{})[game.id];
+  assert(!res,'reading the game saves no score');
+  // a scored game also opens for reading at the end
+  await w.GtmTab.load(file); assert(!S.read&&!S.done&&!$('g-show').hidden,'Restart plays it as a quiz again');
+}
+
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));
 process.exit(H.failures?1:0);
 })().catch(e=>{ console.error('Test run crashed:',e); process.exit(1) });
