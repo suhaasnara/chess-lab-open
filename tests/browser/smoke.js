@@ -34,7 +34,9 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function waitFor(page,fn,arg,ms=20000){ try{ await page.waitForFunction(fn,arg,{timeout:ms,polling:100}); return true }catch(e){ return false } }
 
 (async()=>{
-  const srv=await serve(); const base=`http://127.0.0.1:${srv.address().port}/`;
+  /* BASE=<url> tests a deployed copy (e.g. the live GitHub Pages site) instead of this checkout */
+  const LIVE=process.env.BASE||''; const srv=LIVE?null:await serve(); const base=LIVE?(LIVE.endsWith('/')?LIVE:LIVE+'/'):`http://127.0.0.1:${srv.address().port}/`;
+  const soft=(name,ok,detail)=>{ if(LIVE&&!ok) warnings.push('not on this deploy: '+name+(detail?' — '+detail:'')); else check(name,ok,detail) };
   const type={chromium,firefox,webkit}[BROWSER]; if(!type) throw new Error('unknown browser '+BROWSER);
   const browser=await type.launch();
   const ctx=await browser.newContext({viewport:{width:1280,height:900},colorScheme:'light'});
@@ -96,7 +98,7 @@ async function waitFor(page,fn,arg,ms=20000){ try{ await page.waitForFunction(fn
     check('Arrows: no context menu on the board',ctxPrevented);
     const a=await center('pl-board','h3'); await page.mouse.click(a[0],a[1]); await sleep(100);
     check('Arrows: a left click clears them',await page.evaluate(()=>!document.querySelector('#pl-board>svg.shapes')));
-  }else check('Arrows module present (window.Shapes)',false,'not implemented yet');
+  }else soft('Arrows module present (window.Shapes)',false,'not implemented yet');
   await page.screenshot({path:path.join(OUT,'play-game.png')});
 
   /* ---- Openings: pick a preset, play a move with the mouse, the trainer judges it ---- */
@@ -182,12 +184,15 @@ async function waitFor(page,fn,arg,ms=20000){ try{ await page.waitForFunction(fn
   await page.screenshot({path:path.join(OUT,'guess.png')});
 
   /* ---- Watch: add a video by its link ---- */
+  if(await page.$('#wa-aurl')){
   await go('watch');
   await page.fill('#wa-aurl','https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=90'); await page.fill('#wa-atitle','1. A test lecture'); await page.fill('#wa-aser','Test course');
   await page.click('#wa-asave'); await sleep(150);
   check('Watch: a video is added and deep-links at your position',await page.evaluate(()=>{ const a=document.querySelector('#wa-list a.watitle'); return !!a&&/t=90s/.test(a.href) }));
+  } else soft('Watch tab present',false);
 
   /* ---- Players: a public Lichess account (the author's own), what they play, Train vs ---- */
+  if(!await page.$('#p-form')) soft('Players tab present',false); else {
   await go('players');
   await page.selectOption('#p-site','lichess'); await page.fill('#p-user','suhaasn'); await page.click('#p-go');
   const plOk=await waitFor(page,()=>(Store.get('players-index')||[]).length>0||/No such|answered|reach|wait/.test(document.getElementById('p-err').textContent),null,40000);
@@ -203,6 +208,7 @@ async function waitFor(page,fn,arg,ms=20000){ try{ await page.waitForFunction(fn
     await page.click('#p-sheet [data-train="b"]');
     check('Players: Train vs opens the trainer and the opponent plays their move',await waitFor(page,()=>{ const S=OpeningsTab.state; return S.op&&S.op.player&&S.log.length>=1&&S.phase==='await' },null,20000),await page.evaluate(()=>document.getElementById('o-status').textContent.slice(0,120)));
   } else warnings.push('Players: Lichess could not be reached from this runner: '+plMsg);
+  }
 
   /* ---- every tab, light and dark, desktop and phone ---- */
   const VIEWS=await page.$$eval('.tabs button[data-route]',bs=>bs.map(b=>b.dataset.route));
@@ -218,6 +224,18 @@ async function waitFor(page,fn,arg,ms=20000){ try{ await page.waitForFunction(fn
   }
   if(themes.length>1){ await page.evaluate(()=>Settings.set('theme','auto')); }
 
+  /* ---- a touch screen at phone width: tap a piece, tap its square ---- */
+  try{
+    const tctx=await browser.newContext({viewport:{width:390,height:844},hasTouch:true});
+    const tp=await tctx.newPage(); tp.on('pageerror',e=>errors.push('pageerror (touch): '+(e&&e.message||e)));
+    await tp.goto(base+'#play',{waitUntil:'load'}); await waitFor(tp,()=>document.body.dataset.view==='play',null,5000);
+    await tp.selectOption('#pl-color','w'); await tp.tap('#pl-new'); await sleep(200);
+    const tc=async sq=>{ await (await tp.$(`#pl-board .sq[data-sq="${sq}"]`)).tap(); await sleep(150) };   /* scrolls the square into view, then taps it */
+    await tc('d2'); await tc('d4');
+    check('Touch: tapping a piece and then its square plays the move',await waitFor(tp,()=>PlayTab.state.moves[0]==='d4',null,3000),await tp.evaluate(()=>PlayTab.state.moves.join(' ')));
+    await tctx.close();
+  }catch(e){ warnings.push('touch check could not run here: '+(e.message||e)) }
+
   check('no page errors or console errors',!errors.length,errors.slice(0,12).join(' | '));
   fs.writeFileSync(path.join(OUT,'summary.json'),JSON.stringify({browser:BROWSER,version:browser.version(),engine:eng,results,errors,warnings},null,1));
   console.log(`\n${BROWSER}: ${results.length-failed}/${results.length} checks passed; ${errors.length} errors, ${warnings.length} warnings`);
@@ -226,6 +244,6 @@ async function waitFor(page,fn,arg,ms=20000){ try{ await page.waitForFunction(fn
   /* the screenshots as text in the log too (DUMP=1): artifacts can't always be downloaded where they're reviewed */
   if(process.env.DUMP){ const dir=path.join(OUT,'small'); for(const f of fs.readdirSync(dir).sort()){ const b=fs.readFileSync(path.join(dir,f)).toString('base64');
     console.log('SHOT:'+f); for(let i=0;i<b.length;i+=3000) console.log('B64:'+b.slice(i,i+3000)); console.log('END:'+f) } }
-  await browser.close(); srv.close();
+  await browser.close(); if(srv) srv.close();
   process.exit(failed?1:0);
 })().catch(e=>{ console.error(e); process.exit(2) });

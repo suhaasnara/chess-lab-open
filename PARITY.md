@@ -1,0 +1,74 @@
+# Chess Lab Open and the private Chess Lab: what matches, what differs, and the plan
+
+Chess Lab Open is the public version of Suhaas's private training site, Chess Lab. The two should feel like the
+same tool. The only intended difference is the data: the private site is built around his own games, course PGNs,
+calculation books and opponents, and none of that can be published. Everything that works on open data, or on the
+visitor's own data, belongs in both.
+
+This file records where the two stand (as of the `parity-1` branch, November 2026) and how to close the rest.
+
+## Now the same in both
+
+| Feature | Notes on the Open version |
+| --- | --- |
+| Board: arrows and circles | Right-click / right-drag, Shift red, Alt/Ctrl blue, Shift+Alt yellow; cleared by a left click or a new position. A PGN's own `[%cal]`/`[%csl]` shows where its notes show. Same `window.Shapes` module, rewritten comments. |
+| Takebacks | Play (counted on the saved game), opening trainer (your move and the reply; that position isn't rated again), endgames and calculation (they already had them). In puzzles and drills Open never plays a wrong move on the board, so "try again" is already the retry, and only the first try counts. |
+| Move marks and evaluation signs | `$1`–`$19`, `$146` and the rest as !, ?, !!, ??, !?, ?!, □, =, ∞, ⩲, ⩱, ±, ∓, +−, −+, N … beside the moves of imported repertoires and Guess-the-move games. |
+| Dark mode | Settings → Theme. Only colour variables change (`--head`, `--on-navy`, `--blue-bg` as in the private site). Open defaults to Match device; the private site defaults to Light. Dark text colours are checked for 4.5:1 contrast in the tests. |
+| Opening trainer | Rated/Training, opponent level 1000 → Elite, rating v2, line length, the PGN's own notes beside the move list (Training live, Rated at the end), take back, ← → through the line, Arrange, start lines per repertoire, Sidelines in repertoires (Realistic / Balanced / Sidelines first, the same weighting: share × games that stay in your file, recent-line damping, missed lines first), trappy opponent, minimum share, eval bar, Stockfish info after a line, Statistics with the average end-of-line eval. FEN-start PGNs. |
+| Players | Same idea and the same sheet shape, on the visitor's data: any Lichess or Chess.com username, games fetched by the browser. What they play with each colour, an explorer board, Train vs (their moves while their games go, then the book), a printable pre-round sheet with the line to expect against your imported repertoire. |
+| Watch | Same library logic (series, Resume/Continue, position, watched, Watched up to here, notes with timestamp links, bookmarks, tag edits, deep links and no embeds), on videos the visitor adds. |
+| Guess the move | Scoring, notes after each move, Show the game, arrows keys, eval graph; plus your own PGNs (notes, side lines, marks, arrows), judged live by Stockfish. |
+| Tactics, Calculation, Endgames, Drills, Play, Today, Progress | Already matched before this branch (on CC0 Lichess data). |
+
+## Still different, and why
+
+| Private feature | Why it is not in Open |
+| --- | --- |
+| Built-in repertoires (from his course PGNs, with the courses' notes and arrows) | Course content is copyrighted and private. Open has presets plus import: anyone can bring their own PGN or Lichess study, notes and all. |
+| Calculation exercises from his calculation books, with the books' notes | Book content. Open uses 1,092 hard CC0 Lichess puzzles in the same exercise format. |
+| Annotated master games from books in Guess the move | Book annotations. Open has master games from the CC0 Lichess broadcast database (moves only), some of Suhaas's own games, and the visitor's own PGNs. |
+| Players with over-the-board data, his notes and built prep lines; Events (event prep) | Opponents' names, event and US Chess data are private. Open's Players works on public online games of any username the visitor types. |
+| Report card over his whole history (OTB / online / combined), "Your prep in your games", Punish drills from his OTB games | His games. Open's Analyze my games builds the same kind of report and drills from the visitor's own recent games. |
+| Explain this position (asks Claude) | Needs the Claude artifact runtime; Open is a static site with no server and no keys. |
+| Account sync, offline copy, Chess Lab Pocket | Private hosting. Open keeps progress in the browser with JSON export/import and works offline once loaded (everything is static). |
+| Lichess server evals stored for his repertoires (eval column in the move list) | Built from his repertoires. Open's eval bar uses Stockfish in the browser instead. |
+| Alpha pieces | Free for personal non-commercial use only, so Open ships cburnett (see CREDITS.md). |
+
+## Not ported yet (no private data needed)
+
+These would fit Open as they are; they were left for a later pass:
+
+1. **Board and input settings**: piece animation speed, coordinates on/off, last-move and move-dot toggles, board
+   size, sounds, opponent delay, auto-next after a clean line.
+2. **Opening trainer extras**: "Never play this reply" (skip a reply in a repertoire), a review queue of your
+   repertoire mistakes, custom openings from a position ("+ New opening"), "Play as" the other side of a preset,
+   captured pieces beside the board, the move-list eval column, "Show mistakes after a line" (all / mistakes only).
+3. **Players**: opening names per line in the explorer, a rating/time-window filter, and your own notes on a player.
+4. **Watch on Today**: the private site's balanced daily plan (resume + one video from two other topics). Open shows
+   only the video in progress.
+5. **Firefox and red arrows**: Firefox always opens its menu on Shift+right-click, so a non-Shift alternative for red
+   would help Firefox users.
+
+## Plan: one source, two builds
+
+Today the two sites are separate code that has been ported back and forth by hand. The plan to stop that:
+
+1. **Shared modules first** (no behaviour change): move the code both sites run into one place, written against a
+   small interface instead of each site's globals:
+   `shared/board.js` (board, drag/tap, `Shapes`), `shared/pgn.js` (PGN parser with notes, NAGs and shapes, the
+   Guess-the-move parser), `shared/engine.js` (the Stockfish worker and its watchdog), `shared/theme.css` (the
+   colour variables, light and dark), `shared/trainer-core.js` (rating v2, variety weighting, takeback rules).
+   Each needs a `Store` (get/put/del) and a `Book` (moves/now/oppMoves) passed in.
+2. **Make the public repo the home of the shared code.** It is MIT and already clean; the private kit pulls it in
+   (git subtree or a pinned copy in `site/src/shared/`), so a fix made in either place lands in both.
+3. **Data adapters, not forks**: the private site keeps its own adapters (account database store, built-in
+   repertoires, course annotations, OTB players); Open keeps localStorage, imports and public APIs. Features check
+   for data, not for which site they're on (Players with OTB data shows OTB sections; without, only online).
+4. **One test suite for the shared code**, run by both repos, plus each site's own data tests. The browser smoke
+   test (Firefox + Chromium) runs on both.
+5. **Privacy stays enforced at the boundary**: `tools/privacy_guard.py` runs on every change to the shared code in
+   the public repo, so nothing from the private kit can come back through it.
+
+Order of work: board + Shapes + theme (smallest, already identical), then the PGN parser, then the engine, then the
+trainer core (largest, most behaviour to keep stable: drill ids and opening ratings must not change).

@@ -6,6 +6,11 @@ on:
     branches: [main, parity-1]
   pull_request:
   workflow_dispatch:
+    inputs:
+      base:
+        description: 'Test a deployed copy instead of this checkout (e.g. the live site URL); empty = this checkout'
+        required: false
+        default: ''
 
 jobs:
   smoke:
@@ -22,6 +27,8 @@ jobs:
       - name: Install Playwright and ${{ matrix.browser }}
         run: cd tests/browser && npm install --no-audit --no-fund && npx playwright install --with-deps ${{ matrix.browser }}
       - name: Smoke test in ${{ matrix.browser }}
+        env:
+          BASE: ${{ github.event.inputs.base }}
         run: cd tests/browser && DUMP=1 node smoke.js ${{ matrix.browser }} out/${{ matrix.browser }}
       - name: Screenshots and summary
         if: always()

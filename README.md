@@ -16,11 +16,18 @@ accounts, no uploads: progress lives in localStorage with JSON export/import.
   five puzzles near your puzzle rating and one opening line (your lowest-rated
   opening). It ticks off as you go, with a streak counter.
 - **Openings** — train preset openings, or import your own repertoire as a PGN
-  (Lichess study / Chessable export), or paste the link to a public Lichess study, and drill it. The opponent plays real replies
+  (paste it, choose a .pgn file, or paste the link to a public Lichess study), and drill it. The opponent plays real replies
   from books built from Lichess games: an **Opponent level** slider runs from
   Lichess 1000 up to Elite 2500+, and the book card shows your level's moves next
   to the elite book's. Each opening gets a rating: every move you find is scored
   against a difficulty from the elite share of the right move. No account needed.
+  Your PGN's own **notes, move marks (!, ?, ⩲ …) and arrows** show beside the moves (as you play in
+  Training; when the line ends in Rated). **Take back** (B) your move and the reply (that position isn't rated
+  again); step through the line with ← →; **Arrange** the list; **Start lines here** for a repertoire;
+  **Sidelines in repertoires** (Realistic / Balanced / Sidelines first) decides how often your prepared sidelines
+  come up; the ⚙ holds the trainer settings (line length, the opponent's minimum share, trappy lines, eval bar,
+  Stockfish info after a line, depth); **Statistics** lists every opening you've trained with its average
+  end-of-line eval.
 - **Tactics** — 11,260 CC0 puzzles from the Lichess puzzle database (rated 1200–2900,
   33 motifs, filter by motif and rating), with a puzzle rating (Elo against each puzzle's Lichess rating, first attempt only).
 - **Calculation** — see the whole line before you play it: on 1,092 hard, long
@@ -45,11 +52,23 @@ accounts, no uploads: progress lives in localStorage with JSON export/import.
   best line counts). **Play it out** continues any drill against Stockfish: convert
   the advantage, or hold the position.
 - **Play** — games against Stockfish from 1400 to full strength, with a blindfold
-  mode (counted peeks).
+  mode (counted peeks) and takebacks (T; counted on the saved game).
 - **Guess the move** — play through games from the winner's side and guess each
-  move (2 points for key moves): five of Suhaas's tournament games, checked clean
-  at depth 20+. A Moves panel marks your guesses, and an eval graph appears after
-  the game.
+  move (2 points for key moves): master games from the Lichess broadcasts and some of Suhaas's tournament games,
+  checked clean at depth 20+. A Moves panel marks your guesses, and an eval graph appears after
+  the game. **Add your own games**: paste or upload a PGN with your notes (comments, side lines, move marks and
+  arrows are kept); Stockfish judges other moves live.
+- **Players** — type an opponent's Lichess or Chess.com username: their last 200 public games are fetched by your
+  browser and kept on this device. See what they play with each colour, browse their moves on a board, **Train vs**
+  them in the opening trainer (the opponent plays their moves while their games go, then the book), and print a
+  **pre-round sheet** (their first moves, the line to expect against your imported repertoire, recent games).
+- **Watch** — your own chess video library: paste YouTube links; each video keeps your position, watched state,
+  notes (timestamps become links) and bookmarks, grouped by series, with Resume / Continue. No embeds: every video
+  opens on YouTube at your saved place.
+- **On every board** — right-click a square for a circle, right-drag for an arrow (Shift red, Alt or Ctrl blue,
+  Shift+Alt yellow; a left click clears them), as on Lichess. (Firefox always opens its own menu on
+  Shift+right-click and doesn't let a page block it, so red shapes are awkward there; the other colours work.)
+- **Dark mode** — Settings → Theme: Match device (default), Light or Dark.
 - **Progress** — totals and per-opening ratings, with JSON export/import.
 
 ## Data sources
@@ -85,10 +104,19 @@ cd site && python3 -m http.server 8000
 ## Tests
 
 Headless tests (jsdom) cover the board, the trainer, the PGN import, tactics,
-the analyze flow against a mocked API, and the data files:
+the analyze flow against a mocked API, Players and Watch, arrows, takebacks, the dark theme and the data files:
 
 ```sh
 cd tests && npm install && npm test
+```
+
+A real-browser smoke test (Playwright) opens every tab in **Firefox and Chromium**, plays a move on every board
+with the mouse (clicks and a drag), checks that Stockfish answers, draws arrows, takes moves back, fails on any
+console or page error, and screenshots every tab in light and dark at desktop and phone width. CI runs it on every
+push (workflow *Browsers*; screenshots are the run's artifacts). Locally:
+
+```sh
+cd tests/browser && npm install && npx playwright install firefox chromium && node smoke.js firefox
 ```
 
 CI also runs `tools/privacy_guard.py`, which fails the build if anything from
@@ -97,7 +125,7 @@ in this repo. The denylist is stored as hashes, so the guard leaks nothing itsel
 
 ## Privacy
 
-Your games are fetched by **your** browser straight from lichess.org /
-api.chess.com and never leave it. Progress, imported repertoires and saved
-drills live in your browser's localStorage; the Progress tab exports and
-imports them as JSON.
+Your games (and the opponents you scout in Players) are fetched by **your** browser straight from lichess.org /
+api.chess.com and never leave it. Progress, imported repertoires, your own Guess-the-move games, players and
+your video library live in your browser's localStorage; the Progress tab exports and imports them as JSON.
+The page contacts YouTube only when you press *Get title* in Watch.
