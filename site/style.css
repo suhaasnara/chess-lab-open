@@ -294,3 +294,4 @@ footer .inner{padding-block:18px;font-size:.85rem;color:var(--muted)}
 /* Openings: the type-a-move box opens from the keyboard button under the board */
 .btn.icon{font-size:1rem;line-height:1;padding:5px 10px}
 .btn.icon[aria-pressed="true"]{background:var(--callout);border-color:var(--blue)}
+#g-list .glabel{margin:10px 2px 2px;font-size:.72rem}#g-list .glabel:first-child{margin-top:0}

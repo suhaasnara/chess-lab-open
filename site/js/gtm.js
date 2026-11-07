@@ -14,13 +14,19 @@ function saveResult(){ const r=results(); r[S.game.id]={pts:S.pts,max:S.game.max
 function renderList(){
   const el=$('g-list'); el.innerHTML='';
   const res=results();
-  for(const e of INDEX||[]){
+  // two groups when master games are present (index rows with set:"masters"): master games first, then mine
+  const rows=INDEX||[], masters=rows.filter(e=>e.set==='masters'), mine=rows.filter(e=>e.set!=='masters');
+  const groups=masters.length?[['Master games',masters],['My games',mine]]:[['',mine]];
+  for(const [head,list] of groups){
+   if(head&&list.length){ const h=document.createElement('h3'); h.className='label glabel'; h.textContent=head; el.appendChild(h) }
+   for(const e of list){
     const r=res[e.id];
     const b=document.createElement('button'); b.className='drill';
     b.setAttribute('aria-current',S.game&&S.game.id===e.id?'true':'false');
     b.innerHTML=`<span class="src">${r?r.pts+'/'+r.max:''}</span><span><span class="opp">${esc(e.title)}</span><br><span class="meta">${esc(e.meta)}</span></span><span class="evalchip">&#9654;</span>`;
     b.addEventListener('click',()=>load(e.file));
     el.appendChild(b);
+   }
   }
   if(!el.children.length) el.innerHTML='<p class="empty">No games yet.</p>';
 }
