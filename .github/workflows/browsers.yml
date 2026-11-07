@@ -22,7 +22,7 @@ jobs:
       - name: Install Playwright and ${{ matrix.browser }}
         run: cd tests/browser && npm install --no-audit --no-fund && npx playwright install --with-deps ${{ matrix.browser }}
       - name: Smoke test in ${{ matrix.browser }}
-        run: cd tests/browser && node smoke.js ${{ matrix.browser }} out/${{ matrix.browser }}
+        run: cd tests/browser && DUMP=1 node smoke.js ${{ matrix.browser }} out/${{ matrix.browser }}
       - name: Screenshots and summary
         if: always()
         uses: actions/upload-artifact@v4

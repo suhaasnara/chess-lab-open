@@ -11,7 +11,7 @@ const {chromium,firefox,webkit}=require('playwright');
 const BROWSER=process.argv[2]||'chromium';
 const OUT=path.resolve(process.argv[3]||path.join(__dirname,'out',BROWSER));
 const SITE=path.join(__dirname,'..','..','site');
-fs.mkdirSync(OUT,{recursive:true});
+fs.mkdirSync(OUT,{recursive:true}); if(process.env.DUMP) fs.mkdirSync(path.join(OUT,'small'),{recursive:true});
 
 const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json',
   '.wasm':'application/wasm','.svg':'image/svg+xml','.jpg':'image/jpeg','.png':'image/png','.txt':'text/plain; charset=utf-8'};
@@ -181,6 +181,29 @@ async function waitFor(page,fn,arg,ms=20000){ try{ await page.waitForFunction(fn
     check('Guess the move: the guess is scored',await waitFor(page,p=>GtmTab.state.ply>p&&GtmTab.state.rows.length>0,p0,10000),await page.evaluate(()=>document.getElementById('g-status').textContent.slice(0,100))) }
   await page.screenshot({path:path.join(OUT,'guess.png')});
 
+  /* ---- Watch: add a video by its link ---- */
+  await go('watch');
+  await page.fill('#wa-aurl','https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=90'); await page.fill('#wa-atitle','1. A test lecture'); await page.fill('#wa-aser','Test course');
+  await page.click('#wa-asave'); await sleep(150);
+  check('Watch: a video is added and deep-links at your position',await page.evaluate(()=>{ const a=document.querySelector('#wa-list a.watitle'); return !!a&&/t=90s/.test(a.href) }));
+
+  /* ---- Players: a public Lichess account (the author's own), what they play, Train vs ---- */
+  await go('players');
+  await page.selectOption('#p-site','lichess'); await page.fill('#p-user','suhaasn'); await page.click('#p-go');
+  const plOk=await waitFor(page,()=>(Store.get('players-index')||[]).length>0||/No such|answered|reach|wait/.test(document.getElementById('p-err').textContent),null,40000);
+  const plMsg=await page.evaluate(()=>document.getElementById('p-err').textContent);
+  if(plOk&&await page.evaluate(()=>(Store.get('players-index')||[]).length>0)){
+    check('Players: their public games are fetched',true,plMsg);
+    const ub=await page.$('#p-view [data-uci]'); if(ub){ await ub.click(); await sleep(100) }
+    check('Players: the explorer plays their move on the board',await page.evaluate(()=>PlayersTab.state.line.length===1));
+    await page.screenshot({path:path.join(OUT,'players.png')});
+    await page.click('#p-view [data-act="sheet"]'); await sleep(150);
+    check('Players: the pre-round sheet renders',await page.evaluate(()=>/Line to expect/.test(document.getElementById('p-sheet').textContent)));
+    await page.screenshot({path:path.join(OUT,'players-sheet.png'),fullPage:true});
+    await page.click('#p-sheet [data-train="b"]');
+    check('Players: Train vs opens the trainer and the opponent plays their move',await waitFor(page,()=>{ const S=OpeningsTab.state; return S.op&&S.op.player&&S.log.length>=1&&S.phase==='await' },null,20000),await page.evaluate(()=>document.getElementById('o-status').textContent.slice(0,120)));
+  } else warnings.push('Players: Lichess could not be reached from this runner: '+plMsg);
+
   /* ---- every tab, light and dark, desktop and phone ---- */
   const VIEWS=await page.$$eval('.tabs button[data-route]',bs=>bs.map(b=>b.dataset.route));
   const themes=await page.evaluate(()=>Settings.DEF.theme!==undefined?['light','dark']:['light']);
@@ -190,7 +213,8 @@ async function waitFor(page,fn,arg,ms=20000){ try{ await page.waitForFunction(fn
     for(const v of VIEWS){ await go(v); await sleep(200);
       const sw=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1);
       if(vw==='phone') check(`no sideways scroll on ${v} (phone, ${theme})`,!sw);
-      await page.screenshot({path:path.join(OUT,`${v}-${vw}-${theme}.png`),fullPage:vw==='phone'}) }
+      await page.screenshot({path:path.join(OUT,`${v}-${vw}-${theme}.png`),fullPage:vw==='phone'});
+      if(process.env.DUMP) await page.screenshot({path:path.join(OUT,'small',`${v}-${vw}-${theme}.jpg`),type:'jpeg',quality:42}) }
   }
   if(themes.length>1){ await page.evaluate(()=>Settings.set('theme','auto')); }
 
@@ -199,6 +223,9 @@ async function waitFor(page,fn,arg,ms=20000){ try{ await page.waitForFunction(fn
   console.log(`\n${BROWSER}: ${results.length-failed}/${results.length} checks passed; ${errors.length} errors, ${warnings.length} warnings`);
   if(errors.length) console.log('errors:\n  '+errors.join('\n  '));
   if(warnings.length) console.log('warnings:\n  '+warnings.slice(0,30).join('\n  '));
+  /* the screenshots as text in the log too (DUMP=1): artifacts can't always be downloaded where they're reviewed */
+  if(process.env.DUMP){ const dir=path.join(OUT,'small'); for(const f of fs.readdirSync(dir).sort()){ const b=fs.readFileSync(path.join(dir,f)).toString('base64');
+    console.log('SHOT:'+f); for(let i=0;i<b.length;i+=3000) console.log('B64:'+b.slice(i,i+3000)); console.log('END:'+f) } }
   await browser.close(); srv.close();
   process.exit(failed?1:0);
 })().catch(e=>{ console.error(e); process.exit(2) });
