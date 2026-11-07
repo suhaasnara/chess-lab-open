@@ -259,7 +259,22 @@
    "fen": "8/8/1KP5/3r4/8/8/8/k7 w - - 0 1",
    "goal": "win",
    "end": "convert",
-   "text": "Only 1 c7 wins. Walk the king down the board to escape the checks, and when the pawn promotes, look out: a new queen would be met by a stalemate trick. Promote to the piece that still wins."
+   "text": "Only 1 c7 wins. Walk the king towards the rook to escape the checks, and when Black plays ...Rd4!, a new queen is met by ...Rc4+, and after Qxc4 it's stalemate. Promote to the piece that still wins.",
+   "prefer": [
+    "c6c7",
+    "d5d6",
+    "b6b5",
+    "d6d5",
+    "b5b4",
+    "d5d4",
+    "b4b3",
+    "d4d3",
+    "b3c2",
+    "d3d4",
+    "c7c8r",
+    "d4a4",
+    "c2b3"
+   ]
   },
   {
    "id": "r-vsp-cut",
@@ -401,7 +416,7 @@
    "fen": "6r1/8/5PP1/8/8/8/k7/7K w - - 0 1",
    "goal": "win",
    "end": "convert",
-   "text": "Two connected passed pawns on the 6th rank beat a lone rook when the defending king is far away. Push them forward: the rook can't stop both, and you win it for a pawn."
+   "text": "Two connected passed pawns on the 6th rank beat a lone rook when the defending king is far away. Push them forward: the rook can stop only one, and the other promotes."
   }
  ]
 }

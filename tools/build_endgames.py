@@ -66,8 +66,9 @@ def user_node(b, goal):
         node = {'b': '', 'w': ' '.join(m['uci'] for m in W), 'd': ' '.join(m['uci'] for m in D)}
         good = [m['uci'] for m in D]
     good.sort(key=lambda u: (u not in PREFER, PREFER.index(u) if u in PREFER else 0))   # the textbook moves first (stored line, then expansion)
-    if goal == 'win' and W:
-        good = [u for u in good if u in bset] + [u for u in good if u not in bset]
+    if goal == 'win' and W:   # textbook (prefer) moves lead the stored line even when a faster win exists; grading is unchanged
+        pref = [u for u in good if u in PREFER]
+        good = pref + [u for u in good if u in bset and u not in pref] + [u for u in good if u not in bset and u not in pref]
     return {k: v for k, v in node.items() if v}, good
 
 def finished(b, prev, mv, goal, end, depth):
@@ -136,8 +137,12 @@ def build(p, budget):
         if not ms:
             return None
         u = ms[0]['uci']
+        same = [m['uci'] for m in ms if m['category'] == ms[0]['category']]
         if GOAL[0] == 'draw':
-            u = keep_material(b, [m['uci'] for m in ms if m['category'] == ms[0]['category']])
+            u = keep_material(b, same)
+        pref = [x for x in PREFER if x in same]   # a textbook defence (prefer) with the same result as the tablebase's best
+        if pref:
+            u = pref[0]
         nodes[k] = u
         return u
 
