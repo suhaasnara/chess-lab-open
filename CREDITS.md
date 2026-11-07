@@ -59,6 +59,12 @@ cburnett instead.)
   [Lichess open database](https://database.lichess.org/) (**CC0 1.0**): position and move
   counts only. Thank you, Lichess. Consider [donating](https://lichess.org/patron).
   Do not build them from commercial databases or TWIC: not redistributable.
+- **Guess the move, master games** (`site/data/gtm/game11.json` …) — game moves from the
+  [Lichess broadcast database](https://database.lichess.org/) (**CC0 1.0**), picked and built by
+  `.github/workflows/gtm-masters.yml` (`tools/broadcast_games.py`, `tools/build_gtm.py`; scoring and evals by Stockfish).
+  No annotations: the moves only. The other games are Suhaas's own, with his own notes.
+- **The 2200+ club book** reads several months of the open database in parallel
+  (`.github/workflows/build-club-months.yml`, `tools/merge_club.py`).
 
 ## Analyze my games
 
