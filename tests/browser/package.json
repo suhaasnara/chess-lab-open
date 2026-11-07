@@ -1,0 +1,6 @@
+{
+  "name": "chess-lab-open-browser-tests",
+  "private": true,
+  "scripts": { "smoke": "node smoke.js" },
+  "dependencies": { "playwright": "1.63.0" }
+}

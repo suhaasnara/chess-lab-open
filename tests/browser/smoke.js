@@ -1,0 +1,204 @@
+/* Chess Lab Open — real-browser smoke test (Playwright), run in CI on Firefox and Chromium.
+     node tests/browser/smoke.js <firefox|chromium> [outDir]
+   Serves site/ from a local static server, opens every tab, plays a move on every board with the
+   real mouse (clicks and a drag), checks that Stockfish answers, draws an arrow with a right-drag,
+   takes moves back, collects console errors and page errors, and saves screenshots of every tab in
+   light and dark, at desktop and phone width. Exit code 1 when a check fails. */
+'use strict';
+const http=require('http'), fs=require('fs'), path=require('path');
+const {chromium,firefox,webkit}=require('playwright');
+
+const BROWSER=process.argv[2]||'chromium';
+const OUT=path.resolve(process.argv[3]||path.join(__dirname,'out',BROWSER));
+const SITE=path.join(__dirname,'..','..','site');
+fs.mkdirSync(OUT,{recursive:true});
+
+const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json',
+  '.wasm':'application/wasm','.svg':'image/svg+xml','.jpg':'image/jpeg','.png':'image/png','.txt':'text/plain; charset=utf-8'};
+function serve(){
+  return new Promise(res=>{
+    const srv=http.createServer((req,rsp)=>{
+      let p=decodeURIComponent(req.url.split('?')[0].split('#')[0]); if(p.endsWith('/')) p+='index.html';
+      const f=path.join(SITE,path.normalize(p).replace(/^(\.\.[/\\])+/,''));
+      if(!f.startsWith(SITE)||!fs.existsSync(f)||fs.statSync(f).isDirectory()){ rsp.writeHead(404); rsp.end('not found'); return }
+      rsp.writeHead(200,{'Content-Type':MIME[path.extname(f)]||'application/octet-stream','Cache-Control':'no-store'});
+      fs.createReadStream(f).pipe(rsp);
+    });
+    srv.listen(0,'127.0.0.1',()=>res(srv));
+  });
+}
+
+const results=[]; let failed=0;
+function check(name,ok,detail=''){ results.push({name,ok:!!ok,detail:String(detail||'')}); if(!ok) failed++; console.log((ok?'  ok   ':'  FAIL ')+name+(detail?' — '+detail:'')) }
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function waitFor(page,fn,arg,ms=20000){ try{ await page.waitForFunction(fn,arg,{timeout:ms,polling:100}); return true }catch(e){ return false } }
+
+(async()=>{
+  const srv=await serve(); const base=`http://127.0.0.1:${srv.address().port}/`;
+  const type={chromium,firefox,webkit}[BROWSER]; if(!type) throw new Error('unknown browser '+BROWSER);
+  const browser=await type.launch();
+  const ctx=await browser.newContext({viewport:{width:1280,height:900},colorScheme:'light'});
+  const page=await ctx.newPage();
+  const errors=[], warnings=[];
+  page.on('pageerror',e=>errors.push('pageerror: '+(e&&e.message||e)));
+  page.on('console',m=>{ const t=m.type(); const txt=m.text();
+    const at=(m.location()&&m.location().url)||'';
+    if(t==='error'){ (/fonts\.(googleapis|gstatic)|favicon/.test(txt+at)||(/Failed to load resource/.test(txt)&&at&&!at.startsWith(base))?warnings:errors).push('console.error: '+txt+(at?' @ '+at:'')) }
+    else if(t==='warning') warnings.push('console.warn: '+txt) });
+  page.on('requestfailed',r=>{ const u=r.url(); (u.startsWith(base)?errors:warnings).push('request failed: '+u+' ('+(r.failure()&&r.failure().errorText)+')') });
+  page.on('worker',w=>{ warnings.push('worker started: '+w.url().slice(0,80)) });
+
+  console.log(`== ${BROWSER} ${browser.version()} at ${base}`);
+  await page.goto(base+'#today',{waitUntil:'load'});
+  check('page loads with every tab',await page.$$eval('.tabs button[data-route]',b=>b.length)>=11);
+
+  /* the board's squares: real mouse on the centre of a square */
+  const center=async(board,sq)=>{ const el=await page.$(`#${board} .sq[data-sq="${sq}"]`); if(!el) return null; const b=await el.boundingBox(); return b&&[b.x+b.width/2,b.y+b.height/2] };
+  async function tap(board,from,to){ const a=await center(board,from), b=await center(board,to); if(!a||!b) return false;
+    await page.mouse.click(a[0],a[1]); await sleep(80); await page.mouse.click(b[0],b[1]); return true }
+  async function drag(board,from,to){ const a=await center(board,from), b=await center(board,to); if(!a||!b) return false;
+    await page.mouse.move(a[0],a[1]); await page.mouse.down(); await page.mouse.move((a[0]+b[0])/2,(a[1]+b[1])/2,{steps:6}); await page.mouse.move(b[0],b[1],{steps:6}); await page.mouse.up(); return true }
+  async function rightDrag(board,from,to,mods=[]){ const a=await center(board,from), b=await center(board,to); if(!a||!b) return false;
+    for(const k of mods) await page.keyboard.down(k);
+    await page.mouse.move(a[0],a[1]); await page.mouse.down({button:'right'}); await page.mouse.move(b[0],b[1],{steps:6}); await page.mouse.up({button:'right'});
+    for(const k of mods) await page.keyboard.up(k); return true }
+  const go=async v=>{ await page.evaluate(v=>{ location.hash='#'+v },v); await waitFor(page,v=>document.body.dataset.view===v,v,5000); await sleep(250) };
+
+  /* ---- the engine ---- */
+  await go('play');
+  const eng=await page.evaluate(async()=>{ const t=performance.now(); const a=await SharedEngine.analyse('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',10,1,15000);
+    return {a,name:SharedEngine.name,why:SharedEngine.why,failed:SharedEngine.failed,ms:Math.round(performance.now()-t)} });
+  check('Stockfish answers an analysis',eng.a&&eng.a.length&&eng.a[0].uci,`${eng.name||'no engine'} in ${eng.ms} ms${eng.why?'; '+eng.why:''}${eng.a&&eng.a[0]?'; best '+eng.a[0].uci:''}`);
+  check('Stockfish 18 lite (WebAssembly) is the engine, not a fallback',/^Stockfish 18 lite$/.test(eng.name||''),eng.name+(eng.why?' — '+eng.why:''));
+  const pl=await page.evaluate(async()=>SharedEngine.play('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',1500,300));
+  check('Stockfish plays a move at limited strength',/^[a-h][1-8][a-h][1-8]/.test(pl||''),pl);
+
+  /* ---- Play: drag e2-e4, the bot answers; take back ---- */
+  await page.selectOption('#pl-elo','1400'); await page.selectOption('#pl-color','w'); await page.click('#pl-new'); await sleep(200);
+  await drag('pl-board','e2','e4');
+  check('Play: a dragged move is played',await waitFor(page,()=>PlayTab.state.moves[0]==='e4',null,3000),await page.evaluate(()=>PlayTab.state.moves.join(' ')));
+  check('Play: the bot answers',await waitFor(page,()=>PlayTab.state.moves.length>=2,null,20000),await page.evaluate(()=>PlayTab.state.moves.join(' ')));
+  await tap('pl-board','g1','f3');
+  check('Play: a tapped move (click, click) is played',await waitFor(page,()=>PlayTab.state.moves[2]==='Nf3',null,3000),await page.evaluate(()=>PlayTab.state.moves.join(' ')));
+  await waitFor(page,()=>PlayTab.state.moves.length>=4&&!PlayTab.state.busy,null,20000);
+  if(await page.$('#pl-back')){
+    await page.click('#pl-back'); await sleep(150);
+    check('Play: Take back removes your move and the reply',await page.evaluate(()=>PlayTab.state.moves.length===2&&PlayTab.state.g.turn()==='w'),await page.evaluate(()=>PlayTab.state.moves.join(' ')));
+  }
+  /* arrows and circles */
+  const hasShapes=await page.evaluate(()=>!!window.Shapes);
+  if(hasShapes){
+    await rightDrag('pl-board','d2','d4'); await sleep(100);
+    check('Arrows: a right-drag draws an arrow',await page.evaluate(()=>{ const s=document.querySelector('#pl-board>svg.shapes'); return !!(s&&s.querySelector('line,polygon')) }));
+    await rightDrag('pl-board','c2','c2',['Shift']); await sleep(100);
+    check('Arrows: a right-click with Shift draws a red circle',await page.evaluate(()=>{ const s=document.querySelector('#pl-board>svg.shapes circle'); return !!s&&/c2410c/i.test(s.getAttribute('stroke')) }));
+    const ctxPrevented=await page.evaluate(()=>{ const e=new MouseEvent('contextmenu',{bubbles:true,cancelable:true}); document.querySelector('#pl-board .sq').dispatchEvent(e); return e.defaultPrevented });
+    check('Arrows: no context menu on the board',ctxPrevented);
+    const a=await center('pl-board','h3'); await page.mouse.click(a[0],a[1]); await sleep(100);
+    check('Arrows: a left click clears them',await page.evaluate(()=>!document.querySelector('#pl-board>svg.shapes')));
+  }else check('Arrows module present (window.Shapes)',false,'not implemented yet');
+  await page.screenshot({path:path.join(OUT,'play-game.png')});
+
+  /* ---- Openings: pick a preset, play a move with the mouse, the trainer judges it ---- */
+  await go('openings');
+  await page.click('#o-pick'); await sleep(150);
+  const presetBtn=await page.$('#o-list button.drill:has-text("Italian Game")');
+  if(presetBtn) await presetBtn.click(); else await page.evaluate(()=>OpeningsTab.selectOpening('preset-italian'));
+  const oReady=await waitFor(page,()=>{ const S=OpeningsTab.state; return S.op&&S.phase==='await'&&!S.busy&&S.g.turn()==='w' },null,30000);
+  check('Openings: preset loads and the book opponent replies',oReady,await page.evaluate(()=>OpeningsTab.state.log.map(e=>e.san).join(' ')));
+  if(oReady){
+    const before=await page.evaluate(()=>OpeningsTab.state.log.length);
+    const mv=await page.evaluate(()=>{ const g=OpeningsTab.state.g; const m=g.moves({verbose:true}).find(m=>m.san==='c3')||g.moves({verbose:true}).find(m=>m.san==='d3')||g.moves({verbose:true})[0]; return [m.from,m.to,m.san] });
+    await tap('o-board',mv[0],mv[1]);
+    const judged=await waitFor(page,b=>{ const S=OpeningsTab.state; const t=document.getElementById('o-status').textContent; return (S.log.length>b||/isn.t|loses|Rare|Not a book|playable/.test(t))&&!/Checking/.test(t) },before,25000);
+    check('Openings: your move is judged (book or Stockfish)',judged,`${mv[2]}: `+await page.evaluate(()=>document.getElementById('o-status').textContent.slice(0,140)));
+    const oppReplied=await waitFor(page,b=>OpeningsTab.state.log.length>=b+2||OpeningsTab.state.phase==='done'||/isn.t|loses|Not a book/.test(document.getElementById('o-status').textContent),before,20000);
+    check('Openings: the opponent answers again (or the miss is shown)',oppReplied);
+    const tb=await page.$('#o-back');
+    if(tb){ await waitFor(page,()=>OpeningsTab.state.phase==='await'&&!OpeningsTab.state.busy,null,15000);
+      const n0=await page.evaluate(()=>OpeningsTab.state.log.length);
+      const can=await page.evaluate(()=>!document.getElementById('o-back').disabled);
+      if(can){ await page.click('#o-back'); await sleep(150);
+        check('Openings: Take back undoes your move and the reply',await page.evaluate(n0=>OpeningsTab.state.log.length<n0&&OpeningsTab.state.g.turn()==='w',n0),`${n0} -> `+await page.evaluate(()=>OpeningsTab.state.log.length)) }
+    }
+  }
+  await page.screenshot({path:path.join(OUT,'openings-line.png')});
+
+  /* ---- Tactics: the solution's first move with the mouse ---- */
+  await go('tactics');
+  await waitFor(page,()=>!!TacticsTab.lib&&TacticsTab.lib.length,null,20000);
+  await page.click('#t-next'); await sleep(200);
+  const tmv=await page.evaluate(()=>{ const S=TacticsTab.state; const u=S.cur.moves[S.step]; return [u.slice(0,2),u.slice(2,4),S.step] });
+  await tap('t-board',tmv[0],tmv[1]);
+  check('Tactics: the right move is accepted',await waitFor(page,s=>TacticsTab.state.step>s,tmv[2],4000),tmv.join(' '));
+  /* a wrong move, then (when it exists) Take back to retry */
+  await page.click('#t-next'); await sleep(200);
+  const wrong=await page.evaluate(()=>{ const S=TacticsTab.state; const u=S.cur.moves[S.step]; const m=S.g.moves({verbose:true}).find(m=>m.from+m.to!==u.slice(0,4)&&!(()=>{const g=new Chess(S.g.fen());g.move(m);return g.in_checkmate()})()); return m?[m.from,m.to]:null });
+  if(wrong){ await tap('t-board',wrong[0],wrong[1]); await sleep(300);
+    check('Tactics: a wrong move is marked',await page.evaluate(()=>/isn.t it|Not quite/.test(document.getElementById('t-status-box').textContent)),wrong.join('')+': '+await page.evaluate(()=>document.getElementById('t-status-box').textContent.slice(0,90)));
+    if(await page.$('#t-back')){ const vis=await page.evaluate(()=>{ const b=document.getElementById('t-back'); return b&&!b.hidden&&!b.disabled });
+      if(vis){ await page.click('#t-back'); await sleep(150); check('Tactics: Take back gives a retry',await page.evaluate(()=>TacticsTab.state.retry===true||/Try again|retry/i.test(document.getElementById('t-status-box').textContent))) } } }
+  await page.screenshot({path:path.join(OUT,'tactics.png')});
+
+  /* ---- Calculation: enter the solution's first move, submit ---- */
+  await go('calc');
+  await waitFor(page,()=>!!CalcTab.lib&&CalcTab.lib.length,null,20000);
+  await page.click('#cc-next'); await sleep(200);
+  const cmv=await page.evaluate(()=>{ const u=CalcTab.state.cur.moves[1]; return [u.slice(0,2),u.slice(2,4)] });
+  await tap('cc-board',cmv[0],cmv[1]);
+  check('Calculation: a move enters the line',await waitFor(page,()=>CalcTab.state.line.length===1,null,3000));
+  await page.click('#cc-submit');
+  check('Calculation: Submit grades the line',await waitFor(page,()=>CalcTab.state.sub,null,15000),await page.evaluate(()=>document.getElementById('cc-status').textContent.slice(0,100)));
+  await page.screenshot({path:path.join(OUT,'calc.png')});
+
+  /* ---- Endgames: the tablebase's best move; the defence replies ---- */
+  await go('endgames');
+  await waitFor(page,()=>!!EndgamesTab.data&&EndgamesTab.data.positions.length,null,20000);
+  await page.click('#eg-next'); await sleep(200);
+  const emv=await page.evaluate(()=>{ const S=EndgamesTab.state; const n=S.cur.nodes&&S.cur.nodes[normKey(S.g.fen())]; const s=n&&(n.b||n.w||n.d)||S.cur.line[0]; const u=s.split(' ')[0]; return [u.slice(0,2),u.slice(2,4)] });
+  await tap('eg-board',emv[0],emv[1]);
+  check('Endgames: a move is graded and the defence replies',await waitFor(page,()=>EndgamesTab.state.hist.length>=2||EndgamesTab.state.phase==='done',null,20000),await page.evaluate(()=>document.getElementById('eg-status').textContent.slice(0,100)));
+  await page.screenshot({path:path.join(OUT,'endgames.png')});
+
+  /* ---- Drills: a saved drill (as Analyze my games makes them), judged by Stockfish ---- */
+  await page.evaluate(()=>{ Store.put('adrills',[{id:'atest0001',kind:'mine',fen:'r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3',color:'w',played:'a3',playedUci:'a2a3',best:null,
+    opp:'Test opponent',date:'2026-11-01',drop:0.12,before:0.4,url:'https://lichess.org/'}]) });
+  await go('drills');
+  await page.click('#d-list button.drill'); await sleep(200);
+  await tap('d-board','d2','d4');
+  check('Drills: Stockfish judges your move',await waitFor(page,()=>{ const t=document.getElementById('d-status').textContent; return !/Checking/.test(t)&&(DrillsTab.state.done||/still gives|Could not|isn/.test(t)) },null,25000),await page.evaluate(()=>document.getElementById('d-status').textContent.slice(0,120)));
+  await page.screenshot({path:path.join(OUT,'drills.png')});
+
+  /* ---- Guess the move: theory plays itself; guess the game move ---- */
+  await go('guess');
+  await waitFor(page,()=>document.querySelectorAll('#g-list button.drill').length>0,null,10000);
+  await page.click('#g-list button.drill');
+  const gReady=await waitFor(page,()=>{ const S=GtmTab.state; return S.game&&S.ply>=S.game.theory&&!S.busy&&((S.ply%2===0?'w':'b')===S.game.winner)&&/your move/.test(document.getElementById('g-status').textContent) },null,30000);
+  check('Guess the move: the game reaches your first guess',gReady);
+  if(gReady){ const p0=await page.evaluate(()=>GtmTab.state.ply);
+    const gmv=await page.evaluate(()=>{ const S=GtmTab.state; const m=new Chess(S.g.fen()).move(S.game.moves[S.ply]); return [m.from,m.to] });
+    await tap('g-board',gmv[0],gmv[1]);
+    check('Guess the move: the guess is scored',await waitFor(page,p=>GtmTab.state.ply>p&&GtmTab.state.rows.length>0,p0,10000),await page.evaluate(()=>document.getElementById('g-status').textContent.slice(0,100))) }
+  await page.screenshot({path:path.join(OUT,'guess.png')});
+
+  /* ---- every tab, light and dark, desktop and phone ---- */
+  const VIEWS=await page.$$eval('.tabs button[data-route]',bs=>bs.map(b=>b.dataset.route));
+  const themes=await page.evaluate(()=>Settings.DEF.theme!==undefined?['light','dark']:['light']);
+  for(const theme of themes) for(const [vw,w,h] of [['desktop',1280,900],['phone',390,844]]){
+    await page.setViewportSize({width:w,height:h});
+    if(theme!=='light'||themes.length>1) await page.evaluate(t=>Settings.set('theme',t),theme);
+    for(const v of VIEWS){ await go(v); await sleep(200);
+      const sw=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1);
+      if(vw==='phone') check(`no sideways scroll on ${v} (phone, ${theme})`,!sw);
+      await page.screenshot({path:path.join(OUT,`${v}-${vw}-${theme}.png`),fullPage:vw==='phone'}) }
+  }
+  if(themes.length>1){ await page.evaluate(()=>Settings.set('theme','auto')); }
+
+  check('no page errors or console errors',!errors.length,errors.slice(0,12).join(' | '));
+  fs.writeFileSync(path.join(OUT,'summary.json'),JSON.stringify({browser:BROWSER,version:browser.version(),engine:eng,results,errors,warnings},null,1));
+  console.log(`\n${BROWSER}: ${results.length-failed}/${results.length} checks passed; ${errors.length} errors, ${warnings.length} warnings`);
+  if(errors.length) console.log('errors:\n  '+errors.join('\n  '));
+  if(warnings.length) console.log('warnings:\n  '+warnings.slice(0,30).join('\n  '));
+  await browser.close(); srv.close();
+  process.exit(failed?1:0);
+})().catch(e=>{ console.error(e); process.exit(2) });

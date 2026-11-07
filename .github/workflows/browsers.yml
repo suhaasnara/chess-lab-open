@@ -1,0 +1,32 @@
+name: Browsers
+# Real-browser smoke test: every tab, a move on every board, Stockfish, arrows, takebacks,
+# console errors, and screenshots (light/dark, desktop/phone) in Firefox and Chromium.
+on:
+  push:
+    branches: [main, parity-1]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [firefox, chromium]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright and ${{ matrix.browser }}
+        run: cd tests/browser && npm install --no-audit --no-fund && npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Smoke test in ${{ matrix.browser }}
+        run: cd tests/browser && node smoke.js ${{ matrix.browser }} out/${{ matrix.browser }}
+      - name: Screenshots and summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-${{ matrix.browser }}
+          path: tests/browser/out/${{ matrix.browser }}
+          retention-days: 14
