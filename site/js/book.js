@@ -60,6 +60,14 @@ window.Book=(()=>{
     if(out) cache.set(k,out);
     return out;
   }
+  /* The same lookup without waiting, for a book that has already loaded (else null). Used where many positions are
+     looked at in one go (how much of the book stays inside your repertoire). */
+  function now(fen,level='masters'){
+    const lv=LEVELS[level]?level:'masters', book=STATIC[lv]; if(!book) return null;
+    const k=key(fen)+'|'+lv; if(cache.has(k)){ const c=cache.get(k); return c&&!c.demo?c:null }
+    const rows=book[key(fen)]; if(!rows||!rows.length) return null;
+    const out=fromRows(rows); out.source=lv==='masters'?'elite':'club'; cache.set(k,out); return out;
+  }
   /* The opponent's book: the chosen club band where it has 20+ games, else the elite book. */
   async function oppMoves(fen){
     const lv=Settings.get('olevel');
@@ -77,7 +85,7 @@ window.Book=(()=>{
     return best; /* [eco, name] */
   }
   function levelLabel(lv){ return (LEVELS[lv]||LEVELS.masters).label }
-  return {moves,oppMoves,nameOf,levelLabel,LEVELS,ORDER,
+  return {moves,now,oppMoves,nameOf,levelLabel,LEVELS,ORDER,
     hasBook:lv=>!!STATIC[LEVELS[lv]?lv:'masters'],
     get hasStatic(){return !!STATIC.masters},
     ready:()=>Promise.all([namesP,demoP,staticBook('masters')])};

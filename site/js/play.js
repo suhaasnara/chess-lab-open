@@ -6,12 +6,12 @@
 'use strict';
 (function(){
 let board=null;
-const S={g:null,me:'w',elo:1800,blind:false,peeks:0,over:false,busy:false,resignArm:false,moves:[],start:null,goal:null,label:''};
+const S={g:null,me:'w',elo:1800,blind:false,peeks:0,over:false,busy:false,resignArm:false,moves:[],start:null,goal:null,label:'',takebacks:0,gid:0};
 
 function games(){ return Store.get('play-games')||[] }
 function saveGame(result,reason){
   const list=games();
-  list.unshift({t:Date.now(),me:S.me,elo:S.elo,blind:S.blind,peeks:S.peeks,result,reason,moves:S.moves.join(' '),fen:S.start||undefined,goal:S.goal||undefined,label:S.label||undefined});
+  list.unshift({t:Date.now(),me:S.me,elo:S.elo,blind:S.blind,peeks:S.peeks,takebacks:S.takebacks||undefined,result,reason,moves:S.moves.join(' '),fen:S.start||undefined,goal:S.goal||undefined,label:S.label||undefined});
   Store.put('play-games',list.slice(0,30)); renderGames();
 }
 function renderGames(){
@@ -20,13 +20,13 @@ function renderGames(){
   const W=list.filter(g=>g.result==='win').length,D=list.filter(g=>g.result==='draw').length,L=list.length-W-D;
   el.innerHTML=(list.length?`<p class="note">${W} wins · ${D} draws · ${L} losses</p>`:'<p class="note">No games yet.</p>')+
     list.slice(0,12).map(g=>`<div class="gamerow"><span class="src">${new Date(g.t).toISOString().slice(0,10)}</span>
-      <span>${g.goal?'Play it out ('+(g.goal==='win'?'convert':'hold')+') · ':''}${g.me==='w'?'White':'Black'} vs Stockfish${g.elo==='max'?'':' ('+g.elo+')'}${g.blind?' · blindfold'+(g.peeks?' ('+g.peeks+' peeks)':''):''}</span>
+      <span>${g.goal?'Play it out ('+(g.goal==='win'?'convert':'hold')+') · ':''}${g.me==='w'?'White':'Black'} vs Stockfish${g.elo==='max'?'':' ('+g.elo+')'}${g.blind?' · blindfold'+(g.peeks?' ('+g.peeks+' peeks)':''):''}${g.takebacks?' · '+g.takebacks+' takeback'+(g.takebacks>1?'s':''):''}</span>
       <span class="pill ${g.result==='win'?'good':g.result==='draw'?'none':'bad'}">${g.result}</span>
       <a class="note" href="${g.fen?'https://lichess.org/analysis/'+encodeURIComponent(g.fen.replace(/ /g,'_')):'https://lichess.org/analysis/pgn/'+encodeURIComponent(g.moves)}" target="_blank" rel="noopener">review ↗</a></div>`).join('');
 }
 function newGame(){
   S.start=null; S.goal=null; S.label='';
-  S.g=new Chess(); S.moves=[]; S.over=false; S.busy=false; S.resignArm=false; S.peeks=0;
+  S.g=new Chess(); S.moves=[]; S.over=false; S.busy=false; S.resignArm=false; S.peeks=0; S.takebacks=0; S.gid++;
   S.elo=$('pl-elo').value==='max'?'max':+$('pl-elo').value;
   const c=$('pl-color').value; S.me=c==='random'?(Math.random()<0.5?'w':'b'):c;
   S.blind=$('pl-blind').checked;
@@ -38,7 +38,7 @@ function newGame(){
 }
 /* From a drill: same strength setting, no blindfold; goal 'win' (convert) or 'hold' (don't lose). */
 function fromPosition(fen,me,goal,label){
-  S.g=new Chess(fen); S.start=fen; S.goal=goal; S.label=label||''; S.moves=[]; S.over=false; S.busy=false; S.resignArm=false; S.peeks=0;
+  S.g=new Chess(fen); S.start=fen; S.goal=goal; S.label=label||''; S.moves=[]; S.over=false; S.busy=false; S.resignArm=false; S.peeks=0; S.takebacks=0; S.gid++;
   S.elo=$('pl-elo').value==='max'?'max':+$('pl-elo').value; S.me=me; S.blind=false;
   $('pl-board').classList.remove('blind');
   board.set(S.g,{orient:S.me,last:null});
@@ -49,10 +49,11 @@ function fromPosition(fen,me,goal,label){
 }
 async function botMove(){
   if(S.over) return;
-  S.busy=true;
+  S.busy=true; tools(); const gid=S.gid;
   let uci=null;
   if(S.elo==='max'){ const a=await SharedEngine.analyse(S.g.fen(),14,1,12000).catch(()=>null); uci=a&&a[0]&&a[0].uci }
   else uci=await SharedEngine.play(S.g.fen(),S.elo,700).catch(()=>null);
+  if(gid!==S.gid) return;   /* a take back or a new game while the engine thought */
   S.busy=false;
   if(S.over) return;
   if(!uci){ status('warn','The engine is not available.','Check Settings, or try again.'); return }
@@ -61,8 +62,24 @@ async function botMove(){
   S.moves.push(m.san);
   board.set(S.g,{last:{from:m.from,to:m.to},orient:S.me});
   renderMoves();
-  if(!checkEnd()) status('', 'Your move.',m.san+' played.');
+  if(!checkEnd()) status('', 'Your move.',m.san+' played.'+(S.takebacks?` Takebacks: ${S.takebacks}.`:''));
+  tools();
 }
+/* Take back your last move (and the engine's reply to it); counted on the saved game. */
+const myMoveCount=()=>{ const first=S.start?new Chess(S.start).turn():'w'; return S.moves.filter((_,i)=>(i%2===0?first:(first==='w'?'b':'w'))===S.me).length };
+const canTakeBack=()=>!!(S.g&&!S.over&&myMoveCount()>0);
+function takeBack(){
+  if(!canTakeBack()) return;
+  S.gid++; S.busy=false; S.resignArm=false;
+  do{ S.g.undo(); S.moves.pop() }while(S.moves.length&&S.g.turn()!==S.me);
+  if(S.g.turn()!==S.me){ botMove(); }
+  S.takebacks++;
+  const h=S.g.history({verbose:true}), m=h[h.length-1];
+  board.set(S.g,{last:m?{from:m.from,to:m.to}:null,orient:board.orient});
+  renderMoves(); tools();
+  status('warn','Taken back.',`Your move again. Takebacks this game: ${S.takebacks} (saved with the game).`);
+}
+function tools(){ const b=$('pl-back'); if(b) b.disabled=!canTakeBack() }
 function userMove(from,to,promo){
   if(!S.g||S.over||S.busy) return;
   if(S.g.turn()!==S.me) return;
@@ -72,6 +89,7 @@ function userMove(from,to,promo){
   board.set(S.g,{last:{from:m.from,to:m.to},orient:S.me});
   renderMoves();
   if(!checkEnd()){ status('', 'Stockfish is thinking…',''); botMove() }
+  tools();
 }
 function checkEnd(){
   const g=S.g; let result=null, reason='';
@@ -91,7 +109,7 @@ function endGame(result,reason){
   status(result==='win'||met?'good':result==='draw'?'':'bad',
     (result==='win'?'You won!':result==='draw'?'Draw.':'Stockfish wins.')+(S.goal?(met?' Goal met ✓':' Goal missed'):''),
     reason+(S.blind?` · blindfold${S.peeks?', '+S.peeks+' peeks':''}`:'')+'. The pieces are back; review below.');
-  saveGame(result,reason);
+  saveGame(result,reason); tools();
 }
 function resign(){
   if(!S.g||S.over) return;
@@ -120,6 +138,9 @@ function init(){
   renderGames();
   $('pl-new').addEventListener('click',newGame);
   $('pl-resign').addEventListener('click',resign);
+  $('pl-back').addEventListener('click',takeBack);
+  document.addEventListener('keydown',e=>{ if(document.body.dataset.view!=='play'||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)||e.ctrlKey||e.metaKey||e.altKey) return;
+    if(e.key==='t'||e.key==='T'||e.key==='b'||e.key==='B') takeBack(); if(e.key==='f'||e.key==='F') board.flip() });
   $('pl-peek').addEventListener('click',peek);
   $('pl-flip').addEventListener('click',()=>board.flip());
   $('pl-moveform').addEventListener('submit',e=>{
@@ -131,5 +152,5 @@ function init(){
     $('pl-movein').value=''; userMove(mv.from,mv.to,mv.promotion);
   });
 }
-window.PlayTab={init,newGame,fromPosition,userMove,resign,peek,get state(){return S}};
+window.PlayTab={init,newGame,fromPosition,userMove,resign,peek,takeBack,canTakeBack,get state(){return S}};
 })();

@@ -7,12 +7,18 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 
 /* ---------- Settings (per browser) ---------- */
 window.Settings=(()=>{
-  const DEF={board:'maple',input:'tap',olevel:'masters',olen:'long',omode:'rated',sfDepth:'auto',oshare:3};
+  const DEF={board:'maple',input:'tap',olevel:'masters',olen:'long',omode:'rated',sfDepth:'auto',oshare:3,theme:'auto',
+    ovariety:'balanced',ominshare:0,otrappy:false,evalCol:true,osfinfo:false};
   let cur={};
   try{ cur=JSON.parse(localStorage.getItem('clo-settings')||'{}') }catch(e){}
   const get=k=>cur[k]!==undefined?cur[k]:DEF[k];
+  /* Theme: light, dark or auto (match the device). Only the colour variables in style.css change; the board keeps its own.
+     The small script in index.html's head sets it before the first paint, so a dark page never flashes light. */
+  const theme=()=>{ const t=get('theme'); document.documentElement.dataset.theme=t==='light'||t==='dark'?t:'auto' };
+  theme();
   const set=(k,v)=>{ cur[k]=v; try{ localStorage.setItem('clo-settings',JSON.stringify(cur)) }catch(e){}
     if(k==='board') document.body.dataset.board=v==='maple'?'':v;
+    if(k==='theme') theme();
     dispatchEvent(new Event('settings-change')) };
   document.addEventListener('DOMContentLoaded',()=>{ const b=get('board'); if(b!=='maple') document.body.dataset.board=b });
   return {DEF,get,set,all:()=>({...DEF,...cur})};
@@ -185,6 +191,7 @@ function makeBoard(el,opts={}){
   let drag=null;
   el.addEventListener('pointerdown',e=>{
     if(B.locked||!B.game) return;
+    if(e.button!==0) return;   /* right button: arrows and circles (Shapes); middle: nothing */
     const sqEl=e.target.closest('.sq'); if(!sqEl) return;
     const sq=sqEl.dataset.sq, g=B.game, p=g.get(sq);
     if(B.sel&&B.sel!==sq){ const mv=g.moves({square:B.sel,verbose:true}).find(m=>m.to===sq); if(mv){ const from=B.sel; B.sel=null; e.preventDefault(); opts.onMove&&opts.onMove(from,sq,mv.promotion?'q':undefined); return } }
@@ -244,3 +251,66 @@ function sanOf(fen,uci){
   const g=new Chess(fen); const m=g.move({from:uci.slice(0,2),to:uci.slice(2,4),promotion:uci[4]||'q'});
   return m?m.san:uci;
 }
+
+/* ---------- Arrows and circles, Lichess style, on every board ----------
+   Right-click a square for a circle, right-drag to another square for an arrow: plain = green, Shift = red,
+   Alt (or Ctrl / Cmd) = blue, Shift+Alt = yellow; drawing the same shape again removes it. A left click on the
+   board, or a new position, clears what you drew. A tab shows a PGN's own [%cal]/[%csl] shapes with
+   Shapes.auto(boardEl, "Ge2e4 Rd4d5 Yd4"); they stay until the position changes.
+   Drawn on an SVG laid over the board; a MutationObserver puts it back after each redraw. Squares are read from
+   data-sq, so either orientation works. Touch screens have no right click: there, only a PGN's shapes show. */
+window.Shapes=(()=>{
+  const NS='http://www.w3.org/2000/svg', COL={G:'#15803d',R:'#c2410c',B:'#1d4ed8',Y:'#ca8a04'};
+  const st=new WeakMap(), S=el=>{ let o=st.get(el); if(!o){ o={user:[],auto:[],sig:null,asig:null,tmp:null}; st.set(el,o) } return o };
+  const parse=s=>String(s||'').split(/[\s,]+/).map(t=>{ const m=t.match(/^([GRBY])([a-h][1-8])([a-h][1-8])?$/); return m?{c:m[1],a:m[2],b:m[3]&&m[3]!==m[2]?m[3]:null}:null }).filter(Boolean);
+  const sigOf=el=>{ const a=[]; el.querySelectorAll('.sq').forEach(q=>{ const p=q.querySelector('.pc'); if(p) a.push(q.dataset.sq+p.className) }); return a.sort().join('|') };
+  const same=(x,y)=>x.a===y.a&&x.b===y.b;
+  function pos(el){ const q=el.querySelector('.sq[data-sq]'), white=!q||q.dataset.sq==='a8';
+    return sq=>{ const f=sq.charCodeAt(0)-97, r=+sq[1]-1; return white?[f+.5,7.5-r]:[7.5-f,r+.5] } }
+  function shape(p,x,op){ const col=COL[x.c]||COL.G, [ax,ay]=p(x.a);
+    if(!x.b) return `<circle cx="${ax}" cy="${ay}" r=".44" fill="none" stroke="${col}" stroke-width=".075" opacity="${op}"/>`;
+    const [bx,by]=p(x.b), dx=bx-ax, dy=by-ay, L=Math.hypot(dx,dy), ux=dx/L, uy=dy/L, h=.42, w=.24, tx=bx-ux*.12, ty=by-uy*.12, sx=tx-ux*h, sy=ty-uy*h;
+    return `<g opacity="${op}" fill="${col}" stroke="${col}"><line x1="${ax+ux*.18}" y1="${ay+uy*.18}" x2="${sx+ux*.02}" y2="${sy+uy*.02}" stroke-width=".16" stroke-linecap="round"/>`+
+      `<polygon stroke="none" points="${tx},${ty} ${sx-uy*w},${sy+ux*w} ${sx+uy*w},${sy-ux*w}"/></g>` }
+  function draw(el){ const o=S(el), s=sigOf(el);
+    if(o.sig!==null&&s!==o.sig) o.user=[]; o.sig=s; if(o.asig!==null&&s!==o.asig){ o.auto=[]; o.asig=null }
+    let svg=null; for(const c of el.children) if(c.tagName.toLowerCase()==='svg'&&c.classList.contains('shapes')) svg=c;
+    const list=[...o.auto.map(x=>[x,.72]),...o.user.map(x=>[x,.82])]; if(o.tmp) list.push([o.tmp,.5]);
+    if(!list.length){ if(svg) svg.remove(); return }
+    if(!svg){ svg=document.createElementNS(NS,'svg'); svg.setAttribute('class','shapes'); svg.setAttribute('viewBox','0 0 8 8'); svg.setAttribute('aria-hidden','true'); el.appendChild(svg) }
+    const p=pos(el); svg.innerHTML=list.map(([x,op])=>shape(p,x,op)).join('') }
+  function auto(el,s){ if(!el) return; const o=S(el); o.auto=parse(s); o.asig=o.auto.length?sigOf(el):null; draw(el) }
+  function clear(el){ const o=st.get(el); if(o&&(o.user.length||o.tmp)){ o.user=[]; o.tmp=null; draw(el) } }
+  const colorOf=e=>e.shiftKey&&(e.altKey||e.ctrlKey||e.metaKey)?'Y':e.shiftKey?'R':(e.altKey||e.ctrlKey||e.metaKey)?'B':'G';
+  const sqAt=(el,e)=>{ const t=document.elementFromPoint(e.clientX,e.clientY); const q=t&&t.closest&&t.closest('.sq'); return q&&el.contains(q)?q.dataset.sq:null };
+  const boardOf=t=>t&&t.closest?t.closest('.board'):null;
+  let dr=null;
+  /* no browser menu on a board (Ctrl+click on a Mac is a right click too) */
+  document.addEventListener('contextmenu',e=>{ if(boardOf(e.target)||dr) e.preventDefault() },true);
+  document.addEventListener('pointerdown',e=>{ const el=boardOf(e.target); if(!el) return;
+    if(e.button===2){ const a=sqAt(el,e); if(!a) return; e.preventDefault(); e.stopPropagation(); dr={el,a,c:colorOf(e)}; return }
+    if(e.button===0&&!(e.ctrlKey&&/Mac/.test(navigator.platform))) clear(el) },true);
+  document.addEventListener('pointermove',e=>{ if(!dr) return; const b=sqAt(dr.el,e); const o=S(dr.el), t=b&&b!==dr.a?{c:dr.c,a:dr.a,b}:null;
+    if(JSON.stringify(t)!==JSON.stringify(o.tmp)){ o.tmp=t; draw(dr.el) } },true);
+  document.addEventListener('pointerup',e=>{ if(!dr||e.button!==2) return; e.stopPropagation(); const d=dr; dr=null; const o=S(d.el); o.tmp=null;
+    const b=sqAt(d.el,e), x={c:d.c,a:d.a,b:b&&b!==d.a?b:null}, i=o.user.findIndex(y=>same(x,y));
+    if(i>=0){ const was=o.user[i].c; o.user.splice(i,1); if(was!==x.c) o.user.push(x) } else o.user.push(x); draw(d.el) },true);
+  /* Redraws replace the board's squares (and with them the SVG): put it back, and drop shapes when the position changed. */
+  const mo=new MutationObserver(rs=>{ const els=new Set(); for(const r of rs){ const t=r.target; if(t.classList&&t.classList.contains('board')&&[...r.addedNodes].some(n=>n.classList&&n.classList.contains('sq'))) els.add(t) } els.forEach(el=>{ if(st.has(el)) draw(el) }) });
+  const start=()=>mo.observe(document.body,{childList:true,subtree:true});
+  if(document.body) start(); else document.addEventListener('DOMContentLoaded',start);
+  return {auto,clear,parse,draw,state:el=>st.get(el)};
+})();
+
+/* ---------- PGN move marks and evaluation signs ($1 = !, $14 = ⩲, ...) ---------- */
+const NAGS={1:'!',2:'?',3:'!!',4:'??',5:'!?',6:'?!',7:'□',8:'□',10:'=',11:'=',12:'=',13:'∞',14:'⩲',15:'⩱',16:'±',17:'∓',18:'+−',19:'−+',22:'⨀',23:'⨀',32:'⟳',33:'⟳',36:'→',37:'→',40:'↑',41:'↑',132:'⇆',133:'⇆',138:'⊕',139:'⊕',140:'∆',146:'N'};
+/* a comment's [%cal Ge2e4,Rd4d5] / [%csl Yd4] shapes as "Ge2e4 Rd4d5 Yd4" (Shapes.auto's format) */
+function pgnShapes(c){ const out=[]; String(c).replace(/\[%c(?:al|sl)\s+([^\]]*)\]/g,(_,l)=>{ for(const x of l.split(/[\s,]+/)) if(/^[GRBY][a-h][1-8]([a-h][1-8])?$/.test(x)) out.push(x); return '' }); return [...new Set(out)].join(' ') }
+/* a PGN comment as plain text: no [%clk]/[%eval]/[%cal] tags, no Lichess or Chessable export markers */
+function cleanNote(c){ return String(c).replace(/\[%[^\]]*\]/g,'').replace(/StartFEN[\s\S]*?EndFEN/g,' ').replace(/StartBracket/g,'(').replace(/EndBracket/g,')')
+  .replace(/\[\/(?:course|variation)\/[^\]]*\]/g,'').replace(/[-�]/g,'').replace(/\s+/g,' ').replace(/\(\s+/g,'(').replace(/\s+\)/g,')').trim().replace(/^[()\s]*$/,'') }
+/* move marks (!, ?, ...) and evaluation signs (⩲, ±, ...) as styled spans: good marks green, mistakes red, signs muted */
+const MARK_NAMES={'!':'good move','?':'mistake','!!':'brilliant move','??':'blunder','!?':'interesting move','?!':'dubious move','□':'only move','=':'equal position','∞':'unclear position','⩲':'White is slightly better','⩱':'Black is slightly better','±':'White is better','∓':'Black is better','+−':'White is winning','−+':'Black is winning','N':'novelty','⟳':'development advantage','→':'with an attack','↑':'with the initiative','⇆':'with counterplay','∆':'with the idea','⊕':'time trouble','⨀':'zugzwang'};
+const MARK_CLS={'!':'mk-good','!!':'mk-good','!?':'mk-int','?!':'mk-warn','?':'mk-bad','??':'mk-bad','□':'mk-good'};
+const markTokens=mk=>String(mk||'').match(/!!|\?\?|!\?|\?!|[!?]|\+−|−\+|\S/g)||[];
+function markHtml(mk){ return markTokens(mk).map(t=>`<span class="mk ${MARK_CLS[t]||'mk-sign'}" title="${esc(MARK_NAMES[t]||t)}">${esc(t)}</span>`).join('') }

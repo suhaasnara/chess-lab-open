@@ -10,7 +10,7 @@ const fs=require('fs'), path=require('path');
 section('t1: page loads, routes, board renders');
 {
   const {w}=await makePage();
-  assert(w.document.querySelectorAll('.tabs button[data-route]').length===11,'eleven tabs');
+  assert(w.document.querySelectorAll('.tabs button[data-route]').length===13,'thirteen tabs');
   assert(w.document.body.dataset.view==='today','Today is the default view');
   assert(w.document.querySelectorAll('#o-board .sq').length===64,'the openings board has 64 squares');
   w.location.hash='#tactics'; await sleep(60);
@@ -660,6 +660,267 @@ section('t24: Guess the move — notes after each move, Show the game, arrow key
   assert(!res,'reading the game saves no score');
   // a scored game also opens for reading at the end
   await w.GtmTab.load(file); assert(!S.read&&!S.done&&!$('g-show').hidden,'Restart plays it as a quiz again');
+}
+
+
+section('t25: arrows and circles — Shapes, a PGN’s [%cal]/[%csl]');
+{
+  const {w}=await makePage();
+  const Sh=w.Shapes;
+  assert(Sh.parse('Ge2e4, Rd4d5 Yd4 Xa1 Bh1h1').map(x=>x.c+x.a+(x.b||'')).join(' ')==='Ge2e4 Rd4d5 Yd4 Bh1','shape strings parse (bad ones dropped, same-square arrow is a circle)');
+  assert(w.pgnShapes('{A plan [%cal Ge2e4,Rd4d5] [%csl Yd4,Gd4] [%clk 0:10:00]}')==='Ge2e4 Rd4d5 Yd4 Gd4','[%cal] and [%csl] are read from a comment');
+  assert(w.cleanNote('A plan [%cal Ge2e4] [%clk 0:10:00] here')==='A plan here','tags are removed from the note text');
+  const el=w.document.getElementById('pl-board'); w.PlayTab.newGame && null;
+  w.location.hash='#play'; await sleep(30);
+  w.document.getElementById('pl-elo').value='1400'; w.PlayTab.state.g=null;
+  const b=w.document.getElementById('o-board');
+  w.OpeningsTab.selectOpening('preset-english'); await sleep(300);
+  Sh.auto(b,'Ge2e4 Yd4'); 
+  const svg=b.querySelector(':scope>svg.shapes');
+  assert(svg&&svg.querySelectorAll('line').length===1&&svg.querySelectorAll('circle').length===1,'an arrow and a circle are drawn over the board');
+  assert(svg.querySelector('polygon')&&/#15803d/i.test(svg.querySelector('g').getAttribute('fill')),'green arrow with a head');
+  /* a redraw of the same position keeps them; a new position drops them */
+  w.OpeningsTab.state.g&&w.OpeningsTab.state.g.fen();
+  const S=w.OpeningsTab.state; const fen0=S.g.fen();
+  b.dispatchEvent(new w.Event('noop'));
+  await w.OpeningsTab.userMove('b1','c3'); await sleep(900);
+  assert(!b.querySelector(':scope>svg.shapes'),'the shapes go when the position changes ('+(S.g.fen()!==fen0)+')');
+  assert(new RegExp('board>svg\\.shapes').test(require('fs').readFileSync(require('path').join(H.SITE,'style.css'),'utf8')),'the overlay is styled');
+}
+
+section('t26: PGN notes, move marks and arrows in imported repertoires');
+{
+  const {w}=await makePage();
+  const pgn=`[Event "Notes test"]
+
+{Intro to the line.} 1. e4! {The best by test. [%cal Ge2e4,Rd2d4]} 1... e5 $1 {Classical.} (1... c5 $5 {The Sicilian [%csl Yc5]}) 2. Nf3 $14 Nc6 3. Bb5 {The Spanish.} a6 *`;
+  const r=w.OpeningsTab.parseRepPGN(pgn);
+  const g=new w.Chess(); const k1=w.posId(w.normKey(g.fen()))+'|e2e4';
+  assert(r.ann[k1]&&r.ann[k1][0]==='!'&&/best by test/.test(r.ann[k1][1])&&/Intro to the line/.test(r.ann[k1][1])&&r.ann[k1][2]==='Ge2e4 Rd2d4','1.e4: the ! mark, the note (with the intro) and two arrows');
+  g.move('e4'); const k2=w.posId(w.normKey(g.fen()))+'|c7c5';
+  assert(r.ann[k2]&&r.ann[k2][0]==='!?'&&r.ann[k2][2]==='Yc5','a side line keeps its own mark ($5 = !?) and circle');
+  const g2=new w.Chess(); g2.move('e4'); g2.move('e5'); const k3=w.posId(w.normKey(g2.fen()))+'|g1f3';
+  assert(r.ann[k3]&&r.ann[k3][0]==='⩲','$14 becomes ⩲');
+  assert(w.markHtml('!⩲').includes('mk-good')&&w.markHtml('?!').includes('mk-warn')&&w.markHtml('??').includes('mk-bad')&&/White is slightly better/.test(w.markHtml('⩲')),'marks are styled and named');
+  const $=id=>w.document.getElementById(id);
+  $('o-pgnbox').value=pgn; $('o-repname').value='Notes rep'; $('o-repside').value='white';
+  w.Settings.set('omode','rated');
+  $('o-repsave').click(); await sleep(150);
+  const S=w.OpeningsTab.state;
+  assert(!$('o-notecard').hidden,'the Notes card shows for a repertoire with notes');
+  await w.OpeningsTab.userMove('e2','e4'); await sleep(50);
+  assert(!/best by test/.test($('o-notes').textContent)&&/open when the line ends/.test($('o-notes').textContent),'Rated: the notes wait for the end of the line');
+  w.Settings.set('omode','training'); w.OpeningsTab.newLine(); await sleep(50);
+  await w.OpeningsTab.userMove('e2','e4'); await sleep(50);
+  assert(/best by test/.test($('o-notes').textContent)&&$('o-notes').querySelector('.mk-good'),'Training: the note and the ! show under 1.e4');
+  const svg=$('o-board').querySelector(':scope>svg.shapes');
+  assert(svg&&svg.querySelectorAll('line').length===2,'the PGN’s two arrows are on the board after 1.e4');
+  assert($('o-movelist').querySelector('.mk'),'the move list shows the mark too');
+  await sleep(900);
+  assert(S.log.length===2,'the opponent answers from the file');
+  w.Settings.set('omode','rated');
+}
+
+section('t27: take backs — openings (not rated again), Play (counted)');
+{
+  const {w}=await makePage({analyse:async()=>[{uci:'b1c3',cp:0.3,mate:null}]});
+  const pgn='[Event "TB"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bb5 *';
+  const $=id=>w.document.getElementById(id);
+  $('o-pgnbox').value=pgn; $('o-repname').value='TB rep'; $('o-repside').value='white'; $('o-repsave').click(); await sleep(150);
+  const S=w.OpeningsTab.state;
+  assert(!w.OpeningsTab.canTakeBack()&&$('o-back').disabled,'nothing to take back at the start');
+  await w.OpeningsTab.userMove('e2','e4'); await sleep(900);
+  assert(S.log.length===2&&S.g.turn()==='w','1.e4 e5 played');
+  assert(w.OpeningsTab.canTakeBack()&&!$('o-back').disabled,'Take back is offered');
+  const scored=S.scored.length;
+  w.OpeningsTab.takeBack(); await sleep(20);
+  assert(S.log.length===0&&S.g.history().length===0&&S.userMoves===0,'your move and the reply are taken back');
+  await w.OpeningsTab.userMove('d2','d4'); await sleep(50);
+  assert(S.scored.length===scored&&S.scored[0].s===1,'the retried position isn’t rated again (first try still counts)');
+  await w.OpeningsTab.userMove('e2','e4'); await sleep(900);
+  /* browsing: ← shows an earlier position, the board takes no moves, → comes back */
+  w.OpeningsTab.browse(0); await sleep(10);
+  assert(w.OpeningsTab.state.browse===0&&!$('o-browsenote').hidden,'← browses back through the line');
+  await w.OpeningsTab.userMove('g1','f3'); assert(S.log.length===2,'no moves while browsing');
+  w.OpeningsTab.browse(null); assert(S.browse===null,'End comes back');
+  /* Play */
+  w.SharedEngine.play=async()=>'e7e5';
+  w.location.hash='#play'; await sleep(20);
+  $('pl-color').value='w'; $('pl-blind').checked=false; w.PlayTab.newGame(); await sleep(20);
+  w.PlayTab.userMove('e2','e4'); await sleep(50);
+  const P=w.PlayTab.state;
+  assert(P.moves.join(' ')==='e4 e5','Play: 1.e4 e5');
+  assert(!$('pl-back').disabled,'Play: Take back is offered');
+  w.PlayTab.takeBack(); await sleep(10);
+  assert(P.moves.length===0&&P.takebacks===1,'Play: your move and the reply are taken back and counted');
+  w.PlayTab.userMove('d2','d4'); await sleep(50); w.PlayTab.resign(); w.PlayTab.resign();
+  const gm=(w.Store.get('play-games')||[])[0];
+  assert(gm&&gm.takebacks===1&&/1 takeback/.test($('pl-games').textContent),'the takeback is saved with the game');
+}
+
+section('t28: dark mode — a Theme setting that only swaps colour variables');
+{
+  const {w}=await makePage();
+  const css=require('fs').readFileSync(require('path').join(H.SITE,'style.css'),'utf8');
+  assert(w.Settings.get('theme')==='auto'&&w.document.documentElement.dataset.theme==='auto','default: Match device');
+  assert(/:root\[data-theme="dark"\]\{color-scheme:dark;/.test(css)&&/@media \(prefers-color-scheme:dark\)\{:root\[data-theme="auto"\]/.test(css),'dark variables for Dark and for a dark device');
+  const block=css.match(/:root\[data-theme="dark"\]\{([^}]*)\}/)[1];
+  assert(!/[{};]\s*[a-z-]+\s*:(?!\s*#|\s*dark|\s*rgba|\s*var)/.test(block.replace(/--[\w-]+:/g,'')),'the dark block only sets variables');
+  w.Settings.set('theme','dark');
+  assert(w.document.documentElement.dataset.theme==='dark','Dark sets data-theme on <html>');
+  const sel=w.document.querySelector('#s-rows select[data-k="theme"]');
+  assert(sel&&[...sel.options].map(o=>o.value).join()==='auto,light,dark','Settings has Theme: Match device / Light / Dark');
+  sel.value='light'; sel.dispatchEvent(new w.Event('change')); assert(w.document.documentElement.dataset.theme==='light','and Light switches back');
+  assert(/<script>[^<]*clo-settings[^<]*dataset\.theme/.test(require('fs').readFileSync(require('path').join(H.SITE,'index.html'),'utf8')),'the theme is set before the first paint');
+  /* contrast of the dark palette (WCAG): text on cards and on the page */
+  const hex=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255).map(c=>c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4));
+  const L=h=>{ const [r,g,b]=hex(h); return 0.2126*r+0.7152*g+0.0722*b }, cr=(a,b)=>{ const x=L(a),y=L(b); return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05) };
+  const v=k=>block.match(new RegExp('--'+k+':(#[0-9a-f]{6})'))[1];
+  const pairs=[['ink','white'],['muted','white'],['head','white'],['blue','white'],['muted','band'],['good','white'],['bad','white'],['warn','white'],['ink','callout'],['ink','good-soft'],['ink','bad-soft'],['brass-text','white']];
+  const low=pairs.filter(([a,b])=>cr(v(a),v(b))<4.5);
+  assert(!low.length,'every dark text colour has 4.5:1 or more on its background'+(low.length?': '+low.map(p=>p.join('/')+' '+cr(v(p[0]),v(p[1])).toFixed(2)).join(', '):''));
+  assert(cr('#ffffff',v('navy'))>=4.5,'white on the dark navy buttons: '+cr('#ffffff',v('navy')).toFixed(2)+':1');
+}
+
+section('t29: openings list — Arrange, start lines, Statistics, trainer settings, sidelines');
+{
+  const {w}=await makePage({analyse:async()=>[{uci:'b1c3',cp:0.3,mate:null}]});
+  const O=w.OpeningsTab, $=id=>w.document.getElementById(id);
+  const ids=O.ordered(O.openings()).map(o=>o.id);
+  O.saveOrder(['preset-london','preset-caro']);
+  const now=O.ordered(O.openings()).map(o=>o.id);
+  assert(now[0]==='preset-london'&&now[1]==='preset-caro'&&now.length===ids.length,'your order puts London and Caro first, the rest keep theirs');
+  O.setArrange(true);
+  assert($('o-list').querySelectorAll('.arr').length===ids.filter(id=>!/^pl-/.test(id)).length&&$('o-list').querySelector('.grip'),'Arrange shows a grip and arrows for every opening');
+  O.moveItem('preset-caro',-1);
+  assert(O.ordered(O.openings())[0].id==='preset-caro','↑ moves an opening up');
+  O.setArrange(false);
+  assert(O.firstListed().id==='preset-caro','the default opening is the top of your list');
+  /* start lines */
+  $('o-pgnbox').value='[Event "S"]\n\n1. d4 d5 2. c4 e6 (2... c6 3. Nf3) 3. Nc3 Nf6 *'; $('o-repname').value='QG rep'; $('o-repside').value='white'; $('o-repsave').click(); await sleep(150);
+  const S=O.state;
+  await O.userMove('d2','d4'); await sleep(900); await O.userMove('c2','c4'); await sleep(900);
+  assert(S.log.length===4,'1.d4 d5 2.c4 and a reply');
+  O.browse(3); await sleep(10);
+  const set=$('o-setstart'); assert(set&&/Start lines here/.test(set.textContent),'Start lines here is offered for the position on the board');
+  set.click(); await sleep(50);
+  assert(w.Store.get('ostart-'+S.op.id).moves.join(' ')==='d4 d5 c4'&&S.log.length>=4&&S.log[2].who==='book','new lines start after 1.d4 d5 2.c4');
+  assert(/from 2\.c4/.test($('o-list').innerHTML)||(O.renderStats(),true),'the list says where the repertoire starts');
+  $('o-resetstart').click(); await sleep(50); assert(!w.Store.get('ostart-'+S.op.id)&&S.log.length===0,'Start from move 1 resets it');
+  /* sidelines weighting: Sidelines first favours the rarer prepared reply more than Realistic */
+  const fen='rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1';
+  $('o-pgnbox').value='[Event "B"]\n\n1. e4 e5 (1... c5) *'; $('o-repname').value='Var'; $('o-repside').value='white'; $('o-repsave').click(); await sleep(150);
+  /* in the test book 1...c5 is the most played reply (6,000 games) and 1...e5 the less played one (5,000) */
+  const share=mode=>{ w.Settings.set('ovariety',mode); let e5=0; for(let i=0;i<600;i++){ w.Store.del('orecent'); if(O.repPick(fen,['e7e5','c7c5']).uci==='e7e5') e5++ } return e5/600 };
+  const real=share('realistic'), side=share('sidelines');
+  assert(side>real+0.1,`Sidelines first brings up the less played reply more often (e5: ${Math.round(real*100)}% → ${Math.round(side*100)}%)`);
+  w.Settings.set('ovariety','balanced');
+  /* trainer settings modal */
+  O.openSettings(); await sleep(10);
+  assert(!$('o-setmodal').hidden&&$('o-setbody').querySelectorAll('[data-seg="olen"]').length===5&&$('o-setbody').querySelector('[data-k="ominshare"]')&&$('o-setbody').querySelector('[data-k="otrappy"]'),'the gear opens line length, sidelines, min share, trappy and more');
+  $('o-setbody').querySelector('[data-seg="olen"][data-v="short"]').click(); assert(w.Settings.get('olen')==='short','a setting applies at once');
+  const tr=$('o-setbody').querySelector('[data-k="otrappy"]'); tr.checked=true; tr.dispatchEvent(new w.Event('change',{bubbles:true})); assert(w.Settings.get('otrappy')===true,'trappy switches on');
+  $('o-setreset').click(); assert(w.Settings.get('olen')==='long'&&w.Settings.get('otrappy')===false,'Reset to default');
+  $('o-setclose').click();
+  /* statistics */
+  w.Store.put('stats-preset-london',{rating:1850,lines:3,n2:3,last:Date.now(),history:[{t:Date.now(),r:1850,e:0.4},{t:Date.now(),r:1850,e:0.2}]});
+  O.openStats(); await sleep(10);
+  const txt=$('o-statsbody').textContent;
+  assert(!$('o-statsmodal').hidden&&/London System/.test(txt)&&/\+0\.30/.test(txt)&&/Lines played/.test(txt),'Statistics lists trained openings with the average end-of-line eval');
+  $('o-statsbody').querySelector('[data-train="preset-london"]').click(); await sleep(50);
+  assert(S.op.id==='preset-london'&&$('o-statsmodal').hidden,'Train opens that opening');
+}
+
+section('t30: Guess the move — your own PGN with notes, marks and arrows');
+{
+  const {w}=await makePage({analyse:async()=>[{uci:'x',cp:0.2,mate:null}]});
+  const G=w.GtmTab, $=id=>w.document.getElementById(id);
+  const pgn=`[Event "Club night"]
+[White "Me, Myself"]
+[Black "Friend, A"]
+[Date "2026.10.01"]
+[Result "1-0"]
+
+{My favourite game.} 1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5 7. Bb3 d6 8. c3 O-O 9. h3 Na5 10. Bc2 c5 11. d4 Qc7 12. Nbd2 Bd7 13. Nf1 $14 {Rerouting the knight. [%cal Gf1g3,Gg3f5]} (13. d5 {is also good}) 13... cxd4 14. cxd4 Rac8 15. Ne3 Nc6 16. d5?! Nb4 17. Bb1 a5 18. a3 Na6 19. b4 1-0`;
+  const list=G.parseGames(pgn);
+  assert(list.length===1&&list[0].moves.length===37,'the PGN parses: one game, 37 plies');
+  const n=list[0].notes;
+  assert(n[24]&&/Rerouting/.test(n[24].t)&&n[24].mk==='⩲'&&n[24].sh==='Gf1g3 Gg3f5'&&n[24].v&&/13\. d5/.test(n[24].v[0]),'13.Nf1: note, ⩲, two arrows and the side line');
+  assert(n[30]&&n[30].mk==='?!'&&list[0].intro==='My favourite game.','16.d5?! keeps its mark; the first comment is the intro');
+  G.parseGames('').length===0;
+  $('g-addbox').value=pgn; $('g-addside').value='winner';
+  await G.addGames(); await sleep(50);
+  const own=G.ownGames();
+  assert(own.length===1&&own[0].game.winner==='w'&&own[0].game.theory>0&&own[0].game.maxpts>0,'stored with your side (the winner), theory from the book and a score ('+own[0].game.theory+' theory plies, '+own[0].game.maxpts+' pts)');
+  assert(/Your games/.test($('g-list').textContent)&&/Me – Friend, 2026/.test($('g-list').textContent),'the game shows under Your games');
+  const S=G.state;
+  assert(S.game&&S.game.own,'it opens for guessing');
+  w.GtmTab.showGame(); await sleep(20); w.GtmTab.viewAt(25); await sleep(10);
+  assert($('g-moves').querySelector('.mk-sign')&&/Rerouting/.test($('g-moves').textContent),'reading: the ⩲ mark and the note show');
+  const svg=$('g-board').querySelector(':scope>svg.shapes'); assert(svg&&svg.querySelectorAll('line').length===2,'reading: the note’s arrows are on the board');
+  $('g-addbox').value=pgn; await G.addGames(); assert(/already/.test($('g-adderr').textContent)&&G.ownGames().length===1,'adding the same game again is refused');
+}
+
+section('t31: Watch — your own video library');
+{
+  const {w}=await makePage();
+  const W=w.WatchTab, $=id=>w.document.getElementById(id);
+  assert(W.parseLink('https://www.youtube.com/watch?v=abcdefghijk&t=1h2m3s').id==='abcdefghijk'&&W.parseLink('https://youtu.be/abcdefghijk?t=95').t===95&&W.parseLink('https://www.youtube.com/watch?v=abcdefghijk&t=1h2m3s').t===3723&&!W.parseLink('https://example.com'),'YouTube links (watch, youtu.be, &t=) parse');
+  w.location.hash='#watch'; await sleep(20);
+  assert(/library is empty/.test($('wa-list').textContent),'empty library explains itself');
+  $('wa-aurl').value='https://www.youtube.com/watch?v=abcdefghijk'; $('wa-atitle').value='1. Pawn structures'; $('wa-aser').value='Structures course'; $('wa-adur').value='45:00'; $('wa-atopic').value='structures';
+  W.add();
+  $('wa-aurl').value='https://youtu.be/bbbbbbbbbbb?t=600'; $('wa-atitle').value='2. Isolated pawn'; $('wa-aser').value='Structures course'; W.add();
+  assert(W.all.length===2&&W.rec('bbbbbbbbbbb').t===600,'two videos added; a link’s &t= becomes your position');
+  assert($('wa-list').querySelector('details.waser')&&/Structures course/.test($('wa-list').textContent)&&/0 of 2 watched/.test($('wa-list').textContent),'grouped by series');
+  const cont=$('wa-list').querySelector('.wacont'); assert(cont&&/Resume/.test(cont.textContent)&&/t=600s/.test(cont.href),'Resume deep-links to YouTube at your position');
+  $('wa-list').querySelector('.warow[data-id="bbbbbbbbbbb"] [data-act="detail"]').click(); await sleep(10);
+  const row=$('wa-list').querySelector('.warow[data-id="bbbbbbbbbbb"]');
+  row.querySelector('[data-f="bmt"]').value='12:34'; row.querySelector('[data-f="bml"]').value='the key idea'; row.querySelector('[data-act="bm-add"]').click(); await sleep(10);
+  assert((W.rec('bbbbbbbbbbb').bm||[])[0].t===754&&/12:34/.test($('wa-list').textContent),'a bookmark is saved and listed');
+  $('wa-list').querySelector('.warow[data-id="bbbbbbbbbbb"] [data-act="upto"]').click(); await sleep(10);
+  assert(W.rec('abcdefghijk').w&&W.rec('bbbbbbbbbbb').w,'Watched up to here marks the series so far');
+  assert(!$('wa-list').querySelector('iframe'),'no embeds');
+  const ex=w.Store.exportAll(); assert(ex.watch&&ex.watch.list.length===2,'the library is in the progress export');
+  W.put('abcdefghijk',{w:0,t:120}); w.TodayTab.render();
+  assert(/Watch: 1\. Pawn structures/.test($('td-list').textContent),'Today links to the video in progress');
+}
+
+section('t32: Players — an opponent’s public games, what they play, train vs, pre-round sheet');
+{
+  const games=[];
+  const mk=(id,white,black,winner,moves)=>JSON.stringify({id,variant:'standard',speed:'rapid',status:winner?'mate':'draw',createdAt:Date.UTC(2026,9,id.length),players:{white:{user:{name:white},rating:1900},black:{user:{name:black},rating:1950}},winner,moves});
+  for(let i=0;i<6;i++) games.push(mk('a'+i,'Rival','x'+i,i<4?'white':'black','e4 e5 Nf3 Nc6 Bc4 Bc5 c3 Nf6'));
+  for(let i=0;i<3;i++) games.push(mk('b'+i,'y'+i,'Rival',null,'e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6'));
+  games.push(mk('c0','z','Rival','black','d4 Nf6 c4 g6 Nc3 Bg7 e4 d6'));
+  let asked='';
+  const {w}=await makePage({fetch:async url=>{ if(/lichess\.org\/api\/games\/user\//.test(url)){ asked=url; return {ok:true,status:200,text:async()=>games.join('\n')} } return null }});
+  const P=w.PlayersTab, $=id=>w.document.getElementById(id);
+  w.location.hash='#players'; await sleep(20);
+  $('p-site').value='lichess'; $('p-user').value='Rival';
+  $('p-form').dispatchEvent(new w.Event('submit',{cancelable:true})); await sleep(150);
+  assert(/api\/games\/user\/Rival\?max=200/.test(asked)&&/perfType=blitz,rapid,classical/.test(asked),'their games are fetched from the public Lichess API');
+  const idx=P.index(); assert(idx.length===1&&idx[0].n===10&&idx[0].name==='Rival','10 games kept on this device');
+  assert(/As White they open/.test($('p-view').textContent)&&/1\.e4/.test($('p-view').textContent),'what they play with White');
+  const start='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+  const mw=P.movesAt('li-rival','w',start); assert(mw[0].san==='e4'&&mw[0].n===6&&Math.abs(mw[0].score-4/6)<1e-9,'as White: 1.e4 in 6 games, scoring 67%');
+  const ab=P.movesAt('li-rival','b','rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1'); assert(ab[0].san==='c5'&&ab[0].n===3,'as Black vs 1.e4: the Sicilian');
+  const line=P.expectLine('li-rival','b');
+  assert(line.map(x=>x.san).join(' ').startsWith('e4 c5 Nf3 d6')&&line[1].src==='they','the line to expect with White: 1.e4 c5 2.Nf3 d6 …');
+  /* the explorer board */
+  $('p-moves').querySelector('[data-uci="e2e4"]')?null:null;
+  $('p-view').querySelector('[data-col="w"]').click(); await sleep(10);
+  $('p-moves').querySelector('[data-uci="e2e4"]').click(); await sleep(10);
+  assert(P.state.line.join()==='e4'&&/Their opponents played/.test($('p-movehead').textContent),'clicking their move plays it on the explorer board');
+  /* sheet */
+  $('p-view').querySelector('[data-act="sheet"]').click(); await sleep(10);
+  assert(!$('p-sheet').hidden&&/Pre-round sheet/.test($('p-sheet').textContent)&&/Line to expect/.test($('p-sheet').textContent)&&$('p-sheet').querySelector('[data-act="print"]'),'a printable pre-round sheet');
+  /* train vs */
+  $('p-sheet').querySelector('[data-train="w"]').click(); await sleep(400);
+  const S=w.OpeningsTab.state;
+  assert(S.op&&S.op.id==='pl-li-rival-w'&&S.op.side==='white','Train vs opens the trainer with you as White');
+  await w.OpeningsTab.userMove('e2','e4'); await sleep(900);
+  assert(S.log[1]&&S.log[1].san==='c5'&&/played c5 in 3 of 3/.test($('o-status').textContent),'the opponent plays their own move (1...c5, 3 of 3 games)');
 }
 
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));

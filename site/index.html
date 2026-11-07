@@ -24,6 +24,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap">
 <link rel="stylesheet" href="style.css?v=__V__">
+<meta name="color-scheme" content="light dark">
+<script>/* the theme before the first paint (Settings -> Theme: light, dark or auto = match the device) */
+try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto'; document.documentElement.dataset.theme=(t==='light'||t==='dark')?t:'auto' }catch(e){ document.documentElement.dataset.theme='auto' }</script>
 </head>
 <body>
 
@@ -49,9 +52,11 @@
     <button data-route="drills">Drills</button>
     <button data-route="play">Play</button>
     <button data-route="guess">Guess the move</button>
+    <button data-route="players">Players</button>
+    <button data-route="watch">Watch</button>
     <button data-route="progress">Progress</button>
     <span class="spacer"></span>
-    <button data-route="settings">&#9881; Settings</button>
+    <button data-route="settings" aria-label="Settings">&#9881;<span class="setlab"> Settings</span></button>
   </div>
 </nav>
 
@@ -69,7 +74,9 @@
         <li><b>Start with your own games.</b> In <a href="#analyze">Analyze my games</a>, type your Lichess or Chess.com username: you get a report card and drills from your mistakes (and the ones your opponents got away with).</li>
         <li><b>Come back to <a href="#today">Today</a>.</b> A short daily session: a few of your drills, five puzzles near your rating, one endgame, one opening line.</li>
         <li><b><a href="#openings">Openings</a>:</b> pick an opening or paste your repertoire as a PGN. The opponent plays real moves from Lichess games at the level you set, from 1000 to Elite, then Stockfish takes over.</li>
-        <li><b><a href="#tactics">Tactics</a>, <a href="#calc">Calculation</a>, <a href="#endgames">Endgames</a>, <a href="#play">Play</a> and <a href="#guess">Guess the move</a></b> for everything else.</li>
+        <li><b><a href="#players">Players</a>:</b> type an opponent’s username to see what they play, train against their openings and print a pre-round sheet. <b><a href="#watch">Watch</a>:</b> your own video library, with your place, notes and bookmarks.</li>
+        <li><b><a href="#tactics">Tactics</a>, <a href="#calc">Calculation</a>, <a href="#endgames">Endgames</a>, <a href="#play">Play</a> and <a href="#guess">Guess the move</a></b> (add your own games too) for everything else.</li>
+        <li><b>On every board:</b> right-click or right-drag for circles and arrows (Shift red, Alt or Ctrl blue). Settings → Theme switches to dark.</li>
         <li><b>Private by design:</b> no account, nothing uploaded. Your progress stays in this browser (Progress → Export to move it).</li>
       </ul>
       <div class="btns" style="margin-top:10px"><a class="btn primary" href="#analyze" id="welcome-go">Analyze my games</a><button class="btn" id="welcome-ok">Got it</button></div>
@@ -92,22 +99,25 @@
   <div class="otrain">
     <div class="opick">
       <button class="opickbtn" id="o-pick" aria-expanded="false">
-        <span class="opicklab">Opening</span>
+        <span class="opicklab" id="o-picklab">Opening</span>
         <span class="opickname" id="o-pickname">Choose an opening</span>
         <span class="opickcar">&#9662;</span>
       </button>
       <div class="card opop" id="o-pop" hidden>
         <div class="filters"><input type="text" id="o-search" placeholder="Search openings and repertoires&hellip;" aria-label="Search"></div>
         <div class="list" id="o-list"></div>
-        <div class="btns" style="margin-top:10px"><button class="btn sm" id="o-import">Import a repertoire (PGN)</button></div>
+        <div class="btns" style="margin-top:10px"><button class="btn sm" id="o-import">Import a repertoire (PGN)</button>
+          <button class="btn sm" id="o-statsbtn">Statistics</button>
+          <button class="btn sm" id="o-arrange" aria-pressed="false" title="Put the openings in your own order">Arrange</button>
+          <button class="btn sm" id="o-resetorder" hidden>Reset order</button></div>
       </div>
     </div>
     <div id="o-side">
       <div class="card ohead">
-        <div class="seg" role="group" aria-label="Mode">
+        <div class="ohtop"><div class="seg" role="group" aria-label="Mode">
           <button id="o-rated" aria-pressed="true">Rated</button>
           <button id="o-training" aria-pressed="false">Training</button>
-        </div>
+        </div><button class="btn sm icon gear" id="o-gear" title="Trainer settings" aria-label="Trainer settings">&#9881;</button></div>
         <div class="olevel">
           <label for="o-level"><span class="label">Opponent</span> <b id="o-levelname">Elite 2500+</b></label>
           <input type="range" id="o-level" min="0" max="7" step="1" value="7" aria-describedby="o-levelhelp">
@@ -122,6 +132,7 @@
       <div class="card" id="o-movecard">
         <span class="label">Moves</span>
         <div class="movelist" id="o-movelist"></div>
+        <p class="note pbrowse" id="o-browsenote" hidden></p>
       </div>
     </div>
     <div class="boardwrap">
@@ -129,10 +140,12 @@
         <div class="board" id="o-board" role="group" aria-label="Chess board"></div>
         <div class="endbar" id="o-endbar" hidden><span id="o-endtext"></span><button class="btn sm primary" id="o-endnext">Next line</button></div>
       </div>
-      <div class="evalbar" id="o-evalbar" hidden><i style="width:50%"></i></div>
+      <div class="evalrow" id="o-evalwrap"><div class="evalbar" id="o-evalbar" hidden><i style="width:50%"></i></div><span class="note mono" id="o-evaltxt"></span></div>
       <div class="boardtools" id="o-tools">
         <button class="btn sm primary" id="o-newline">Next line <kbd>N</kbd></button>
         <button class="btn sm" id="o-hint">Hint <kbd>H</kbd></button>
+        <button class="btn sm" id="o-back" title="Take back your last move and the reply (B). In Rated, that position isn't rated again." disabled>Take back <kbd>B</kbd></button>
+        <button class="btn sm" id="o-prev" aria-label="Previous move" title="Previous move (←)" disabled>&#9664;</button><button class="btn sm" id="o-next" aria-label="Next move" title="Next move (→)" disabled>&#9654;</button>
         <button class="btn sm" id="o-flip">Flip <kbd>F</kbd></button>
         <button class="btn sm icon" id="o-type" type="button" aria-pressed="false" aria-controls="o-moveform" title="Type moves instead of dragging" aria-label="Type a move">&#9000;</button>
         <a class="btn sm" id="o-lichess" target="_blank" rel="noopener">Lichess &#8599;</a>
@@ -143,6 +156,10 @@
       </form>
     </div>
     <div class="oright">
+      <div class="card" id="o-notecard" hidden>
+        <span class="label">Notes from your PGN</span>
+        <div class="cnotes" id="o-notes"></div>
+      </div>
       <div class="card" id="o-bookcard">
         <span class="label" id="o-booklabel">Elite book</span>
         <div id="o-bookrows"><p class="note">The book shows here after each line (and live in Training mode).</p></div>
@@ -161,6 +178,8 @@
       <div class="moverow" style="margin:0 0 8px"><input type="text" id="o-studyurl" placeholder="Or a Lichess study link: https://lichess.org/study/…" aria-label="Lichess study link">
         <button class="btn" id="o-studyget">Fetch</button></div>
       <textarea id="o-pgnbox" rows="8" placeholder="[Event &quot;...&quot;]&#10;&#10;1. e4 e5 2. Nf3 ..."></textarea>
+      <div class="btns" style="margin-top:6px"><label class="btn sm" for="o-pgnfile">Choose a .pgn file</label><input type="file" id="o-pgnfile" accept=".pgn,text/plain,application/x-chess-pgn" class="sr-only"></div>
+      <p class="note">Comments in braces, move marks (!, ?, $1 …) and Lichess arrows ([%cal], [%csl]) are kept and shown beside the moves.</p>
       <div class="row2" style="margin-top:8px">
         <label class="field">Name <input type="text" id="o-repname" placeholder="My 1.e4 repertoire"></label>
         <label class="field">Your side
@@ -172,6 +191,19 @@
         <button class="btn" id="o-repcancel">Cancel</button>
         <span class="note" id="o-reperr"></span>
       </div>
+    </div>
+  </div>
+  <div class="modal" id="o-setmodal" hidden role="dialog" aria-modal="true" aria-labelledby="o-settitle">
+    <div class="card">
+      <div class="mhead"><h2 id="o-settitle">Trainer settings</h2><button class="btn sm" id="o-setclose" aria-label="Close">Close ✕</button></div>
+      <div id="o-setbody"></div>
+      <div class="btns" style="margin-top:12px"><button class="btn sm" id="o-setreset">Reset to default</button><span class="note">Changes apply at once and stay in this browser.</span></div>
+    </div>
+  </div>
+  <div class="modal" id="o-statsmodal" hidden role="dialog" aria-modal="true" aria-labelledby="o-statstitle">
+    <div class="card wide">
+      <div class="mhead"><h2 id="o-statstitle">Statistics</h2><button class="btn sm" id="o-statsclose" aria-label="Close">Close ✕</button></div>
+      <div id="o-statsbody"></div>
     </div>
   </div>
 </section>
@@ -354,6 +386,7 @@
         <div class="board" id="pl-board" role="group" aria-label="Chess board"></div>
         <p class="note" id="pl-strip" style="margin:6px 0 0;min-height:1.2em"></p>
         <div class="boardtools">
+          <button class="btn sm" id="pl-back" title="Take back your last move and the reply (T). Counted on the saved game." disabled>Take back <kbd>T</kbd></button>
           <button class="btn sm" id="pl-peek">Peek</button>
           <button class="btn sm" id="pl-resign">Resign</button>
           <button class="btn sm" id="pl-flip">Flip <kbd>F</kbd></button>
@@ -376,7 +409,7 @@
   <div class="grid">
     <div>
       <p class="note" style="margin:0 0 10px">Play through a game from the winner&rsquo;s side and guess
-         each move: famous master games, and some of mine. 2 points for a key move, 1 for the rest; a move the engine rates as good counts too.</p>
+         each move: famous master games, some of mine, and your own (paste a PGN with your notes). 2 points for a key move, 1 for the rest; a move the engine rates as good counts too.</p>
       <div class="list" id="g-list"></div>
     </div>
     <div class="panel">
@@ -399,6 +432,71 @@
         <div class="tablewrap" id="g-tablewrap" hidden><table id="g-table"></table></div>
       </div>
     </div>
+  </div>
+  <div class="modal" id="g-addmodal" hidden role="dialog" aria-modal="true" aria-labelledby="g-addtitle">
+    <div class="card">
+      <h2 id="g-addtitle">Add your own game</h2>
+      <p class="note">Paste a PGN (one game or several) or choose a file. Notes in braces, side lines in brackets, move marks (!, ?, $1 …) and Lichess arrows are kept.
+         It is read in your browser and stored only on this device.</p>
+      <textarea id="g-addbox" rows="8" placeholder="[White &quot;Me&quot;]&#10;[Black &quot;A friend&quot;]&#10;[Result &quot;1-0&quot;]&#10;&#10;1. e4 e5 2. Nf3 {the plan} Nc6 …"></textarea>
+      <div class="row2" style="margin-top:8px">
+        <label class="field">Guess the moves of
+          <select id="g-addside"><option value="winner">The winner (White in a draw)</option><option value="white">White</option><option value="black">Black</option></select></label>
+        <div class="field"><span>Or a file</span><label class="btn sm" for="g-addfile" style="align-self:flex-start">Choose a .pgn file</label><input type="file" id="g-addfile" accept=".pgn,text/plain,application/x-chess-pgn" class="sr-only"></div>
+      </div>
+      <div class="btns" style="margin-top:12px"><button class="btn primary" id="g-addsave">Add</button><button class="btn" id="g-addcancel">Cancel</button><span class="note" id="g-adderr"></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= Players ================= -->
+<section id="players" hidden>
+  <div class="grid">
+    <div class="p-left">
+      <form class="card" id="p-form">
+        <span class="label">Add a player</span>
+        <div class="row2" style="margin-top:8px">
+          <label class="field">Site <select id="p-site"><option value="lichess">Lichess</option><option value="chesscom">Chess.com</option></select></label>
+          <label class="field">Username <input type="text" id="p-user" placeholder="their username" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+        </div>
+        <div class="chips" id="p-speeds" style="margin-top:8px;gap:12px"></div>
+        <div class="btns" style="margin-top:10px"><button class="btn primary" id="p-go" type="submit">Fetch their games</button><span class="note" id="p-err" role="status"></span></div>
+        <p class="note" style="margin:8px 0 0">Their last 200 public games are fetched by your browser from the site’s public API and kept only on this device.</p>
+      </form>
+      <div class="list" id="p-list" style="margin-top:12px"></div>
+    </div>
+    <div>
+      <div id="p-view"></div>
+      <div id="p-sheet" class="psheet" hidden></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= Watch ================= -->
+<section id="watch" hidden>
+  <div class="wawrap">
+    <details class="card waadd" id="wa-addcard" open>
+      <summary><span class="label">Add a video</span></summary>
+      <div class="moverow" style="margin-top:8px"><input type="text" id="wa-aurl" placeholder="YouTube link (a &amp;t= position is kept)" aria-label="YouTube link" autocomplete="off" spellcheck="false"><button class="btn sm" id="wa-aget" type="button" title="Ask YouTube for the title and channel">Get title</button></div>
+      <div class="row2" style="margin-top:8px">
+        <label class="field">Title <input type="text" id="wa-atitle"></label>
+        <label class="field">Series (a course or playlist) <input type="text" id="wa-aser" list="wa-series" placeholder="optional"></label>
+        <label class="field">Channel <input type="text" id="wa-ach" placeholder="optional"></label>
+        <label class="field">Length (h:mm:ss) <input type="text" id="wa-adur" placeholder="optional"></label>
+        <label class="field">Topic <input type="text" id="wa-atopic" list="wa-topics" placeholder="endgames, openings, …"></label>
+        <label class="field">Opening (links to Openings) <input type="text" id="wa-aop" placeholder="optional"></label>
+        <label class="field">Kind <select id="wa-akind"><option value="lecture">Lecture</option><option value="fun">Fun</option></select></label>
+      </div>
+      <datalist id="wa-topics"></datalist><datalist id="wa-series"></datalist>
+      <div class="btns" style="margin-top:10px"><button class="btn primary" id="wa-asave" type="button">Add to my library</button><span class="note" id="wa-aerr" role="status"></span></div>
+      <p class="note" style="margin:8px 0 0">No videos play on this page: each one opens on YouTube at your saved position. Your library, notes and bookmarks stay in this browser.</p>
+    </details>
+    <div class="filters" style="margin-top:12px">
+      <input type="text" id="wa-search" placeholder="Search titles, series, notes…" aria-label="Search videos">
+      <div class="chips" id="wa-view"></div><div class="chips" id="wa-kind"></div><div class="chips" id="wa-state"></div>
+      <div class="btns" style="align-items:center"><select id="wa-topic" aria-label="Topic"></select><span class="note" id="wa-count"></span></div>
+    </div>
+    <div id="wa-list" class="walist"></div>
   </div>
 </section>
 
@@ -453,6 +551,8 @@
 <script src="js/drills.js?v=__V__"></script>
 <script src="js/play.js?v=__V__"></script>
 <script src="js/gtm.js?v=__V__"></script>
+<script src="js/players.js?v=__V__"></script>
+<script src="js/watch.js?v=__V__"></script>
 <script src="js/today.js?v=__V__"></script>
 <script src="js/progress.js?v=__V__"></script>
 <script src="js/settingspage.js?v=__V__"></script>

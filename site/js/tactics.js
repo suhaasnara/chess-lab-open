@@ -68,6 +68,7 @@ function renderL(){
 
 function load(z){
   if(endbar) endbar.hide();
+  S.gen=(S.gen||0)+1;   /* a reply still on its timer belongs to the puzzle it was made for */
   S.cur=z; S.g=new Chess(z.fen); S.step=0; S.solved=false; S.failedFirst=false; S.usedHint=false; S.hintStage=0;
   let last=null;
   /* Lichess puzzles: the first move of the solution is the opponent's setup move. */
@@ -106,7 +107,8 @@ function userMove(from,to,promo){
     endbar.show(clean?'good':'warn',clean?'Solved ✓ first try':'Solved, not first try','Next puzzle');
     renderL(); return;
   }
-  setTimeout(()=>{ const u=reply; const mm=S.g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'});
+  const gen=S.gen;
+  setTimeout(()=>{ if(gen!==S.gen) return; const u=reply; const mm=S.g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'});
     S.step++;
     board.set(S.g,{last:mm?{from:mm.from,to:mm.to}:null,orient:board.orient});
     status('','Keep going.',''); },450);

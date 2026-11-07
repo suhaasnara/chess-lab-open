@@ -29,7 +29,7 @@ function pickOpening(){
   const ops=OpeningsTab.openings();
   const played=ops.map(o=>({o,s:OpeningsTab.stats(o.id)})).filter(x=>x.s.lines>0);
   if(played.length) return played.sort((a,b)=>a.s.rating-b.s.rating)[0].o.id;
-  const presets=ops.filter(o=>!o.rep);
+  const presets=ops.filter(o=>!o.rep&&!o.player);
   return presets[(new Date().getDate())%presets.length].id;
 }
 function plan(){
@@ -89,6 +89,10 @@ function render(){
     b.addEventListener('click',()=>start(it));
     el.appendChild(b);
   }
+  /* Watch: the video you were in the middle of (a link, not part of the count) */
+  const wt=window.WatchTab&&WatchTab.today();
+  if(wt){ const a=document.createElement('a'); a.className='drill wtoday'; a.href=wt.url; a.target='_blank'; a.rel='noopener';
+    a.innerHTML=`<span class="src">W</span><span><span class="opp">Watch: ${esc(wt.v.title)}</span><br><span class="meta">${esc(wt.label)} · opens YouTube</span></span><span class="evalchip">↗</span>`; el.appendChild(a) }
   const nd=(Store.get('adrills')||[]).length;
   $('td-note').innerHTML=nd?'':'Drills from your own games appear here once you run <a href="#analyze">Analyze my games</a> and save some.';
 }

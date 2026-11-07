@@ -1,9 +1,9 @@
 /* Chess Lab Open — router: which section is on screen (#openings, #tactics, ...). */
 'use strict';
 (function(){
-const VIEWS=['today','openings','tactics','calc','endgames','analyze','drills','play','guess','progress','settings'];
-const BOARD_VIEWS=['openings','tactics','calc','endgames','drills','play','guess'];
-const TITLES={today:'Today',openings:'Openings',tactics:'Tactics',calc:'Calculation',endgames:'Endgames',analyze:'Analyze my games',drills:'Drills',play:'Play',guess:'Guess the move',progress:'Progress',settings:'Settings'};
+const VIEWS=['today','openings','tactics','calc','endgames','analyze','drills','play','guess','players','watch','progress','settings'];
+const BOARD_VIEWS=['openings','tactics','calc','endgames','drills','play','guess','players'];
+const TITLES={today:'Today',openings:'Openings',tactics:'Tactics',calc:'Calculation',endgames:'Endgames',analyze:'Analyze my games',drills:'Drills',play:'Play',guess:'Guess the move',players:'Players',watch:'Watch',progress:'Progress',settings:'Settings'};
 let shown=null, first=true;
 function route(){
   let v=(location.hash||'#today').slice(1).split('/')[0];
@@ -23,6 +23,8 @@ function route(){
   if(v==='progress'){ ProgressTab.render(); CalcTab.ensure().then(()=>{ if(document.body.dataset.view==='progress') ProgressTab.render() }) }
   if(v==='today') TodayTab.render();
   if(v==='drills') DrillsTab.refresh();
+  if(v==='watch') WatchTab.render();
+  if(v==='players') PlayersTab.render();
   if(changed&&document.scrollingElement) document.scrollingElement.scrollTop=0;
   if(first){ first=false; const top=()=>{ if(document.scrollingElement) document.scrollingElement.scrollTop=0 };   /* a #tab link jumps to the section; start at the top instead */
     requestAnimationFrame(top); addEventListener('load',top,{once:true}) }
@@ -42,6 +44,6 @@ document.addEventListener('click',e=>{   /* capture phase: the list re-renders o
 },true);
 document.querySelectorAll('.tabs button[data-route]').forEach(b=>b.addEventListener('click',()=>{ location.hash='#'+b.dataset.route }));
 addEventListener('hashchange',route);
-OpeningsTab.init(); TacticsTab.init(); CalcTab.init(); EndgamesTab.init(); TodayTab.init(); AnalyzeTab.init(); DrillsTab.init(); PlayTab.init(); GtmTab.init(); ProgressTab.init(); SettingsTab.init();
+OpeningsTab.init(); TacticsTab.init(); CalcTab.init(); EndgamesTab.init(); TodayTab.init(); AnalyzeTab.init(); DrillsTab.init(); PlayTab.init(); GtmTab.init(); PlayersTab.init(); WatchTab.init(); ProgressTab.init(); SettingsTab.init();
 route();
 })();
