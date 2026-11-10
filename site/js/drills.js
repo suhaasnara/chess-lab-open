@@ -3,7 +3,7 @@
    of the best line counts, the kit's rule). Drill ids: 'a' + sha1(fen|playedUci)[:8]. */
 'use strict';
 (function(){
-let board=null, endbar=null;
+let board=null, endbar=null, H=null;   /* H: Today, when it hosts this panel (its next item; told after each result) */
 const S={cur:null,g:null,done:false,busy:false,kind:'all',state:'all',q:''};
 const KINDS=[['all','All'],['mine','Your mistakes'],['punish','Punish']];
 const STATES=[['all','Any'],['new','Not tried'],['missed','Missed'],['solved','Solved']];
@@ -15,7 +15,7 @@ const DEPTH=13;
 
 const drills=()=>Store.get('adrills')||[];
 const prog=()=>Store.get('adrills-progress')||{};
-function saveResult(id,ok){ const p=prog(); const e=p[id]||{tries:0}; e.tries++; if(ok){ e.ok=true; e.okN=(e.okN||0)+1 } e.t=Date.now(); p[id]=e; Store.put('adrills-progress',p); renderL() }
+function saveResult(id,ok){ const p=prog(); const e=p[id]||{tries:0}; e.tries++; if(ok){ e.ok=true; e.okN=(e.okN||0)+1 } e.t=Date.now(); p[id]=e; Store.put('adrills-progress',p); renderL(); if(H) H.changed() }
 
 function shown(){ const p=prog(), q=S.q.trim().toLowerCase();
   return drills().filter(d=>{ if(S.kind!=='all'&&(S.kind==='punish')!==isPunish(d)) return false;
@@ -89,7 +89,7 @@ function finish(m,ok,text){
   board.flash([m.from,m.to],'good');
   status('good',`${m.san} ✓`,text||'');
   saveResult(S.cur.id,!S.hinted);   /* a hinted drill is played through but not counted solved */
-  endbar.show('good',`${m.san} ✓ Solved`,'Next drill');
+  endbar.show('good',`${m.san} ✓ Solved`,H?'Next in session':'Next drill');
 }
 async function show(){
   if(!S.cur||S.done) return;
@@ -98,7 +98,7 @@ async function show(){
   if(!u){ status('warn','No stored answer and no engine.',''); return }
   board.setHint(u.slice(0,2),u.slice(2,4));
   status('warn','Answer: '+sanOf(S.g.fen(),u),'Shown answers don’t count as solved.');
-  endbar.show('warn','Answer: '+sanOf(S.g.fen(),u),'Next drill');
+  endbar.show('warn','Answer: '+sanOf(S.g.fen(),u),H?'Next in session':'Next drill');
   saveResult(S.cur.id,false);
 }
 /* Play it out: continue from the drill position against Stockfish (Play tab). The goal comes from the eval
@@ -118,7 +118,7 @@ async function hint(){
   if(S.hintStage===1){ board.setHint(u.slice(0,2)); status('warn','Hint: this piece.','Press H again for the move. A hinted drill doesn’t count as solved.') }
   else { board.setHint(u.slice(0,2),u.slice(2,4)); status('warn','Hint: '+sanOf(S.g.fen(),u),'Play it to finish. It doesn’t count as solved.') }
 }
-function next(){ const p=prog(); const d=drills().find(x=>!p[x.id]||!p[x.id].ok)||drills()[0]; if(d) load(d) }
+function next(){ if(H) return H.next(); const p=prog(); const d=drills().find(x=>!p[x.id]||!p[x.id].ok)||drills()[0]; if(d) load(d) }
 function status(tone,head,rest,help){ const el=$('d-status'); el.className='status'+(tone?' '+tone:''); el.innerHTML=`<strong>${esc(head)}</strong>${esc(rest||'')}${help?Help.q(help):''}` }
 
 function init(){
@@ -136,5 +136,5 @@ function init(){
   $('d-hint').addEventListener('click',hint);
   Keys.on('drills',{'/':['Search drills',()=>{ const i=$('d-search'); if(i&&!$('d-searchwrap').hidden){ i.focus(); i.select() } }],n:['Next drill',()=>next()],h:['Hint (first the piece, then the move)',()=>hint()],f:['Flip the board',()=>board.flip()]});
 }
-window.DrillsTab={init,hint,refresh:renderL,load,next,userMove,show,playOut,get state(){return S}};
+window.DrillsTab={init,hint,refresh:renderL,load,next,userMove,show,playOut,host:h=>{ H=h||null },flip:()=>board.flip(),get state(){return S}};
 })();

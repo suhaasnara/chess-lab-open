@@ -212,6 +212,14 @@ footer .inner{padding-block:18px;font-size:.85rem;color:var(--muted)}
 
 /* Today */
 .tdwrap #welcome{max-width:900px;margin:0 0 16px}
+/* Today's cards under the session bar (Endgame, Opening line, Watch): Chess Lab's .watoday values */
+.watoday{margin:10px 0;padding:10px 14px}
+.watoday .label{margin:0}.watoday a{text-decoration:none;color:var(--head)}.watoday a:hover{text-decoration:underline}
+.watoday .wthead{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}
+.watoday .walink{margin-left:auto;white-space:nowrap}
+.watoday .wtrow{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline;padding:4px 0;border-top:1px solid var(--line)}
+.watoday .wtrow:first-of-type{border-top:0}
+.watoday .wtlab{font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--blue);flex:0 0 auto;min-width:86px}
 body.welcomed[data-view="today"] .hero{display:none}
 .tdhead{margin:4px 0 8px;font-size:.95rem}
 .drill.done{opacity:.6}.drill.done .src{color:var(--good)}

@@ -332,7 +332,7 @@ section('t14: Today — a daily session from your drills, puzzles and openings')
 {
   const {w}=await makePage();
   for(let i=0;i<40&&!(w.TacticsTab.lib||[]).length;i++) await sleep(100);
-  const D=[1,2,3,4].map(i=>({id:'a-'+i,fen:'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',played:'a6',best:'e7e5',drop:0.2,opp:'x'+i,date:'2026-10-0'+i,color:'b'}));
+  const D=[1,2,3,4].map(i=>({id:'a-'+i,fen:'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',played:'a6',playedUci:'a7a6',best:'e7e5',drop:0.2,opp:'x'+i,date:'2026-10-0'+i,color:'b'}));
   w.Store.put('adrills',D);
   const old=Date.now()-30*864e5;
   w.Store.put('adrills-progress',{'a-1':{tries:1,ok:true,okN:1,t:old},'a-2':{tries:1,t:Date.now()-2*864e5},'a-3':{tries:1,ok:true,okN:1,t:Date.now()-864e5}});
@@ -345,12 +345,29 @@ section('t14: Today — a daily session from your drills, puzzles and openings')
   w.Store.put('today',{...t,drills:[]});
   assert(w.TodayTab.plan().drills.length===3,'drills saved after an empty-drill plan join today\u2019s plan');
   w.location.hash='#today'; await sleep(80);
-  assert(w.document.querySelectorAll('#td-list .drill').length===10&&/0 of 10 done/.test(w.document.getElementById('td-head').textContent),'the list shows 10 items (with the endgame), none done');
+  const doc=w.document, head=()=>doc.getElementById('td-head').textContent;
+  assert(doc.querySelectorAll('#td-list .drill').length===8&&/0 of 10 done/.test(head()),'Up next lists the 3 drills and 5 puzzles; the session counts 10 (with the endgame and the opening line), none done');
+  assert(/Endgame/.test(doc.getElementById('td-cards').textContent)&&/Opening line/.test(doc.getElementById('td-cards').textContent),'the endgame and the opening line are cards under the session bar, as in Chess Lab');
+  assert(w.TodayTab.hosted==='drill'&&w.DrillsTab.state.cur&&w.DrillsTab.state.cur.id==='a-4'&&doc.getElementById('td-grid').contains(doc.getElementById('d-board'))&&doc.body.dataset.view==='today','the first item is on Today’s board, ready to play (the Drills panel, hosted here)');
   const tp=w.Store.get('tactics-progress')||{}; tp[t.puzzles[0]]={ok:true,t:Date.now()}; w.Store.put('tactics-progress',tp);
   w.TodayTab.render();
-  assert(/1 of 10 done/.test(w.document.getElementById('td-head').textContent),'a puzzle solved today ticks off');
-  w.document.getElementById('td-go').click(); await sleep(120);
-  assert(w.document.body.dataset.view==='drills'&&w.DrillsTab.state.cur&&w.DrillsTab.state.cur.id==='a-4','Continue opens the next item (the first drill)');
+  assert(/1 of 10 done/.test(head()),'a puzzle solved today ticks off');
+  await w.DrillsTab.userMove('e7','e5'); await sleep(30);
+  const dp=w.Store.get('adrills-progress');
+  assert(dp['a-4']&&dp['a-4'].ok&&dp['a-4'].tries===1&&/2 of 10 done/.test(head()),'solving it on Today is stored by the Drills code under its own key, and ticks off');
+  assert(w.DrillsTab.state.cur.id==='a-4'&&/Next in session/.test(doc.querySelector('#td-grid .endbar').textContent),'the solved drill stays on the board; its banner says Next in session');
+  doc.querySelector('#td-grid .endbar button').click(); await sleep(30);
+  assert(w.DrillsTab.state.cur.id==='a-2'&&w.TodayTab.sel==='drill:a-2','Next in session goes to the next item not done');
+  w.TodayTab.next(); w.TodayTab.next(); await sleep(30);
+  const pz=w.TacticsTab.state.cur;
+  assert(w.TodayTab.hosted==='puzzle'&&pz&&t.puzzles.includes(pz.id)&&pz.id!==t.puzzles[0]&&doc.getElementById('td-grid').contains(doc.getElementById('t-board'))&&!doc.getElementById('td-grid').contains(doc.getElementById('d-board')),'puzzles are played here too (the Tactics panel), skipping the one already done');
+  w.location.hash='#drills'; await sleep(60);
+  assert(doc.getElementById('drills').contains(doc.getElementById('d-board'))&&doc.getElementById('tactics').contains(doc.getElementById('t-board'))&&w.TodayTab.hosted===null,'leaving Today gives the panels back to their tabs');
+  w.DrillsTab.next(); await sleep(20);
+  assert(doc.body.dataset.view==='drills'&&w.DrillsTab.state.cur&&!w.TodayTab.sel.startsWith('x'),'Next in Drills is the Drills tab’s own again');
+  w.location.hash='#today'; await sleep(60);
+  const ec=doc.querySelector('#td-cards a[data-td^="opening:"]'); ec.click(); await sleep(120);
+  assert(doc.body.dataset.view==='openings','the opening line’s card opens it in Openings');
 }
 
 section('t15: Punish the mistake and Play it out');
@@ -454,7 +471,8 @@ section('t18: result banner on every board');
   const {w}=await makePage({analyse:async()=>[{uci:'e1g1',cp:0.4,mate:null}]});
   for(let i=0;i<40&&!(w.TacticsTab.lib||[]).length;i++) await sleep(100);
   const bar=id=>w.document.getElementById(id).parentElement.querySelector('.endbar');
-  /* Tactics: a clean solve */
+  /* Tactics: a clean solve (on the Tactics tab: Today hosts that board while it is open) */
+  w.location.hash='#tactics'; await sleep(30);
   const z=w.TacticsTab.lib.find(p=>p.moves.length===2);
   w.TacticsTab.load(z); await sleep(20);
   const e=z.moves[w.TacticsTab.state.step]; await w.TacticsTab.userMove(e.slice(0,2),e.slice(2,4),e[4]); await sleep(50);
@@ -893,7 +911,8 @@ section('t31: Watch — your own video library');
   assert(!$('wa-list').querySelector('iframe'),'no embeds');
   const ex=w.Store.exportAll(); assert(ex.watch&&ex.watch.list.length===2,'the library is in the progress export');
   W.put('abcdefghijk',{w:0,t:120}); w.TodayTab.render();
-  assert(/Watch: 1\. Pawn structures/.test($('today').textContent),'Today links to the video in progress');
+  assert(/Continue\s*1\. Pawn structures/.test($('td-cards').textContent)&&$('td-cards').querySelector('a[href*="t=120s"]'),'Today’s Watch card resumes the video in progress (Chess Lab’s plan: Continue first)');
+  assert(w.WatchTab.plan().every(p=>(p.v.kind||'lecture')!=='fun'),'fun videos never appear on Today');
 }
 
 section('t32: Players — an opponent’s public games, what they play, train vs, pre-round sheet');

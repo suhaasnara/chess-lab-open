@@ -142,6 +142,31 @@ async function getTitle(){
 function today(){ const v=all().filter(x=>state(x)==='progress').sort((a,b)=>(rec(b.id).u||0)-(rec(a.id).u||0))[0]
   ||(()=>{ const s=all().filter(x=>x.series&&state(x)==='new'&&all().some(y=>y.series===x.series&&state(y)==='watched')); return s.sort((a,b)=>chNum(a)-chNum(b))[0] })();
   return v?{v,url:url(v),label:state(v)==='progress'?'Resume at '+fmt(pos(v)):'Next in '+v.series}:null }
+/* Today's Watch card, Chess Lab's balanced daily plan: up to 3 videos. Resume the one you touched last, then one pick from
+   each of up to two OTHER topics, rotating daily so every topic gets its day; each pick is its series' next chapter.
+   Fun videos never appear. */
+function plan(){
+  const lect=all().filter(v=>(v.kind||'lecture')!=='fun');
+  if(!lect.length) return [];
+  const day=new Date().toISOString().slice(0,10);
+  const hash=s=>{ let h=0; for(const c of s) h=(h*31+c.charCodeAt(0))|0; return h };
+  const picks=[], usedTopic=new Set(), usedGroup=new Set();
+  const going=lect.filter(v=>state(v)==='progress').sort((a,b)=>(rec(b.id).u||0)-(rec(a.id).u||0))[0];
+  if(going){ picks.push({v:going,label:'Continue'}); usedTopic.add(going.topic||'—'); usedGroup.add(groupOf(going)) }
+  const topics=[...new Set(lect.map(v=>v.topic).filter(Boolean))].sort((a,b)=>hash(a+day)-hash(b+day));
+  for(const t of topics){
+    if(picks.length>=3) break; if(usedTopic.has(t)) continue;
+    const cands=lect.filter(v=>v.topic===t&&state(v)!=='watched'&&!usedGroup.has(groupOf(v)));
+    if(!cands.length) continue;
+    const groups=new Map(); cands.forEach(v=>{ const g=groupOf(v); if(!groups.has(g)) groups.set(g,[]); groups.get(g).push(v) });
+    const best=[...groups.values()].map(vs=>{ vs.sort((a,b)=>(chNum(a)-chNum(b))||(a.n-b.n));
+      return {vs,act:Math.max(0,...vs.map(v=>rec(v.id).u||0)),minN:Math.min(...vs.map(v=>v.n))} })
+      .sort((a,b)=>(b.act-a.act)||(a.minN-b.minN))[0];
+    const v=contNext(best.vs); if(!v) continue;
+    picks.push({v,label:t[0].toUpperCase()+t.slice(1)}); usedTopic.add(t); usedGroup.add(groupOf(v));
+  }
+  return picks.map(({v,label})=>({v,label,url:url(v),meta:[v.series||'',pos(v)>0?'at '+fmt(pos(v)):'',v.sec?fmt(v.sec):''].filter(Boolean).join(' · ')}));
+}
 
 function init(){
   Keys.on('watch',{'/':['Search videos',()=>{ const i=$('wa-search'); i.focus(); i.select() }]});
@@ -179,5 +204,5 @@ function init(){
   $('wa-aurl').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); if($('wa-atitle').value.trim()) add(); else $('wa-atitle').focus() } });
   render();
 }
-window.WatchTab={init,STARTERS,addStarter,render,add,parseLink,parseTime,fmt,url,today,get all(){return all()},rec,put};
+window.WatchTab={init,STARTERS,addStarter,render,add,parseLink,parseTime,fmt,url,today,plan,get all(){return all()},rec,put};
 })();

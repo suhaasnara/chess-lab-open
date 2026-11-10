@@ -44,11 +44,11 @@ async function waitFor(page,fn,arg,ms=20000){ try{ await page.waitForFunction(fn
   let ua; if(BROWSER==='chromium'){ const t=await browser.newPage(); ua=(await t.evaluate(()=>navigator.userAgent)).replace('HeadlessChrome','Chrome'); await t.close() }
   const ctx=await browser.newContext({viewport:{width:1280,height:900},colorScheme:'light',...(ua?{userAgent:ua}:{})});
   const page=await ctx.newPage();
-  const errors=[], warnings=[];
+  const errors=[], warnings=[]; let inLive=false;   /* inLive: the one live Lichess check is running (its errors are warnings) */
   page.on('pageerror',e=>errors.push('pageerror: '+(e&&e.message||e)));
   page.on('console',m=>{ const t=m.type(); const txt=m.text();
     const at=(m.location()&&m.location().url)||'';
-    if(t==='error'){ (/fonts\.(googleapis|gstatic)|favicon/.test(txt+at)||(/Failed to load resource/.test(txt)&&at&&!at.startsWith(base))?warnings:errors).push('console.error: '+txt+(at?' @ '+at:'')) }
+    if(t==='error'){ (/fonts\.(googleapis|gstatic)|favicon/.test(txt+at)||(inLive&&/lichess\.org/.test(txt+at))||(/Failed to load resource/.test(txt)&&at&&!at.startsWith(base))?warnings:errors).push('console.error: '+txt+(at?' @ '+at:'')) }
     else if(t==='warning') warnings.push('console.warn: '+txt) });
   /* a request the page itself abandoned (navigation, a closed page) is not a failure */
   page.on('requestfailed',r=>{ const u=r.url(), why=(r.failure()&&r.failure().errorText)||''; (u.startsWith(base)&&!/ABORTED|NS_BINDING_ABORTED|cancel/i.test(why)?errors:warnings).push('request failed: '+u+' ('+why+')') });
@@ -192,6 +192,18 @@ async function waitFor(page,fn,arg,ms=20000){ try{ await page.waitForFunction(fn
   check('Drills: Stockfish judges your move',await waitFor(page,()=>{ const t=document.getElementById('d-status').textContent; return !/Checking/.test(t)&&(DrillsTab.state.done||/still gives|Could not|isn/.test(t)) },null,25000),await page.evaluate(()=>document.getElementById('d-status').textContent.slice(0,120)));
   await page.screenshot({path:path.join(OUT,'drills.png')});
 
+  /* ---- Today: the session is played right here (Chess Lab's Today): the drill on Today's board, scored by the Drills code ---- */
+  await page.evaluate(()=>{ Store.del('today'); Store.put('adrills',[{id:'atest0002',kind:'mine',fen:'r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3',color:'w',played:'a3',playedUci:'a2a3',best:'f1b5',
+    opp:'Today opponent',date:'2026-11-02',drop:0.12,before:0.4,url:'https://lichess.org/'}]) });
+  await go('today');
+  check('Today: the first item is on Today’s board (the Drills panel, hosted)',await waitFor(page,()=>TodayTab.hosted==='drill'&&DrillsTab.state.cur&&DrillsTab.state.cur.id==='atest0002'&&document.getElementById('td-grid').contains(document.getElementById('d-board')),null,10000));
+  await page.$eval('#d-board',e=>e.scrollIntoView({block:'center'})); await sleep(150);
+  await tap('d-board','f1','b5');
+  check('Today: solving it there ticks it off (stored by Drills under its own key)',await waitFor(page,()=>{ const p=Store.get('adrills-progress')||{}; return p.atest0002&&p.atest0002.ok&&/1 of/.test(document.getElementById('td-head').textContent) },null,10000),await page.evaluate(()=>document.getElementById('td-head').textContent));
+  await page.screenshot({path:path.join(OUT,'today-played.png')});
+  await go('drills');
+  check('Today: leaving gives the board back to Drills',await page.evaluate(()=>document.getElementById('drills').contains(document.getElementById('d-board'))&&TodayTab.hosted===null));
+
   /* ---- Guess the move: theory plays itself; guess the game move ---- */
   await go('guess');
   await waitFor(page,()=>document.querySelectorAll('#g-list button.drill').length>0,null,10000);
@@ -212,7 +224,18 @@ async function waitFor(page,fn,arg,ms=20000){ try{ await page.waitForFunction(fn
   check('Watch: a video is added and deep-links at your position',await page.evaluate(()=>{ const a=document.querySelector('#wa-list a.watitle'); return !!a&&/t=90s/.test(a.href) }));
   } else soft('Watch tab present',false);
 
-  /* ---- Players: a public Lichess account (the author's own), what they play, Train vs ---- */
+  /* ---- Players: a public Lichess account, what they play, Train vs ----
+     On recorded fixtures (Lichess's NDJSON game export, Chess.com's archives), as the jsdom tests do, so an outage at
+     Lichess can't fail the site's check. The one live call is the separate, labelled check after this block. */
+  const ndjson=(()=>{ const out=[], t0=Date.UTC(2026,9,1);
+    const g=(i,white,black,winner,moves,speed)=>({id:'fx'+String(i).padStart(6,'0'),rated:true,variant:'standard',speed,perf:speed,createdAt:t0+i*36e5,status:winner?'resign':'draw',
+      players:{white:{user:{name:white,id:white.toLowerCase()},rating:white==='suhaasn'?2210:2050+i},black:{user:{name:black,id:black.toLowerCase()},rating:black==='suhaasn'?2210:2040+i}},...(winner?{winner}:{}),moves});
+    for(let i=0;i<6;i++) out.push(g(i,'suhaasn','opp'+i,i<4?'white':'black','d4 Nf6 c4 e6 Nf3 d5 Nc3 Be7 Bf4 O-O e3 c5','blitz'));
+    for(let i=6;i<10;i++) out.push(g(i,'opp'+i,'suhaasn',i<8?'black':null,'e4 e5 Nf3 Nc6 Bb5 a6 Ba4 Nf6 O-O Be7 Re1 b5','rapid'));
+    return out.map(j=>JSON.stringify(j)).join('\n')+'\n' })();
+  const cors={'Access-Control-Allow-Origin':'*'};
+  await page.route(/^https:\/\/lichess\.org\/api\/games\/user\//,r=>r.fulfill({status:200,headers:{...cors,'Content-Type':'application/x-ndjson'},body:ndjson}));
+  await page.route(/^https:\/\/api\.chess\.com\/pub\/player\//,r=>r.fulfill({status:200,headers:{...cors,'Content-Type':'application/json'},body:JSON.stringify(/archives$/.test(r.request().url())?{archives:[]}:{games:[]})}));
   if(!await page.$('#p-form')) soft('Players tab present',false); else {
   await go('players');
   await page.selectOption('#p-site','lichess'); await page.fill('#p-user','suhaasn'); await page.click('#p-go');
@@ -228,7 +251,21 @@ async function waitFor(page,fn,arg,ms=20000){ try{ await page.waitForFunction(fn
     await page.screenshot({path:path.join(OUT,'players-sheet.png'),fullPage:true});
     await page.click('#p-sheet [data-train="b"]');
     check('Players: Train vs opens the trainer and the opponent plays their move',await waitFor(page,()=>{ const S=OpeningsTab.state; return S.op&&S.op.player&&S.log.length>=1&&S.phase==='await' },null,20000),await page.evaluate(()=>document.getElementById('o-status').textContent.slice(0,120)));
-  } else warnings.push('Players: Lichess could not be reached from this runner: '+plMsg);
+  } else check('Players: their public games are fetched (recorded fixture)',false,plMsg);
+  }
+  await page.unroute(/^https:\/\/lichess\.org\/api\/games\/user\//); await page.unroute(/^https:\/\/api\.chess\.com\/pub\/player\//);
+
+  /* ---- LIVE (the one check that needs the internet): Lichess's game export answers this page. Informational: a 5xx, a rate
+     limit or no answer (an outage at Lichess, not the site) is a warning; anything else that isn't games is a failure. ---- */
+  { inLive=true;
+    const live=await page.evaluate(async()=>{ const c=new AbortController(), t=setTimeout(()=>c.abort(),20000);
+      try{ const r=await fetch('https://lichess.org/api/games/user/suhaasn?max=1&moves=true',{headers:{Accept:'application/x-ndjson'},signal:c.signal}); const txt=r.ok?await r.text():'';
+        return {status:r.status,games:txt.trim()?txt.trim().split('\n').length:0} }
+      catch(e){ return {status:0,why:String(e&&e.message||e)} } finally{ clearTimeout(t) } });
+    await sleep(300); inLive=false;
+    if(live.status===200&&live.games>0) check('LIVE (informational): Lichess’s game export answers this page',true,live.games+' game');
+    else if(live.status===0||live.status===429||live.status>=500) warnings.push('LIVE (informational): Lichess did not answer ('+(live.status||live.why)+'); an outage there, not a site failure');
+    else check('LIVE (informational): Lichess’s game export answers this page',false,'status '+live.status+', '+live.games+' games');
   }
 
   /* ---- every tab, light and dark, desktop and phone ---- */

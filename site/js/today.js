@@ -60,12 +60,6 @@ function items(){
     title:'Opening line: '+o.name,meta:st.lines?`rating ${st.rating} · ${Help.n(st.lines,'line')}`:'new for you'}) }
   return out;
 }
-function start(it){
-  if(it.kind==='drill'){ location.hash='#drills'; setTimeout(()=>DrillsTab.load(it.obj),30) }
-  else if(it.kind==='puzzle'){ location.hash='#tactics'; setTimeout(()=>TacticsTab.load(it.obj),30) }
-  else if(it.kind==='endgame'){ location.hash='#endgames'; setTimeout(()=>EndgamesTab.load(it.obj),30) }
-  else { location.hash='#openings'; setTimeout(()=>OpeningsTab.selectOpening(it.id),30) }
-}
 function streak(all,done){
   const s=Store.get('today-streak')||{n:0,last:null};
   if(all&&done===all&&s.last!==dayKey()){
@@ -73,16 +67,17 @@ function streak(all,done){
   }
   return s.last===dayKey()||s.last===dayKey(Date.now()-DAY)?s.n:0;
 }
-/* The page (shared train view, Chess Lab's layout): the session bar and the Up next list on the left, the selected
-   item's position on the board, and a card that says what it is. Start opens it in its own tab (where it is scored). */
-let board=null, sel=null, picked=false;   /* picked: the person chose this row (else the first item not done is shown) */
+/* The page, as Chess Lab's Today: the session bar, the Endgame / Opening line / Watch cards and the Up next list on the
+   left; drills and puzzles are played right here, on the board. Today hosts the Drills or Tactics panel itself (their
+   own board, buttons and coach card), so each item is judged and stored by its own tab's code and keys, exactly as
+   there. The endgame and the opening line open in their tabs from their cards; all of it counts in the session. */
 const KIND={drill:'Drill',puzzle:'Puzzle',endgame:'Endgame',opening:'Opening line'};
+const INPLACE={drill:1,puzzle:1};
+let board=null, sel=null, hosted=null, P={};   /* sel: kind:id of the item on the board; hosted: 'drill' | 'puzzle' | null */
+const keyOf=it=>it.kind+':'+it.id;
+const tabOf=k=>k==='drill'?window.DrillsTab:window.TacticsTab;
 function preview(it){
   try{
-    if(it.kind==='drill') return {g:new Chess(it.obj.fen),orient:it.obj.color};
-    if(it.kind==='puzzle'){ const z=it.obj, g=new Chess(z.fen); let last=null;
-      if(z.pre!==false&&z.moves&&z.moves.length>1){ const u=z.moves[0]; const m=g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'}); if(m) last={from:m.from,to:m.to} }
-      return {g,orient:g.turn(),last} }
     if(it.kind==='endgame'){ const g=new Chess(it.obj.fen); return {g,orient:g.turn()} }
     const o=it.obj, g=new Chess(o.startFen||o.fen||undefined); let last=null;
     for(const m of o.moves||[]){ const r=g.move(m); if(!r) break; last={from:r.from,to:r.to} }
@@ -91,45 +86,76 @@ function preview(it){
 }
 function badge(it){
   if(it.kind==='drill') return {b:(v=>v==null?'D':(v>0?'+':v<0?'−':'')+Math.abs(v).toFixed(1))(it.obj.before),t:'Eval from White’s side'};
-  if(it.kind==='puzzle') return {b:it.obj.rating||'P',t:'Puzzle rating'};
-  if(it.kind==='endgame') return {b:it.obj.goal==='win'?'Win':'Draw',t:'The goal'};
-  return {b:'Line',t:'An opening line'};
+  return {b:it.obj.rating||'P',t:'Puzzle rating'};
 }
-function side(it){
-  const el=$('td-side'); if(!it){ el.innerHTML=''; return }
-  const what={drill:it.obj&&it.obj.kind==='punish'?'Your opponent erred here: find the move that makes them pay.':'From your own game: find the move you should have played.',
-    puzzle:'Five puzzles near your puzzle rating: the first try counts.',endgame:(it.obj.goal==='win'?'Win it':'Hold the draw')+' against perfect defence (the Lichess tablebase).',
-    opening:'One line against real Lichess games at the level you set; your lowest-rated opening comes first.'}[it.kind];
-  el.innerHTML=TV.head({kicker:'Today · '+KIND[it.kind]+(it.done?' · done':''),title:esc(it.title.replace(/^(Drill|Endgame|Opening line): /,'')),
-    chips:[esc(it.meta)],extra:`<p class="note" style="margin:8px 0 0">${esc(what)}</p>`})+
-    `<div class="status${it.done?' good':''}" style="margin-top:12px"><strong>${it.done?'Done today ✓':'Ready when you are.'}</strong>${it.done?'You can still do it again; it won’t count twice.':'Start opens it in its own tab, where it is scored. Come back here for the next one.'}</div>`;
+/* Show one panel in Today's board column: Drills', Tactics' or Today's own (the empty state). */
+function show(which){
+  const grid=$('td-grid'), mine=P.today, want=which==='drill'?P.drill:which==='puzzle'?P.puzzle:mine;
+  if(want.parentNode!==grid) grid.appendChild(want);
+  for(const p of [P.drill,P.puzzle]) if(p!==want&&p.parentNode===grid) P.home[p===P.drill?'drill':'puzzle'].appendChild(p);
+  mine.hidden=want!==mine;
+  if(hosted&&hosted!==which) tabOf(hosted).host(null);
+  hosted=which==='drill'||which==='puzzle'?which:null;
+  if(hosted) tabOf(hosted).host({next:nextItem,changed:refresh});
+  dispatchEvent(new Event('resize'));   /* the board fits itself to the column it is in now */
 }
-function select(it,list){
-  sel=it?it.kind+':'+it.id:null;
-  if(board){ if(it){ const p=preview(it); board.set(p.g,{locked:true,orient:p.orient,last:p.last||null}) } else board.set(new Chess(),{locked:true}) }
-  side(it);
+/* Leaving Today: give the panels back to their tabs. */
+function undock(){ if(!P.today) return; for(const k of ['drill','puzzle']) if(P[k].parentNode!==P.home[k]) P.home[k].appendChild(P[k]);
+  if(hosted) tabOf(hosted).host(null); hosted=null }
+function play(it){
+  sel=it?keyOf(it):null;
+  if(it&&INPLACE[it.kind]){ show(it.kind); const T=tabOf(it.kind);
+    if(!(T.state.cur&&T.state.cur.id===it.id)) T.load(it.obj) }   /* already on its board: keep the attempt as it is */
+  else { show(null); const p=it?preview(it):{g:new Chess(),orient:'w'}; board.set(p.g,{locked:true,orient:p.orient,last:p.last||null}) }
   for(const b of $('td-list').querySelectorAll('.drill[data-k]')) b.setAttribute('aria-current',String(b.dataset.k===sel));
-  const go=$('td-go'), nxt=(list||items()).find(x=>!x.done);
-  go.disabled=!it&&!nxt;
-  go.textContent=it&&!it.done?(it===nxt&&!(list||items()).some(x=>x.done)?'Start today’s session':'Start'):(nxt?'Continue':'All done for today ✓');
 }
-function render(){
+function card(label,href,all,rows){ return `<div class="card watoday"><div class="wthead"><span class="label">${label}</span><a class="note walink" href="${href}">${all} →</a></div>${rows}</div>` }
+function cards(list){
+  const out=[];
+  const wp=window.WatchTab&&WatchTab.plan?WatchTab.plan():[];
+  if(wp.length) out.push(card('Watch','#watch','All videos',wp.map(p=>`<div class="wtrow"><span class="wtlab">${esc(p.label)}</span><a href="${esc(p.url)}" target="_blank" rel="noopener"><b>${esc(p.v.title)}</b></a><span class="note">${esc(p.meta||'opens YouTube')}</span></div>`).join('')));
+  const eg=list.find(x=>x.kind==='endgame');
+  if(eg){ const seen=!!((Store.get('endgame-progress')||{})[eg.id]);
+    out.push(card('Endgame','#endgames','All endgames',`<div class="wtrow"><span class="wtlab">${eg.done?'Done ✓':seen?'Review':'New'}</span><a href="#endgames" data-td="${esc(keyOf(eg))}"><b>${esc(eg.obj.title)}</b></a><span class="note">${eg.obj.goal==='win'?'Win it':'Hold the draw'} against perfect defence</span></div>`)) }
+  const op=list.find(x=>x.kind==='opening');
+  if(op){ const st=OpeningsTab.stats(op.id);
+    out.push(card('Opening line','#openings','All openings',`<div class="wtrow"><span class="wtlab">${op.done?'Done ✓':st.lines?'Rating '+st.rating:'New'}</span><a href="#openings" data-td="${esc(keyOf(op))}"><b>${esc(op.obj.name)}</b></a><span class="note">${st.lines?'your lowest-rated opening · '+Help.n(st.lines,'line'):'one line against real Lichess games'}</span></div>`)) }
+  return out.join('');
+}
+/* render(): Today opened (the first item not done goes on the board, as in Chess Lab); refresh(): a result came in (the
+   item stays on the board; Next moves on). */
+function render(){ draw(true) }
+function refresh(){ if(document.body.dataset.view==='today') draw(false) }
+function draw(fresh){
   const el=$('td-list'); if(!el) return;
-  const list=items(), done=list.filter(x=>x.done).length;
-  const n=streak(list.length,done);
-  $('td-head').innerHTML=TV.session('Today’s session',done,list.length,n?n+'-day streak':'');
-  el.innerHTML=list.map(it=>{ const b=badge(it); return TV.row({badge:b.b,badgeTitle:b.t,title:esc(it.title)+(it.done?' <span class="tag conv">Done</span>':''),meta:`<span class="src">${KIND[it.kind]}</span> · ${esc(it.meta)}`,
-    right:TV.dots([[it.done?'good':'',it.done?'Done today':'Not done yet']]),cls:it.done?'done':'',data:{k:it.kind+':'+it.id}}) }).join('');
-  /* Watch: the video you were in the middle of (a link, not part of the count), as a card like Chess Lab's */
-  const wt=window.WatchTab&&WatchTab.today();
-  $('td-cards').innerHTML=wt?`<div class="card" style="margin-bottom:12px;padding:12px 14px"><div class="ohtop"><span class="label">Watch</span><a class="note" href="#watch">All videos →</a></div>
-    <a class="drill wtoday" style="margin-top:8px" href="${esc(wt.url)}" target="_blank" rel="noopener"><span class="evalchip">▶</span><span><div class="opp">Watch: ${esc(wt.v.title)}</div><div class="meta">${esc(wt.label)} · opens YouTube</div></span><span></span></a></div>`:'';
+  const list=items(), done=list.filter(x=>x.done).length, n=streak(list.length,done);
+  const here=list.filter(x=>INPLACE[x.kind]);
+  $('td-head').innerHTML=TV.session('Today’s session',done,list.length,n?n+'-day streak':'')+
+    (list.length&&done>=list.length?'<div class="empty" style="margin-bottom:10px">Session complete. Come back tomorrow, or keep going in <a href="#drills">Drills</a> and <a href="#tactics">Tactics</a>.</div>':'');
+  $('td-cards').innerHTML=cards(list);
+  el.innerHTML=here.map(it=>{ const b=badge(it); return TV.row({badge:b.b,badgeTitle:b.t,title:esc(it.title)+(it.done?' <span class="tag conv">Done</span>':''),meta:`<span class="src">${KIND[it.kind]}</span> · ${esc(it.meta)}`,
+    right:TV.dots([[it.done?'good':'',it.done?'Done today':'Not done yet']]),cls:it.done?'done':'',data:{k:keyOf(it)}}) }).join('');
+  el.classList.toggle('isempty',!here.length);
+  if(!here.length) el.innerHTML='<p class="empty">'+((TacticsTab.lib||[]).length?'Nothing to play here today.':'Loading the puzzles…')+'</p>';
   const nd=(Store.get('adrills')||[]).length;
   $('td-note').innerHTML=nd?'':'Drills from your own games appear here once you run <a href="#analyze">Analyze my games</a> and save some.';
-  const mine=picked&&list.find(x=>x.kind+':'+x.id===sel&&!x.done); if(!mine) picked=false;
-  const cur=mine||list.find(x=>!x.done)||list[0]||null;
-  select(cur,list);
+  if(fresh||(!hosted&&!sel)) play(here.find(x=>!x.done)||here[0]||null);
+  else for(const b of el.querySelectorAll('.drill[data-k]')) b.setAttribute('aria-current',String(b.dataset.k===sel));   /* a result came in: the board stays as it is */
 }
+function nextItem(){
+  const here=items().filter(x=>INPLACE[x.kind]); if(!here.length) return;
+  const i=here.findIndex(x=>keyOf(x)===sel);
+  const it=here.slice(i+1).find(x=>!x.done)||here.find(x=>!x.done&&keyOf(x)!==sel)||here[(i+1)%here.length];
+  play(it);
+  if(innerWidth<860){ const b=document.querySelector('#td-grid .panel:not([hidden]) .board'); if(b&&b.scrollIntoView) b.scrollIntoView({behavior:'smooth',block:'start'}) }
+}
+function start(it){
+  if(it.kind==='drill'){ location.hash='#drills'; setTimeout(()=>DrillsTab.load(it.obj),30) }
+  else if(it.kind==='puzzle'){ location.hash='#tactics'; setTimeout(()=>TacticsTab.load(it.obj),30) }
+  else if(it.kind==='endgame'){ location.hash='#endgames'; setTimeout(()=>EndgamesTab.load(it.obj),30) }
+  else { location.hash='#openings'; setTimeout(()=>OpeningsTab.selectOpening(it.id),30) }
+}
+function select(it){ play(it) }
 /* First visit: a short guide on Today (dismissable; "How it works" in the header brings it back). */
 function welcome(show){
   const el=$('welcome'); if(!el) return;
@@ -140,12 +166,20 @@ function welcome(show){
 }
 function dismiss(){ try{ localStorage.setItem('clo-welcome','seen') }catch(e){} $('welcome').hidden=true; document.body.classList.add('welcomed') }
 function init(){
+  const grid=$('td-grid');
+  P={today:grid.querySelector('.panel'),drill:$('drills').querySelector('.panel'),puzzle:$('tactics').querySelector('.panel')};
+  P.home={drill:P.drill.parentNode,puzzle:P.puzzle.parentNode};
   board=makeBoard($('td-board'),{}); board.set(new Chess(),{locked:true});
-  $('td-list').addEventListener('click',e=>{ const b=e.target.closest('.drill[data-k]'); if(!b) return; const it=items().find(x=>x.kind+':'+x.id===b.dataset.k); if(it){ picked=true; select(it); if(innerWidth<860) $('td-board').scrollIntoView({behavior:'smooth',block:'start'}) } });
-  $('td-go').addEventListener('click',()=>{ const list=items(); const it=(picked&&list.find(x=>x.kind+':'+x.id===sel&&!x.done))||list.find(x=>!x.done); if(it) start(it) });
-  const nextItem=()=>{ const list=items(); if(!list.length) return; const i=list.findIndex(x=>x.kind+':'+x.id===sel); const it=list.slice(i+1).find(x=>!x.done)||list.find(x=>!x.done)||list[(i+1)%list.length]; picked=true; select(it,list) };
+  $('td-list').addEventListener('click',e=>{ const b=e.target.closest('.drill[data-k]'); if(!b) return; const it=items().find(x=>keyOf(x)===b.dataset.k); if(it){ play(it);
+    if(innerWidth<860){ const bd=document.querySelector('#td-grid .panel:not([hidden]) .board'); if(bd&&bd.scrollIntoView) bd.scrollIntoView({behavior:'smooth',block:'start'}) } } });
+  $('td-cards').addEventListener('click',e=>{ const a=e.target.closest('a[data-td]'); if(!a) return; const it=items().find(x=>keyOf(x)===a.dataset.td); if(it){ e.preventDefault(); start(it) } });
+  /* the empty state's own board: Start opens the endgame or opening line still to do */
+  $('td-go').addEventListener('click',()=>{ const it=items().find(x=>!x.done&&!INPLACE[x.kind]); if(it) start(it) });
   $('td-next').addEventListener('click',nextItem); $('td-flip').addEventListener('click',()=>board.flip());
-  Keys.on('today',{n:['Next item',nextItem],f:['Flip the board',()=>board.flip()]});
+  const flip=()=>hosted?tabOf(hosted).flip():board.flip();
+  Keys.on('today',{n:['Next in session',nextItem],h:['Hint (first the piece, then the move)',()=>{ if(hosted) tabOf(hosted).hint() }],f:['Flip the board',flip]});
+  addEventListener('hashchange',()=>{ if(document.body.dataset.view!=='today') undock() });   /* runs after the router */
+  addEventListener('watch-change',refresh);
   TV.fitBoard('#td-wrap','#td-tools');
   welcome();
   $('welcome-x').addEventListener('click',dismiss); $('welcome-ok').addEventListener('click',dismiss);
@@ -153,7 +187,7 @@ function init(){
   $('td-help').addEventListener('click',()=>{ welcome(true); setTimeout(()=>{ const e=$('welcome'); if(e.scrollIntoView) e.scrollIntoView({block:'start'}) },30) });
   $('help-open').addEventListener('click',()=>{ location.hash='#today'; welcome(true); setTimeout(()=>{ const e=$('welcome'); if(e.scrollIntoView) e.scrollIntoView({block:'start'}) },30) });
   /* the puzzle library loads after this page: rebuild an empty plan once it is there */
-  let tries=0; const wait=setInterval(()=>{ tries++; if(((TacticsTab.lib||[]).length&&EndgamesTab.data)||tries>40){ clearInterval(wait); if(document.body.dataset.view==='today') render() } },250);
+  let tries=0; const wait=setInterval(()=>{ tries++; if(((TacticsTab.lib||[]).length&&EndgamesTab.data)||tries>40){ clearInterval(wait); if(document.body.dataset.view==='today'){ if(hosted) refresh(); else render() } } },250);
 }
-window.TodayTab={init,render,plan,items,start,select};
+window.TodayTab={init,render,plan,items,start,select,next:nextItem,get hosted(){return hosted},get sel(){return sel}};
 })();

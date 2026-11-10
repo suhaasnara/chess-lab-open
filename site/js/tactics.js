@@ -3,7 +3,7 @@
    first attempt only (a hint counts as a miss); K = 32 for the first 30 puzzles, then 16. */
 'use strict';
 (function(){
-let LIB=null, board=null, endbar=null;
+let LIB=null, board=null, endbar=null, H=null;   /* H: Today, when it hosts this panel */
 const S={cur:null,g:null,step:0,solved:false,failedFirst:false,usedHint:false,hintStage:0,motifs:[],ops:[],lo:null,hi:null,status:'Unsolved',band:null};
 const BANDS=[['All','Any rating'],['1200','1200–1499'],['1500','1500–1799'],['1800','1800–2099'],['2100','2100–2399'],['2400','2400+']];
 const STATUSES=['All','Unsolved','Missed','Solved'];
@@ -17,6 +17,7 @@ function saveResult(id,ok){
     rt.r=Math.round(rt.r+K*((ok?1:0)-E)); rt.n++; Store.put('tac-rating',rt);
     const h=Store.get('tac-history')||[]; h.push({t:Date.now(),r:rt.r}); Store.put('tac-history',h.slice(-500)) }
   renderHeader();
+  if(H) H.changed();
 }
 function renderHeader(){
   const rt=rating(), solved=Object.values(prog()).filter(x=>x.ok).length;
@@ -123,7 +124,7 @@ function userMove(from,to,promo){
     if(!S.failedFirst&&!S.usedHint) saveResult(S.cur.id,true);
     status('good','Solved!',S.failedFirst||S.usedHint?'(no rating: not a clean first try)':'');
     const clean=!S.failedFirst&&!S.usedHint;
-    endbar.show(clean?'good':'warn',clean?'Solved ✓ first try':'Solved, not first try','Next puzzle');
+    endbar.show(clean?'good':'warn',clean?'Solved ✓ first try':'Solved, not first try',H?'Next in session':'Next puzzle');
     renderL(); return;
   }
   const gen=S.gen;
@@ -142,6 +143,7 @@ function hint(){
 /* As in Chess Lab, the page opens on the first puzzle of the list (nothing is counted until a move is made) */
 function first(){ const z=daily(filtered())[0]; if(z) load(z) }
 function next(){
+  if(H) return H.next();
   const p=prog();
   const list=daily(filtered());
   const z=list.find(x=>!p[x.id])||list[0];
@@ -162,5 +164,5 @@ function init(){
   $('t-flip').addEventListener('click',()=>board.flip());
   Keys.on('tactics',{n:['Next puzzle',()=>next()],h:['Hint',()=>hint()],f:['Flip the board',()=>board.flip()]});
 }
-window.TacticsTab={init,get state(){return S},load,next,userMove,hint,filtered,get lib(){return LIB}};
+window.TacticsTab={init,get state(){return S},load,next,userMove,hint,filtered,host:h=>{ H=h||null },flip:()=>board.flip(),get lib(){return LIB}};
 })();
