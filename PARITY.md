@@ -73,3 +73,28 @@ Today the two sites are separate code that has been ported back and forth by han
 
 Order of work: board + Shapes + theme (smallest, already identical), then the PGN parser, then the engine, then the
 trainer core (largest, most behaviour to keep stable: drill ids and opening ratings must not change).
+
+### Progress (branch `one-codebase`, 9 Nov 2026)
+
+The shared code lives in **`site/shared/`** (this repo, MIT). The private kit keeps a pinned copy in its
+`site/src/shared/` (a `PIN.json` with the commit and a SHA-256 per file; its CI fails if the copy is edited there).
+Shared files declare one namespace each; each site keeps its own short names as thin wrappers.
+
+| Stage | Shared file | What it holds | Status |
+| --- | --- | --- | --- |
+| 1 | `theme.css`, `shapes.js`, `board.js` | colour variables (light / dark / match device); arrows and circles; `Board.draw`, `Board.bind` (tap or drag, optional input mode), `makeBoard`, `endBanner` | done, both sites |
+| 2 | `pgn.js` | `PGN.normKey` / `PGN.posId` (golden-value tested), NAG signs, note cleaning, arrows, `PGN.read` (games, nested variations, notes, marks, arrows) | done, both sites (repertoire import; the Guess-the-move parsers are still separate) |
+| 3 | `engine.js` | `EngineKit.create(builds)`: one Stockfish worker, watchdog, queue, cache; each site passes where its builds are served from | done, both sites |
+| 4 | `trainer-core.js` | rating v2 scale (difficulty, start 1800, K 40→16, short-line weight), "Sidelines in repertoires" weights, trappy factor, weighted pick | done, both sites — the one rule that still differs is how a line's expected score is averaged (see below) |
+
+Still to share: the rest of the opening trainer around the core (state, line flow, takebacks), the Guess-the-move
+parser, and the tabs themselves; then Open's extras come to the private site and the "Not ported yet" list comes here.
+
+**Rating, the one difference left in the core:** at the end of a rated line Open compares your average score with
+the expected score at the *average* difficulty; the private site averages the expected score of *each* move. They
+agree when a line's moves are about equally hard; with very uneven moves (1600 and 2600 finds in one line) one
+line's update can differ by up to ~9 points while provisional, ~4 after. Averaging each move's expected score (the
+private rule) is the standard Elo reading of "each move is a game". Each site keeps its own until
+Suhaas picks one (no stored rating changes either way; only future updates would).
+
+Privacy: `tools/privacy_guard.py --build site` now checks the exact folder that is deployed, and fails closed.
