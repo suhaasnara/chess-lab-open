@@ -37,7 +37,7 @@ function renderList(){
     return `<tr><td>${n}</td><td class="num">${done.length}/${xs.length}</td><td class="num">${done.length?Math.round(100*ok/done.length)+'%':'—'}</td><td class="num">${tn.length?fmt(Math.round(t/tn.length)):'—'}</td></tr>` });
   $('cc-stats').innerHTML=`<thead><tr><th>Length</th><th class="num">Done</th><th class="num">Solved</th><th class="num">Avg time</th></tr></thead><tbody>${groups.join('')}</tbody>`;
   $('cc-list').innerHTML=L.slice(0,400).map(z=>{ const r=p[z.id], c=chipFor(r);
-    return `<button type="button" class="drill" data-id="${esc(z.id)}" aria-current="${!!(S.cur&&S.cur.id===z.id)}"><span class="evalchip ${c[0]}">${c[1]}</span><span><div class="opp">${esc(Puzzles.title(z.id,themeName(z.motif),!!r))}</div><div class="meta">${mine(z)} moves · ${z.rating} · ${sideOf(z)} to move</div></span><span class="note">${r&&r.secs?fmt(r.secs):''}</span></button>` }).join('')
+    return `<button type="button" class="drill" data-id="${esc(z.id)}" aria-current="${!!(S.cur&&S.cur.id===z.id)}"><span class="evalchip ${c[0]}">${c[1]}</span><span><div class="opp">${esc(Puzzles.title(z.id,themeName(z.motif),!!r,Puzzles.num(LIB,z.id)))}</div><div class="meta">${mine(z)} moves · ${z.rating} · ${sideOf(z)} to move</div></span><span class="note">${r&&r.secs?fmt(r.secs):''}</span></button>` }).join('')
     ||`<p class="note">${LIB?'Nothing here with these filters.':'Loading exercises…'}</p>`;
   if(L.length>400) $('cc-list').insertAdjacentHTML('beforeend','<p class="note">Showing the first 400; narrow the rating or length to see the rest.</p>');
 }
@@ -54,16 +54,17 @@ function load(z){
   $('cc-clock').textContent='0:00';
   status('',`${S.g.turn()==='w'?'White':'Black'} to move. See ${mine(z)} moves deep.`,'Play the whole line (your moves and the replies you expect), then Submit.');
   showTrain(true);
-  $('cc-head').innerHTML=TV.head({kicker:'Lichess #'+esc(z.id),title:esc(Puzzles.title(z.id,themeName(z.motif),!!prog()[z.id])),chips:[`<span class="mono">${z.rating}</span>`,`${mine(z)} moves for you`,(S.g.turn()==='w'?'White':'Black')+' to move']});
+  $('cc-head').innerHTML=TV.head({kicker:'Lichess puzzle',title:esc(Puzzles.title(z.id,themeName(z.motif),!!prog()[z.id],Puzzles.num(LIB,z.id))),chips:[`<span class="mono">${z.rating}</span>`,`${mine(z)} moves for you`,(S.g.turn()==='w'?'White':'Black')+' to move']});
   $('cc-facts').innerHTML=`<dt>Length</dt><dd>${mine(z)} moves for you</dd><dt>Rating</dt><dd>${z.rating}</dd><dt>Motif</dt><dd>${esc(Puzzles.theme(themeName(z.motif),!!S.sub))}</dd>`;
   $('cc-lichess').href=z.url||'#';
   renderLine(); renderList();
 }
 function sanLine(fen,ucis){ const g=new Chess(fen); const out=[]; for(const u of ucis){ const m=g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'}); if(!m) break; out.push(m.san) } return out }
-function numbered(fen,sans,hi){
+function numbered(fen,sans,hi,click){
   const white=fen.split(' ')[1]==='w', n0=+fen.split(' ')[5]||1;
   return sans.map((s,i)=>{ const ply=i+(white?0:1); const no=Math.floor(ply/2)+n0;
-    const pre=ply%2===0?no+'. ':(i===0?no+'… ':''); return `<span class="${hi&&hi(i)||''}">${pre}${esc(s)}</span>` }).join(' ');
+    const pre=ply%2===0?no+'. ':(i===0?no+'… ':'');
+    return click?`<button type="button" class="vmv ${hi&&hi(i)||''}" data-at="${i+1}">${pre}${esc(s)}</button>`:`<span class="${hi&&hi(i)||''}">${pre}${esc(s)}</span>` }).join(' ');
 }
 function renderLine(){
   const z=S.cur; if(!z) return;
@@ -110,7 +111,7 @@ async function submit(){
   status(tone,head,`${fmt(secs)} · the solution is below; step through it with ← →.`);
   endbar.show(tone==='bad'?'bad':score>=1?'good':'warn',`${head} ${Math.round(score*100)}% · ${fmt(secs)}`,'Next exercise');
   $('cc-line').innerHTML=`<div><span class="label">Your line</span><br>${numbered(S.start,sanLine(S.start,S.line),i=>i<k?'ok':'miss')}</div>
-    <div style="margin-top:8px"><span class="label">Solution</span><br>${numbered(S.start,ss,i=>i<k?'ok':'')}</div>`;
+    <div style="margin-top:8px"><span class="label">Solution</span><br><span class="ccsol">${numbered(S.start,ss,i=>i<k?'ok':'',true)}</span></div>`;
   S.view=0; showView(); renderLine(); renderList();
 }
 function showView(){
@@ -120,7 +121,8 @@ function showView(){
   for(let i=0;i<S.view;i++){ const u=sol[i]; const m=g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'}); if(m) last={from:m.from,to:m.to} }
   S.g=g; board.set(g,{last,locked:true});
   $('cc-step').textContent=`${S.view} / ${sol.length}`;
-  const slot=$('cc-readslot'); if(slot&&!slot.firstChild){ const ss=sanLine(S.start,sol); slot.appendChild(Reader.button(()=>Reader.open({title:'Solution · Puzzle '+S.cur.id,fen:S.start,orient:board.orient,lines:ss.map(san=>({san})),at:S.view}))) }
+  document.querySelectorAll('#cc-line .ccsol .vmv[data-at]').forEach(b=>b.classList.toggle('cur',+b.dataset.at===S.view));
+  const slot=$('cc-readslot'); if(slot&&!slot.firstChild){ const ss=sanLine(S.start,sol); slot.appendChild(Reader.button(()=>Reader.open({title:'Solution · '+Puzzles.title(S.cur.id,'',false,Puzzles.num(LIB,S.cur.id)),fen:S.start,orient:board.orient,lines:ss.map(san=>({san})),at:S.view}))) }
 }
 function next(){ const p=prog(); const L=list(); const i=L.findIndex(z=>S.cur&&z.id===S.cur.id);
   const z=L.slice(i+1).find(x=>!p[x.id]||p[x.id].score<1)||L.find(x=>!p[x.id])||L[0]; if(z) load(z) }
@@ -142,6 +144,7 @@ function init(){
   $('cc-flip').addEventListener('click',()=>board.flip());
   /* stepping through the solution moves the result banner out of the way */
   $('cc-prev').addEventListener('click',()=>{ S.view--; endbar.hide(); showView() });
+  $('cc-line').addEventListener('click',e=>{ const b=e.target.closest('.ccsol .vmv[data-at]'); if(b&&S.sub){ S.view=+b.dataset.at; endbar.hide(); showView() } });
   $('cc-fwd').addEventListener('click',()=>{ S.view++; endbar.hide(); showView() });
   Keys.on('calc',{ArrowLeft:['Back a move (your line, or the solution)',()=>{ if(S.sub){ S.view--; endbar.hide(); showView() } else undo() }],
     ArrowRight:['Forward through the solution',()=>{ if(!S.sub) return false; S.view++; endbar.hide(); showView() }],

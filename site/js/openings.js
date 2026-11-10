@@ -554,7 +554,9 @@ function renderSide(){
   const delta=st.rating-S.startRating;
   $('o-rate').innerHTML=training()?'<span class="note">Training mode: the rating doesn’t move.</span>'
     :`<b>${st.rating}</b><span class="delta ${delta>0?'up':delta<0?'down':''}">${delta?(delta>0?'+':'')+delta+' this line':''}</span><span class="note">· ${st.lines} lines</span>`;
-  const btns=$('o-sidebtns'); btns.innerHTML='';
+  /* The opening's own actions sit here, not under the board (Nov 2026: fewer rows under the board, a bigger board):
+     Lichess ↗ (kept as one node: its link is updated as the line goes), Save this position, Play as, Review, Hide … */
+  const btns=$('o-sidebtns'), lkNode=$('o-lichess'); btns.innerHTML=''; btns.appendChild(lkNode);
   { const b=document.createElement('button'); b.className='btn sm'; b.id='o-savepos'; b.textContent='Save this position'; b.title='Make the moves on the board a position of your own, to train from';
     b.disabled=!S.g; b.addEventListener('click',()=>saveCurrent()); btns.appendChild(b) }
   if(!S.op.rep&&!S.op.player){ const other=S.op.side==='white'?'black':'white', b=document.createElement('button'); b.className='btn sm'; b.id='o-playas';

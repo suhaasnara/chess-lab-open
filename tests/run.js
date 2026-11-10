@@ -658,7 +658,7 @@ section('t23: Openings — import a Lichess study by link');
     return {ok:true,status:200,text:async()=>PGN} } return null }});
   const O=w.OpeningsTab, $=id=>w.document.getElementById(id);
   assert(O.studyApi('https://lichess.org/study/AbCdEf12')==='https://lichess.org/api/study/AbCdEf12.pgn'&&
-         O.studyApi('lichess.org/study/AbCdEf12/Zz9Yy8Xx#3')==='https://lichess.org/api/study/AbCdEf12/Zz9Yy8Xx.pgn'&&!O.studyApi('https://lichess.org/abc'),'study and chapter links map to the public export');
+         O.studyApi('lichess.org/study/AbCdEf12/Zz9Yy8Xx#3')==='https://lichess.org/api/study/AbCdEf12.pgn'&&!O.studyApi('https://lichess.org/abc'),'study and chapter links both fetch the whole study (every chapter)');
   $('o-studyurl').value='https://lichess.org/study/PRIVATE1';
   await O.fetchStudy();
   assert(/public or unlisted/.test($('o-reperr').textContent),'a private study gets a clear message');
@@ -1380,6 +1380,50 @@ section('t51: Win% wording (shared/winpct.js): Lichess’s Win% on screen, the g
   assert(/\+5 is 86%/.test(W.HELP)&&/5 points or more is an inaccuracy, 10 a mistake, 15 a blunder/.test(W.HELP),'one explanation with the table and thresholds');
   const src=['drills.js','analyze.js','openings.js'].map(f=>fs.readFileSync(path.join(__dirname,'../site/js',f),'utf8')).join('\n');
   assert(!/drop\*100/.test(src)&&!/30 points or more is a blunder/.test(src),'no “−34%” / “30 points” wording left (it read as twice Lichess’s Win%)');
+}
+
+section('t52: side lines on the board (shared/varline.js), numbered puzzles, whole-study import, Openings tools');
+{
+  const {w}=await makePage({analyse:async()=>[{uci:'g1f3',cp:0.3,mate:null}]}); await sleep(250);
+  const $=id=>w.document.getElementById(id), V=w.VarLine;
+  const box=w.document.createElement('div');
+  box.innerHTML=V.wrap(undefined,'1.e4 e5 {good} 2.Nf3 (2.f4 exf4 (2...d5) 3.Nf3) Nc6 3.Bb5! a6 ±',['x']);
+  const bs=[...box.querySelectorAll('.vmv')], txt=bs.map(b=>b.textContent).join(' ');
+  assert(txt==='1.e4 e5 2.Nf3 2.f4 exf4 2…d5 3.Nf3 2…Nc6 3.Bb5! a6','every move is a button, numbered as in a study ('+txt+')');
+  const P=t=>V.path(bs.find(b=>b.textContent===t)).join(' ');
+  assert(P('2…d5')==='x e4 e5 f4 d5'&&P('3.Nf3')==='x e4 e5 f4 exf4 Nf3'&&P('2…Nc6')==='x e4 e5 Nf3 Nc6','nested lines start from the position before the move they replace; paths carry the prefix');
+  assert(box.querySelector('.vnote').textContent==='good'&&/±/.test(box.textContent),'notes and evaluation signs stay as text');
+  const bad=w.document.createElement('div'); bad.innerHTML=V.html(undefined,'1.e4 e5 2.Ke3 Nf6 3.Nf3');
+  assert(bad.querySelectorAll('.vmv').length===2&&bad.querySelectorAll('.vdead').length===3,'an illegal move and the rest of its line stay plain text');
+  const pv=(h,t)=>{ const b=w.document.createElement('div'); b.innerHTML=h; const x=[...b.querySelectorAll('.vmv')].find(e=>e.textContent===t); return x?V.path(x).join(' '):null };
+  // books: a bracket after a move can hold the reply's alternative ("30.Rf4 (30...Ke6) 30...Kg5"); its number decides
+  const bk=V.html(undefined,'1.e4 (1...c5 2.Nf3) 1...e5 2.Nf3');
+  assert(pv(bk,'1…c5')==='e4 c5'&&pv(bk,'1…e5')==='e4 e5','a numbered bracket starts where its number fits');
+  // prose: a square named in a sentence is not played; a numbered move goes back to its point; "a)" labels aren't brackets
+  const pr=V.html(undefined,'1.e4 e5 2.Nf3 The knight eyes e5 and d4. 2 Bc4 Nc6 a) b) 3.Qh5');
+  assert(pv(pr,'2.Bc4')==='e4 e5 Bc4'&&pv(pr,'Nc6')==='e4 e5 Bc4 Nc6'&&!pv(pr,'e5 ')&&pv(pr,'3.Qh5')==='e4 e5 Bc4 Nc6 Qh5','prose skipped, "2 Bc4" restarts at move 2, labels kept as text');
+  const rv=V.html(undefined,'1.e4 e5 2.Nf3, Black now playing Nc6 3.Bb5');
+  assert(pv(rv,'2…Nc6')==='e4 e5 Nf3 Nc6'&&pv(rv,'3.Bb5')==='e4 e5 Nf3 Nc6 Bb5','a move inside prose is played when the numbered move after it needs it');
+  assert(V.mark(box,['x','e4','e5','f4','d5'])===bs.find(b=>b.textContent==='2…d5')&&box.querySelectorAll('.vmv.cur').length===1,'mark() highlights the move on the board');
+  // puzzles: numbers instead of ids (display only)
+  const lib=[{id:'YrWQQ'},{id:'7Am2X'},{id:'j26z8'}];
+  assert(w.Puzzles.num(lib,'j26z8')===3&&w.Puzzles.title('j26z8','Fork',false,w.Puzzles.num(lib,'j26z8'))==='Puzzle 3'&&w.Puzzles.title('zz','',false,0)==='Puzzle zz','Puzzle 3, not Puzzle j26z8');
+  // a study link copied from the browser (it names the open chapter) fetches every chapter
+  assert(w.Net.studyApi('https://lichess.org/study/AbCdEf12/Zz9Yy8Xx')==='https://lichess.org/api/study/AbCdEf12.pgn','the whole study, not one chapter');
+  // Openings: Lichess sits with the opening's own buttons, not under the board
+  w.location.hash='#openings'; await sleep(200);
+  assert(!!$('o-sidebtns').querySelector('#o-lichess')&&!$('o-tools').querySelector('#o-lichess'),'Lichess ↗ in the side card, not under the board');
+  // Guess the move: a side line from the notes plays on the board once the game is read
+  const idx=await w.fetch('data/gtm/index.json').then(r=>r.json()); let file=null, game=null;
+  for(const e of idx){ const g=await w.fetch('data/gtm/'+e.file).then(r=>r.json()); if(Object.values(g.notes||{}).some(n=>(n.v||[]).length)){ file=e.file; game=g; break } }
+  if(!file){ assert(true,'(no published game has side lines; VarLine covered above)') }
+  else{ await w.GtmTab.load(file); const S=w.GtmTab.state; w.GtmTab.showGame(); await sleep(30); w.location.hash='#guess'; w.document.body.dataset.view='guess';
+    const vb=$('g-moves').querySelector('.vmv'); assert(!!vb,'side lines show as move buttons');
+    const path=V.path(vb); vb.click(); await sleep(10);
+    assert(S.vr&&S.vr.at===path.length&&$('g-moves').querySelector('.vmv.cur')===$('g-moves').querySelector('.vmv'),'clicking a side-line move shows it on the board and marks it');
+    const key=k=>w.document.dispatchEvent(new w.KeyboardEvent('keydown',{key:k,bubbles:true}));
+    key('ArrowLeft'); await sleep(10); assert(!S.vr||S.vr.at===path.length-1,'← steps back along the side line');
+    key('Home'); await sleep(10); assert(!S.vr&&S.view===0,'Home goes back to the game'); }
 }
 
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));

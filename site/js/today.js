@@ -51,7 +51,7 @@ function items(){
   for(const id of t.drills){ const d=D.find(x=>x.id===id); if(d) out.push({kind:'drill',id,obj:d,done:!!(dp[id]&&dp[id].t>=s),
     title:'Drill: vs '+d.opp,meta:`${d.date} · you played ${d.played}`}) }
   for(const id of t.puzzles){ const z=L.find(x=>x.id===id); if(z) out.push({kind:'puzzle',id,obj:z,done:!!(tp[id]&&tp[id].t>=s),
-    title:'Puzzle '+z.id,meta:(z.rating||'')+(Puzzles.show()?' · '+themeName(z.motif):'')}) }
+    title:'Puzzle '+(Puzzles.num(L,z.id)||z.id),meta:(z.rating||'')+(Puzzles.show()?' · '+themeName(z.motif):'')}) }
   const eg=t.endgame&&EndgamesTab.byId(t.endgame), ep=Store.get('endgame-progress')||{};
   if(eg) out.push({kind:'endgame',id:eg.id,obj:eg,done:!!(ep[eg.id]&&ep[eg.id].t>=s),
     title:'Endgame: '+eg.title,meta:(eg.goal==='win'?'win it':'hold the draw')+' against perfect defence'});

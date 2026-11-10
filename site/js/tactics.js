@@ -71,7 +71,7 @@ function renderL(){
   const el=$('t-list'), p=prog(), list=daily(filtered());
   $('t-listlabel').textContent=`${list.length.toLocaleString()} puzzle${list.length===1?'':'s'}${list.length>200?' · first 200 shown':''} · Next picks the next one`;
   el.innerHTML=list.slice(0,200).map(z=>{ const st=p[z.id];
-    return TV.row({badge:z.rating||'—',title:esc(Puzzles.title(z.id,themeName(z.motif),!!st)),meta:z.op?esc(opName(z.op)):'Lichess',
+    return TV.row({badge:z.rating||'—',title:esc(Puzzles.title(z.id,themeName(z.motif),!!st,Puzzles.num(LIB,z.id))),meta:z.op?esc(opName(z.op)):'Lichess',
       right:TV.dots([[st?(st.ok?'good':'bad'):'','Puzzle']]),current:!!(S.cur&&S.cur.id===z.id),data:{id:z.id}}) }).join('');
   el.classList.toggle('isempty',!list.length);
   if(!list.length) el.innerHTML='<p class="empty">No puzzles match these filters. Try Any rating or Any status.</p>';
@@ -81,8 +81,8 @@ function renderL(){
 function facts(){ const z=S.cur; if(!z) return;
   const done=!!(S.solved||S.failedFirst||prog()[z.id]);   /* themes stay hidden until the puzzle is done (Puzzles) */
   const rt=rating(), toMove=S.g&&S.g.turn()==='w'?'White':'Black';
-  $('t-head').innerHTML=TV.head({kicker:'Lichess #'+esc(z.id)+(z.op?' · '+esc(opName(z.op)):''),right:rt.n?String(rt.r):'',
-    title:esc(Puzzles.title(z.id,themeName(z.motif),done)),
+  $('t-head').innerHTML=TV.head({kicker:'Lichess puzzle'+(z.op?' · '+esc(opName(z.op)):''),right:rt.n?String(rt.r):'',
+    title:esc(Puzzles.title(z.id,themeName(z.motif),done,Puzzles.num(LIB,z.id))),
     chips:[z.rating?`<span class="mono">${z.rating}</span>`:'',toMove+' to move',
       `<span id="t-facts">Themes: ${esc(Puzzles.theme((z.themes||[]).filter(t=>!['middlegame','endgame','opening','advantage','crushing','mate','short','long','veryLong','oneMove'].includes(t)).map(themeName).join(', ')||themeName(z.motif),done))}</span>`,
       z.url?`<a href="${esc(z.url)}" target="_blank" rel="noopener">Original game</a>`:'']});

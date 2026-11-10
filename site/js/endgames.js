@@ -219,12 +219,15 @@ async function solution(){
   const g=new Chess(S.cur.fen); const sans=[]; for(const u of S.sol){ const m=g.move(U(u)); if(!m) break; sans.push(m.san) }
   const white=S.cur.fen.split(' ')[1]==='w';
   $('eg-moves').innerHTML='<span class="label">Best play (tablebase)</span><br>'+sans.map((s,i)=>{ const ply=i+(white?0:1); const no=Math.floor(ply/2)+1;
-    return (ply%2===0?no+'. ':(i===0?no+'… ':''))+esc(s) }).join(' ');
+    return `<button type="button" class="vmv" data-at="${i+1}">${ply%2===0?no+'.':(i===0?no+'…':'')}${esc(s)}</button>` }).join(' ');
+  markSol();
   if(S.phase==='play'){ S.phase='done'; status('warn','Solution shown.','Retry the position whenever you like.') }
 }
 function showSol(){ if(!S.sol) return; S.view=Math.max(0,Math.min(S.sol.length,S.view));
   const g=new Chess(S.cur.fen); let last=null; for(let i=0;i<S.view;i++){ const m=g.move(U(S.sol[i])); if(m) last={from:m.from,to:m.to} }
-  board.set(g,{last,locked:true}); $('eg-step').textContent=`${S.view} / ${S.sol.length}` }
+  board.set(g,{last,locked:true}); $('eg-step').textContent=`${S.view} / ${S.sol.length}`; markSol() }
+/* the solution's moves are buttons: a click shows that position (← → still step) */
+function markSol(){ document.querySelectorAll('#eg-moves .vmv[data-at]').forEach(b=>b.classList.toggle('cur',+b.dataset.at===S.view)) }
 function next(){ if(H) return H.next();
   if(!DATA) return; const p=prog(), L=list(); const i=L.findIndex(z=>S.cur&&z.id===S.cur.id);
   const after=[...L.slice(i+1),...L.slice(0,i+1)];
@@ -238,6 +241,7 @@ function stats(){ const p=prog(); const all=DATA?DATA.positions:[];
 
 function init(){
   TV.fitBoard('#eg-wrap','#eg-tools');
+  $('eg-moves').addEventListener('click',e=>{ const b=e.target.closest('.vmv[data-at]'); if(b&&S.sol){ S.view=+b.dataset.at; showSol(); buttons() } });
   board=makeBoard($('eg-board'),{onMove:userMove});
   endbar=endBanner($('eg-board'),()=>next(),'Next endgame');
   board.set(new Chess('8/8/8/4k3/8/8/8/4K3 w - - 0 1'),{locked:true});

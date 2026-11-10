@@ -92,3 +92,9 @@ nav.tabs a.settab svg{flex:none;width:22px;height:22px}
 @media (max-width:480px){nav.tabs .inner > a.ph-x{display:none}.xmenu a.ph-x{display:flex}nav.tabs .xtab.cur-ph{color:var(--head);border-bottom-color:var(--blue);font-weight:600}nav.tabs a.settab{display:none}.xmenu .xset{display:flex;border-top:1px solid var(--line);margin-top:4px;padding-top:11px}
   nav.tabs a,nav.tabs .xtab{padding:12px 4px;font-size:.84rem}nav.tabs .tabgap{min-width:0}nav.tabs .inner{gap:0;padding-left:8px;padding-right:8px}}
 @media print{nav.tabs,.xmenu{display:none!important}}
+/* Side lines you can click through (shared/varline.js): moves are buttons, notes grey, nested lines in brackets */
+.vline{margin:3px 0 4px;font-size:.86rem;line-height:1.75;color:var(--muted)}
+.vmv{border:0;background:none;font:inherit;font-weight:600;color:var(--ink);padding:1px 3px;margin:0 -1px;border-radius:3px;cursor:pointer}
+.vmv:hover{background:var(--band)}.vmv.cur{background:var(--navy);color:var(--on-navy)}
+.vmv:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+.vnote{color:var(--muted);font-style:italic}.vpar,.vdead{color:var(--muted)}

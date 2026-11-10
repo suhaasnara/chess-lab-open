@@ -377,3 +377,11 @@ body.no-coords .coord{display:none}body.no-last .sq.last{background:none}body.no
 /* Shared screens stage 5: hidden for sight, kept for screen readers (the opening's name is in the picker) */
 .vh{position:absolute;left:0;top:0;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .otrain .ohtop .seg.mini{flex:0 0 auto}
+/* Openings: a narrow board (small window) drops the key hints under it so its one row of tools wraps less
+   (the keys are in each button's title and under ?). */
+#openings .boardwrap{container-type:inline-size}
+@container (max-width:560px){#o-tools{gap:5px}#o-tools kbd{display:none}#o-tools .btn.sm{padding:6px 7px}}
+/* Guess the move: side lines are clickable once the game is being read (as the main moves are) */
+.gmoves:not(.vread) .vmv{cursor:default;font-weight:400;color:inherit}.gmoves:not(.vread) .vmv:hover{background:none}
+.gmoves .gnote .vline{margin:2px 0 4px}
+.ccline .vmv.cur{color:var(--on-navy)}

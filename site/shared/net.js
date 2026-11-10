@@ -4,7 +4,8 @@
    feature does work, instead of failing silently.
 
    Net.online()                    false when the browser says it is offline
-   Net.studyApi(url)               the PGN export URL of a lichess.org/study/<id>[/<chapter>] link, or null
+   Net.studyApi(url)               the PGN export URL of the whole study for a lichess.org/study/<id>[/<chapter>] link, or null
+                                   (a link copied from the browser always names the open chapter; every chapter is fetched)
    Net.fetchStudy(url)             -> {pgn, name, side ('white'|'black'|''), chapters}; throws Error with a message for people
    Net.tablebase(fen, ms=6000)     -> the Lichess tablebase's JSON for a position (7 pieces or fewer), or null
    Net.lichessImport(pgn)          -> the game's analysis URL on lichess.org (imported); throws Error when it can't
@@ -28,7 +29,7 @@ window.Net=(()=>{
   }
   function studyApi(url){
     const m=String(url||'').trim().match(/lichess\.org\/study\/([A-Za-z0-9]{8})(?:\/([A-Za-z0-9]{8}))?/);
-    return m?'https://lichess.org/api/study/'+m[1]+(m[2]?'/'+m[2]:'')+'.pgn':null;
+    return m?'https://lichess.org/api/study/'+m[1]+'.pgn':null;
   }
   async function fetchStudy(url){
     const u=studyApi(url); if(!u) throw new Error('That is not a Lichess study link (https://lichess.org/study/…).');

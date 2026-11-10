@@ -44,7 +44,7 @@ async function load(file){
   const game=typeof file==='object'&&file?deep(file):await fetch(Site.url('gtm',file)).then(r=>r.json()).catch(()=>null);
   if(!game){ status('bad','Could not load the game.',''); return }
   if(endbar) endbar.hide();
-  S.game=game; S.g=new Chess(game.fen||undefined); S.ply=0; S.pts=0; S.got=0; S.missed=0; S.alsoGood=0; S.done=false; S.busy=false; S.hintStage=0; S.rows=[]; S.view=null; S.read=false; S.gen=(S.gen||0)+1;
+  S.game=game; S.g=new Chess(game.fen||undefined); S.ply=0; S.pts=0; S.got=0; S.missed=0; S.alsoGood=0; S.done=false; S.busy=false; S.hintStage=0; S.rows=[]; S.view=null; S.vr=null; S.read=false; S.gen=(S.gen||0)+1;
   readTools(); showTrain(true);
   const me=game.winner;
   $('g-head').innerHTML=TV.head({kicker:game.own?'Your game':(INDEX||[]).some(e=>e.id===game.id&&e.set==='masters')?'Master game':'Suhaas’s game',
@@ -188,16 +188,18 @@ function drawGraph(){
 /* The game so far (never past the current move): your moves marked ✓ (game move) / ≈ (just as good) / ✗ (missed), "book" for theory.
    Annotated games (game.notes {ply: {t: text, v: [side lines]}}, game.intro) show each move's note right after it, side lines
    folded. Once the game is over (or "Show the game"), every move can be clicked, and ← → Home End step through it. */
-function noteHtml(n){
+/* side lines: each move a button (shared/varline.js), played from the position before the move it replaces (fen) */
+function noteHtml(n,fen,prefix){
   if(!n) return '';
-  const v=(n.v||[]).length?`<details class="gvars"><summary>${n.v.length===1?'Side line':n.v.length+' side lines'}</summary>${n.v.map(x=>`<p>${esc(x)}</p>`).join('')}</details>`:'';
+  const v=(n.v||[]).map(x=>VarLine.wrap(fen,x,prefix)).join('');
   return `<div class="gnote">${n.t?`<p>${esc(n.t)}</p>`:''}${v}</div>`;
 }
 function renderMoves(){
   const el=$('g-moves'); if(!el) return;
   const g=S.game; if(!g){ el.innerHTML=''; return }
   const byPly={}; for(const r of S.rows) byPly[r.ply]=r;
-  const notes=g.notes||{}, upto=S.done?g.moves.length:S.ply, cur=S.view==null?upto-1:S.view-1;
+  const notes=g.notes||{}, upto=S.done?g.moves.length:S.ply, cur=S.vr?-2:S.view==null?upto-1:S.view-1;
+  const vg=new Chess(g.fen||undefined), vfen=[]; for(let i=0;i<upto;i++){ vfen.push(vg.fen()); vg.move(g.moves[i],{sloppy:true}) }
   let html=g.intro?`<div class="gnote gintro"><p>${esc(g.intro)}</p></div>`:'';
   for(let i=0;i<upto;i++){
     if(i%2===0||notes[i-1]) html+=`<span class="note">${Math.floor(i/2)+1}${i%2?'…':'.'}</span> `;
@@ -208,9 +210,12 @@ function renderMoves(){
     const tag=S.done?'button':'b';
     const mk=notes[i]&&notes[i].mk?markHtml(notes[i].mk):'';
     html+=`<${tag} class="gmv ${cls}${i===cur&&S.done?' cur':''}" data-ply="${i+1}"${S.done?' type="button"':''} title="${r&&r.guess!==g.moves[i]?'you: '+esc(r.guess):''}">${esc(g.moves[i])}${mk}</${tag}>${mark} `;
-    if(notes[i]&&(notes[i].t||(notes[i].v||[]).length)) html+=noteHtml(notes[i]);
+    if(notes[i]&&(notes[i].t||(notes[i].v||[]).length)) html+=noteHtml(notes[i],vfen[i],g.moves.slice(0,i));
   }
   el.innerHTML=html||'<span class="note">The moves appear as the game goes.</span>';
+  el.classList.toggle('vread',!!S.done);
+  const vc=S.vr?VarLine.mark(el,S.vr.path.slice(0,S.vr.at)):null;
+  if(vc){ const top=vc.offsetTop; if(top<el.scrollTop||top>el.scrollTop+el.clientHeight-30) el.scrollTop=top-40; return }
   const c=el.querySelector('.gmv.cur');
   if(c&&S.done){   // keep the current move (and its note) in view inside the panel, without scrolling the page
     const n=c.nextElementSibling&&c.nextElementSibling.classList.contains('gnote')?c.nextElementSibling:c;
@@ -221,11 +226,24 @@ function renderMoves(){
 /* reading a finished game: show the position after `ply` plies */
 function viewAt(ply){
   const g=S.game; if(!g||!S.done) return;
-  ply=Math.max(0,Math.min(g.moves.length,ply)); S.view=ply;
+  ply=Math.max(0,Math.min(g.moves.length,ply)); S.view=ply; S.vr=null;
   const c=new Chess(g.fen||undefined); let m=null; for(let i=0;i<ply;i++) m=c.move(g.moves[i]);
   board.set(c,{last:m?{from:m.from,to:m.to}:null,orient:board.orient,locked:true});
   Shapes.auto($('g-board'),ply>0&&g.notes&&g.notes[ply-1]&&g.notes[ply-1].sh||'');   /* the note's own arrows, when reading */
   readSlot();
+  renderMoves(); readTools();
+}
+/* reading a finished game: a side line from the notes on the board (path = SAN from the start; k = the move it replaces);
+   ← → step along it, back past its first move returns to the game */
+function viewVar(path,at){
+  const g=S.game; if(!g||!S.done||!path) return;
+  let k=0; while(k<path.length&&k<g.moves.length&&g.moves[k]===path[k]) k++;
+  if(k===path.length){ viewAt(k); return }
+  at=Math.max(k,Math.min(path.length,at)); if(at===k){ viewAt(k); return }
+  S.vr={path,at,k}; S.view=k;
+  const c=new Chess(g.fen||undefined); let m=null; for(let i=0;i<at;i++){ m=c.move(path[i],{sloppy:true}); if(!m) break }
+  board.set(c,{last:m?{from:m.from,to:m.to}:null,orient:board.orient,locked:true});
+  Shapes.auto($('g-board'),'');
   renderMoves(); readTools();
 }
 function readTools(){
@@ -233,7 +251,7 @@ function readTools(){
   $('g-nav').hidden=!on;
   $('g-show').hidden=!S.game||S.done;
   $('g-hint').hidden=on;
-  if(on){ $('g-prev').disabled=S.view<=0; $('g-next').disabled=S.view>=g.moves.length }
+  if(on){ $('g-prev').disabled=!S.vr&&S.view<=0; $('g-next').disabled=S.vr?S.vr.at>=S.vr.path.length:S.view>=g.moves.length }
 }
 /* "Show the game": skip the guessing and read the annotated game from the start (no score is saved) */
 function showGame(){
@@ -271,12 +289,13 @@ function init(){
     if(f.size>3e6){ $('g-adderr').textContent='That file is over 3 MB. Paste the games you want instead.'; return }
     $('g-addbox').value=await f.text(); $('g-adderr').textContent=`Read ${f.name}. Pick the side, then Add.`; e.target.value='' });
   $('g-show').addEventListener('click',showGame);
-  $('g-prev').addEventListener('click',()=>viewAt(S.view-1));
-  $('g-next').addEventListener('click',()=>viewAt(S.view+1));
-  $('g-moves').addEventListener('click',e=>{ const b=e.target.closest('.gmv'); if(b&&S.done) viewAt(+b.dataset.ply) });
+  $('g-prev').addEventListener('click',()=>S.vr?viewVar(S.vr.path,S.vr.at-1):viewAt(S.view-1));
+  $('g-next').addEventListener('click',()=>S.vr?viewVar(S.vr.path,S.vr.at+1):viewAt(S.view+1));
+  $('g-moves').addEventListener('click',e=>{ const vp=VarLine.path(e.target); if(vp){ if(S.done) viewVar(vp,vp.length); return }
+    const b=e.target.closest('.gmv'); if(b&&S.done) viewAt(+b.dataset.ply) });
   const done=()=>S.done&&S.game;
-  Keys.on('guess',{ArrowLeft:['Back through the game (after it ends)',()=>{ if(!done()) return false; viewAt(S.view-1) }],
-    ArrowRight:['Forward through the game',()=>{ if(!done()) return false; viewAt(S.view+1) }],
+  Keys.on('guess',{ArrowLeft:['Back through the game (after it ends)',()=>{ if(!done()) return false; if(S.vr) viewVar(S.vr.path,S.vr.at-1); else viewAt(S.view-1) }],
+    ArrowRight:['Forward through the game',()=>{ if(!done()) return false; if(S.vr) viewVar(S.vr.path,S.vr.at+1); else viewAt(S.view+1) }],
     Home:['Start of the game',()=>{ if(!done()) return false; viewAt(0) }], End:['End of the game',()=>{ if(!done()) return false; viewAt(S.game.moves.length) }],
     h:['Hint',()=>hint()], f:['Flip the board',()=>board.flip()]});
 }

@@ -123,7 +123,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
         </div>
         <h2 id="o-name" class="vh">Choose an opening</h2>
         <div class="ohrate" id="o-rate"></div>
-        <div class="btns" id="o-sidebtns" style="margin-top:8px"></div>
+        <div class="btns" id="o-sidebtns" style="margin-top:8px"><a class="btn sm" id="o-lichess" target="_blank" rel="noopener">Lichess &#8599;</a></div>
       </div>
       <div class="status" id="o-status" aria-live="polite">Pick an opening or import a repertoire to start training.</div>
     </div>
@@ -143,7 +143,6 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
         <button class="btn sm" id="o-prev" aria-label="Previous move" title="Previous move (←)" disabled>&#9664;</button><button class="btn sm" id="o-next" aria-label="Next move" title="Next move (→)" disabled>&#9654;</button>
         <button class="btn sm" id="o-flip">Flip <kbd>F</kbd></button>
         <button class="btn sm icon" id="o-type" type="button" aria-pressed="false" aria-controls="o-moveform" title="Type moves instead of dragging" aria-label="Type a move">&#9000;</button>
-        <a class="btn sm" id="o-lichess" target="_blank" rel="noopener">Lichess &#8599;</a>
       </div>
       <form class="moveform" id="o-moveform" hidden>
         <div class="moverow"><input id="o-movein" placeholder="Type a move (Nf3, e4, O-O)" aria-label="Type a move"><button class="btn">Play</button></div>
@@ -173,7 +172,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
   <div class="modal" id="o-importmodal" hidden>
     <div class="card">
       <h2>Import a repertoire</h2>
-      <p class="note">Paste a PGN of your repertoire (Lichess study, Chessable course export, or any PGN with variations), or the link to a public or unlisted Lichess study (one chapter or the whole study).
+      <p class="note">Paste a PGN of your repertoire (Lichess study, Chessable course export, or any PGN with variations), or the link to a public or unlisted Lichess study (every chapter is imported).
          It is parsed in your browser and stored only on this device.</p>
       <div class="moverow" style="margin:0 0 8px"><input type="text" id="o-studyurl" placeholder="Or a Lichess study link: https://lichess.org/study/…" aria-label="Lichess study link">
         <button class="btn" id="o-studyget">Fetch</button></div>
@@ -601,6 +600,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
 <script src="shared/help.js?v=__V__"></script>
 <script src="shared/winpct.js?v=__V__"></script>
 <script src="shared/reader.js?v=__V__"></script>
+<script src="shared/varline.js?v=__V__"></script>
 <script src="shared/controls.js?v=__V__"></script>
 <script src="shared/nav.js?v=__V__"></script>
 <script src="shared/trainview.js?v=__V__"></script>
