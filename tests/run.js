@@ -1133,6 +1133,25 @@ section('t42: puzzle titles don’t give the idea away');
   w.Settings.set('ptheme',true); assert(w.Puzzles.title('x','Fork',false)==='Fork','Settings → Show theme in puzzle titles');
 }
 
+section('t43: Endgames — category dropdown, your own position (tablebase-graded), Lichess analysis');
+{
+  const TB={'8/8/8/4k3/8/8/8/KQ6 w - - 0 1':{category:'win',dtz:17,dtm:17,moves:[{uci:'b1f1',category:'loss',dtm:-16},{uci:'b1b8',category:'loss',dtm:-20}]},
+            '8/8/8/4k3/8/8/8/KQ6 b - - 0 1':{category:'loss',dtz:-17,dtm:-17,moves:[]}};
+  const {w}=await makePage({fetch:async u=>{ const m=String(u).match(/tablebase\.lichess\.ovh\/standard\?fen=(.+)$/); if(!m) return null;
+    const d=TB[decodeURIComponent(m[1])]||{category:'draw',moves:[]}; return {ok:true,status:200,json:async()=>d,text:async()=>JSON.stringify(d)} }});
+  const $=id=>w.document.getElementById(id), E=w.EndgamesTab;
+  w.location.hash='#endgames'; await sleep(600);
+  assert($('eg-cat')&&$('eg-cat').tagName==='SELECT'&&$('eg-cat').options.length>3,'categories are a dropdown');
+  $('eg-addpos').click(); assert(!$('eg-custom').hidden,'+ Your position opens the form');
+  $('eg-cfen').value='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'; await E.saveCustomPos(); assert(/up to 7 pieces/.test($('eg-cerr').textContent),'more than 7 pieces is refused');
+  $('eg-cfen').value='8/8/8/4k3/8/8/8/KQ6 b - - 0 1'; await E.saveCustomPos(); assert(/side to move loses/.test($('eg-cerr').textContent),'a lost position is refused');
+  $('eg-cfen').value='8/8/8/4k3/8/8/8/KQ6 w - - 0 1'; $('eg-cname').value='My queen mate'; await E.saveCustomPos(); await sleep(50);
+  const c=E.customs(); assert(c.length===1&&c[0].goal==='win'&&c[0].end==='mate','saved as a win (mate): '+JSON.stringify(c[0]&&c[0].goal));
+  assert(E.state.cur&&E.state.cur.id===c[0].id&&$('eg-cat').value==='mine','it opens under Your positions');
+  assert(/lichess\.org\/analysis\/standard\/8\/8\/8\/4k3/.test($('eg-lichess').href),'Open in Lichess analysis');
+  assert(!$('eg-delpos').hidden,'your positions can be deleted');
+}
+
 section('t37: shared code (site/shared/) — position ids never change, one PGN reader');
 {
   const {w}=await makePage();

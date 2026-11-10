@@ -62,11 +62,12 @@ function due(e){ if(!e) return true; if(!e.ok) return e.t<new Date().setHours(0,
 function list(){ return DATA?DATA.positions.filter(p=>S.group==='all'||p.group===S.group):[] }
 function renderList(){
   const ch=$('eg-groups'); ch.innerHTML='';
-  if(DATA){ const r=document.createElement('div'); r.className='chips';
-    for(const [v,n] of [['all','All'],...DATA.groups.filter(g=>DATA.positions.some(p=>p.group===g[0]))]){
-      const b=document.createElement('button'); b.className='chip'; b.textContent=n; b.setAttribute('aria-pressed',String(S.group===v));
-      b.addEventListener('click',()=>{ S.group=v; renderList() }); r.appendChild(b) }
-    ch.appendChild(r);
+  if(DATA){ const r=document.createElement('label'); r.className='field egcat'; r.innerHTML='<span class="label">Category</span>';
+    const sel=document.createElement('select'); sel.id='eg-cat'; sel.setAttribute('aria-label','Category');
+    for(const [v,n] of [['all','All endings'],...DATA.groups.filter(g=>DATA.positions.some(p=>p.group===g[0]))]){ const o=document.createElement('option'); o.value=v; o.textContent=n; sel.appendChild(o) }
+    sel.value=S.group; sel.addEventListener('change',()=>{ S.group=sel.value; renderList() }); r.appendChild(sel);
+    const add=document.createElement('button'); add.type='button'; add.className='btn sm'; add.id='eg-addpos'; add.textContent='+ Your position'; add.addEventListener('click',openCustom);
+    ch.appendChild(r); ch.appendChild(add);
     const p=prog(), solved=DATA.positions.filter(z=>p[z.id]&&p[z.id].okN).length;
     const c=document.createElement('p'); c.className='note'; c.style.margin='6px 0 0';
     c.textContent=`${solved} of ${DATA.positions.length} solved`; ch.appendChild(c) }
@@ -89,6 +90,32 @@ const goalText=z=>{ const who=z.fen.split(' ')[1]==='w'?'White':'Black';
   return `${who} to play and hold the draw for ${z.end.split(':')[1]} moves`; };
 function par(z){ const t=z.tb||{}; if(z.goal!=='win') return 'Draw with best play';
   if(t.dtm!=null) return `Mate in ${Math.abs(Math.round(t.dtm/2))} with best play`; return 'Win with best play'; }
+/* ---------- your own positions: up to 7 pieces, graded by the live tablebase (Store eg-custom = [{id, title, fen, goal, end}]) ---------- */
+const customs=()=>Store.get('eg-custom')||[];
+function mergeCustoms(){ if(!DATA) return; DATA.positions=DATA.positions.filter(p=>p.group!=='mine').concat(customs().map(c=>({...c,group:'mine'})));
+  if(customs().length&&!DATA.groups.some(g=>g[0]==='mine')) DATA.groups.push(['mine','Your positions']) }
+function openCustom(){
+  const box=$('eg-custom'); box.hidden=false; $('eg-cfen').value=S.cur?S.cur.fen:''; $('eg-cerr').textContent=''; $('eg-cfen').focus() }
+async function saveCustomPos(){
+  const err=$('eg-cerr'), fen=$('eg-cfen').value.trim(), name=$('eg-cname').value.trim();
+  let g; try{ g=new Chess(fen); if(!new Chess().validate_fen(fen).valid) throw 0 }catch(e){ err.textContent='That is not a legal position (FEN).'; return }
+  const n=g.board().flat().filter(Boolean).length; if(n>7){ err.textContent=`The tablebase knows positions with up to 7 pieces (kings included); this one has ${n}.`; return }
+  if(g.game_over()){ err.textContent='The game is already over in that position.'; return }
+  err.textContent='Asking the tablebase…';
+  const d=await Net.tablebase(fen,8000); if(!d||!d.category){ err.textContent=Net.online()?'The tablebase didn’t answer. Try again in a moment.':Net.why(); return }
+  const cat=EndgameCore.res(d.category==='win'?'loss':d.category==='loss'?'win':'draw');   /* d.category is for the side to move */
+  if(cat==='L'){ err.textContent='The side to move loses with best play. Set it up with the other side to move, or flip the colours.'; return }
+  const pawns=/p/i.test(fen.split(' ')[0]);
+  const c={id:'my-'+Date.now().toString(36),title:name||'My position',fen:g.fen(),goal:cat==='W'?'win':'draw',end:cat==='W'?(pawns?'convert':'mate'):'hold:20',
+    text:cat==='W'?'Your position: the tablebase says it is a win.':'Your position: the tablebase says it is a draw. Hold it for 20 moves.',tb:{cat:d.category,dtz:d.dtz,dtm:d.dtm},custom:true};
+  Store.put('eg-custom',customs().concat([c])); $('eg-custom').hidden=true; $('eg-cname').value=''; mergeCustoms(); S.group='mine'; renderList(); load(DATA.positions.find(p=>p.id===c.id));
+}
+function deleteCustomPos(id){ Store.put('eg-custom',customs().filter(c=>c.id!==id)); mergeCustoms(); S.group='all'; renderList(); next() }
+/* the best line for a position the data has no stored line for: the tablebase's best move each turn (bot replies as in play) */
+async function liveLine(z){ const g=new Chess(z.fen), out=[];
+  for(let i=0;i<40&&!g.game_over();i++){ const d=await Net.tablebase(g.fen()); if(!d||!d.moves||!d.moves.length) break;
+    const u=g.turn()===S.me?(EndgameCore.options(d,z.goal)||{}).b?.split(' ')[0]||d.moves[0].uci:await EndgameCore.pickReply(g.fen(),d,null); if(!u) break; g.move(U(u)); out.push(u) }
+  return out }
 function load(z){
   if(!z) return; if(endbar) endbar.hide();
   S.cur=z; S.g=new Chess(z.fen); S.hist=[]; S.phase='play'; S.busy=false; S.me=S.g.turn(); S.moves=0; S.grades=[]; S.assisted=false; S.counted=false; S.sol=null; S.view=0;
@@ -96,6 +123,7 @@ function load(z){
   status('',goalText(z),'');
   $('eg-facts').innerHTML=`<dt>Goal</dt><dd>${esc(goalText(z))}</dd><dt>Best play</dt><dd>${esc(par(z))}</dd><dt>Graded by</dt><dd id="eg-src">the Lichess tablebase</dd>`;
   $('eg-text').textContent=z.text||''; $('eg-tip').hidden=true;
+  $('eg-lichess').href='https://lichess.org/analysis/standard/'+z.fen.replace(/ /g,'_'); $('eg-delpos').hidden=!z.custom;
   renderMoves(); renderList(); buttons();
 }
 function buttons(){ const p=S.phase; $('eg-back').disabled=!S.hist.length||S.busy; $('eg-hint').disabled=p!=='play'||S.busy;
@@ -178,8 +206,9 @@ async function hint(){
   S.assisted=true; board.setHint(u.slice(0,2)); $('eg-tip').hidden=false; $('eg-tip').textContent='Hint: move the highlighted piece (this attempt no longer counts as solved).';
 }
 /* The tablebase's main line, stepped through with ← → */
-function solution(){
+async function solution(){
   if(!S.cur) return; if(S.phase==='play'&&S.hist.length) S.assisted=true;
+  if(!S.cur.line&&S.cur.custom){ status('','Asking the tablebase for the best line…',''); S.cur.line=await liveLine(S.cur); if(!S.cur.line.length){ S.cur.line=null; status('warn','No line: the tablebase didn’t answer.',Net.online()?'':Net.why()); return } }
   S.sol=S.cur.line||[]; S.view=0; showSol(); buttons();
   const g=new Chess(S.cur.fen); const sans=[]; for(const u of S.sol){ const m=g.move(U(u)); if(!m) break; sans.push(m.san) }
   const white=S.cur.fen.split(' ')[1]==='w';
@@ -205,7 +234,7 @@ function init(){
   board=makeBoard($('eg-board'),{onMove:userMove});
   endbar=endBanner($('eg-board'),()=>next(),'Next endgame');
   board.set(new Chess('8/8/8/4k3/8/8/8/4K3 w - - 0 1'),{locked:true});
-  fetch('data/endgames.json').then(r=>{ if(!r.ok) throw 0; return r.json() }).then(j=>{ DATA=j; renderList() })
+  fetch('data/endgames.json').then(r=>{ if(!r.ok) throw 0; return r.json() }).then(j=>{ DATA=j; mergeCustoms(); renderList() })
     .catch(()=>{ DATA={groups:[],positions:[]}; renderList() });
   $('eg-back').addEventListener('click',takeBack);
   $('eg-hint').addEventListener('click',hint);
@@ -215,10 +244,12 @@ function init(){
   $('eg-flip').addEventListener('click',()=>board.flip());
   $('eg-prev').addEventListener('click',()=>{ S.view--; endbar.hide(); showSol() });
   $('eg-fwd').addEventListener('click',()=>{ S.view++; endbar.hide(); showSol() });
+  $('eg-csave').addEventListener('click',saveCustomPos); $('eg-ccancel').addEventListener('click',()=>{ $('eg-custom').hidden=true });
+  $('eg-delpos').addEventListener('click',()=>{ if(S.cur&&S.cur.custom&&confirm('Delete this position?')) deleteCustomPos(S.cur.id) });
   Keys.on('endgames',{ArrowLeft:['Back through the solution',()=>{ if(!S.sol) return false; S.view--; endbar.hide(); showSol() }],
     ArrowRight:['Forward through the solution',()=>{ if(!S.sol) return false; S.view++; endbar.hide(); showSol() }],
     b:['Take back your move (and the reply)',()=>takeBack()], h:['Hint',()=>hint()], n:['Next ending',()=>next()], f:['Flip the board',()=>board.flip()]});
 }
-window.EndgamesTab={init,load,userMove,takeBack,hint,solution,next,pickToday,stats,offline:false,onFinish:null,
+window.EndgamesTab={init,saveCustomPos,customs,deleteCustomPos,liveLine,load,userMove,takeBack,hint,solution,next,pickToday,stats,offline:false,onFinish:null,
   get state(){return S},get data(){return DATA},byId:id=>DATA&&DATA.positions.find(z=>z.id===id)};
 })();

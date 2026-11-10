@@ -303,14 +303,20 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
       <p class="note" style="margin:0 0 10px">Textbook endings against perfect defence. Every move is graded by the
          <a href="https://lichess.org/blog/W3WeMyQAACQAdfAL/7-piece-syzygy-tablebases-are-complete" target="_blank" rel="noopener">Lichess tablebase</a>:
          best, still winning, or the result thrown away.</p>
-      <div id="eg-groups" style="margin-bottom:10px"></div>
+      <div id="eg-groups" class="btns" style="margin-bottom:10px;align-items:flex-end"></div>
+      <div class="card" id="eg-custom" hidden><span class="label">Your position</span>
+        <label class="field">FEN (up to 7 pieces, kings included)<input type="text" id="eg-cfen" placeholder="8/8/8/4k3/8/8/4P3/4K3 w - - 0 1" autocomplete="off" spellcheck="false"></label>
+        <label class="field">Name<input type="text" id="eg-cname" placeholder="e.g. My rook ending"></label>
+        <p class="note">The live Lichess tablebase says whether the side to move wins or draws, and grades every move.</p>
+        <div class="btns"><button class="btn sm primary" id="eg-csave" type="button">Save and train</button><button class="btn sm" id="eg-ccancel" type="button">Cancel</button></div>
+        <p class="note" id="eg-cerr" role="status"></p></div>
       <div class="list" id="eg-list"></div>
     </div>
     <div class="panel">
       <div class="boardwrap">
         <div class="board" id="eg-board" role="group" aria-label="Chess board"></div>
         <div class="boardtools">
-          <button class="btn sm" id="eg-back">Take back <kbd>←</kbd></button>
+          <button class="btn sm" id="eg-back">Take back <kbd>B</kbd></button>
           <button class="btn sm" id="eg-hint">Hint <kbd>H</kbd></button>
           <button class="btn sm" id="eg-sol">Solution</button>
           <button class="btn sm" id="eg-prev" aria-label="Back through the solution" hidden>&#8592;</button>
@@ -319,6 +325,8 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
           <button class="btn sm" id="eg-retry">Retry</button>
           <button class="btn sm" id="eg-next">Next <kbd>N</kbd></button>
           <button class="btn sm" id="eg-flip">Flip <kbd>F</kbd></button>
+          <a class="btn sm" id="eg-lichess" target="_blank" rel="noopener" title="Open this position on the Lichess analysis board">Lichess analysis &#8599;</a>
+          <button class="btn sm" id="eg-delpos" hidden>Delete position</button>
         </div>
       </div>
       <div class="side">
