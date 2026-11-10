@@ -1368,6 +1368,20 @@ section('t50: one per-site config (shared/site.js + js/config.js): tabs, pieces,
   assert(threw===2,'an unknown data source and a second define both throw');
 }
 
+section('t51: Win% wording (shared/winpct.js): Lichess’s Win% on screen, the grading unchanged');
+{
+  const {w}=await makePage(); await sleep(100); const W=w.WinPct;
+  const r=p=>Math.round(W.pct(p)*10)/10;
+  assert(r(0)===50&&r(1)===59.1&&r(2)===67.6&&r(3)===75.1&&r(5)===86.3,'Lichess’s curve: 0 → 50, +1 → 59.1, +2 → 67.6, +3 → 75.1, +5 → 86.3');
+  assert(Math.abs(W.pct(1.7)-(50+50*w.eval('wc(1.7)')))<1e-9,'the same curve as the grading’s winning chances (wc), rescaled');
+  assert(W.pts(0.1)===5&&W.pts(0.2)===10&&W.pts(0.3)===15,'Lichess’s 0.1 / 0.2 / 0.3 are 5 / 10 / 15 Win% points');
+  assert(W.judge(4)===''&&W.judge(5)==='inaccuracy'&&W.judge(10)==='mistake'&&W.judge(15)==='blunder','labels at 5 / 10 / 15');
+  assert(W.change(1,0.14,'w')==='59% → 52%'&&W.change(-1,0.14,'b')==='59% → 52%','before → after from the mover’s side');
+  assert(/\+5 is 86%/.test(W.HELP)&&/5 points or more is an inaccuracy, 10 a mistake, 15 a blunder/.test(W.HELP),'one explanation with the table and thresholds');
+  const src=['drills.js','analyze.js','openings.js'].map(f=>fs.readFileSync(path.join(__dirname,'../site/js',f),'utf8')).join('\n');
+  assert(!/drop\*100/.test(src)&&!/30 points or more is a blunder/.test(src),'no “−34%” / “30 points” wording left (it read as twice Lichess’s Win%)');
+}
+
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));
 process.exit(H.failures?1:0);
 })().catch(e=>{ console.error('Test run crashed:',e); process.exit(1) });

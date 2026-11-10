@@ -708,7 +708,7 @@ function renderSetModal(){
     `<div class="mset"><label class="field"><b>Opponent only plays moves played at least <span id="o-minv">${+D('ominshare')||0}%</span> of the time</b>
       <input type="range" data-k="ominshare" min="0" max="80" step="5" value="${+D('ominshare')||0}"></label>
       <p class="note">Measured in the opponent's book at each position. 0% plays any book move, in proportion to how often it is chosen. If no move reaches the bar, the most played one is used. In repertoires it skips the prepared replies that are rarely played.</p></div>`+
-    sw('otrappy','Opponent prefers trappy lines','Book replies lean toward the ones that score best in practice for the side playing them. Past the book, Stockfish picks among moves within 0.1 winning chances of its best instead of 0.05.')+
+    sw('otrappy','Opponent prefers trappy lines','Book replies lean toward the ones that score best in practice for the side playing them. Past the book, Stockfish picks among moves within 5 points of Win% of its best instead of 2.5.')+
     sel('omistakes','Show mistakes after a line',[['all','All (misses and half-credit moves)'],['mistakes','Misses only'],['none','Just the count']])+
     sw('ocaptured','Show captured pieces','The pieces each side has taken, above and below the board, with the material balance.')+
     (S.op&&S.op.rep&&skipList(S.op.id).length?`<div class="mset"><b>Replies you skipped</b><p class="note">${skipList(S.op.id).map(x=>esc(x.san)).join(', ')}</p><button type="button" class="btn sm" id="o-unskip">Bring them back</button></div>`:'')+

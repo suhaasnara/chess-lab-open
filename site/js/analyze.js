@@ -202,18 +202,18 @@ function renderReport(user,site,rows,total,final){
   <div class="stats">
     <div class="stat"><b>${rows.length}</b><span class="note">games analyzed${final?'':' of '+total+'…'}</span></div>
     <div class="stat"><b>${W}–${D}–${L}</b><span class="note">your wins / draws / losses${Help.q('Results of the games analyzed here, from your side.')}</span></div>
-    <div class="stat"><b>${blun} / ${mist} / ${inacc}</b><span class="note">your blunders / mistakes / inaccuracies${Help.q("Each of your moves is judged by how much it dropped your winning chances: 30 points or more is a blunder, 20 a mistake, 10 an inaccuracy (Lichess's scale).")}</span></div>
+    <div class="stat"><b>${blun} / ${mist} / ${inacc}</b><span class="note">your blunders / mistakes / inaccuracies${Help.q('Each of your moves is judged by how much it dropped your Win%. '+WinPct.HELP)}</span></div>
     <div class="stat"><b>${(blun/rows.length).toFixed(1)} / ${(mist/rows.length).toFixed(1)} / ${(inacc/rows.length).toFixed(1)}</b><span class="note">per game${Help.q('The same three counts divided by the number of games analyzed.')}</span></div>
     <div class="stat"><b>${conv==null?'—':conv+'%'}</b><span class="note">won from +2 (${convs.length} games)${Help.q('Of the games where you were 2 pawns or more ahead (by the engine), the share you went on to win.')}</span></div>
     <div class="stat"><b>${save==null?'—':save+'%'}</b><span class="note">saved from −2 (${saves.length} games)${Help.q('Of the games where you were 2 pawns or more behind, the share you drew or won.')}</span></div>
-    <div class="stat"><b>${pun.length?pun.length-toPunish.length+' / '+pun.length:'—'}</b><span class="note">opponents’ mistakes you punished${Help.q("Your opponents' moves that cost them 20 points or more of winning chances, and how many of them you made pay for (your next move kept most of the gain).")}</span></div>
+    <div class="stat"><b>${pun.length?pun.length-toPunish.length+' / '+pun.length:'—'}</b><span class="note">opponents’ mistakes you punished${Help.q("Your opponents' moves that dropped their Win% by 10 points or more (a Lichess mistake), and how many of them you made pay for (your next move kept most of the gain). "+WinPct.HELP)}</span></div>
   </div>
   <div class="repgrid">
     <div class="card"><span class="label">Results by colour and by opponent rating${Help.q('Every game fetched counts here, analyzed or not: results need no engine. Score = your points as a share of the games.')}</span>
       <p class="note">From all ${all.length} fetched games.</p>
       <table style="margin-top:6px"><tr><th>You had</th><th>Games</th><th>Score</th></tr>${byCol.map(([c,n,s])=>`<tr><td>${c==='w'?'White':'Black'}</td><td>${n}</td><td>${n?Math.round(100*s/n)+'%':'—'}</td></tr>`).join('')}</table>
       <table style="margin-top:10px"><tr><th>Opponent rated</th><th>Games</th><th>Score</th></tr>${bandRows.map(([b,o])=>`<tr><td>${esc(b)}</td><td>${o.n}</td><td>${Math.round(100*o.s/o.n)}%</td></tr>`).join('')}</table></div>
-    <div class="card"><span class="label">Accuracy by phase${Help.q('Lichess’s accuracy for each of your moves (100 = no winning chances lost), averaged per phase. Phases as Lichess divides a game: the middlegame starts when 10 or fewer major and minor pieces are left or a back rank is sparse; the endgame when 6 or fewer are left.')}</span>
+    <div class="card"><span class="label">Accuracy by phase${Help.q('Lichess’s accuracy for each of your moves (100 = no Win% lost), averaged per phase. Phases as Lichess divides a game: the middlegame starts when 10 or fewer major and minor pieces are left or a back rank is sparse; the endgame when 6 or fewer are left.')}</span>
       <p class="note">From the ${rows.length} analyzed games (engine evals needed).</p>
       <table style="margin-top:6px"><tr><th>Phase</th><th>Your moves</th><th>Accuracy</th></tr>${['opening','middlegame','endgame'].map(k=>`<tr><td>${k[0].toUpperCase()+k.slice(1)}</td><td>${ph[k].length}</td><td>${avg(ph[k])==null?'—':avg(ph[k])+'%'}</td></tr>`).join('')}</table></div>
     <div class="card"><span class="label">Openings in these games</span>
@@ -222,10 +222,10 @@ function renderReport(user,site,rows,total,final){
     <div class="card" hidden><span class="label">Openings (all)</span>
       <table style="margin-top:6px"><tr><th>Opening</th><th>Games</th><th>Score${Help.q('Your points as a share of the games: a win is 1, a draw ½.')}</th><th>Blunders / mistakes / inaccuracies per game${Help.q("Your own errors in that opening's games, divided by its games.")}</th></tr>
       ${opRows.map(([k,o])=>`<tr><td>${esc(k)}</td><td>${o.n}</td><td>${Math.round(100*o.s/o.n)}%</td><td>${(o.blun/o.n).toFixed(1)} / ${(o.mist/o.n).toFixed(1)} / ${(o.inacc/o.n).toFixed(1)}</td></tr>`).join('')}</table></div>
-    <div class="card"><span class="label">Your costliest moments (${mistakes.length})${Help.q('Your moves that dropped your own winning chances the most. −34% means your chances fell by 34 points with that move (from your side).')}</span>
+    <div class="card"><span class="label">Your costliest moments (${mistakes.length})${Help.q('Your moves that dropped your Win% the most: before the move → after it, from your side. '+WinPct.HELP)}</span>
       <div style="margin-top:6px">${mistakes.slice(0,10).map(m=>`<div class="gamerow"><span class="src">${esc(m.game.date)}</span>
         <span>${esc(m.san)} <span class="note">vs ${esc(m.game.color==='w'?m.game.black:m.game.white)}</span></span>
-        <span class="pill ${m.drop>=0.3?'bad':'warn'}">−${Math.round(m.drop*100)}%</span>
+        <span class="pill ${m.drop>=0.3?'bad':'warn'}" title="Win%, from your side">${WinPct.change(m.before,m.drop,m.game.color)}</span>
         <a class="note" href="${esc(m.game.url)}" target="_blank" rel="noopener">game ↗</a></div>`).join('')||'<p class="note">None found. Clean play!</p>'}</div>
       ${final&&(mistakes.length||toPunish.length)?`<div class="btns" style="margin-top:10px"><button class="btn primary" id="a-savedrills">Save ${Math.min(mistakes.length,40)+Math.min(toPunish.length,20)} drills</button></div>
         <p class="note">Your ${Math.min(mistakes.length,40)} costliest moves, plus ${Math.min(toPunish.length,20)} “Punish the mistake” positions where your opponent erred and you didn’t make them pay.</p>`:''}

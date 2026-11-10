@@ -31,7 +31,7 @@ function renderL(){
   el.innerHTML=list.map(d=>{ const st=p[d.id];
     return TV.row({badge:fmtW(d.before),badgeTitle:'Stockfish’s eval of this position from White’s side, in pawns (+ favors White)',
       title:`vs ${esc(d.opp)}${isPunish(d)?'<span class="tag punish">Punish</span>':''}`,
-      meta:`<span class="src">${esc(SITE[d.site]||d.site||'Game')}</span> · ${esc(d.date||'')} · ${d.color==='w'?'W':'B'} · −${Math.round(d.drop*100)}%`,
+      meta:`<span class="src">${esc(SITE[d.site]||d.site||'Game')}</span> · ${esc(d.date||'')} · ${d.color==='w'?'W':'B'} · −${WinPct.pts(d.drop)} Win%`,
       right:TV.dots([[st?(st.ok?'good':'bad'):'','Find the move']]),current:!!(S.cur&&S.cur.id===d.id),data:{id:d.id}}) }).join('');
   el.classList.toggle('isempty',!list.length);
   if(!list.length) el.innerHTML=all.length?'<p class="empty">No drills match these filters.</p>':'<p class="empty">No drills yet. Run <a href="#analyze"><b>Analyze my games</b></a> first and save drills from your mistakes.</p>';
@@ -44,13 +44,13 @@ function load(d){
   if(endbar) endbar.hide();
   S.cur=d; S.g=new Chess(d.fen); S.done=false; S.busy=false; S.hintStage=0; S.hinted=false;
   board.set(S.g,{last:null,orient:d.color});
-  if(isPunish(d)) status('',`${d.oppMove} was a mistake. Punish it.`,`${S.g.turn()==='w'?'White':'Black'} to move. In the game you played ${d.played}, which let them off (−${Math.round(d.drop*100)}% of the chance they gave you).`,DROP_HELP);
-  else status('', (S.g.turn()==='w'?'White':'Black')+' to move — find a better move.',`In the game you played ${d.played} (−${Math.round(d.drop*100)}% winning chances).`,DROP_HELP);
+  if(isPunish(d)) status('',`${d.oppMove} was a mistake. Punish it.`,`${S.g.turn()==='w'?'White':'Black'} to move. In the game you played ${d.played}, which let them off (it gave back ${WinPct.pts(d.drop)} points of Win%).`,DROP_HELP);
+  else status('', (S.g.turn()==='w'?'White':'Black')+' to move — find a better move.',`In the game you played ${d.played}: Win% ${WinPct.change(d.before,d.drop,d.color)}.`,DROP_HELP);
   const goal=playGoal(d);
   $('d-head').innerHTML=TV.head({kicker:`${isPunish(d)?'Punish · ':''}${esc(SITE[d.site]||d.site||'Your game')} · ${esc(d.date||'')}`,
     title:`vs ${esc(d.opp)}`,
     chips:[d.color==='w'?'White':'Black',`<span class="mono">${fmtW(d.before)}</span>${Help.q('Stockfish’s eval of this position from White’s side, in pawns (+ favors White).')}`,
-      `−${Math.round(d.drop*100)}% in the game${Help.q(DROP_HELP)}`],
+      `Win% ${WinPct.change(d.before,d.drop,d.color)} in the game${Help.q(DROP_HELP)}`],
     extra:`<div class="seg mini" role="group" aria-label="Training mode"><button type="button" aria-pressed="true">Find the move</button><button type="button" id="d-playout" aria-pressed="false" title="${goal==='win'?'Continue against Stockfish from this position. You were winning before the slip: convert it.':'Continue against Stockfish from this position. Hold it: a draw or better counts.'}">Play it out: ${goal==='win'?'win it':'hold it'}</button></div>`});
   $('d-playout').addEventListener('click',playOut);
   $('d-facts').innerHTML=`<dt>Date</dt><dd>${esc(d.date)}</dd><dt>Opponent</dt><dd>${esc(d.opp)}</dd>
@@ -81,7 +81,7 @@ async function userMove(from,to,promo){
   const drop=wc(bestP)-wc(mineP);
   if(drop<0.1) finish(m,true,`Good: about as strong as ${sanOf(S.g.fen(),a[0].uci)} (best).`);
   else{ board.flash([from,to],'bad'); saveResult(d.id,false);
-    status('bad',`${m.san} still gives away ${Math.round(drop*100)}% winning chances.`,'Try again, or Show the answer.') }
+    status('bad',`${m.san} still gives away ${WinPct.pts(drop)} points of Win%.`,'Try again, or Show the answer.') }
 }
 function finish(m,ok,text){
   S.g.move(m); S.done=true;
@@ -104,7 +104,7 @@ async function show(){
 /* Play it out: continue from the drill position against Stockfish (Play tab). The goal comes from the eval
    before the slip: from +1.5 for you it is a win (convert); otherwise don't lose (hold), as in the private kit. */
 const playGoal=d=>((d.before||0)*(d.color==='w'?1:-1))>=1.5?'win':'hold';
-const DROP_HELP='Winning chances (Lichess’s scale, from your side): −34% means the move cut your chances of winning by 34 points.';
+const DROP_HELP=WinPct.HELP;
 function playOut(){
   const d=S.cur; if(!d) return;
   location.hash='#play';
