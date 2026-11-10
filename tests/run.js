@@ -1275,6 +1275,19 @@ section('t37: shared code (site/shared/) — position ids never change, one PGN 
   assert(T.pick(['a','b'],[0,0],()=>0.99)==='b'&&T.pick(['a','b'],[1,3],()=>0.5)==='b'&&T.pick(['a','b'],[1,3],()=>0.1)==='a','weighted pick');
 }
 
+section('t49: Tactics — opening filter (Lichess opening families on the existing puzzles; set and ids unchanged)');
+{
+  const {w}=await makePage(); await sleep(200); w.location.hash='#tactics'; await sleep(120);
+  const lib=w.TacticsTab.lib, tagged=lib.filter(z=>z.op);
+  assert(lib.length===11260&&tagged.length>1000,'every puzzle kept, '+tagged.length+' with an opening family');
+  const box=w.document.querySelector('#t-ops input[value="Sicilian_Defense"]');
+  assert(box&&/Sicilian Defense \(\d+\)/.test(box.parentNode.textContent),'Openings multi-select lists families with counts');
+  box.checked=true; box.dispatchEvent(new w.Event('change',{bubbles:true})); await sleep(30);
+  const f=w.TacticsTab.filtered(); assert(f.length>0&&f.every(z=>z.op==='Sicilian_Defense'),'choosing an opening keeps only its puzzles ('+f.length+')');
+  assert(/opening phase/.test(w.document.getElementById('t-ops').textContent),'says why only some puzzles have an opening');
+  w.document.querySelector('#t-ops [data-all]').click(); await sleep(20); assert(w.TacticsTab.filtered().length>f.length,'Clear brings the rest back');
+}
+
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));
 process.exit(H.failures?1:0);
 })().catch(e=>{ console.error('Test run crashed:',e); process.exit(1) });

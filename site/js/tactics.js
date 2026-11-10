@@ -4,7 +4,7 @@
 'use strict';
 (function(){
 let LIB=null, board=null, endbar=null;
-const S={cur:null,g:null,step:0,solved:false,failedFirst:false,usedHint:false,hintStage:0,motifs:[],lo:null,hi:null,status:'All'};
+const S={cur:null,g:null,step:0,solved:false,failedFirst:false,usedHint:false,hintStage:0,motifs:[],ops:[],lo:null,hi:null,status:'All'};
 const BANDS=[['All','Any rating'],['1200','1200–1499'],['1500','1500–1799'],['1800','1800–2099'],['2100','2100–2399'],['2400','2400+']];
 const STATUSES=['All','Unsolved','Missed','Solved'];
 
@@ -27,6 +27,7 @@ function filtered(){
   const p=prog();
   return LIB.filter(z=>{
     if(S.motifs.length&&!S.motifs.some(m=>z.motif===m||(z.themes||[]).includes(m))) return false;   /* any of the chosen themes */
+    if(S.ops.length&&!S.ops.includes(z.op)) return false;   /* any of the chosen openings */
     if(S.lo!=null&&z.rating<S.lo) return false; if(S.hi!=null&&z.rating>S.hi) return false;
     const st=p[z.id];
     if(S.status==='Unsolved'&&st) return false;
@@ -41,6 +42,8 @@ function daily(list){
   const h=s=>{ let x=2166136261; for(const c of s) x=Math.imul(x^c.charCodeAt(0),16777619); return x>>>0 };
   return list.map(z=>[h(seed+z.id),z]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
 }
+/* Lichess opening family ids (Queens_Gambit_Declined) as names (Queen's Gambit Declined) */
+const opName=k=>String(k).replace(/_/g,' ').replace(/\b(Queens|Kings|Bishops|Petrovs|Owens|Alekhines|Birds)\b/g,w=>w.slice(0,-1)+"'s").replace(/^Owen Defense/,"Owen's Defense");
 /* Themes: a multi-select of the 30 most common (any of them matches); rating: a two-handle slider in 100-point steps. */
 let CTL=null;
 function renderFilters(){
@@ -48,6 +51,11 @@ function renderFilters(){
     const opts=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]).slice(0,30).map(m=>[m,themeName(m)]).sort((a,b)=>a[1].localeCompare(b[1]));
     const rs=LIB.map(z=>z.rating).filter(Boolean), lo=Math.floor(Math.min(...rs)/100)*100, hi=Math.ceil(Math.max(...rs)/100)*100;
     CTL={motifs:Controls.multi($('t-motifs'),{label:'Themes',options:opts,selected:S.motifs,none:'Any theme',onChange:v=>{ S.motifs=v; renderL() }}),
+      ops:(()=>{ const oc={}; for(const z of LIB) if(z.op) oc[z.op]=(oc[z.op]||0)+1; const n=Object.values(oc).reduce((a,b)=>a+b,0);
+        const o=Object.keys(oc).filter(k=>oc[k]>=10).map(k=>[k,opName(k)+' ('+oc[k]+')']).sort((a,b)=>a[1].localeCompare(b[1]));
+        if(!o.length){ $('t-ops').hidden=true; return null }
+        const c=Controls.multi($('t-ops'),{label:'Openings',options:o,selected:S.ops,none:'Any opening',onChange:v=>{ S.ops=v; renderL() }});
+        $('t-ops').insertAdjacentHTML('beforeend',`<p class="note" style="margin:4px 0 0;max-width:22em">Lichess tags the opening only on puzzles from the opening phase (${n.toLocaleString()} of ${LIB.length.toLocaleString()} here).</p>`); return c })(),
       range:Controls.range($('t-bands'),{label:'Puzzle rating',min:lo,max:hi,step:100,lo,hi,onChange:(a,b)=>{ S.lo=a<=lo?null:a; S.hi=b>=hi?null:b; renderL() }})} }
   const mk=(el,items,cur,fn)=>{ el.innerHTML='';
     for(const it of items){ const b=document.createElement('button'); b.className='chip'; b.textContent=it; b.setAttribute('aria-pressed',String(it===cur));
@@ -145,5 +153,5 @@ function init(){
   $('t-flip').addEventListener('click',()=>board.flip());
   Keys.on('tactics',{n:['Next puzzle',()=>next()],h:['Hint',()=>hint()],f:['Flip the board',()=>board.flip()]});
 }
-window.TacticsTab={init,get state(){return S},load,next,userMove,hint,get lib(){return LIB}};
+window.TacticsTab={init,get state(){return S},load,next,userMove,hint,filtered,get lib(){return LIB}};
 })();
