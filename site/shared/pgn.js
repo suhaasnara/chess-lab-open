@@ -28,7 +28,7 @@ window.PGN=(()=>{
   const NAGS={1:'!',2:'?',3:'!!',4:'??',5:'!?',6:'?!',7:'□',8:'□',10:'=',11:'=',12:'=',13:'∞',14:'⩲',15:'⩱',16:'±',17:'∓',18:'+−',19:'−+',22:'⨀',23:'⨀',32:'⟳',33:'⟳',36:'→',37:'→',40:'↑',41:'↑',132:'⇆',133:'⇆',138:'⊕',139:'⊕',140:'∆',146:'N'};
   function shapes(c){ const out=[]; String(c).replace(/\[%c(?:al|sl)\s+([^\]]*)\]/g,(_,l)=>{ for(const x of l.split(/[\s,]+/)) if(/^[GRBY][a-h][1-8]([a-h][1-8])?$/.test(x)) out.push(x); return '' }); return [...new Set(out)].join(' ') }
   function cleanNote(c){ return String(c).replace(/\[%[^\]]*\]/g,'').replace(/StartFEN[\s\S]*?EndFEN/g,' ').replace(/StartBracket/g,'(').replace(/EndBracket/g,')')
-    .replace(/\[\/(?:course|variation)\/[^\]]*\]/g,'').replace(/[-�]/g,'').replace(/\s+/g,' ').replace(/\(\s+/g,'(').replace(/\s+\)/g,')').trim().replace(/^[()\s]*$/,'') }
+    .replace(/\[\/(?:course|variation)\/[^\]]*\]/g,'').replace(/[\uE000-\uF8FF\uFFFD]/g,'').replace(/\s+/g,' ').replace(/\(\s+/g,'(').replace(/\s+\)/g,')').trim().replace(/^[()\s]*$/,'') }
   const TOKEN=/\[\s*(\w+)\s+"((?:[^"\\]|\\.)*)"\s*\]|\{[^}]*\}|;[^\n]*|\(|\)|\$\d+|[^\s(){}[\];]+/g;
   function read(text){
     const edges=new Map(), notes={}, starts=[]; let games=0, bad=0;
