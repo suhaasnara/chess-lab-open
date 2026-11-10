@@ -1,7 +1,10 @@
 name: Tag tactics with openings
 # Run by hand. Adds the Lichess opening family ("op") to the puzzles already in site/data/tactics.json, from the
 # Lichess puzzle database (CC0). The puzzle set and ids don't change. Pushes a review branch tactics-op/<run id>.
+# While the workflow is only on a branch (dispatch needs it on main), push that branch to run/tag-tactics-openings.
 on:
+  push:
+    branches: ['run/tag-tactics-openings']
   workflow_dispatch:
     inputs:
       ref:
@@ -17,7 +20,7 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
-        with: { ref: '${{ inputs.ref }}' }
+        with: { ref: '${{ inputs.ref || github.ref }}' }
       - uses: actions/setup-python@v5
         with: { python-version: '3.12' }
       - run: pip install zstandard==0.23.0
