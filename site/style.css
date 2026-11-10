@@ -4,27 +4,7 @@
    the colour variables below. The board keeps its own colours.
    Board: Lichess "maple" (AGPLv3+), pieces: Lichess "cburnett" by Colin M.L. Burnett (GPLv2+).
    See CREDITS.md. */
-:root{
-  color-scheme:light;
-  --navy:#13284a; --ink:#1b2636; --muted:#536175; --blue:#1f4e8c; --blue-on-navy:#a9c4ec;
-  --band:#f2f6fb; --callout:#e2eaf6; --line:#d9e1ec; --white:#ffffff;
-  --brass:#b08d57; --brass-light:#cfb27e; --brass-text:#8a6a35;
-  --good:#1e7a4f; --good-soft:#e2f2e9; --warn:#97701f; --warn-soft:#f6eedd; --bad:#b03a31; --bad-soft:#f8e3e1;
-  --serif:'Libre Caslon Text',Georgia,'Times New Roman',serif;
-  --sans:'Source Sans 3','Segoe UI',system-ui,-apple-system,sans-serif;
-  --radius:4px; --accent:var(--blue); --accent-soft:var(--callout);
-  --head:var(--navy); --on-navy:#ffffff; --blue-bg:var(--blue); --chart:var(--navy); --heroBg:var(--navy);
-  --lv1:#c9d8ee; --lv2:#8fb0dc; --lv3:#3f6fae; --shadow:rgba(19,40,74,.22);
-}
-/* Dark: the same names with dark values (also under Match device when the device is dark). */
-:root[data-theme="dark"]{color-scheme:dark;--navy:#2b4f86;--head:#dfe7f3;--ink:#e2e7ee;--muted:#9eabbd;--blue:#8db4ea;--blue-bg:#3a66a8;--blue-on-navy:#b9d0f2;
-  --band:#111924;--callout:#1d2a3c;--line:#2b3a50;--white:#182331;--brass:#c4a26a;--brass-light:#d8bd8c;--brass-text:#d2b27a;
-  --good:#4cbb85;--good-soft:#15332a;--warn:#d6a94e;--warn-soft:#382d16;--bad:#ea766b;--bad-soft:#3b1f1d;--chart:#8db4ea;--heroBg:#0c1420;
-  --lv1:#22385a;--lv2:#2f5287;--lv3:#5b86c4;--shadow:rgba(0,0,0,.5)}
-@media (prefers-color-scheme:dark){:root[data-theme="auto"]{color-scheme:dark;--navy:#2b4f86;--head:#dfe7f3;--ink:#e2e7ee;--muted:#9eabbd;--blue:#8db4ea;--blue-bg:#3a66a8;--blue-on-navy:#b9d0f2;
-  --band:#111924;--callout:#1d2a3c;--line:#2b3a50;--white:#182331;--brass:#c4a26a;--brass-light:#d8bd8c;--brass-text:#d2b27a;
-  --good:#4cbb85;--good-soft:#15332a;--warn:#d6a94e;--warn-soft:#382d16;--bad:#ea766b;--bad-soft:#3b1f1d;--chart:#8db4ea;--heroBg:#0c1420;
-  --lv1:#22385a;--lv2:#2f5287;--lv3:#5b86c4;--shadow:rgba(0,0,0,.5)}}
+/* Colour variables (light / dark / match device): shared/theme.css, loaded before this file. */
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html{background:var(--band)}

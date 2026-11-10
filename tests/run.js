@@ -761,7 +761,7 @@ section('t27: take backs — openings (not rated again), Play (counted)');
 section('t28: dark mode — a Theme setting that only swaps colour variables');
 {
   const {w}=await makePage();
-  const css=require('fs').readFileSync(require('path').join(H.SITE,'style.css'),'utf8');
+  const css=require('fs').readFileSync(require('path').join(H.SITE,'shared','theme.css'),'utf8');   /* the variables live in the shared theme */
   assert(w.Settings.get('theme')==='auto'&&w.document.documentElement.dataset.theme==='auto','default: Match device');
   assert(/:root\[data-theme="dark"\]\{color-scheme:dark;/.test(css)&&/@media \(prefers-color-scheme:dark\)\{:root\[data-theme="auto"\]/.test(css),'dark variables for Dark and for a dark device');
   const block=css.match(/:root\[data-theme="dark"\]\{([^}]*)\}/)[1];
