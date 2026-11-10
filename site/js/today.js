@@ -68,14 +68,15 @@ function streak(all,done){
   return s.last===dayKey()||s.last===dayKey(Date.now()-DAY)?s.n:0;
 }
 /* The page, as Chess Lab's Today: the session bar, the Endgame / Opening line / Watch cards and the Up next list on the
-   left; drills and puzzles are played right here, on the board. Today hosts the Drills or Tactics panel itself (their
-   own board, buttons and coach card), so each item is judged and stored by its own tab's code and keys, exactly as
-   there. The endgame and the opening line open in their tabs from their cards; all of it counts in the session. */
+   left; every item is played right here, on the board. Today hosts that tab's own panel (Drills, Tactics, Endgames, or the
+   Openings trainer: their board, buttons, coach card and keys), so each item is judged and stored by its own tab's code
+   and keys, exactly as there. The endgame and the opening line are picked from their cards (Chess Lab's look). */
 const KIND={drill:'Drill',puzzle:'Puzzle',endgame:'Endgame',opening:'Opening line'};
-const INPLACE={drill:1,puzzle:1};
-let board=null, sel=null, hosted=null, P={};   /* sel: kind:id of the item on the board; hosted: 'drill' | 'puzzle' | null */
+const INPLACE={drill:1,puzzle:1,endgame:1,opening:1}, ROWS={drill:1,puzzle:1};   /* ROWS: listed under Up next; the others are cards */
+let board=null, sel=null, hosted=null, P={};   /* sel: kind:id of the item on the board; hosted: the kind whose panel is here, or null */
+const VIEW={drill:'drills',puzzle:'tactics',endgame:'endgames',opening:'openings'};
 const keyOf=it=>it.kind+':'+it.id;
-const tabOf=k=>k==='drill'?window.DrillsTab:window.TacticsTab;
+const tabOf=k=>({drill:window.DrillsTab,puzzle:window.TacticsTab,endgame:window.EndgamesTab,opening:window.OpeningsTab})[k];
 function preview(it){
   try{
     if(it.kind==='endgame'){ const g=new Chess(it.obj.fen); return {g,orient:g.turn()} }
@@ -88,26 +89,34 @@ function badge(it){
   if(it.kind==='drill') return {b:(v=>v==null?'D':(v>0?'+':v<0?'−':'')+Math.abs(v).toFixed(1))(it.obj.before),t:'Eval from White’s side'};
   return {b:it.obj.rating||'P',t:'Puzzle rating'};
 }
-/* Show one panel in Today's board column: Drills', Tactics' or Today's own (the empty state). */
+/* Show one panel in Today's board column: a tab's (hosted) or Today's own (the empty state). */
 function show(which){
-  const grid=$('td-grid'), mine=P.today, want=which==='drill'?P.drill:which==='puzzle'?P.puzzle:mine;
-  if(want.parentNode!==grid) grid.appendChild(want);
-  for(const p of [P.drill,P.puzzle]) if(p!==want&&p.parentNode===grid) P.home[p===P.drill?'drill':'puzzle'].appendChild(p);
+  const grid=$('td-grid'), mine=P.today, want=which?P[which][0].el:mine;
+  if(which) for(const x of P[which]) if(x.el.parentNode!==grid) grid.appendChild(x.el);   /* the panel, plus its dialogs (Openings) */
+  else if(mine.parentNode!==grid) grid.appendChild(mine);
+  for(const k of Object.keys(VIEW)) if(k!==which) home(k);
   mine.hidden=want!==mine;
   if(hosted&&hosted!==which) tabOf(hosted).host(null);
-  hosted=which==='drill'||which==='puzzle'?which:null;
+  hosted=which||null;
   if(hosted) tabOf(hosted).host({next:nextItem,changed:refresh});
+  grid.dataset.hosted=hosted||'';
   dispatchEvent(new Event('resize'));   /* the board fits itself to the column it is in now */
 }
+/* a panel back to its exact place in its own tab */
+function home(k){ for(const x of P[k]||[]) if(x.el.parentNode!==x.parent) x.parent.insertBefore(x.el,x.next) }
 /* Leaving Today: give the panels back to their tabs. */
-function undock(){ if(!P.today) return; for(const k of ['drill','puzzle']) if(P[k].parentNode!==P.home[k]) P.home[k].appendChild(P[k]);
-  if(hosted) tabOf(hosted).host(null); hosted=null }
+function undock(){ if(!P.today) return; for(const k of Object.keys(VIEW)) home(k); if(hosted) tabOf(hosted).host(null); hosted=null; $('td-grid').dataset.hosted='' }
+function current(it){
+  const T=tabOf(it.kind);
+  if(it.kind==='opening'){ const st=T.state; return st.op&&st.op.id===it.id&&st.phase!=='done' }
+  return !!(T.state.cur&&T.state.cur.id===it.id);
+}
 function play(it){
   sel=it?keyOf(it):null;
-  if(it&&INPLACE[it.kind]){ show(it.kind); const T=tabOf(it.kind);
-    if(!(T.state.cur&&T.state.cur.id===it.id)) T.load(it.obj) }   /* already on its board: keep the attempt as it is */
+  if(it&&INPLACE[it.kind]){ show(it.kind);
+    if(!current(it)){ if(it.kind==='opening') OpeningsTab.selectOpening(it.id); else tabOf(it.kind).load(it.obj) } }   /* already on its board: keep the attempt as it is */
   else { show(null); const p=it?preview(it):{g:new Chess(),orient:'w'}; board.set(p.g,{locked:true,orient:p.orient,last:p.last||null}) }
-  for(const b of $('td-list').querySelectorAll('.drill[data-k]')) b.setAttribute('aria-current',String(b.dataset.k===sel));
+  for(const b of document.querySelectorAll('#td-list .drill[data-k],#td-cards [data-tdrow]')) b.setAttribute('aria-current',String((b.dataset.k||b.dataset.tdrow)===sel));
 }
 function card(label,href,all,rows){ return `<div class="card watoday"><div class="wthead"><span class="label">${label}</span><a class="note walink" href="${href}">${all} →</a></div>${rows}</div>` }
 function cards(list){
@@ -116,10 +125,10 @@ function cards(list){
   if(wp.length) out.push(card('Watch','#watch','All videos',wp.map(p=>`<div class="wtrow"><span class="wtlab">${esc(p.label)}</span><a href="${esc(p.url)}" target="_blank" rel="noopener"><b>${esc(p.v.title)}</b></a><span class="note">${esc(p.meta||'opens YouTube')}</span></div>`).join('')));
   const eg=list.find(x=>x.kind==='endgame');
   if(eg){ const seen=!!((Store.get('endgame-progress')||{})[eg.id]);
-    out.push(card('Endgame','#endgames','All endgames',`<div class="wtrow"><span class="wtlab">${eg.done?'Done ✓':seen?'Review':'New'}</span><a href="#endgames" data-td="${esc(keyOf(eg))}"><b>${esc(eg.obj.title)}</b></a><span class="note">${eg.obj.goal==='win'?'Win it':'Hold the draw'} against perfect defence</span></div>`)) }
+    out.push(card('Endgame','#endgames','All endgames',`<div class="wtrow" data-tdrow="${esc(keyOf(eg))}"><span class="wtlab">${eg.done?'Done ✓':seen?'Review':'New'}</span><a href="#today" data-td="${esc(keyOf(eg))}"><b>${esc(eg.obj.title)}</b></a><span class="note">${eg.obj.goal==='win'?'Win it':'Hold the draw'} against perfect defence</span></div>`)) }
   const op=list.find(x=>x.kind==='opening');
   if(op){ const st=OpeningsTab.stats(op.id);
-    out.push(card('Opening line','#openings','All openings',`<div class="wtrow"><span class="wtlab">${op.done?'Done ✓':st.lines?'Rating '+st.rating:'New'}</span><a href="#openings" data-td="${esc(keyOf(op))}"><b>${esc(op.obj.name)}</b></a><span class="note">${st.lines?'your lowest-rated opening · '+Help.n(st.lines,'line'):'one line against real Lichess games'}</span></div>`)) }
+    out.push(card('Opening line','#openings','All openings',`<div class="wtrow" data-tdrow="${esc(keyOf(op))}"><span class="wtlab">${op.done?'Done ✓':st.lines?'Rating '+st.rating:'New'}</span><a href="#today" data-td="${esc(keyOf(op))}"><b>${esc(op.obj.name)}</b></a><span class="note">${st.lines?'your lowest-rated opening · '+Help.n(st.lines,'line'):'one line against real Lichess games'}</span></div>`)) }
   return out.join('');
 }
 /* render(): Today opened (the first item not done goes on the board, as in Chess Lab); refresh(): a result came in (the
@@ -129,25 +138,25 @@ function refresh(){ if(document.body.dataset.view==='today') draw(false) }
 function draw(fresh){
   const el=$('td-list'); if(!el) return;
   const list=items(), done=list.filter(x=>x.done).length, n=streak(list.length,done);
-  const here=list.filter(x=>INPLACE[x.kind]);
+  const here=list.filter(x=>INPLACE[x.kind]), rows=here.filter(x=>ROWS[x.kind]);
   $('td-head').innerHTML=TV.session('Today’s session',done,list.length,n?n+'-day streak':'')+
     (list.length&&done>=list.length?'<div class="empty" style="margin-bottom:10px">Session complete. Come back tomorrow, or keep going in <a href="#drills">Drills</a> and <a href="#tactics">Tactics</a>.</div>':'');
   $('td-cards').innerHTML=cards(list);
-  el.innerHTML=here.map(it=>{ const b=badge(it); return TV.row({badge:b.b,badgeTitle:b.t,title:esc(it.title)+(it.done?' <span class="tag conv">Done</span>':''),meta:`<span class="src">${KIND[it.kind]}</span> · ${esc(it.meta)}`,
+  el.innerHTML=rows.map(it=>{ const b=badge(it); return TV.row({badge:b.b,badgeTitle:b.t,title:esc(it.title)+(it.done?' <span class="tag conv">Done</span>':''),meta:`<span class="src">${KIND[it.kind]}</span> · ${esc(it.meta)}`,
     right:TV.dots([[it.done?'good':'',it.done?'Done today':'Not done yet']]),cls:it.done?'done':'',data:{k:keyOf(it)}}) }).join('');
-  el.classList.toggle('isempty',!here.length);
-  if(!here.length) el.innerHTML='<p class="empty">'+((TacticsTab.lib||[]).length?'Nothing to play here today.':'Loading the puzzles…')+'</p>';
+  el.classList.toggle('isempty',!rows.length);
+  if(!rows.length) el.innerHTML='<p class="empty">'+((TacticsTab.lib||[]).length?'Nothing to play here today.':'Loading the puzzles…')+'</p>';
   const nd=(Store.get('adrills')||[]).length;
   $('td-note').innerHTML=nd?'':'Drills from your own games appear here once you run <a href="#analyze">Analyze my games</a> and save some.';
   if(fresh||(!hosted&&!sel)) play(here.find(x=>!x.done)||here[0]||null);
-  else for(const b of el.querySelectorAll('.drill[data-k]')) b.setAttribute('aria-current',String(b.dataset.k===sel));   /* a result came in: the board stays as it is */
+  else for(const b of document.querySelectorAll('#td-list .drill[data-k],#td-cards [data-tdrow]')) b.setAttribute('aria-current',String((b.dataset.k||b.dataset.tdrow)===sel));   /* a result came in: the board stays as it is */
 }
 function nextItem(){
   const here=items().filter(x=>INPLACE[x.kind]); if(!here.length) return;
   const i=here.findIndex(x=>keyOf(x)===sel);
   const it=here.slice(i+1).find(x=>!x.done)||here.find(x=>!x.done&&keyOf(x)!==sel)||here[(i+1)%here.length];
   play(it);
-  if(innerWidth<860){ const b=document.querySelector('#td-grid .panel:not([hidden]) .board'); if(b&&b.scrollIntoView) b.scrollIntoView({behavior:'smooth',block:'start'}) }
+  if(innerWidth<860){ const b=document.querySelector('#td-grid > :not([hidden]) .board'); if(b&&b.scrollIntoView) b.scrollIntoView({behavior:'smooth',block:'start'}) }
 }
 function start(it){
   if(it.kind==='drill'){ location.hash='#drills'; setTimeout(()=>DrillsTab.load(it.obj),30) }
@@ -175,17 +184,21 @@ function welcome(show){
 function dismiss(){ try{ localStorage.setItem('clo-welcome','seen') }catch(e){} $('welcome').hidden=true; document.body.classList.add('welcomed') }
 function init(){
   const grid=$('td-grid');
-  P={today:grid.querySelector('.panel'),drill:$('drills').querySelector('.panel'),puzzle:$('tactics').querySelector('.panel')};
-  P.home={drill:P.drill.parentNode,puzzle:P.puzzle.parentNode};
+  P={today:grid.querySelector('.panel')};
+  for(const [k,els] of [['drill',[$('drills').querySelector('.panel')]],['puzzle',[$('tactics').querySelector('.panel')]],['endgame',[$('endgames').querySelector('.panel')]],
+    ['opening',[$('openings').querySelector('.otrain'),...$('openings').querySelectorAll(':scope > .modal')]]])
+    P[k]=els.map(el=>({el,parent:el.parentNode,next:el.nextSibling}));
   board=makeBoard($('td-board'),{}); board.set(new Chess(),{locked:true});
   $('td-list').addEventListener('click',e=>{ const b=e.target.closest('.drill[data-k]'); if(!b) return; const it=items().find(x=>keyOf(x)===b.dataset.k); if(it){ play(it);
-    if(innerWidth<860){ const bd=document.querySelector('#td-grid .panel:not([hidden]) .board'); if(bd&&bd.scrollIntoView) bd.scrollIntoView({behavior:'smooth',block:'start'}) } } });
-  $('td-cards').addEventListener('click',e=>{ const a=e.target.closest('a[data-td]'); if(!a) return; const it=items().find(x=>keyOf(x)===a.dataset.td); if(it){ e.preventDefault(); start(it) } });
+    if(innerWidth<860){ const bd=document.querySelector('#td-grid > :not([hidden]) .board'); if(bd&&bd.scrollIntoView) bd.scrollIntoView({behavior:'smooth',block:'start'}) } } });
+  $('td-cards').addEventListener('click',e=>{ const a=e.target.closest('a[data-td]'); if(!a) return; const it=items().find(x=>keyOf(x)===a.dataset.td); if(it){ e.preventDefault(); play(it);
+    if(innerWidth<860){ const bd=document.querySelector('#td-grid > :not([hidden]) .board'); if(bd&&bd.scrollIntoView) bd.scrollIntoView({behavior:'smooth',block:'start'}) } } });
   /* the empty state's own board: Start opens the endgame or opening line still to do */
-  $('td-go').addEventListener('click',()=>{ const it=items().find(x=>!x.done&&!INPLACE[x.kind]); if(it) start(it) });
+  $('td-go').addEventListener('click',()=>{ const it=items().find(x=>!x.done)||items()[0]; if(it) play(it) });
   $('td-next').addEventListener('click',nextItem); $('td-flip').addEventListener('click',()=>board.flip());
-  const flip=()=>hosted?tabOf(hosted).flip():board.flip();
-  Keys.on('today',{n:['Next in session',nextItem],h:['Hint (first the piece, then the move)',()=>{ if(hosted) tabOf(hosted).hint() }],f:['Flip the board',flip]});
+  /* keys: with a tab's panel on the board, that tab's own keymap (its N goes to the next item in the session) */
+  Keys.on('today',{n:['Next in session',nextItem],f:['Flip the board',()=>board.flip()]});
+  const view0=Keys.view; Keys.view=()=>{ const v=view0(); return v==='today'&&hosted?VIEW[hosted]:v };
   addEventListener('hashchange',()=>{ if(document.body.dataset.view!=='today') undock() });   /* runs after the router */
   addEventListener('watch-change',refresh);
   TV.fitBoard('#td-wrap','#td-tools');

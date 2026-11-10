@@ -213,6 +213,11 @@ footer .inner{padding-block:18px;font-size:.85rem;color:var(--muted)}
 
 /* Today */
 .tdwrap #welcome{max-width:900px;margin:0 0 16px}
+/* Today hosting the Openings trainer: board | header and moves (the opening comes from Today's card, so no picker) */
+#td-grid .otrain{grid-template-columns:minmax(0,1fr) minmax(0,320px);grid-template-areas:"board side" "board right";grid-template-rows:auto 1fr}
+#td-grid .otrain .opick{display:none}
+@media (max-width:1040px){#td-grid .otrain{grid-template-columns:minmax(0,1fr);grid-template-areas:"board" "side" "right";grid-template-rows:none}}
+#td-cards .wtrow[aria-current="true"]{box-shadow:inset 3px 0 0 var(--navy);padding-left:8px}
 /* Today's cards under the session bar (Endgame, Opening line, Watch): Chess Lab's .watoday values */
 .watoday{margin:10px 0;padding:10px 14px}
 .watoday .label{margin:0}.watoday a{text-decoration:none;color:var(--head)}.watoday a:hover{text-decoration:underline}

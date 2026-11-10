@@ -366,8 +366,21 @@ section('t14: Today — a daily session from your drills, puzzles and openings')
   w.DrillsTab.next(); await sleep(20);
   assert(doc.body.dataset.view==='drills'&&w.DrillsTab.state.cur&&!w.TodayTab.sel.startsWith('x'),'Next in Drills is the Drills tab’s own again');
   w.location.hash='#today'; await sleep(60);
-  const ec=doc.querySelector('#td-cards a[data-td^="opening:"]'); ec.click(); await sleep(120);
-  assert(doc.body.dataset.view==='openings','the opening line’s card opens it in Openings');
+  /* the endgame and the opening line are played here too, picked from their cards */
+  const egA=doc.querySelector('#td-cards a[data-td^="endgame:"]'); const egId=egA.dataset.td.split(':')[1]; egA.click(); await sleep(60);
+  assert(doc.body.dataset.view==='today'&&w.TodayTab.hosted==='endgame'&&w.EndgamesTab.state.cur&&w.EndgamesTab.state.cur.id===egId&&doc.getElementById('td-grid').contains(doc.getElementById('eg-board')),'the endgame’s card puts it on Today’s board (the Endgames panel, hosted)');
+  assert(doc.querySelector('#td-cards [data-tdrow^="endgame:"]').getAttribute('aria-current')==='true','its card is marked as the one on the board');
+  const ep=w.Store.get('endgame-progress')||{}; ep[egId]={tries:1,okN:1,ok:true,t:Date.now()}; w.Store.put('endgame-progress',ep); w.TodayTab.render&&0;
+  const opA=doc.querySelector('#td-cards a[data-td^="opening:"]'); const opId=opA.dataset.td.split(':').slice(1).join(':'); opA.click(); await sleep(80);
+  assert(doc.body.dataset.view==='today'&&w.TodayTab.hosted==='opening'&&w.OpeningsTab.state.op&&w.OpeningsTab.state.op.id===opId&&doc.getElementById('td-grid').contains(doc.getElementById('o-board'))&&doc.getElementById('td-grid').contains(doc.getElementById('o-setmodal')),'the opening line’s card puts it on Today’s board (the Openings trainer and its dialogs, hosted)');
+  assert(w.Keys.view()==='openings','keys on Today follow the trainer on the board (its own keymap)');
+  for(let i=0;i<40&&w.OpeningsTab.state.phase!=='await';i++) await sleep(25);
+  for(const mv of w.OpeningsTab.state.g.moves({verbose:true})){ if(w.OpeningsTab.state.userMoves) break; await w.OpeningsTab.userMove(mv.from,mv.to,mv.promotion); await sleep(10) }
+  for(let i=0;i<60&&w.OpeningsTab.state.phase!=='await'&&w.OpeningsTab.state.phase!=='done';i++) await sleep(25);
+  const st0=w.OpeningsTab.stats(opId).lines; if(w.OpeningsTab.state.phase!=='done') w.OpeningsTab.endHere(); await sleep(60);
+  assert(w.OpeningsTab.state.phase==='done'&&w.OpeningsTab.stats(opId).lines>=1&&/Next in session/.test(doc.getElementById('o-status').textContent),'ending the line there scores it with the Openings code (stats-<id>); its button says Next in session');
+  w.location.hash='#openings'; await sleep(60);
+  assert(doc.getElementById('openings').firstElementChild===doc.querySelector('.otrain')&&doc.getElementById('openings').contains(doc.getElementById('o-setmodal'))&&doc.getElementById('endgames').contains(doc.getElementById('eg-board'))&&w.Keys.view()==='openings','leaving Today puts the trainer, its dialogs and the Endgames panel back where they were');
 }
 
 section('t15: Punish the mistake and Play it out');

@@ -203,6 +203,7 @@ function selectOpening(id){
   newLine();
 }
 
+let H=null;   /* Today, when it hosts this trainer: Next goes to the next item in the session */
 /* ---------- Line play ---------- */
 function newLine(review){
   if(!S.op) return;
@@ -475,14 +476,15 @@ function endLine(msg){
     if(opp.length){ const d=document.createElement('div'); d.className='note skiprow'; d.innerHTML='Never play this reply again: '+opp.map(x=>`<button type="button" class="btn sm" data-skip="${esc(posId(normKey(x.before))+'|'+x.uci)}" data-san="${esc(x.san)}">${esc(x.san)}</button>`).join(' ');
       d.addEventListener('click',e=>{ const b=e.target.closest('[data-skip]'); if(!b) return; const l=skipList(S.op.id); l.push({k:b.dataset.skip,san:b.dataset.san}); Store.put('oskip-'+S.op.id,l); b.disabled=true; b.textContent+=' — skipped' });
       $('o-status').appendChild(d) } }
-  const nx=document.createElement('button'); nx.className='btn primary endnext'; nx.textContent='Next line (N)';
-  nx.addEventListener('click',newLine); $('o-status').appendChild(nx);
+  const nx=document.createElement('button'); nx.className='btn primary endnext'; nx.textContent=H?'Next in session (N)':'Next line (N)';
+  nx.addEventListener('click',()=>H?H.next():newLine()); $('o-status').appendChild(nx);
   /* a banner on the board itself, so the end of the line is obvious on a phone */
   const box=$('o-boardbox'); box.classList.remove('end-good','end-warn'); box.classList.add(S.misses.length?'end-warn':'end-good');
   $('o-endtext').textContent=(S.misses.length?`${msg} ${S.misses.length} miss${S.misses.length>1?'es':''}`:`${msg} ✓ All right`)+(training()?'':` · ${delta>=0?'+':''}${delta}`);
   $('o-endbar').hidden=false;
   draw(); renderSide(); renderBook(); renderEval();
   finalEval(S.op.id,S.lineId);
+  if(H) H.changed();
   if(!S.misses.length&&Settings.get('autoNext')){ const id=S.lineId; setTimeout(()=>{ if(S.lineId===id&&S.phase==='done'&&document.body.dataset.view==='openings') newLine() },2500) }
 }
 /* E / End line: stop the line where you are. In Rated mode only the moves you played are scored. */
@@ -760,7 +762,7 @@ function init(){
       saveOrder([...L.querySelectorAll('.arr')].map(x=>x.dataset.id)); renderArrange() };
     addEventListener('pointermove',move); addEventListener('pointerup',up); addEventListener('pointercancel',up);
   });
-  $('o-newline').addEventListener('click',newLine);
+  $('o-newline').addEventListener('click',()=>H?H.next():newLine());
   $('o-endnext').addEventListener('click',newLine);
   $('o-hint').addEventListener('click',hint);
   $('o-back').addEventListener('click',takeBack);
@@ -834,11 +836,11 @@ function init(){
     ArrowRight:['Forward a move',ok(()=>{ if(!browsing()) return false; browse(S.browse+1) })],
     Home:['Start of the line',ok(()=>{ if(!S.g) return false; browse(0) })], End:['Back to the current move',ok(()=>{ if(!S.g) return false; browse(null) })],
     b:['Take back your move and the reply',ok(()=>takeBack())], r:['Restart: a new line',ok(()=>newLine())], h:['Hint (first the piece, then the move)',ok(()=>hint())],
-    f:['Flip the board',ok(()=>$('o-flip').click())], n:['Next line',ok(()=>newLine())], e:['End the line here (Rated: only the moves you played count)',ok(()=>endHere())]});
+    f:['Flip the board',ok(()=>$('o-flip').click())], n:['Next line',ok(()=>H?H.next():newLine())], e:['End the line here (Rated: only the moves you played count)',ok(()=>endHere())]});
   addEventListener('settings-change',()=>{ STAY.clear(); if(document.body.dataset.view==='openings'){ renderSide(); renderBook(); renderEval() } });
   renderList();
   board.set(new Chess(),{orient:'w',locked:true});
 }
-window.OpeningsTab={init,openDefault,PRESETS,renderList,endHere,SID,skipList,renderCaptured,customs,saveCustom,deleteCustom,openNew,saveNew,saveCurrent,studyApi,fetchStudy,doImport,syncLevel,soundDemoMoves,get state(){return S},selectOpening,newLine,userMove,parseRepPGN,moveDifficulty,openings,stats,
+window.OpeningsTab={init,host:h=>{ H=h||null; $('o-newline').firstChild.textContent=H?'Next ':'Next line ' },flip:()=>$('o-flip').click(),openDefault,PRESETS,renderList,endHere,SID,skipList,renderCaptured,customs,saveCustom,deleteCustom,openNew,saveNew,saveCurrent,studyApi,fetchStudy,doImport,syncLevel,soundDemoMoves,get state(){return S},selectOpening,newLine,userMove,parseRepPGN,moveDifficulty,openings,stats,
   takeBack,canTakeBack,browse,annAt,repPick,ordered,saveOrder,setArrange,moveItem,renderStats,openStats,openSettings,firstListed};
 })();

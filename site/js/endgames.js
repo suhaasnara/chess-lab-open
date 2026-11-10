@@ -7,7 +7,7 @@
 'use strict';
 (function(){
 const DAY=864e5, REVIEW=[3,7,21];
-let board=null, DATA=null, endbar=null;
+let board=null, DATA=null, endbar=null, H=null;   /* H: Today, when it hosts this panel */
 const S={cur:null,g:null,hist:[],phase:'idle',busy:false,me:'w',moves:0,grades:[],assisted:false,sol:null,view:0,group:'all',src:''};
 const prog=()=>Store.get('endgame-progress')||{};
 const U=u=>({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'});
@@ -146,8 +146,8 @@ function finish(ok,head,rest){
   const p=prog(), e=p[z.id]||{tries:0,okN:0};
   if(!S.counted) e.tries++; S.counted=true; e.t=Date.now(); e.ok=ok&&!S.assisted; if(e.ok) e.okN=(e.okN||0)+1; p[z.id]=e; Store.put('endgame-progress',p);
   const tone=ok?(S.assisted?'warn':'good'):'bad';
-  status(tone,head,rest||''); endbar.show(tone,head,'Next endgame');
-  board.set(S.g,{locked:true}); renderList(); buttons(); EndgamesTab.onFinish&&EndgamesTab.onFinish(z,e);
+  status(tone,head,rest||''); endbar.show(tone,head,H?'Next in session':'Next endgame');
+  board.set(S.g,{locked:true}); renderList(); buttons(); EndgamesTab.onFinish&&EndgamesTab.onFinish(z,e); if(H) H.changed();
 }
 function over(){                                  /* after any move: is the exercise finished? */
   const z=S.cur, g=S.g;
@@ -172,7 +172,7 @@ async function userMove(from,to,promo){
     board.flash([m.to],'bad');
     const why=z.goal==='win'?'That lets the win slip.':'That loses.';
     S.busy=false; S.phase='mistake';
-    if(!S.counted){ const p=prog(), e=p[z.id]||{tries:0,okN:0}; e.tries++; e.t=Date.now(); e.ok=false; p[z.id]=e; Store.put('endgame-progress',p); S.counted=true; renderList() }
+    if(!S.counted){ const p=prog(), e=p[z.id]||{tries:0,okN:0}; e.tries++; e.t=Date.now(); e.ok=false; p[z.id]=e; Store.put('endgame-progress',p); S.counted=true; renderList(); if(H) H.changed() }
     status('bad',why,bestSan?` ${bestSan} was the move. Take it back and try again, or start over.`:' Take it back and try again, or start over.');
     endbar.show('bad',why+(bestSan?' '+bestSan+' was the move.':''),'Take back');
     endbar.onNext=()=>{ endbar.onNext=()=>next(); takeBack() };
@@ -225,7 +225,7 @@ async function solution(){
 function showSol(){ if(!S.sol) return; S.view=Math.max(0,Math.min(S.sol.length,S.view));
   const g=new Chess(S.cur.fen); let last=null; for(let i=0;i<S.view;i++){ const m=g.move(U(S.sol[i])); if(m) last={from:m.from,to:m.to} }
   board.set(g,{last,locked:true}); $('eg-step').textContent=`${S.view} / ${S.sol.length}` }
-function next(){
+function next(){ if(H) return H.next();
   if(!DATA) return; const p=prog(), L=list(); const i=L.findIndex(z=>S.cur&&z.id===S.cur.id);
   const after=[...L.slice(i+1),...L.slice(0,i+1)];
   load(after.find(z=>!p[z.id])||after.find(z=>due(p[z.id]))||after[0]);
@@ -257,6 +257,6 @@ function init(){
     ArrowRight:['Forward a move',()=>{ if(S.sol){ S.view++; endbar.hide(); showSol(); return } return look(1) }],
     b:['Take back your move (and the reply)',()=>takeBack()], h:['Hint',()=>hint()], n:['Next ending',()=>next()], f:['Flip the board',()=>board.flip()]});
 }
-window.EndgamesTab={init,saveCustomPos,customs,deleteCustomPos,liveLine,load,userMove,takeBack,hint,solution,next,pickToday,stats,offline:false,onFinish:null,
+window.EndgamesTab={init,host:h=>{ H=h||null },flip:()=>board.flip(),saveCustomPos,customs,deleteCustomPos,liveLine,load,userMove,takeBack,hint,solution,next,pickToday,stats,offline:false,onFinish:null,
   get state(){return S},get data(){return DATA},byId:id=>DATA&&DATA.positions.find(z=>z.id===id)};
 })();
