@@ -19,15 +19,7 @@ async function live(fen){
   if(EndgamesTab.offline) return null;
   return Net.tablebase(fen);   /* shared/net.js */
 }
-const res=c=>({loss:'W',win:'L','maybe-loss':'W','maybe-win':'L'})[c]||'D';
-const met=m=>m.dtm!=null?Math.abs(m.dtm):10000+Math.abs(m.dtz||0);
-function fromLive(d,goal){                       /* the same shape as a stored user node */
-  const ms=(d&&d.moves)||[]; if(!ms.length) return null;
-  const W=ms.filter(m=>res(m.category)==='W'), D=ms.filter(m=>res(m.category)==='D');
-  if(goal==='win'&&W.length){ const best=Math.min(...W.map(met)); const b=W.filter(m=>met(m)===best).map(m=>m.uci);
-    return {b:b.join(' '),w:W.filter(m=>!b.includes(m.uci)).map(m=>m.uci).join(' '),d:D.map(m=>m.uci).join(' ')} }
-  return {b:'',w:W.map(m=>m.uci).join(' '),d:D.map(m=>m.uci).join(' ')};
-}
+const fromLive=(d,goal)=>EndgameCore.options(d,goal);   /* shared/endgame-core.js */
 /* The user's options at fen: {b,w,d} plus where they came from. */
 async function options(fen){
   const n=node(fen); if(n&&typeof n==='object') return {n,src:'tablebase'};
@@ -55,7 +47,7 @@ async function grade(fen,uci){
 }
 async function bestReply(fen){
   const n=node(fen); if(typeof n==='string') return n;
-  const d=await live(fen); if(d&&d.moves&&d.moves.length) return d.moves[0].uci;
+  const d=await live(fen); if(d&&d.moves&&d.moves.length) return EndgameCore.pickReply(fen,d,live);   /* keep the result, keep material, fewest saving replies; losing: resist longest */
   const a=await SharedEngine.analyse(fen,18,1,5000); return a&&a.length?a[0].uci:null;
 }
 async function hintMove(fen){

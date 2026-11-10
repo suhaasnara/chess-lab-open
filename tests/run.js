@@ -1063,6 +1063,26 @@ section('t38: trainer extras from Chess Lab — Play as, review queue, Never pla
   w.Settings.set('ocaptured',false); O.renderCaptured(g2); assert($('o-capt').hidden,'and hide when the setting is off');
 }
 
+section('t39: endgame bot — keep the result, keep material, fewest saving replies; losing: resist longest');
+{
+  const {w}=await makePage();
+  const E=w.EndgameCore, fen='4k2r/8/8/8/8/8/8/R1B1K3 w - - 0 1';   /* rook + bishop vs rook: a draw */
+  const tb={moves:[{uci:'c1h6',category:'draw',dtz:0},{uci:'a1a7',category:'draw',dtz:0},{uci:'e1e2',category:'draw',dtz:0}]};
+  const after={ /* the user's replies there: after Bh6 the rook takes it (still a draw); otherwise plain king moves */
+    h6:{moves:[{uci:'h8h6',category:'draw'},{uci:'e8d8',category:'draw'}]},
+    a7:{moves:[{uci:'e8d8',category:'draw'},{uci:'e8f8',category:'draw'},{uci:'h8h1',category:'win'}]},
+    e2:{moves:[{uci:'e8d8',category:'draw'},{uci:'e8f8',category:'draw'},{uci:'e8f7',category:'draw'},{uci:'e8e7',category:'draw'}]}};
+  const probe=async f=>{ const g=new w.Chess(f); return g.get('h6')?after.h6:g.get('a7')?after.a7:after.e2 };
+  const pick=await E.pickReply(fen,tb,probe);
+  assert(pick!=='c1h6','the bot no longer gives the bishop away (picked '+pick+'; the tablebase listed Bh6 first)');
+  assert(pick==='a1a7','…and of the safe moves it leaves the fewest drawing replies (Ra7: 2 of 3 vs Ke2: 4)');
+  assert(await E.pickReply(fen,tb,null)==='c1h6','without a probe it falls back to the tablebase order');
+  const lose={moves:[{uci:'e1d1',category:'win',dtm:12},{uci:'e1f1',category:'win',dtm:30},{uci:'e1e2',category:'win',dtm:20}]};
+  assert(await E.pickReply(fen,lose,probe)==='e1f1','losing anyway: it resists longest (mate in 30, not 12)');
+  const win={moves:[{uci:'a1a8',category:'loss',dtm:-3},{uci:'a1a7',category:'loss',dtm:-9},{uci:'e1e2',category:'draw'}]};
+  assert(E.options(win,'win').b==='a1a8'&&E.options(win,'win').w==='a1a7'&&E.options(win,'win').d==='e1e2','grading: fastest win = best, slower win = good, draw = thrown');
+}
+
 section('t37: shared code (site/shared/) — position ids never change, one PGN reader');
 {
   const {w}=await makePage();
