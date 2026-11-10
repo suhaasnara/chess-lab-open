@@ -109,12 +109,7 @@ function init(){
   $('d-show').addEventListener('click',show);
   $('d-playout').addEventListener('click',playOut);
   $('d-flip').addEventListener('click',()=>board.flip());
-  document.addEventListener('keydown',e=>{
-    if(document.body.dataset.view!=='drills') return;
-    if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
-    if(e.key==='n'||e.key==='N') next();
-    if(e.key==='f'||e.key==='F') board.flip();
-  });
+  Keys.on('drills',{n:['Next drill',()=>next()],f:['Flip the board',()=>board.flip()]});
 }
 window.DrillsTab={init,refresh:renderL,load,next,userMove,show,playOut,get state(){return S}};
 })();

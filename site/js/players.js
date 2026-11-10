@@ -188,8 +188,8 @@ function init(){
     else if(act==='refresh'){ const p=pdata(S.pid); if(!p||S.busy) return; S.busy=true; a.disabled=true; a.textContent='Fetching…';
       try{ await addPlayer(p.site,p.user,p.speeds||['blitz','rapid','classical']); select(p.id) }catch(x){ a.textContent='Could not refresh'; } S.busy=false }
   });
-  document.addEventListener('keydown',e=>{ if(document.body.dataset.view!=='players'||!S.board||S.sheet||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
-    if(e.key==='ArrowLeft'){ e.preventDefault(); S.line.pop(); drawExplorer() } else if(e.key==='Home'){ S.line=[]; drawExplorer() } });
+  Keys.on('players',{ArrowLeft:['Back a move in the explorer',()=>{ if(!S.board||S.sheet||!S.line.length) return false; S.line.pop(); drawExplorer() }],
+    Home:['Back to the start',()=>{ if(!S.board||S.sheet) return false; S.line=[]; drawExplorer() }]});
   render();
 }
 window.PlayersTab={init,render,select,addPlayer,movesAt,expectLine,tree,pgnMoves,index,data:pdata,get state(){return S}};

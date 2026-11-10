@@ -128,15 +128,12 @@ function init(){
   /* stepping through the solution moves the result banner out of the way */
   $('cc-prev').addEventListener('click',()=>{ S.view--; endbar.hide(); showView() });
   $('cc-fwd').addEventListener('click',()=>{ S.view++; endbar.hide(); showView() });
-  document.addEventListener('keydown',e=>{
-    if(document.body.dataset.view!=='calc') return;
-    if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
-    if(e.key==='ArrowLeft'){ if(S.sub){ S.view--; endbar.hide(); showView() } else undo() }
-    if(e.key==='ArrowRight'&&S.sub){ S.view++; endbar.hide(); showView() }
-    if(e.key==='n'||e.key==='N') next();
-    if(e.key==='f'||e.key==='F') board.flip();
-    if(e.key==='Enter'&&!S.sub) submit();
-  });
+  Keys.on('calc',{ArrowLeft:['Back a move (your line, or the solution)',()=>{ if(S.sub){ S.view--; endbar.hide(); showView() } else undo() }],
+    ArrowRight:['Forward through the solution',()=>{ if(!S.sub) return false; S.view++; endbar.hide(); showView() }],
+    b:['Take back your last entered move',()=>{ if(S.sub) return false; undo() }],
+    r:['Reset: clear your line and start again',()=>{ if(S.sub) return false; reset() }],
+    n:['Next exercise',()=>next()], f:['Flip the board',()=>board.flip()]});
+  document.addEventListener('keydown',e=>{ if(document.body.dataset.view==='calc'&&e.key==='Enter'&&!S.sub&&!/INPUT|TEXTAREA|SELECT|BUTTON/.test(e.target.tagName)) submit() });
 }
 /* data/calc.json loads the first time Calculation or Progress is opened (not on every visit). */
 let libP=null;

@@ -262,18 +262,11 @@ function init(){
   $('g-prev').addEventListener('click',()=>viewAt(S.view-1));
   $('g-next').addEventListener('click',()=>viewAt(S.view+1));
   $('g-moves').addEventListener('click',e=>{ const b=e.target.closest('.gmv'); if(b&&S.done) viewAt(+b.dataset.ply) });
-  document.addEventListener('keydown',e=>{
-    if(document.body.dataset.view!=='guess') return;
-    if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
-    if(e.key==='h'||e.key==='H') hint();
-    if(e.key==='f'||e.key==='F') board.flip();
-    if(S.done&&S.game&&!e.altKey&&!e.metaKey&&!e.ctrlKey){
-      const k={ArrowLeft:-1,ArrowRight:1}[e.key];
-      if(k){ e.preventDefault(); viewAt(S.view+k) }
-      else if(e.key==='Home'){ e.preventDefault(); viewAt(0) }
-      else if(e.key==='End'){ e.preventDefault(); viewAt(S.game.moves.length) }
-    }
-  });
+  const done=()=>S.done&&S.game;
+  Keys.on('guess',{ArrowLeft:['Back through the game (after it ends)',()=>{ if(!done()) return false; viewAt(S.view-1) }],
+    ArrowRight:['Forward through the game',()=>{ if(!done()) return false; viewAt(S.view+1) }],
+    Home:['Start of the game',()=>{ if(!done()) return false; viewAt(0) }], End:['End of the game',()=>{ if(!done()) return false; viewAt(S.game.moves.length) }],
+    h:['Hint',()=>hint()], f:['Flip the board',()=>board.flip()]});
 }
 /* ---------- Your own games ---------- */
 function ownGames(){ return Store.get('gtm-own')||[] }

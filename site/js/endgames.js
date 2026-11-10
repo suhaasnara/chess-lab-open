@@ -215,14 +215,9 @@ function init(){
   $('eg-flip').addEventListener('click',()=>board.flip());
   $('eg-prev').addEventListener('click',()=>{ S.view--; endbar.hide(); showSol() });
   $('eg-fwd').addEventListener('click',()=>{ S.view++; endbar.hide(); showSol() });
-  document.addEventListener('keydown',e=>{
-    if(document.body.dataset.view!=='endgames'||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
-    if(e.key==='ArrowLeft'){ if(S.sol){ S.view--; endbar.hide(); showSol() } else takeBack() }
-    if(e.key==='ArrowRight'&&S.sol){ S.view++; endbar.hide(); showSol() }
-    if(e.key==='n'||e.key==='N') next();
-    if(e.key==='f'||e.key==='F') board.flip();
-    if(e.key==='h'||e.key==='H') hint();
-  });
+  Keys.on('endgames',{ArrowLeft:['Back through the solution',()=>{ if(!S.sol) return false; S.view--; endbar.hide(); showSol() }],
+    ArrowRight:['Forward through the solution',()=>{ if(!S.sol) return false; S.view++; endbar.hide(); showSol() }],
+    b:['Take back your move (and the reply)',()=>takeBack()], h:['Hint',()=>hint()], n:['Next ending',()=>next()], f:['Flip the board',()=>board.flip()]});
 }
 window.EndgamesTab={init,load,userMove,takeBack,hint,solution,next,pickToday,stats,offline:false,onFinish:null,
   get state(){return S},get data(){return DATA},byId:id=>DATA&&DATA.positions.find(z=>z.id===id)};

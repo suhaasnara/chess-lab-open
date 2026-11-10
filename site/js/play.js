@@ -139,8 +139,7 @@ function init(){
   $('pl-new').addEventListener('click',newGame);
   $('pl-resign').addEventListener('click',resign);
   $('pl-back').addEventListener('click',takeBack);
-  document.addEventListener('keydown',e=>{ if(document.body.dataset.view!=='play'||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)||e.ctrlKey||e.metaKey||e.altKey) return;
-    if(e.key==='t'||e.key==='T'||e.key==='b'||e.key==='B') takeBack(); if(e.key==='f'||e.key==='F') board.flip() });
+  Keys.on('play',{b:['Take back your move and the reply',()=>takeBack()],f:['Flip the board',()=>board.flip()],p:['Peek (blindfold)',()=>peek()]});
   $('pl-peek').addEventListener('click',peek);
   $('pl-flip').addEventListener('click',()=>board.flip());
   $('pl-moveform').addEventListener('submit',e=>{

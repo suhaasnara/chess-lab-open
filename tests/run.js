@@ -1083,6 +1083,41 @@ section('t39: endgame bot — keep the result, keep material, fewest saving repl
   assert(E.options(win,'win').b==='a1a8'&&E.options(win,'win').w==='a1a7'&&E.options(win,'win').d==='e1e2','grading: fastest win = best, slower win = good, draw = thrown');
 }
 
+section('t40: one keymap — the same letters on every page, ? lists them, never while typing');
+{
+  const {w}=await makePage({analyse:async()=>null});
+  const K=w.Keys, $=id=>w.document.getElementById(id), press=(key,o={})=>{ const e=new w.KeyboardEvent('keydown',Object.assign({key,bubbles:true,cancelable:true},o)); (o.target||w.document.body).dispatchEvent(e); return e };
+  for(const v of ['openings','tactics','calc','endgames','drills','play','guess','players']) assert(Object.keys(K.map(v)).length,'the '+v+' page registers its keys');
+  assert(K.map('openings').e&&K.map('openings').b&&K.map('openings').r&&K.map('openings').h&&K.map('openings').f&&K.map('openings').n&&K.map('openings').ArrowLeft,'Openings: ← → B R H F N E');
+  assert(!K.map('endgames').ArrowLeft||/solution/.test(K.map('endgames').ArrowLeft[0]),'Endgames: ← steps the solution, take back is B');
+  assert(K.map('endgames').b&&K.map('play').b&&K.map('play').p&&K.map('calc').r,'B takes back, P peeks, R resets');
+  w.location.hash='#openings'; await sleep(50); w.document.body.dataset.view='openings';
+  w.OpeningsTab.selectOpening('preset-any-white'); await sleep(200);
+  await w.OpeningsTab.userMove('e2','e4'); await sleep(1200);
+  const S=w.OpeningsTab.state; assert(S.userMoves===1&&S.phase==='await','one move played');
+  const inp=w.document.createElement('input'); w.document.body.appendChild(inp);
+  press('e',{target:inp}); assert(S.phase==='await','E while typing in a box does nothing');
+  press('e',{ctrlKey:true}); assert(S.phase==='await','Ctrl+E stays the browser’s');
+  press('e'); await sleep(50); assert(S.phase==='done'&&/ended here/.test($('o-status').textContent),'E ends the line where you are');
+  press('?'); assert($('keys-overlay')&&/End the line here/.test($('keys-overlay').textContent),'? lists this page’s keys');
+  press('Escape'); assert(!$('keys-overlay'),'Escape closes it');
+}
+
+section('t41: Openings — Anything vs e4 / d4 / sidelines, Hide and Restore');
+{
+  let w0=null; const {w}=await makePage({analyse:async(fen)=>[{uci:new w0.Chess(fen).moves({verbose:true})[0].from+new w0.Chess(fen).moves({verbose:true})[0].to,cp:0.1,mate:null}]});
+  w0=w; const O=w.OpeningsTab, $=id=>w.document.getElementById(id), S=O.state;
+  const ids=O.openings().map(o=>o.id); assert(['preset-any-vs-e4','preset-any-vs-d4','preset-any-vs-side'].every(i=>ids.includes(i)),'the three new boxes are listed');
+  O.selectOpening('preset-any-vs-e4'); await sleep(300); assert(S.op.side==='black'&&S.log.map(x=>x.san).join()==='e4'&&S.g.turn()==='b','vs 1.e4: you answer 1.e4');
+  O.selectOpening('preset-any-vs-d4'); await sleep(300); assert(S.log.map(x=>x.san).join()==='d4','vs 1.d4');
+  for(let i=0;i<5;i++){ O.selectOpening('preset-any-vs-side'); await sleep(900); assert(S.log.length===1&&!['e4','d4'].includes(S.log[0].san),'vs sidelines: never 1.e4 or 1.d4 ('+(S.log[0]&&S.log[0].san)+')') }
+  assert(!$('o-hide'),'the Anything boxes can’t be hidden');
+  O.selectOpening('preset-italian'); await sleep(200); assert($('o-hide'),'presets have Hide this opening');
+  $('o-hide').click(); await sleep(100); assert(!O.openings().some(o=>o.id==='preset-italian'),'hidden from the list');
+  w.SettingsTab.init(); assert(/Italian/.test($('s-hidden').textContent),'Settings lists it');
+  $('s-unhide').click(); assert(O.openings().some(o=>o.id==='preset-italian'),'Restore brings it back');
+}
+
 section('t37: shared code (site/shared/) — position ids never change, one PGN reader');
 {
   const {w}=await makePage();

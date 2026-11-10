@@ -37,7 +37,13 @@ function init(){
     row.innerHTML=`<span>${esc(r.label)}${r.note?`<br><span class="note">${esc(r.note)}</span>`:''}</span>`;
     row.appendChild(sel); el.appendChild(row);
   }
+  hiddenRow();
 }
-function refresh(){ document.querySelectorAll('#s-rows select[data-k]').forEach(s=>{ s.value=String(Settings.get(s.dataset.k)) }) }
+/* Restore hidden openings (Openings → Hide this opening keeps their progress) */
+function hiddenRow(){ const el=$('s-rows'); let row=document.getElementById('s-hidden'); if(!row){ row=document.createElement('div'); row.className='setrow'; row.id='s-hidden'; el.appendChild(row) }
+  const ids=Store.get('ohidden')||[], names=ids.map(id=>(OpeningsTab.PRESETS.find(o=>o.id===id)||{}).name).filter(Boolean);
+  row.innerHTML=`<span>Hidden openings<br><span class="note">${names.length?esc(names.join(', ')):'None. Hide one from its panel on the Openings tab.'}</span></span>`+(names.length?'<button type="button" class="btn sm" id="s-unhide">Restore hidden openings</button>':'');
+  const b=row.querySelector('#s-unhide'); if(b) b.onclick=()=>{ Store.del('ohidden'); hiddenRow(); if(window.OpeningsTab&&OpeningsTab.renderList) OpeningsTab.renderList() } }
+function refresh(){ hiddenRow(); document.querySelectorAll('#s-rows select[data-k]').forEach(s=>{ s.value=String(Settings.get(s.dataset.k)) }) }
 window.SettingsTab={init,refresh};
 })();

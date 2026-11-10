@@ -137,13 +137,7 @@ function init(){
   $('t-next').addEventListener('click',next);
   $('t-hint').addEventListener('click',hint);
   $('t-flip').addEventListener('click',()=>board.flip());
-  document.addEventListener('keydown',e=>{
-    if(document.body.dataset.view!=='tactics') return;
-    if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
-    if(e.key==='n'||e.key==='N') next();
-    if(e.key==='h'||e.key==='H') hint();
-    if(e.key==='f'||e.key==='F') board.flip();
-  });
+  Keys.on('tactics',{n:['Next puzzle',()=>next()],h:['Hint',()=>hint()],f:['Flip the board',()=>board.flip()]});
 }
 window.TacticsTab={init,get state(){return S},load,next,userMove,hint,get lib(){return LIB}};
 })();

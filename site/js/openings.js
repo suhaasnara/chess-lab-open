@@ -12,7 +12,11 @@ const START='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 /* "Anything": no PGN needed. Start from move 1; the opponent plays the book at your level, your moves are judged as in presets.
    Fixed ids, so their ratings and stats stay. */
 const ANY=[{id:'preset-any-white',name:'Anything as White',side:'white',moves:[],any:true},
-  {id:'preset-any-black',name:'Anything as Black',side:'black',moves:[],any:true}];
+  {id:'preset-any-black',name:'Anything as Black',side:'black',moves:[],any:true},
+  /* what you play against each first move (Session C): fixed ids too; "sidelines" = any first move but 1.e4 and 1.d4 */
+  {id:'preset-any-vs-e4',name:'Anything vs 1.e4',side:'black',moves:['e4'],any:true},
+  {id:'preset-any-vs-d4',name:'Anything vs 1.d4',side:'black',moves:['d4'],any:true},
+  {id:'preset-any-vs-side',name:'Anything vs sidelines (1.Nf3, 1.c4, others)',side:'black',moves:[],any:true,firstNot:['e2e4','d2d4']}];
 const PRESETS=[
   {id:'preset-italian',name:'Italian Game',side:'white',moves:['e4','e5','Nf3','Nc6','Bc4']},
   {id:'preset-spanish',name:'Ruy Lopez (Spanish)',side:'white',moves:['e4','e5','Nf3','Nc6','Bb5']},
@@ -95,7 +99,8 @@ function openings(){
   const reps=repIndex().map(r=>({...r,rep:true,moves:repStart(r.id),startFen:r.startFen||null}));
   /* Players (the Players tab): you against their moves, one entry per colour you have */
   const pls=(Store.get('players-index')||[]).flatMap(p=>['w','b'].map(c=>({id:'pl-'+p.id+'-'+c,name:'vs '+p.name,side:c==='w'?'white':'black',player:p.id,their:c==='w'?'b':'w',moves:[]})));
-  return [...ANY,...customs(),...reps,...PRESETS,...pls];
+  const hid=new Set(Store.get('ohidden')||[]);   /* presets you hid (Settings → Restore hidden openings); progress is kept */
+  return [...ANY,...customs(),...reps,...PRESETS.filter(o=>!hid.has(o.id)),...pls];
 }
 /* ---------- Your own positions (Store custom-<id> = {name, side, moves:[SAN], fen?}) ---------- */
 function customs(){ return Store.keys().filter(k=>k.startsWith('custom-')).map(k=>{ const v=Store.get(k)||{};
@@ -277,6 +282,8 @@ function pickW(items,weights){ return TC.pick(items,weights) }
    "trappy" favours moves that score well in practice for the side playing them. */
 function pickBook(bk,fen){
   const min=Math.max(0.01,(+Settings.get('ominshare')||0)/100), mover=fen.split(' ')[1], trappy=!!Settings.get('otrappy');
+  const no=S.op&&S.op.firstNot&&S.log.length===0?S.op.firstNot:null;   /* "Anything vs sidelines": never 1.e4 / 1.d4 */
+  if(no){ const keep=bk.rows.filter(r=>!no.includes(r.uci.slice(0,4))); if(keep.length) bk={...bk,rows:keep} }
   let rows=bk.rows.filter(r=>r.share>=min); if(!rows.length) rows=[bk.rows.slice().sort((a,b)=>b.games-a.games)[0]];
   const w=r=>trappy?Math.sqrt(r.games)*(r.games>=20?Math.pow(practical(r,mover)/0.5,6):1):Math.pow(Math.max(r.share,0.005),0.75);
   return pickW(rows,rows.map(w)).uci;
@@ -476,6 +483,8 @@ function endLine(msg){
   finalEval(S.op.id,S.lineId);
   if(!S.misses.length&&Settings.get('autoNext')){ const id=S.lineId; setTimeout(()=>{ if(S.lineId===id&&S.phase==='done'&&document.body.dataset.view==='openings') newLine() },2500) }
 }
+/* E / End line: stop the line where you are. In Rated mode only the moves you played are scored. */
+function endHere(){ if(!S.op||!S.g||S.phase!=='await'||S.busy) return false; if(!S.userMoves) return false; endLine('Line ended here.') }
 /* Stockfish's view of the final position (White's side): stored with the line for Statistics; shown with "Stockfish info". */
 async function finalEval(id,lid){
   if(SharedEngine.failed) return; const fen=S.g.fen(); const g=new Chess(fen); if(g.game_over()) return;
@@ -548,6 +557,9 @@ function renderSide(){
   { const ms=stats(SID()).mistakes||[]; if(ms.length){ const b=document.createElement('button'); b.className='btn sm'; b.id='o-review'; b.textContent=`Review mistakes (${ms.length})`;
     b.title='Replay a position you missed in this opening; finding the move first try takes it off the list';
     b.addEventListener('click',()=>{ const l=stats(SID()).mistakes||[]; if(l.length) newLine(l[Math.floor(Math.random()*l.length)]) }); btns.appendChild(b) } }
+  if(PRESETS.some(o=>o.id===S.op.id)){ const h=document.createElement('button'); h.className='btn sm'; h.id='o-hide'; h.textContent='Hide this opening';
+    h.title='Take it off your list. Its rating and stats are kept; Settings → Restore hidden openings brings it back.';
+    h.addEventListener('click',()=>{ const l=new Set(Store.get('ohidden')||[]); l.add(S.op.id); Store.put('ohidden',[...l]); S.op=null; renderList(); selectOpening(firstListed().id) }); btns.appendChild(h) }
   if(S.op.custom){ const e=document.createElement('button'); e.className='btn sm'; e.id='o-editpos'; e.textContent='Rename or edit'; e.addEventListener('click',()=>openNew(S.op)); btns.appendChild(e);
     const d=document.createElement('button'); d.className='btn sm'; d.id='o-delpos'; d.textContent='Delete position';
     d.addEventListener('click',()=>{ if(confirm('Delete this position and its stats?')) deleteCustom(S.op.id) }); btns.appendChild(d) }
@@ -585,6 +597,7 @@ function renderSide(){
 }
 function tools(){
   const b=$('o-back'); if(b) b.disabled=!canTakeBack();
+  const eh=$('o-endhere'); if(eh) eh.disabled=!(S.op&&S.g&&S.phase==='await'&&!S.busy&&S.userMoves>0);
   const n=S.log?S.log.length:0, at=browsing()?S.browse:n;
   $('o-prev').disabled=!S.g||at<=0; $('o-next').disabled=!browsing();
   $('o-browsenote').hidden=!browsing(); if(browsing()) $('o-browsenote').textContent=`Viewing move ${S.browse} of ${n} · → or End to come back`;
@@ -747,6 +760,7 @@ function init(){
   $('o-endnext').addEventListener('click',newLine);
   $('o-hint').addEventListener('click',hint);
   $('o-back').addEventListener('click',takeBack);
+  $('o-endhere').addEventListener('click',endHere);
   $('o-prev').addEventListener('click',()=>browse((browsing()?S.browse:S.log.length)-1));
   $('o-next').addEventListener('click',()=>{ if(browsing()) browse(S.browse+1) });
   $('o-flip').addEventListener('click',()=>{ board.flip(); S.orientSet=board.orient!==myColor(); Shapes.auto($('o-board'),noteShapes()) });
@@ -809,18 +823,18 @@ function init(){
   document.addEventListener('keydown',e=>{
     if(document.body.dataset.view!=='openings') return;
     if(e.key==='Escape'){ for(const id of ['o-setmodal','o-statsmodal','o-importmodal','o-newmodal']) $(id).hidden=true; if(!$('o-pop').hidden) setPop(false); return }
-    if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)||e.altKey||e.ctrlKey||e.metaKey) return;
-    if(!$('o-setmodal').hidden||!$('o-statsmodal').hidden||!$('o-importmodal').hidden||!$('o-newmodal').hidden) return;
-    const k=e.key.length===1?e.key.toLowerCase():e.key; let used=true;
-    if(k==='n') newLine(); else if(k==='h') hint(); else if(k==='f') $('o-flip').click(); else if(k==='b') takeBack();
-    else if(k==='ArrowLeft') browse((browsing()?S.browse:S.log.length)-1); else if(k==='ArrowRight'){ if(browsing()) browse(S.browse+1) }
-    else if(k==='Home') browse(0); else if(k==='End') browse(null); else used=false;
-    if(used&&k.length>1) e.preventDefault();
   });
+  const modal=()=>!$('o-setmodal').hidden||!$('o-statsmodal').hidden||!$('o-importmodal').hidden||!$('o-newmodal').hidden;
+  const ok=f=>e=>{ if(modal()) return false; return f(e) };
+  Keys.on('openings',{ArrowLeft:['Back a move (view only)',ok(()=>{ if(!S.g) return false; browse((browsing()?S.browse:S.log.length)-1) })],
+    ArrowRight:['Forward a move',ok(()=>{ if(!browsing()) return false; browse(S.browse+1) })],
+    Home:['Start of the line',ok(()=>{ if(!S.g) return false; browse(0) })], End:['Back to the current move',ok(()=>{ if(!S.g) return false; browse(null) })],
+    b:['Take back your move and the reply',ok(()=>takeBack())], r:['Restart: a new line',ok(()=>newLine())], h:['Hint (first the piece, then the move)',ok(()=>hint())],
+    f:['Flip the board',ok(()=>$('o-flip').click())], n:['Next line',ok(()=>newLine())], e:['End the line here (Rated: only the moves you played count)',ok(()=>endHere())]});
   addEventListener('settings-change',()=>{ STAY.clear(); if(document.body.dataset.view==='openings'){ renderSide(); renderBook(); renderEval() } });
   renderList();
   board.set(new Chess(),{orient:'w',locked:true});
 }
-window.OpeningsTab={init,SID,skipList,renderCaptured,customs,saveCustom,deleteCustom,openNew,saveNew,saveCurrent,studyApi,fetchStudy,doImport,syncLevel,soundDemoMoves,get state(){return S},selectOpening,newLine,userMove,parseRepPGN,moveDifficulty,openings,stats,
+window.OpeningsTab={init,PRESETS,renderList,endHere,SID,skipList,renderCaptured,customs,saveCustom,deleteCustom,openNew,saveNew,saveCurrent,studyApi,fetchStudy,doImport,syncLevel,soundDemoMoves,get state(){return S},selectOpening,newLine,userMove,parseRepPGN,moveDifficulty,openings,stats,
   takeBack,canTakeBack,browse,annAt,repPick,ordered,saveOrder,setArrange,moveItem,renderStats,openStats,openSettings,firstListed};
 })();
