@@ -51,6 +51,7 @@ window.Reader=(()=>{
         (i+1===k&&m.note?`<div class="rd-note">${esc(m.note)}</div>`:'')+
         ((m.vars||[]).length?`<details class="rd-vars"><summary>${m.vars.length} side line${m.vars.length>1?'s':''}</summary>${m.vars.map((v,j)=>`<button type="button" class="rd-var" data-v="${i}:${j}">${esc(label(i))}${esc(v.map(x=>x.san).slice(0,4).join(' '))}${v.length>4?' …':''}</button>`).join('')}</details>`:'')+`</div>`).join('')+
       (R.done?`<div class="card rd-done"><b>Chapter complete</b>${R.nextChapter?'<div class="btns"><button type="button" class="btn sm primary" id="rd-nextch">Next chapter →</button></div>':'<p class="note">That was the last line.</p>'}</div>`:'');
+    R.notes.style.paddingBottom=Math.max(24,R.notes.clientHeight-60)+'px';   /* room below, so even the last move can sit at the top */
     const c=R.notes.querySelector('.rd-row.cur'); if(c){ const top=c.parentElement.offsetTop-R.notes.offsetTop; R.notes.scrollTop=k===0?0:top }
     R.prev.disabled=k===0; R.main.hidden=R.li===0;
     R.pos.textContent=k?`${k} / ${L.moves.length}`:`0 / ${L.moves.length}`;

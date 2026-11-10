@@ -20,8 +20,8 @@ select:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
 select[multiple]{background-image:none;padding-right:10px}
 /* The mobile reader (shared/reader.js): board pinned at the top, notes underneath, a fixed bottom bar.
    --rb = the board's share of the screen (35-65, drag handle, remembered). Phones only: the Read button hides elsewhere. */
-.rd-open{display:none}
-@media (orientation:portrait) and (max-width:599.98px),(orientation:landscape) and (max-height:499.98px){.rd-open{display:inline-flex}}
+.btn.rd-open,.rd-open{display:none}
+@media (orientation:portrait) and (max-width:599.98px),(orientation:landscape) and (max-height:499.98px){.btn.rd-open,.rd-open{display:inline-flex}}
 html.reader-open,html.reader-open body{overflow:hidden}
 .reader{position:fixed;inset:0;z-index:90;background:var(--band);color:var(--ink);display:grid;
   grid-template-rows:auto calc(var(--rb,50) * 1vh - 44px) 18px minmax(0,1fr) calc(60px + env(safe-area-inset-bottom,0px));grid-template-columns:100%;
