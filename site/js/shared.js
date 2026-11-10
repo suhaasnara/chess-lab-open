@@ -63,80 +63,16 @@ const wc=p=>2/(1+Math.exp(-0.368208*Math.max(-15,Math.min(15,p))))-1;
 const cpPawns=cp=>Math.abs(cp)>=9900?(cp>0?99:-99):cp/100;
 const fmtEval=p=>p==null?'':(p>0?'+':'')+p.toFixed(1);
 
-/* ---------- One Stockfish worker for the whole app ---------- */
+/* ---------- One Stockfish worker for the whole app (shared/engine.js) ---------- */
+/* The lite WebAssembly build is served with this site (sf/); unpkg and cdnjs are fallbacks
+   for environments that serve the page without its files. */
 window.SharedEngine=(()=>{
-  const emit=()=>dispatchEvent(new Event('engine-change'));
-  /* The lite WebAssembly build is served with this site (sf/); unpkg and cdnjs are fallbacks
-     for environments that serve the page without its files. */
   const HERE=(p=>{ try{ return new URL(p,location.href).href }catch(e){ return p } });
   const SF='https://unpkg.com/stockfish@18.0.8/bin/';
-  const URLS=[
+  return EngineKit.create([
     ['Stockfish 18 lite',HERE('sf/stockfish-18-lite-single.js'),HERE('sf/stockfish-18-lite-single.wasm'),12000],
     ['Stockfish 18 lite (unpkg)',SF+'stockfish-18-lite-single.js',HERE('sf/stockfish-18-lite-single.wasm'),12000],
-    ['Stockfish 10','https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js',null,30000]];
-  let w=null, ok=false, queue=Promise.resolve(), listener=null, failed=false, name='', started=false, readyRes, why='', okIdx=-1, restarts=0;
-  let ready=new Promise(r=>readyRes=r);
-  function tryUrl(k){
-    if(k>=URLS.length){ failed=true; readyRes(); emit(); return }
-    const boot="var F=function(m){postMessage('__sf_fail:'+String(m||'').slice(0,120))};self.addEventListener('unhandledrejection',function(e){e.preventDefault();F(e.reason&&(e.reason.message||e.reason))});self.addEventListener('error',function(e){e.preventDefault();F(e.message)});try{importScripts('"+URLS[k][1]+"')}catch(e){F(e.message)}";
-    let nw; try{ nw=new Worker(URL.createObjectURL(new Blob([boot],{type:'application/javascript'}))+(URLS[k][2]?'#'+encodeURIComponent(URLS[k][2]):'')) }catch(e){ return tryUrl(k+1) }
-    const timer=setTimeout(()=>{ if(!ok){ try{nw.terminate()}catch(_){} if(!why) why=URLS[k][0]+' did not answer in time'; tryUrl(k+1) } },URLS[k][3]);
-    nw.onmessage=e=>{ const l=typeof e.data==='string'?e.data:''; if(!ok&&l.startsWith('__sf_fail')){ clearTimeout(timer); try{nw.terminate()}catch(_){} if(!why) why=URLS[k][0]+' could not start here ('+(l.slice(10)||'unknown reason')+')'; return tryUrl(k+1) } if(!ok&&l==='uciok'){ ok=true; clearTimeout(timer); name=URLS[k][0]; w=nw; okIdx=k; readyRes(); emit() } else if(ok) listener&&listener(l) };
-    nw.onerror=()=>{ clearTimeout(timer); if(!ok){ try{nw.terminate()}catch(_){} tryUrl(k+1) } else { failed=true; emit() } };
-    nw.postMessage('uci');
-  }
-  function start(){ if(started) return; started=true; tryUrl(0) }
-  function restart(){
-    try{ w&&w.terminate() }catch(e){} w=null; ok=false; listener=null; restarts++;
-    ready=new Promise(r=>readyRes=r);
-    if(restarts>5){ failed=true; why='the engine stopped answering repeatedly'; readyRes(); emit(); return }
-    tryUrl(Math.max(0,okIdx));
-  }
-  /* Returns lines sorted best first: [{uci, cp, mate}], cp in pawns from the side to move. */
-  function analyse(fen,depth,multipv=1,limitMs=12000){
-    start();
-    const job=()=>ready.then(()=>new Promise(res=>{
-      if(!w||failed){res(null);return}
-      const lines={}; let done=false;
-      const finish=r=>{ if(done) return; done=true; clearTimeout(t); clearTimeout(kill); listener=null; res(r) };
-      const t=setTimeout(()=>w&&w.postMessage('stop'),limitMs);
-      const kill=setTimeout(()=>{ const got=Object.keys(lines).sort((a,b)=>a-b).map(k=>lines[k]); finish(got.length?got:null); restart() },limitMs+2500);
-      listener=l=>{
-        if(l.startsWith('info')&&l.includes(' pv ')&&l.includes(' score ')){
-          const p=l.split(' '); const mi=p.indexOf('multipv'); const k=mi>=0?+p[mi+1]:1; const si=p.indexOf('score');
-          const cp=p[si+1]==='cp'?parseInt(p[si+2])/100:(parseInt(p[si+2])>0?99:-99); const mate=p[si+1]==='mate'?parseInt(p[si+2]):null;
-          lines[k]={uci:p[p.indexOf('pv')+1],cp,mate};
-        }
-        if(l.startsWith('bestmove')) finish(Object.keys(lines).sort((a,b)=>a-b).map(k=>lines[k]));
-      };
-      w.postMessage('setoption name MultiPV value '+multipv); w.postMessage('position fen '+fen); w.postMessage('go depth '+depth);
-    }));
-    const p=queue.then(job); queue=p.catch(()=>{}); return p;
-  }
-  /* A move at limited strength (UCI_LimitStrength / UCI_Elo, the engine's own scale, 1320-3190).
-     The limit is switched off again right after, so analysis keeps full strength; jobs share the
-     one queue, so they never overlap. */
-  function play(fen,elo,movetime=700){
-    start();
-    const job=()=>ready.then(()=>new Promise(res=>{
-      if(!w||failed){res(null);return}
-      let done=false; const finish=u=>{ if(done) return; done=true; clearTimeout(kill); listener=null; w&&w.postMessage('setoption name UCI_LimitStrength value false'); res(u) };
-      const kill=setTimeout(()=>{ finish(null); restart() },movetime+6000);
-      listener=l=>{ if(l.startsWith('bestmove')){ const u=l.split(' ')[1]; finish(u&&u!=='(none)'?u:null) } };
-      w.postMessage('setoption name MultiPV value 1'); w.postMessage('setoption name UCI_LimitStrength value true');
-      w.postMessage('setoption name UCI_Elo value '+Math.max(1320,Math.min(3190,Math.round(elo))));
-      w.postMessage('position fen '+fen); w.postMessage('go movetime '+movetime);
-    }));
-    const p=queue.then(job); queue=p.catch(()=>{}); return p;
-  }
-  return {start,analyse,play,restart,get failed(){return failed},get ready(){return ok},get name(){return name},get why(){return why},get restarts(){return restarts}};
-})();
-/* Remember finished searches, so revisiting a position answers instantly. */
-(()=>{ const raw=SharedEngine.analyse, cache=new Map(), inflight=new Map();
-  SharedEngine.analyse=function(fen,depth,mpv=1,limitMs){ const k=fen+'|'+depth+'|'+mpv; if(cache.has(k)) return Promise.resolve(cache.get(k));
-    if(inflight.has(k)) return inflight.get(k);
-    const p=raw(fen,depth,mpv,limitMs).then(r=>{ inflight.delete(k); if(r&&r.length){ cache.set(k,r); if(cache.size>3000) cache.delete(cache.keys().next().value) } return r },e=>{ inflight.delete(k); throw e });
-    inflight.set(k,p); return p };
+    ['Stockfish 10','https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js',null,30000]]);
 })();
 
 /* The board (Board.draw / Board.bind, makeBoard, endBanner): shared/board.js. */
