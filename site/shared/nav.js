@@ -1,6 +1,6 @@
 /* Shared (Chess Lab and Chess Lab Open). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
    The header's tab row: a few main tabs, an Extra drop-down for the rest, Settings at the right (inside Extra on phones).
-     Nav.mount(navEl, {main:[[view,label],...], extra:[[view,label,description],...]})
+     Nav.mount(navEl, {main:[[view,label,shortLabelOnPhones?],...], extra:[[view,label,description],...]})
      Nav.set(view)   marks the current tab (an Extra item marks the Extra button)
    Tabs are plain #view links, so each site's router keeps listening to hashchange. The menu is position:fixed under its
    button because the tab row scrolls sideways on phones. Styles: shared/shared.css ("Header tabs"). */
@@ -20,7 +20,7 @@ window.Nav=(function(){
   function mount(el,cfg){
     nav=el; extra=(cfg.extra||[]).map(x=>x[0]);
     nav.classList.add('tabs'); if(!nav.getAttribute('aria-label')) nav.setAttribute('aria-label','Sections');
-    nav.innerHTML='<div class="inner">'+(cfg.main||[]).map(([v,l])=>`<a href="#${v}" data-view="${v}">${esc(l)}</a>`).join('')
+    nav.innerHTML='<div class="inner">'+(cfg.main||[]).map(([v,l,sh])=>`<a href="#${v}" data-view="${v}"${sh?` aria-label="${esc(l)}"`:''}>${sh?`<span class="lfull">${esc(l)}</span><span class="lshort" aria-hidden="true">${esc(sh)}</span>`:esc(l)}</a>`).join('')
       +(extra.length?`<button type="button" class="xtab" id="x-btn" aria-haspopup="true" aria-expanded="false" aria-controls="x-menu">Extra${CARET}</button>`:'')
       +'<span class="tabgap"></span>'
       +`<a href="#settings" data-view="settings" class="settab" title="Settings" aria-label="Settings">${GEAR}<span class="setlbl">Settings</span></a></div>`;

@@ -76,6 +76,7 @@ nav.tabs a:hover{color:var(--head)}
 nav.tabs a[aria-current="page"]{color:var(--head);border-bottom-color:var(--blue);font-weight:600}
 nav.tabs .xtab{display:inline-flex;align-items:center;gap:6px;background:none;border:0;border-bottom:2px solid transparent;font:inherit;font-size:.95rem;color:var(--muted);padding:13px 12px;cursor:pointer;white-space:nowrap}
 nav.tabs .xtab:hover{color:var(--head)}
+nav.tabs .lshort{display:none}
 nav.tabs .xtab[aria-expanded="true"] svg{transform:rotate(180deg)}
 nav.tabs .xtab.cur{color:var(--head);border-bottom-color:var(--blue);font-weight:600}
 nav.tabs .tabgap{flex:1 1 auto;min-width:8px}
@@ -88,6 +89,6 @@ nav.tabs a.settab svg{flex:none;width:22px;height:22px}
 .xmenu a:hover,.xmenu a:focus-visible{background:var(--accent-soft);outline:none}
 .xmenu a[aria-current="page"] b{color:var(--blue)}
 .xmenu .xset{display:none}
-@media (max-width:480px){nav.tabs a.settab{display:none}.xmenu .xset{display:flex;border-top:1px solid var(--line);margin-top:4px;padding-top:11px}
+@media (max-width:480px){nav.tabs .lfull{display:none}nav.tabs .lshort{display:inline}nav.tabs a.settab{display:none}.xmenu .xset{display:flex;border-top:1px solid var(--line);margin-top:4px;padding-top:11px}
   nav.tabs a,nav.tabs .xtab{padding:12px 4px;font-size:.84rem}nav.tabs .tabgap{min-width:0}nav.tabs .inner{gap:0;padding-left:8px;padding-right:8px}}
 @media print{nav.tabs,.xmenu{display:none!important}}
