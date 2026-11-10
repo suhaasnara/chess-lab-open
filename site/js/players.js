@@ -10,7 +10,7 @@ const S={pid:null,color:'w',line:[],board:null,sheet:false,busy:false};
 const index=()=>Store.get('players-index')||[];
 const pdata=id=>Store.get('player-'+id);
 const TREES=new Map();
-const SPEEDS=[['blitz','Blitz'],['rapid','Rapid'],['classical','Classical']];
+const SPEEDS=[['bullet','Bullet'],['blitz','Blitz'],['rapid','Rapid'],['classical','Classical']];
 
 /* ---------- Fetching (public APIs, in your browser) ---------- */
 async function fetchLichess(user,speeds){

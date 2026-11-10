@@ -491,7 +491,7 @@ section('t20: Progress charts');
   for(let i=0;i<40&&!(w.CalcTab.lib||[]).length;i++) await sleep(100);
   const D=864e5, now=Date.now();
   w.Store.put('stats-preset-italian',{rating:1850,lines:3,n2:3,history:[{t:now-3*D,r:1810,m:'r'},{t:now-2*D,r:1830,m:'r'},{t:now-D,r:1850,m:'r'}]});
-  w.Store.put('tac-history',[{t:now-2*D,r:1990},{t:now-D,r:2010},{t:now,r:2030}]);
+  w.Store.put('tac-history',[{t:now-2*D,r:1990},{t:now-D,r:2010},{t:now,r:2030}]); w.Store.put('tac-rating',{r:2030,n:6});
   const lib=w.CalcTab.lib; w.Store.put('calc-progress',{[lib[0].id]:{score:1,t:now},[lib[lib.length-1].id]:{score:0.5,t:now-D}});
   w.location.hash='#progress'; await sleep(80);
   const q=s=>w.document.querySelector(s);
@@ -508,7 +508,9 @@ section('t20: Progress charts');
 }
 {
   const {w}=await makePage(); w.location.hash='#progress'; await sleep(80);
-  assert(/Train a few lines/.test(w.document.getElementById('p-opchart').textContent)&&/Solve a few puzzles/.test(w.document.getElementById('p-tacchart').textContent),'empty charts say what to do first');
+  assert(/Train a few lines/.test(w.document.getElementById('p-opchart').textContent)&&/Solve 5 puzzles/.test(w.document.getElementById('p-tacchart').textContent),'empty charts say what to do first');
+  w.Store.put('tac-rating',{r:2002,n:1}); w.Store.put('tac-history',[{t:1,r:2000},{t:2,r:2002}]); w.ProgressTab.render(); await sleep(20);
+  assert(/–/.test(w.document.getElementById('p-stats').textContent)&&/after 5 rated puzzles; 1 so far/.test(w.document.getElementById('p-stats').textContent)&&/Solve 5 puzzles/.test(w.document.getElementById('p-tacchart').textContent),'tile and chart agree: no rating from 1 puzzle (the 12-progress.png bug)');
 }
 
 section('t8: data sanity — puzzles legal, demo book and names consistent');

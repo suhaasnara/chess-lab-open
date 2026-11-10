@@ -5,6 +5,8 @@
    Line 2px in the site navy, recessive grid, a dot + tooltip on every point (hover / tap). ---------- */
 const NS='http://www.w3.org/2000/svg';
 const fmtDay=t=>new Date(t).toLocaleDateString(undefined,{month:'short',day:'numeric'});
+const TAC_MIN=5;   /* the puzzle rating shows (tile and chart alike) after this many rated puzzles */
+const rating=()=>Store.get('tac-rating')||{r:2000,n:0};
 function lineChart(el,pts,{empty,label}){
   if(pts.length<2){ el.innerHTML=`<p class="note">${esc(empty)}</p>`; return }
   const W=520,H=190,L=44,R=12,T=12,B=26;
@@ -63,7 +65,7 @@ function charts(withStats){
   if(ops.some(x=>x.o.id===cur)) sel.value=cur;
   const pick=ops.find(x=>x.o.id===sel.value);
   lineChart($('p-opchart'),pick?pick.st.history.map(h=>[h.t,h.r]):[],{empty:'Train a few lines in Rated mode to see your opening rating move.',label:'rating'});
-  lineChart($('p-tacchart'),(Store.get('tac-history')||[]).map(h=>[h.t,h.r]),{empty:'Solve a few puzzles (first try counts) to see your puzzle rating.',label:'puzzle rating'});
+  { const n=(rating().n||0); lineChart($('p-tacchart'),n>=TAC_MIN?(Store.get('tac-history')||[]).map(h=>[h.t,h.r]):[],{empty:`Solve ${TAC_MIN} puzzles (first try counts) to see your puzzle rating${n?` — ${n} so far`:''}.`,label:'puzzle rating'}) }
   const cp=Store.get('calc-progress')||{}, lib=(window.CalcTab&&CalcTab.lib)||[];
   const bands=[[0,2200,'Under 2200'],[2200,2400,'2200–2399'],[2400,2600,'2400–2599'],[2600,9999,'2600+']].map(([lo,hi,label])=>{
     const xs=lib.filter(z=>z.rating>=lo&&z.rating<hi&&cp[z.id]).map(z=>cp[z.id].score); return {label,n:xs.length,v:xs.length?xs.reduce((a,b)=>a+b,0)/xs.length:0} });
@@ -80,8 +82,8 @@ function render(){
   const eg=window.EndgamesTab?EndgamesTab.stats():{solved:0,total:0};
   $('p-stats').innerHTML=`
     <div class="stat"><b>${withStats.reduce((a,x)=>a+x.st.lines,0)}</b><span class="note">opening lines trained</span></div>
-    <div class="stat"><b>${tac.n?tac.r:'–'}</b><span class="note">puzzle rating (${tac.n} rated)</span></div>
-    <div class="stat"><b>${tsolved}</b><span class="note">puzzles solved</span></div>
+    <div class="stat"><b>${tac.n>=TAC_MIN?tac.r:'–'}</b><span class="note">puzzle rating (${tac.n>=TAC_MIN?Help.n(tac.n,'rated puzzle'):`after ${TAC_MIN} rated puzzles; ${tac.n} so far`})${Help.q('Elo against each puzzle’s Lichess rating, first try only. It shows once you have solved or missed '+TAC_MIN+' puzzles, so one lucky puzzle can’t set it.')}</span></div>
+    <div class="stat"><b>${tsolved}</b><span class="note">${tsolved===1?'puzzle':'puzzles'} solved</span></div>
     <div class="stat"><b>${Object.values(dp).filter(x=>x.ok).length} / ${dr.length}</b><span class="note">game drills solved</span></div>
     <div class="stat"><b>${eg.solved} / ${eg.total||'–'}</b><span class="note">endgames solved</span></div>`;
   const t=$('p-table');

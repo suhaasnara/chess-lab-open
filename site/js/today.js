@@ -57,7 +57,7 @@ function items(){
     title:'Endgame: '+eg.title,meta:(eg.goal==='win'?'win it':'hold the draw')+' against perfect defence'});
   const o=O.find(x=>x.id===t.opening);
   if(o){ const st=OpeningsTab.stats(o.id); out.push({kind:'opening',id:o.id,obj:o,done:!!(st.last&&st.last>=s),
-    title:'Opening line: '+o.name,meta:st.lines?`rating ${st.rating} · ${st.lines} lines`:'new for you'}) }
+    title:'Opening line: '+o.name,meta:st.lines?`rating ${st.rating} · ${Help.n(st.lines,'line')}`:'new for you'}) }
   return out;
 }
 function start(it){

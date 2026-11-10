@@ -12,3 +12,9 @@
 .qpop{display:block;margin:4px 0;padding:6px 8px;max-width:320px;background:var(--callout);color:var(--ink);border-radius:var(--radius);font-size:13px;line-height:1.35;font-weight:400;text-align:left;white-space:normal}
 /* "needs internet" card (shared/net.js) */
 .needs-net p{margin:4px 0}
+/* Dropdowns that match the site (native behaviour kept, so phones still get their own picker). Site rules after this win. */
+select{-webkit-appearance:none;appearance:none;background:var(--white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%23889' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 10px center/11px 8px;
+  border:1px solid var(--line);border-radius:var(--radius);padding:7px 30px 7px 10px;color:var(--ink);font:inherit;min-height:36px;cursor:pointer;max-width:100%}
+select:hover{border-color:var(--muted)}
+select:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+select[multiple]{background-image:none;padding-right:10px}
