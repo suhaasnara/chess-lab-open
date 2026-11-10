@@ -92,3 +92,4 @@ nav.tabs a.settab svg{flex:none;width:22px;height:22px}
 @media (max-width:480px){nav.tabs .lfull{display:none}nav.tabs .lshort{display:inline}nav.tabs a.settab{display:none}.xmenu .xset{display:flex;border-top:1px solid var(--line);margin-top:4px;padding-top:11px}
   nav.tabs a,nav.tabs .xtab{padding:12px 4px;font-size:.84rem}nav.tabs .tabgap{min-width:0}nav.tabs .inner{gap:0;padding-left:8px;padding-right:8px}}
 @media print{nav.tabs,.xmenu{display:none!important}}
+@media (max-width:400px){nav.tabs a,nav.tabs .xtab{padding:12px 3px;font-size:.8rem}}   /* small phones: Open's 6 tabs + Extra fit too */
