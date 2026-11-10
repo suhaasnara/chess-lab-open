@@ -1230,6 +1230,17 @@ section('t47: Watch — starter videos (real, checked links), added with one cli
   assert($('watch').querySelectorAll('[data-starter]').length===2,'and leaves the other two on offer');
 }
 
+section('t48: prefilled links — #analyze?site=&u= and #players?site=&u= fill the form, nothing runs by itself');
+{
+  let fetched=0; const {w}=await makePage({url:'https://chess-lab-open.test/#analyze?site=lichess&u=suhaasn&blitz=1',fetch:async u=>{ if(/lichess\.org|chess\.com/.test(u)) fetched++; return null }});
+  await sleep(100); const $=id=>w.document.getElementById(id);
+  assert(w.document.body.dataset.view==='analyze','the route still opens Analyze');
+  assert($('a-site').value==='lichess'&&$('a-user').value==='suhaasn'&&$('a-blitz').checked,'the form is filled');
+  assert(fetched===0,'nothing is fetched until you press Fetch');
+  w.location.hash='#players?site=chesscom&u=CoachSuhaas'; await sleep(80);
+  assert(w.document.body.dataset.view==='players'&&$('p-site').value==='chesscom'&&$('p-user').value==='CoachSuhaas','Players: the add form is filled');
+}
+
 section('t37: shared code (site/shared/) — position ids never change, one PGN reader');
 {
   const {w}=await makePage();

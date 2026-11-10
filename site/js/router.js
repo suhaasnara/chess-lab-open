@@ -6,7 +6,7 @@ const BOARD_VIEWS=['openings','tactics','calc','endgames','drills','play','guess
 const TITLES={today:'Today',openings:'Openings',tactics:'Tactics',calc:'Calculation',endgames:'Endgames',analyze:'Analyze my games',drills:'Drills',play:'Play',guess:'Guess the move',players:'Players',watch:'Watch',progress:'Progress',settings:'Settings'};
 let shown=null, first=true;
 function route(){
-  let v=(location.hash||'#today').slice(1).split('/')[0];
+  let v=(location.hash||'#today').slice(1).split('?')[0].split('/')[0];   /* #analyze?site=lichess&u=name: a prefilled link */
   if(!VIEWS.includes(v)) v='today';
   const changed=shown!==null&&shown!==v; shown=v;
   document.body.dataset.view=v;

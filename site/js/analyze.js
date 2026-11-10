@@ -253,7 +253,11 @@ function renderReport(user,site,rows,total,final){
 }
 function uciOf(fen,san){ const g=new Chess(fen); const m=g.move(san,{sloppy:true}); return m?m.from+m.to+(m.promotion||''):null }
 
+/* #analyze?site=lichess|chesscom&u=<name>: fill the form (from a link, e.g. the private Chess Lab); you press Fetch yourself */
+function prefill(){ const m=location.hash.match(/^#analyze\?(.*)$/); if(!m) return; const q=new URLSearchParams(m[1]);
+  if(q.get('site')==='lichess'||q.get('site')==='chesscom') $('a-site').value=q.get('site'); if(q.get('u')) $('a-user').value=q.get('u').slice(0,40); if(q.get('blitz')==='1'&&$('a-blitz')) $('a-blitz').checked=true }
 function init(){
+  prefill(); addEventListener('hashchange',prefill);
   $('a-capnote').textContent=String(CAP_CHESSCOM);
   $('a-go').addEventListener('click',()=>{ const u=$('a-user').value.trim(); if(!u){ note('Type a username.'); return }
     run($('a-site').value,u) });

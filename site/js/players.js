@@ -165,7 +165,11 @@ function sheetHtml(p){
 function select(id){ S.pid=id; S.line=[]; S.sheet=false; S.orientSet=false; render() }
 function train(myColor){ const pid=S.pid; location.hash='#openings'; setTimeout(()=>OpeningsTab.selectOpening('pl-'+pid+'-'+myColor),30) }
 
+/* #players?site=lichess|chesscom&u=<name>: fill the add form (a prefilled link); you press Add yourself */
+function prefill(){ const m=location.hash.match(/^#players\?(.*)$/); if(!m) return; const q=new URLSearchParams(m[1]);
+  const st=$('p-site'), us=$('p-user'); if(st&&(q.get('site')==='lichess'||q.get('site')==='chesscom')) st.value=q.get('site'); if(us&&q.get('u')) us.value=q.get('u').slice(0,40) }
 function init(){
+  setTimeout(prefill,0); addEventListener('hashchange',prefill);
   const sec=$('players'); if(!sec) return;
   $('p-speeds').innerHTML=SPEEDS.map(([v,l])=>`<label class="toggle" style="margin:0"><input type="checkbox" value="${v}"${v==='bullet'?'':' checked'}> ${l}</label>`).join('');
   $('p-form').addEventListener('submit',async e=>{ e.preventDefault(); if(S.busy) return;
