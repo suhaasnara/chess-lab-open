@@ -116,9 +116,13 @@ async function liveLine(z){ const g=new Chess(z.fen), out=[];
   for(let i=0;i<40&&!g.game_over();i++){ const d=await Net.tablebase(g.fen()); if(!d||!d.moves||!d.moves.length) break;
     const u=g.turn()===S.me?(EndgameCore.options(d,z.goal)||{}).b?.split(' ')[0]||d.moves[0].uci:await EndgameCore.pickReply(g.fen(),d,null); if(!u) break; g.move(U(u)); out.push(u) }
   return out }
+/* ← → during play: look back through the moves played (view only); at the end the board takes moves again */
+function look(d){ if(!S.cur||!S.hist.length) return false; const n=S.hist.length; let k=(S.look==null?n:S.look)+d; k=Math.max(0,Math.min(n,k)); S.look=k===n?null:k;
+  const g=new Chess(S.cur.fen); let last=null; for(const h of S.hist.slice(0,k)){ const m=g.move(U(h.u)); if(m) last={from:m.from,to:m.to} }
+  board.set(S.look==null?S.g:g,{last,locked:S.look!=null||S.phase!=='play'}); $('eg-step').hidden=S.look==null; if(S.look!=null) $('eg-step').textContent=`move ${k} of ${n} · → to come back` }
 function load(z){
   if(!z) return; if(endbar) endbar.hide();
-  S.cur=z; S.g=new Chess(z.fen); S.hist=[]; { const sl=$('eg-readslot'); if(sl) sl.innerHTML='' } S.phase='play'; S.busy=false; S.me=S.g.turn(); S.moves=0; S.grades=[]; S.assisted=false; S.counted=false; S.sol=null; S.view=0;
+  S.cur=z; S.look=null; S.g=new Chess(z.fen); S.hist=[]; { const sl=$('eg-readslot'); if(sl) sl.innerHTML='' } S.phase='play'; S.busy=false; S.me=S.g.turn(); S.moves=0; S.grades=[]; S.assisted=false; S.counted=false; S.sol=null; S.view=0;
   board.set(S.g,{last:null,orient:S.me,locked:false});
   status('',goalText(z),'');
   $('eg-facts').innerHTML=`<dt>Goal</dt><dd>${esc(goalText(z))}</dd><dt>Best play</dt><dd>${esc(par(z))}</dd><dt>Graded by</dt><dd id="eg-src">the Lichess tablebase</dd>`;
@@ -154,7 +158,7 @@ function over(){                                  /* after any move: is the exer
   return null;
 }
 async function userMove(from,to,promo){
-  const z=S.cur; if(!z||S.phase!=='play'||S.busy||S.g.turn()!==S.me) return;
+  const z=S.cur; if(!z||S.phase!=='play'||S.busy||S.g.turn()!==S.me||S.look!=null) return;
   const before=S.g.fen(); const t=new Chess(before); const m=t.move({from,to,promotion:promo||'q'}); if(!m) return;
   const uci=m.from+m.to+(m.promotion||'');
   S.busy=true; buttons(); $('eg-tip').hidden=true;
@@ -248,8 +252,8 @@ function init(){
   $('eg-fwd').addEventListener('click',()=>{ S.view++; endbar.hide(); showSol() });
   $('eg-csave').addEventListener('click',saveCustomPos); $('eg-ccancel').addEventListener('click',()=>{ $('eg-custom').hidden=true });
   $('eg-delpos').addEventListener('click',()=>{ if(S.cur&&S.cur.custom&&confirm('Delete this position?')) deleteCustomPos(S.cur.id) });
-  Keys.on('endgames',{ArrowLeft:['Back through the solution',()=>{ if(!S.sol) return false; S.view--; endbar.hide(); showSol() }],
-    ArrowRight:['Forward through the solution',()=>{ if(!S.sol) return false; S.view++; endbar.hide(); showSol() }],
+  Keys.on('endgames',{ArrowLeft:['Back a move (your moves, or the solution)',()=>{ if(S.sol){ S.view--; endbar.hide(); showSol(); return } return look(-1) }],
+    ArrowRight:['Forward a move',()=>{ if(S.sol){ S.view++; endbar.hide(); showSol(); return } return look(1) }],
     b:['Take back your move (and the reply)',()=>takeBack()], h:['Hint',()=>hint()], n:['Next ending',()=>next()], f:['Flip the board',()=>board.flip()]});
 }
 window.EndgamesTab={init,saveCustomPos,customs,deleteCustomPos,liveLine,load,userMove,takeBack,hint,solution,next,pickToday,stats,offline:false,onFinish:null,
