@@ -1,0 +1,35 @@
+name: Tag tactics with openings
+# Run by hand. Adds the Lichess opening family ("op") to the puzzles already in site/data/tactics.json, from the
+# Lichess puzzle database (CC0). The puzzle set and ids don't change. Pushes a review branch tactics-op/<run id>.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch whose tactics.json to tag'
+        default: 'one-codebase'
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: '${{ inputs.ref }}' }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install zstandard==0.23.0
+      - name: Download the Lichess puzzle database (https://database.lichess.org/#puzzles, CC0)
+        run: curl -sSfL -o puzzles.csv.zst https://database.lichess.org/lichess_db_puzzle.csv.zst
+      - name: Tag
+        run: python3 tools/tag_openings.py puzzles.csv.zst site/data/tactics.json | tee coverage.txt
+      - name: Push the review branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "tactics-op/${{ github.run_id }}"
+          git add site/data/tactics.json coverage.txt
+          git commit -m "Tactics: opening families from the Lichess puzzle database (for review)"
+          git push origin "tactics-op/${{ github.run_id }}"
