@@ -8,43 +8,47 @@
 'use strict';
 (function(){
 let board=null, INDEX=null, endbar=null;
-const S={game:null,g:null,ply:0,pts:0,got:0,missed:0,alsoGood:0,done:false,busy:false,hintStage:0,rows:[],answered:false,view:null,read:false};
+const S={src:null,game:null,g:null,ply:0,pts:0,got:0,missed:0,alsoGood:0,done:false,busy:false,hintStage:0,rows:[],answered:false,view:null,read:false};
 /* view: the ply shown while reading the finished game (null = the live game); read: "Show the game" (no guessing, no score) */
 
 function results(){ return Store.get('gtm-results')||{} }
 function saveResult(){ const r=results(); r[S.game.id]={pts:S.pts,max:S.game.maxpts,t:Date.now()}; Store.put('gtm-results',r) }
 
-function renderList(){
-  const el=$('g-list'); el.innerHTML='';
-  const res=results();
-  // two groups when master games are present (index rows with set:"masters"): master games first, then mine
-  const rows=INDEX||[], masters=rows.filter(e=>e.set==='masters'), mine=rows.filter(e=>e.set!=='masters');
-  const own=ownGames().map(o=>({id:o.game.id,own:o.game.id,title:o.title,meta:o.meta}));
-  /* your own games first (imported or fetched), then Suhaas's, then the master games */
-  const groups=[['Your games',own],['Suhaas’s games',mine]]; if(masters.length) groups.push(['Master games',masters]);
-  for(const [head,list] of groups){
-   if(head&&(list.length||head==='Your games')){ const h=document.createElement('h3'); h.className='label glabel'; h.textContent=head; el.appendChild(h) }
-   if(head==='Your games'){ const a=document.createElement('div'); a.className='btns gown'; a.innerHTML='<button class="btn sm" id="g-add">Add a game (PGN)</button>'+(list.length?'':'<span class="note">Paste a game with your notes to play through it here.</span>'); el.appendChild(a); a.querySelector('#g-add').addEventListener('click',openAdd) }
-   for(const e of list){
-    const r=res[e.id];
-    const b=document.createElement('button'); b.className='drill';
-    b.setAttribute('aria-current',S.game&&S.game.id===e.id?'true':'false');
-    b.innerHTML=`<span class="src">${r?r.pts+'/'+r.max:''}</span><span><span class="opp">${esc(e.title)}</span><br><span class="meta">${esc(e.meta)}</span></span>`+
-      (e.own?`<span class="evalchip gdel" role="button" tabindex="0" data-del="${esc(e.own)}" title="Remove this game" aria-label="Remove ${esc(e.title)}">✕</span>`:'<span class="evalchip">&#9654;</span>');
-    b.addEventListener('click',ev=>{ const d=ev.target.closest('[data-del]'); if(d){ ev.stopPropagation(); removeOwn(d.dataset.del); return } load(e.own?ownGame(e.own):e.file) });
-    el.appendChild(b);
-   }
-  }
-  if(!el.children.length) el.innerHTML='<p class="empty">No games yet.</p>';
+/* The lobby (shared screens: Chess Lab's Guess-the-move start page): where the games come from | the list */
+function sources(){
+  const rows=INDEX||[], own=ownGames().map(o=>({id:o.game.id,own:o.game.id,title:o.title,meta:o.meta}));
+  return [['own','Your own PGN','Games you add, with your notes',own],['mine','Suhaas’s games','The author’s own games, annotated',rows.filter(e=>e.set!=='masters')],
+    ['masters','Master games','Famous games from the Lichess broadcasts',rows.filter(e=>e.set==='masters')]];
 }
+function renderList(){
+  const src=sources(), res=results();
+  if(!S.src||!src.some(x=>x[0]===S.src)) S.src=src[0][3].length?'own':'mine';
+  $('g-src').innerHTML=src.map(([k,l,sub,list])=>`<label class="gmopt${S.src===k?' on':''}"><input type="radio" name="g-src" value="${k}" ${S.src===k?'checked':''}><span><b>${esc(l)}</b><span class="note">${esc(sub)} · ${list.length}</span></span></label>`).join('');
+  const list=src.find(x=>x[0]===S.src)[3], played=list.filter(e=>res[e.id]).length;
+  $('g-count').textContent=`${Help.n(list.length,'game')} · ${played} played`;
+  $('g-add').hidden=S.src!=='own';
+  $('g-srcnote').textContent=S.src==='own'?(list.length?'Your games stay in this browser.':'Add a game: paste a PGN with your notes, side lines and arrows, and guess your way through it.'):'';
+  const yr=e=>(String(e.title+' '+e.meta).match(/\b(1[89]\d\d|20\d\d)\b/)||[])[1];
+  const nxt=list.find(e=>!res[e.id]);
+  $('g-start').disabled=!list.length; $('g-start').textContent=nxt?'Start · next unplayed':'Start · first game';
+  $('g-list').innerHTML=list.map(e=>{ const r=res[e.id];
+    return `<button type="button" class="drill" data-id="${esc(e.id)}" aria-current="${!!(S.game&&S.game.id===e.id)}"><span class="evalchip mono">${r?r.pts+'/'+r.max:(yr(e)||'—')}</span><span><div class="opp">${esc(e.title)}</div><div class="meta">${esc(e.meta)}</div></span>`+
+      (e.own?`<span class="evalchip gdel" role="button" tabindex="0" data-del="${esc(e.own)}" title="Remove this game" aria-label="Remove ${esc(e.title)}">✕</span>`:'<span></span>')+'</button>' }).join('')
+    ||`<p class="note">${S.src==='own'?'No games of yours yet.':INDEX?'No games here.':'Loading the games…'}</p>`;
+}
+function entry(id){ const own=ownGame(id); if(own) return own; const e=(INDEX||[]).find(x=>x.id===id); return e?e.file:null }
+function showTrain(on){ $('g-lobby').hidden=on; $('g-train').hidden=!on }
+function lobby(){ S.gen=(S.gen||0)+1; S.game=null; if(endbar) endbar.hide(); showTrain(false); renderList(); scrollTo(0,0) }
 
 async function load(file){
   const game=typeof file==='object'&&file?deep(file):await fetch('data/gtm/'+file).then(r=>r.json()).catch(()=>null);
   if(!game){ status('bad','Could not load the game.',''); return }
   if(endbar) endbar.hide();
   S.game=game; S.g=new Chess(game.fen||undefined); S.ply=0; S.pts=0; S.got=0; S.missed=0; S.alsoGood=0; S.done=false; S.busy=false; S.hintStage=0; S.rows=[]; S.view=null; S.read=false; S.gen=(S.gen||0)+1;
-  readTools();
+  readTools(); showTrain(true);
   const me=game.winner;
+  $('g-head').innerHTML=TV.head({kicker:game.own?'Your game':(INDEX||[]).some(e=>e.id===game.id&&e.set==='masters')?'Master game':'Suhaas’s game',
+    title:`${esc(game.white)} – ${esc(game.black)}`,chips:[esc([game.event,game.date].filter(Boolean).join(' · ')),game.opening?esc(game.opening[1]):'',esc(game.result),`You play ${me==='w'?'White':'Black'}`]});
   $('g-graphcard').hidden=true; $('g-tablewrap').hidden=true;
   board.set(S.g,{orient:me,last:null});
   $('g-facts').innerHTML=`<dt>White</dt><dd>${esc(game.white)}${game.we?' ('+esc(game.we)+')':''}</dd>
@@ -250,6 +254,13 @@ function init(){
   endbar=endBanner($('g-board'),()=>{ const i=(INDEX||[]).findIndex(e=>S.game&&e.id===S.game.id); const e=INDEX[(i+1)%INDEX.length]; if(e) load(e.file) },'Next game');
   board.set(new Chess(),{locked:true});
   fetch('data/gtm/index.json').then(r=>r.json()).then(j=>{ INDEX=j; renderList() }).catch(()=>{ INDEX=[]; renderList() });
+  $('g-src').addEventListener('change',e=>{ if(e.target.name==='g-src'){ S.src=e.target.value; renderList() } });
+  $('g-list').addEventListener('click',ev=>{ const d=ev.target.closest('[data-del]'); if(d){ ev.stopPropagation(); removeOwn(d.dataset.del); return }
+    const b=ev.target.closest('.drill[data-id]'); if(b){ const f=entry(b.dataset.id); if(f) load(f) } });
+  $('g-add').addEventListener('click',openAdd);
+  $('g-start').addEventListener('click',()=>{ const res=results(), list=sources().find(x=>x[0]===S.src)[3]; const e=list.find(x=>!res[x.id])||list[0]; if(e) load(e.own?ownGame(e.own):e.file) });
+  $('g-back').addEventListener('click',lobby);
+  TV.fitBoard('#g-wrap','#g-tools');
   $('g-hint').addEventListener('click',hint);
   $('g-flip').addEventListener('click',()=>board.flip());
   $('g-restart').addEventListener('click',()=>{ if(!S.game) return; if(S.game.own) load(ownGame(S.game.id)); else load(INDEX.find(e=>e.id===S.game.id).file) });
@@ -347,7 +358,7 @@ async function addGames(){
   Store.put('gtm-own',own);
   if(added&&!Store.get('gtm-own')){ err.textContent='This browser has no room left to store those games.'; return }
   err.textContent=added?'':skipped?'Those games are already in your list.':'';
-  if(added){ $('g-addmodal').hidden=true; $('g-addbox').value=''; renderList(); load(last) }
+  if(added){ $('g-addmodal').hidden=true; $('g-addbox').value=''; S.src='own'; renderList(); load(last) }
 }
 /* evals for the graph of your own game, after you finish it (depth 10, White's side; stored with the game) */
 async function ownEvals(g){
@@ -359,5 +370,5 @@ async function ownEvals(g){
   const own=ownGames(), o=own.find(x=>x.game.id===g.id); if(o){ o.game.evs=evs; Store.put('gtm-own',own) }
   if(S.game&&S.game.id===g.id){ S.game.evs=evs; drawGraph() }
 }
-window.GtmTab={init,load,userMove,hint,drawGraph,showGame,viewAt,parseGames,addGames,ownGames,get state(){return S}};
+window.GtmTab={init,load,lobby,userMove,hint,drawGraph,showGame,viewAt,parseGames,addGames,ownGames,get state(){return S}};
 })();

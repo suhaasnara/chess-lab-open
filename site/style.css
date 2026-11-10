@@ -26,7 +26,7 @@ body[data-view]:not([data-view=today]) .hero{display:none}
 .hero p{margin:6px 0 0;color:var(--blue-on-navy);font-size:.95rem;max-width:62ch}
 .hero a{color:var(--blue-on-navy)}
 main.inner{padding-block:20px 44px}
-body[data-view="openings"] main.inner,body[data-view="tactics"] main.inner,body[data-view="calc"] main.inner,body[data-view="endgames"] main.inner,body[data-view="drills"] main.inner,body[data-view="play"] main.inner,body[data-view="guess"] main.inner{max-width:1500px}
+body[data-view="openings"] main.inner,body[data-view="tactics"] main.inner,body[data-view="endgames"] main.inner,body[data-view="drills"] main.inner,body[data-view="today"] main.inner{max-width:1500px}   /* Play, Calculation, Guess the move: widths in shared/trainview.css */
 
 /* Shared pieces of UI */
 .label{font-size:.72rem;text-transform:uppercase;letter-spacing:.14em;color:var(--blue);font-weight:600}
@@ -327,7 +327,7 @@ body.welcomed[data-view="today"] .hero{display:none}
 .shkey{font-size:.76rem;margin:0 0 8px}.shtab{font-size:.85rem}.shtab td{padding:5px 8px}
 @media print{
   body.print-sheet .tabs,body.print-sheet .hero,body.print-sheet footer,body.print-sheet .p-left,body.print-sheet .noprint,body.print-sheet section:not(#players){display:none!important}
-  body.print-sheet #players .grid{display:block}body.print-sheet .card{border:1px solid #ccc;break-inside:avoid}
+  body.print-sheet #players .tv3{display:block}body.print-sheet #p-grid{display:none!important}body.print-sheet .card{border:1px solid #ccc;break-inside:avoid}
   body.print-sheet,body.print-sheet main.inner{background:#fff;color:#000;padding:0}
 }
 /* Watch */

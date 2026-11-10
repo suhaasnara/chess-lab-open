@@ -51,14 +51,14 @@
 .tv .progressbar i{display:block;height:100%;background:var(--brass-light)}
 
 /* Right: the coach card (kicker, title, small pills), then the status and the rest */
-.tv .ohead{padding:10px 14px 12px}
-.tv .ohtop{display:flex;align-items:center;gap:8px}.tv .ohtop .label{margin-right:auto;white-space:nowrap;letter-spacing:.1em;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
-.tv .ohtop .label.wrap{white-space:normal;line-height:1.45}
-.tv .ohead h2{font-size:1.2rem;margin:0;min-width:0}
-.tv .ohead .elo{font-size:.8rem;color:var(--muted);font-weight:400}
-.tv .ohchips{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}.tv .ohchips>span{font-size:.72rem;font-weight:600;color:var(--muted);background:var(--band);border:1px solid var(--line);border-radius:999px;padding:0 8px}
-.tv .ohead .seg.mini{display:inline-flex;margin-top:10px}
-.tv .dfoot{font-size:.76rem;margin:0}
+:is(.tv,.tv3,.tvplay) .ohead{padding:10px 14px 12px}
+:is(.tv,.tv3,.tvplay) .ohtop{display:flex;align-items:center;gap:8px}:is(.tv,.tv3,.tvplay) .ohtop .label{margin-right:auto;white-space:nowrap;letter-spacing:.1em;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+:is(.tv,.tv3,.tvplay) .ohtop .label.wrap{white-space:normal;line-height:1.45}
+:is(.tv,.tv3,.tvplay) .ohead h2{font-size:1.2rem;margin:0;min-width:0}
+:is(.tv,.tv3,.tvplay) .ohead .elo{font-size:.8rem;color:var(--muted);font-weight:400}
+:is(.tv,.tv3,.tvplay) .ohchips{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}:is(.tv,.tv3,.tvplay) .ohchips>span{font-size:.72rem;font-weight:600;color:var(--muted);background:var(--band);border:1px solid var(--line);border-radius:999px;padding:0 8px}
+:is(.tv,.tv3,.tvplay) .ohead .seg.mini{display:inline-flex;margin-top:10px}
+:is(.tv,.tv3,.tvplay) .dfoot{font-size:.76rem;margin:0}
 
 /* Narrower windows: the coach card goes under the board; phones: one column, the board first */
 @media (max-width:1180px){.tv,.grid.tv{grid-template-columns:minmax(0,280px) minmax(0,1fr)}.tv .panel{grid-template-columns:minmax(0,1fr)}}
@@ -95,9 +95,6 @@ body[data-view="progress"] main.inner{padding-top:14px}
 .tv3>.tvleft{display:flex;flex-direction:column;gap:10px;min-width:0}.tv3>.tvleft .tvback{align-self:flex-start}
 .tv3>.boardwrap{min-width:0;width:100%;justify-self:center;max-width:min(100%,calc(100vh - 150px),720px,var(--bfit,9999px))}
 .tv3>.side{display:flex;flex-direction:column;gap:12px;min-width:0}
-.tv3 .ohead{padding:10px 14px 12px}.tv3 .ohead h2{font-size:1.2rem;margin:0}
-.tv3 .ohtop{display:flex;align-items:center;gap:8px}.tv3 .ohtop .label{margin-right:auto;letter-spacing:.1em;line-height:1.45}
-.tv3 .ohchips{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}.tv3 .ohchips>span{font-size:.72rem;font-weight:600;color:var(--muted);background:var(--band);border:1px solid var(--line);border-radius:999px;padding:0 8px}
 @media (max-width:1180px){
   .tv3{grid-template-columns:minmax(0,1fr) minmax(0,340px);grid-template-rows:repeat(7,auto) 1fr;gap:10px 18px}
   .tv3>.tvleft,.tv3>.side{display:contents}
@@ -127,3 +124,19 @@ body[data-view="progress"] main.inner{padding-top:14px}
 .tvwatch .waadd{margin-bottom:12px}.tvwatch .waadd summary{cursor:pointer;font-weight:600;color:var(--head)}
 .tvwatch #wa-count{margin:0 0 6px}
 body[data-view="play"] main.inner{max-width:1200px}body[data-view="calc"] main.inner{max-width:1440px}
+
+/* Option cards on a lobby (Guess the move: where the games come from). Chess Lab's .gmopts / .gmopt values. */
+.tvlobby .gmopts{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px;margin-top:6px}
+.tvlobby .gmopts.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:480px){.tvlobby .gmopts,.tvlobby .gmopts.three{grid-template-columns:minmax(0,1fr)}}
+.tvlobby .gmopt{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--line);border-radius:var(--radius);padding:9px 11px;cursor:pointer;background:var(--white)}
+.tvlobby .gmopt:hover{border-color:var(--blue)}.tvlobby .gmopt.on{border-color:var(--head);box-shadow:inset 0 0 0 1px var(--navy);background:var(--callout)}
+.tvlobby .gmopt input{margin-top:4px;accent-color:var(--head)}.tvlobby .gmopt b{display:block;color:var(--head);font-weight:600;font-size:.92rem}.tvlobby .gmopt .note{display:block;font-size:.78rem;line-height:1.35}
+body[data-view="guess"] main.inner{max-width:1200px;padding-top:14px}
+
+/* .tvcontents: a wrapper a page redraws as a whole (Players), laid out as if its children were the grid's own */
+.tv3>.tvcontents{display:contents}
+.tv3>.tvcontents>.boardwrap{min-width:0;width:100%;justify-self:center;max-width:min(100%,calc(100vh - 150px),720px,var(--bfit,9999px))}
+.tv3>.tvcontents>.side{display:flex;flex-direction:column;gap:12px;min-width:0}
+@media (max-width:1180px){.tv3>.tvcontents>.side{display:contents}.tv3>.tvcontents>.boardwrap{grid-column:1;grid-row:1/span 8}.tv3>.tvcontents>.side>*{grid-column:2}}
+@media (max-width:860px){.tv3>.tvcontents>.boardwrap{grid-column:1;grid-row:auto;order:0;max-width:none}.tv3>.tvcontents>.side>*{grid-column:1}}

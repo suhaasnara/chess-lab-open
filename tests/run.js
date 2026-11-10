@@ -862,7 +862,7 @@ section('t30: Guess the move — your own PGN with notes, marks and arrows');
   await G.addGames(); await sleep(50);
   const own=G.ownGames();
   assert(own.length===1&&own[0].game.winner==='w'&&own[0].game.theory>0&&own[0].game.maxpts>0,'stored with your side (the winner), theory from the book and a score ('+own[0].game.theory+' theory plies, '+own[0].game.maxpts+' pts)');
-  assert(/Your games/.test($('g-list').textContent)&&/Me – Friend, 2026/.test($('g-list').textContent),'the game shows under Your games');
+  assert(G.state.src==='own'&&/Me – Friend, 2026/.test($('g-list').textContent),'the game shows under Your own PGN');
   const S=G.state;
   assert(S.game&&S.game.own,'it opens for guessing');
   w.GtmTab.showGame(); await sleep(20); w.GtmTab.viewAt(25); await sleep(10);

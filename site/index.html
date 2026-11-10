@@ -439,32 +439,39 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
 
 <!-- ================= Guess the move ================= -->
 <section id="guess" hidden>
-  <div class="grid">
-    <div>
-      <p class="note" style="margin:0 0 10px">Play through a game from the winner&rsquo;s side and guess
-         each move: famous master games, some of mine, and your own (paste a PGN with your notes). 2 points for a key move, 1 for the rest; a move the engine rates as good counts too.</p>
-      <div class="list" id="g-list"></div>
+  <div class="tvlobby" id="g-lobby">
+    <div class="card">
+      <h2>Guess the move</h2>
+      <p class="note" style="margin-top:0">Play through a game from the winner&rsquo;s side and guess each move. 2 points for a key move, 1 for the rest;
+         a move the engine rates as good counts too. The opening plays itself.</p>
+      <div class="label" style="margin-top:12px">Guess moves from</div>
+      <div class="gmopts three" id="g-src"></div>
+      <div class="btns" style="margin-top:14px"><button class="btn primary" id="g-start" type="button">Start · next unplayed</button><button class="btn" id="g-add" type="button">Add a game (PGN)</button></div>
+      <p class="note" id="g-srcnote" style="margin:10px 0 0"></p>
     </div>
-    <div class="panel">
-      <div class="boardwrap">
-        <div class="board" id="g-board" role="group" aria-label="Chess board"></div>
-        <div class="boardtools">
-          <button class="btn sm" id="g-hint">Hint <kbd>H</kbd></button>
-          <span class="gnav" id="g-nav" hidden><button class="btn sm" id="g-prev" aria-label="Previous move">&#9664;</button><button class="btn sm" id="g-next" aria-label="Next move">&#9654;</button></span>
-          <button class="btn sm" id="g-show" hidden title="Skip the guessing and read the game">Show the game</button>
-          <span id="g-readslot"></span>
-          <button class="btn sm" id="g-restart">Restart game</button>
-          <button class="btn sm" id="g-flip">Flip <kbd>F</kbd></button>
-          <span class="evalchip" id="g-score"></span>
-        </div>
-        <div class="card gunder" id="g-graphcard" hidden><span class="label">Eval graph</span><div class="evgraph" id="g-graph"></div><p class="note" id="g-graphnote"></p></div>
+    <div class="card tvlist"><div class="label" id="g-count"></div><div class="list" id="g-list"></div></div>
+  </div>
+  <div class="tvplay" id="g-train" hidden>
+    <div class="boardwrap" id="g-wrap">
+      <div class="board" id="g-board" role="group" aria-label="Chess board"></div>
+      <div class="boardtools" id="g-tools">
+        <button class="btn sm" id="g-hint">Hint <kbd>H</kbd></button>
+        <span class="gnav" id="g-nav" hidden><button class="btn sm" id="g-prev" aria-label="Previous move">&#9664;</button><button class="btn sm" id="g-next" aria-label="Next move">&#9654;</button></span>
+        <button class="btn sm" id="g-show" hidden title="Skip the guessing and read the game">Show the game</button>
+        <span id="g-readslot"></span>
+        <button class="btn sm" id="g-restart">Restart game</button>
+        <button class="btn sm" id="g-flip">Flip <kbd>F</kbd></button>
+        <span class="evalchip" id="g-score"></span>
       </div>
-      <div class="side">
-        <div class="status" id="g-status" aria-live="polite">Pick a game from the list.</div>
-        <div class="card"><span class="label">Moves and notes</span><div class="movelist gmoves" id="g-moves"></div></div>
-        <div class="card"><span class="label">The game</span><dl class="facts" id="g-facts"></dl></div>
-        <div class="tablewrap" id="g-tablewrap" hidden><table id="g-table"></table></div>
-      </div>
+      <div class="card gunder" id="g-graphcard" hidden><span class="label">Eval graph</span><div class="evgraph" id="g-graph"></div><p class="note" id="g-graphnote"></p></div>
+    </div>
+    <div class="side">
+      <div id="g-head"></div>
+      <div class="status" id="g-status" aria-live="polite">Pick a game from the list.</div>
+      <div class="card"><span class="label">Moves and notes</span><div class="movelist gmoves" id="g-moves"></div></div>
+      <div class="card"><span class="label">The game</span><dl class="facts" id="g-facts"></dl></div>
+      <div class="tablewrap" id="g-tablewrap" hidden><table id="g-table"></table></div>
+      <button class="btn sm" id="g-back" type="button" style="align-self:flex-start">&#8592; All games</button>
     </div>
   </div>
   <div class="modal" id="g-addmodal" hidden role="dialog" aria-modal="true" aria-labelledby="g-addtitle">
@@ -485,8 +492,8 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
 
 <!-- ================= Players ================= -->
 <section id="players" hidden>
-  <div class="grid">
-    <div class="p-left">
+  <div class="tv3" id="p-grid">
+    <div class="tvleft p-left">
       <form class="card" id="p-form">
         <span class="label">Add a player</span>
         <div class="row2" style="margin-top:8px">
@@ -497,13 +504,12 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
         <div class="btns" style="margin-top:10px"><button class="btn primary" id="p-go" type="submit">Fetch their games</button><span class="note" id="p-err" role="status"></span></div>
         <p class="note" style="margin:8px 0 0">Their last 200 public games are fetched by your browser from the site’s public API and kept only on this device.</p>
       </form>
-      <div class="list" id="p-list" style="margin-top:12px"></div>
+      <div class="label tvlabel" id="p-listlabel" style="margin-top:4px">Players</div>
+      <div class="list" id="p-list"></div>
     </div>
-    <div>
-      <div id="p-view"></div>
-      <div id="p-sheet" class="psheet" hidden></div>
-    </div>
+    <div class="tvcontents" id="p-view"></div>
   </div>
+  <div id="p-sheet" class="psheet" hidden></div>
 </section>
 
 <!-- ================= Watch ================= -->

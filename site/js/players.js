@@ -109,27 +109,32 @@ function firstMoves(id,color){ const p=pdata(id); const o={};
 /* ---------- Rendering ---------- */
 function renderList(){
   const el=$('p-list'), idx=index();
-  el.innerHTML=idx.length?idx.map(x=>`<button class="drill" data-pid="${esc(x.id)}" aria-current="${S.pid===x.id}"><span class="src">${x.site==='chesscom'?'C.com':'Lichess'}</span><span><span class="opp">${esc(x.name)}</span><br><span class="meta">${x.n} games · fetched ${new Date(x.t).toISOString().slice(0,10)}</span></span><span class="evalchip">&#9654;</span></button>`).join('')
+  $('p-listlabel').hidden=!idx.length; $('p-listlabel').textContent=Help.n(idx.length,'player');
+  el.innerHTML=idx.length?idx.map(x=>TV.row({badge:x.site==='chesscom'?'C.com':'Li',badgeTitle:x.site==='chesscom'?'Chess.com':'Lichess',title:esc(x.name),
+      meta:`${x.n} games · fetched ${new Date(x.t).toISOString().slice(0,10)}`,current:S.pid===x.id,data:{pid:x.id}})).join('')
     :'<p class="empty">No players yet. Type an opponent’s username above. Their public games are fetched by your browser and kept only on this device.</p>';
 }
+/* Three columns (shared screens: Chess Lab's Players): the list | their moves on a board with the explorer under it | who they are */
 function render(){
   renderList();
-  const v=$('p-view'), sh=$('p-sheet'); sh.hidden=!S.sheet; v.hidden=S.sheet;
+  const v=$('p-view'), sh=$('p-sheet'); sh.hidden=!S.sheet; $('p-grid').hidden=S.sheet;
   const p=S.pid&&pdata(S.pid);
-  if(!p){ v.innerHTML='<div class="card"><span class="label">Players</span><h2>Scout an opponent</h2><p class="note">Add a player to see what they play with White and Black, browse their moves on a board, train against their openings and print a pre-round sheet.</p></div>'; if(S.board) S.board=null; return }
+  if(!p){ v.innerHTML='<div class="boardwrap"><div class="card"><span class="label">Players</span><h2>Scout an opponent</h2><p class="note">Add a player to see what they play with White and Black, browse their moves on a board, train against their openings and print a pre-round sheet.</p></div></div><div class="side"></div>'; if(S.board) S.board=null; return }
   if(S.sheet){ sh.innerHTML=sheetHtml(p); return }
   const rw=record(p,'w'), rb=record(p,'b'), col=S.color;
   const fm=(c)=>firstMoves(p.id,c).slice(0,6).map(([k,r])=>`<b>${esc(c==='w'?'1.'+k:'1.'+k.replace(' ',' '))}</b> ${r.n}${r.c?` <span class="note">(${Math.round(100*r.s/r.c)}%)</span>`:''}`).join(' · ')||'<span class="note">none</span>';
-  v.innerHTML=`<div class="card"><div class="phead"><div><span class="label">${p.site==='chesscom'?'Chess.com':'Lichess'} · ${p.games.length} games${p.speeds?' · '+p.speeds.join(', '):''}</span>
-      <h2 style="margin:4px 0 2px"><a href="${p.site==='chesscom'?'https://www.chess.com/member/':'https://lichess.org/@/'}${esc(encodeURIComponent(p.user))}" target="_blank" rel="noopener">${esc(p.name)}</a></h2>
-      <p class="note" style="margin:0">As White ${rw.w}–${rw.l}${rw.d?' ='+rw.d:''} (${pct(rw)}) · as Black ${rb.w}–${rb.l}${rb.d?' ='+rb.d:''} (${pct(rb)}) · ${esc(p.games[p.games.length-1].d)} to ${esc(p.games[0].d)}</p></div>
-      <div class="btns"><button class="btn sm primary" data-act="sheet">Pre-round sheet</button><button class="btn sm" data-act="refresh">Refresh games</button><button class="btn sm" data-act="remove">Remove</button></div></div>
-      <div class="row2" style="margin-top:10px"><div><span class="label">As White they open</span><p class="ptxt">${fm('w')}</p></div><div><span class="label">As Black they answer</span><p class="ptxt">${fm('b')}</p></div></div>
-      <div class="btns"><button class="btn sm" data-train="w">Train vs ${esc(p.name)}: you have White</button><button class="btn sm" data-train="b">You have Black</button></div></div>
-    <div class="panel" style="margin-top:12px"><div class="boardwrap"><div class="board" id="p-board" role="group" aria-label="Their moves on a board"></div>
-      <div class="boardtools"><div class="seg" role="group" aria-label="Their colour"><button data-col="w" aria-pressed="${col==='w'}">Their White games</button><button data-col="b" aria-pressed="${col==='b'}">Their Black games</button></div>
-      <button class="btn sm" data-act="start" aria-label="Start">⏮</button><button class="btn sm" data-act="back" aria-label="Back">◀</button><button class="btn sm" data-act="flip">Flip</button></div></div>
-      <div class="side"><div class="card"><span class="label">Position</span><p class="mono" id="p-line" style="margin:6px 0 0"></p></div><div class="card"><span class="label" id="p-movehead">Moves</span><div id="p-moves"></div></div></div></div>`;
+  const link=`${p.site==='chesscom'?'https://www.chess.com/member/':'https://lichess.org/@/'}${esc(encodeURIComponent(p.user))}`;
+  v.innerHTML=`<div class="boardwrap" id="p-wrap"><div class="board" id="p-board" role="group" aria-label="Their moves on a board"></div>
+      <div class="boardtools" id="p-tools"><div class="seg mini" role="group" aria-label="Their colour"><button data-col="w" aria-pressed="${col==='w'}">Their White games</button><button data-col="b" aria-pressed="${col==='b'}">Their Black games</button></div>
+      <button class="btn sm" data-act="start" aria-label="Start">⏮</button><button class="btn sm" data-act="back" aria-label="Back">◀</button><button class="btn sm" data-act="flip">Flip</button></div>
+      <p class="note mono" id="p-line" style="margin:8px 0 0"></p>
+      <div class="card" style="margin-top:12px"><span class="label" id="p-movehead">Moves</span><div id="p-moves"></div></div></div>
+    <div class="side">${TV.head({kicker:`${p.site==='chesscom'?'Chess.com':'Lichess'} · ${p.games.length} games${p.speeds?' · '+esc(p.speeds.join(', ')):''}`,
+        title:`<a href="${link}" target="_blank" rel="noopener">${esc(p.name)}</a>`,
+        chips:[`As White ${rw.w}–${rw.l}${rw.d?' ='+rw.d:''} (${pct(rw)})`,`As Black ${rb.w}–${rb.l}${rb.d?' ='+rb.d:''} (${pct(rb)})`,`${esc(p.games[p.games.length-1].d)} to ${esc(p.games[0].d)}`],
+        extra:`<div class="btns" style="margin-top:10px"><button class="btn sm primary" data-act="sheet">Pre-round sheet</button><button class="btn sm" data-act="refresh">Refresh games</button><button class="btn sm" data-act="remove">Remove</button></div>
+          <div class="btns" style="margin-top:8px;align-items:center"><span class="note">Train vs ${esc(p.name)}</span><button class="btn sm" data-train="w">you have White</button><button class="btn sm" data-train="b">you have Black</button></div>`})}
+      <div class="card"><span class="label">As White they open</span><p class="ptxt">${fm('w')}</p><span class="label">As Black they answer</span><p class="ptxt">${fm('b')}</p></div></div>`;
   S.board=makeBoard($('p-board'),{onMove:(f,t,pr)=>{ const g=cur(); const m=g.move({from:f,to:t,promotion:pr||'q'}); if(m){ S.line.push(m.san); drawExplorer() } }});
   drawExplorer();
 }
