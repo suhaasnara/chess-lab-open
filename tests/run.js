@@ -1040,6 +1040,17 @@ section('t37: shared code (site/shared/) — position ids never change, one PGN 
   const nc6=Object.keys(r.notes).find(k=>/\|b8c6$/.test(k));
   assert(!nc6,'after a null move the line is skipped, and its $1 is not pinned on the move before');
   assert(r.edges.get('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -').join()==='e2e4,d2d4','both first moves, in the order met');
+  /* trainer core: the rating scale and the reply weighting must not drift (opening ratings are kept per browser) */
+  const T=w.TrainerCore, bk=s=>({total:100,rows:[{uci:'e2e4',share:s},{uci:'d2d4',share:1-s}]});
+  assert(T.difficulty(bk(0.5),['e2e4'])===2200&&T.difficulty(bk(0.9),['e2e4'])===1818&&T.difficulty(bk(0.1),['e2e4'])===2582,'difficulty: a 50% move is a 2200 find, 90% 1818, 10% 2582');
+  assert(T.difficulty(null,['e2e4'])===2350&&T.difficulty({total:10,rows:[]},[])===2350&&T.difficulty(bk(0.01),['e2e4'])===2600,'no book (or under 20 games) = 2350; the scale stops at 2600');
+  assert(T.R2_START===1800&&T.lineK(0)===40&&T.lineK(7)===40&&T.lineK(8)===16&&T.lineWeight(2)===0.5&&T.lineWeight(9)===1,'start 1800, K 40 for 8 provisional lines then 16, short lines count less');
+  const near=(a,b)=>Math.abs(a-b)<1e-9;
+  assert(near(T.varietyWeight(0.5,true,'realistic'),Math.pow(0.5,0.75))&&near(T.varietyWeight(0.5,true,'balanced'),Math.pow(0.5,0.4))&&near(T.varietyWeight(0.5,true,'sidelines'),Math.pow(0.5,0.25)*0.35)&&near(T.varietyWeight(0.01,false,'sidelines'),Math.pow(0.01,0.75)),'variety weights per mode; rare replies stay rare');
+  const o=T.replyWeights([{x:0.6,weak:0.6,seen:3,row:null},{x:0.1,weak:0.6,seen:0,row:null}],{mode:'balanced',useBook:true});
+  const pa=Math.pow(0.6,0.4), pb=Math.pow(0.1,0.4), ex=3-3*pa/(pa+pb);
+  assert(near(o[0].w,0.85*pa*Math.pow(0.3,ex))&&near(o[1].w,0.85*pb),'a reply that came up more than its share is pushed down');
+  assert(T.pick(['a','b'],[0,0],()=>0.99)==='b'&&T.pick(['a','b'],[1,3],()=>0.5)==='b'&&T.pick(['a','b'],[1,3],()=>0.1)==='a','weighted pick');
 }
 
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));

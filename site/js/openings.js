@@ -27,10 +27,9 @@ const PRESETS=[
 ];
 const LENS={short:5,medium:8,long:12,vlong:20,max:30};
 const LEN_NAMES={short:'Short',medium:'Medium',long:'Long',vlong:'Very long',max:'Max'};
-const VARIETY={realistic:['Realistic','Replies come up as often as they are played in games: the main line most of the time.'],
-  balanced:['Balanced','Sidelines you prepared come up much more often than in games, and the main line still leads.'],
-  sidelines:['Sidelines first','Most lines test the sidelines; the main line is one option among them.']};
-const R2_START=1800, R2_PROV=8;
+const TC=TrainerCore;   /* shared/trainer-core.js: rating v2 and reply-weighting rules */
+const VARIETY=TC.VARIETY;
+const R2_START=TC.R2_START, R2_PROV=TC.R2_PROV;
 const cssq=s=>String(s).replace(/["\\]/g,'\\$&');
 
 /* ---------- Imported repertoires ---------- */
@@ -79,12 +78,7 @@ const saveStats=(id,s)=>Store.put('stats-'+id,s);
 /* How hard the right move is to find here (masters' share of the good moves). */
 async function moveDifficulty(fen,good){
   const bk=await Book.moves(fen,'masters');
-  if(!bk||bk.demo||bk.total<20) return 2350;
-  const p=good&&good.length
-    ?bk.rows.filter(r=>good.some(u=>u.slice(0,4)===r.uci.slice(0,4))).reduce((a,r)=>a+r.share,0)
-    :Math.max(...bk.rows.map(r=>r.share));
-  if(p<=0) return 2350; const q=Math.min(0.97,Math.max(0.03,p));
-  return Math.round(Math.max(1600,Math.min(2600,2200+400*Math.log10((1-q)/q))));
+  return TC.difficulty(bk&&!bk.demo?bk:null,good);
 }
 
 /* ---------- Openings list: your order (Arrange), search, Statistics ---------- */
@@ -235,9 +229,8 @@ function stayIn(fen,k){ const kids=repMovesAt(fen); if(!k||!kids.length) return 
   STAY.set(key,s); return s }
 function stayAfter(fen,k){ const mine=repMovesAt(fen); if(!k||!mine.length) return 1; let best=0;
   for(const m of mine){ best=Math.max(best,stayIn(after(fen,m),k)); if(best>=1) break } return best }
-function varietyWeight(x,top){ const v=variety(); if(v==='realistic'||x<0.015) return Math.pow(Math.max(x,0.0005),0.75);
-  return v==='balanced'?Math.pow(x,0.4):Math.pow(x,0.25)*(top?0.35:1) }
-const practical=(r,mover)=>((mover==='w'?r.w:r.b)+r.d/2)/Math.max(1,r.games);
+function varietyWeight(x,top){ return TC.varietyWeight(x,top,variety()) }
+const practical=TC.practical;
 function recentLines(){ return (Store.get('orecent')||{})[S.op.id]||[] }
 function rememberLine(){ if(!S.op||!S.op.rep||!S.oppPicks.length) return; const all=Store.get('orecent')||{};
   all[S.op.id]=(all[S.op.id]||[]).concat([S.oppPicks.slice(0,40)]).slice(-6); Store.put('orecent',all) }
@@ -249,19 +242,13 @@ function repPick(fen,file){
   if(min>0&&useBook){ const keep=kids.filter(u=>replyShare(fen,u,bk)>=min); if(keep.length) kids=keep }
   const recent=recentLines(), opp=fen.split(' ')[1], trappy=!!Settings.get('otrappy');
   const opts=kids.map(u=>{ const f=after(fen,u), cid=posId(normKey(f)), st=rs[cid]; const sh=useBook?replyShare(fen,u,bk):0;
-    return {u,cid,weak:st?(st.w+1)/(st.n+2):0.6,seen:recent.reduce((a,l)=>a+(l.includes(cid)?1:0),0),x:sh?sh*stayAfter(f,2):0,row:bk&&bk.rows.find(r=>r.uci.slice(0,4)===u.slice(0,4))} });
-  const top=Math.max(...opts.map(o=>o.x)); for(const o of opts) o.pop=useBook?varietyWeight(o.x,o.x===top&&top>0):1;
-  const popSum=opts.reduce((a,o)=>a+o.pop,0)||1, seenSum=opts.reduce((a,o)=>a+o.seen,0);
-  for(const o of opts){ o.w=(0.25+o.weak)*o.pop*Math.pow(0.3,Math.max(0,o.seen-seenSum*o.pop/popSum));
-    if(trappy&&o.row&&o.row.games>=20) o.w*=Math.pow(practical(o.row,opp)/0.5,4) }
+    return {u,cid,weak:TC.weakness(st),seen:recent.reduce((a,l)=>a+(l.includes(cid)?1:0),0),x:sh?sh*stayAfter(f,2):0,row:bk&&bk.rows.find(r=>r.uci.slice(0,4)===u.slice(0,4))} });
+  TC.replyWeights(opts,{mode:variety(),useBook,trappy,mover:opp});
   const p=pickW(opts,opts.map(o=>o.w)); S.oppPicks.push(p.cid);
   const why=!rs[p.cid]?'a line you have not trained yet':p.weak>=0.4?'a line you have missed before':`one of ${kids.length} replies you prepared`;
   return {uci:p.u,why:file.length>1?'Your prep · '+why:''};
 }
-function pickW(items,weights){
-  const tot=weights.reduce((a,b)=>a+b,0); if(!(tot>0)) return items[Math.floor(Math.random()*items.length)];
-  let r=Math.random()*tot; for(let i=0;i<items.length;i++){ r-=weights[i]; if(r<=0) return items[i] } return items[items.length-1];
-}
+function pickW(items,weights){ return TC.pick(items,weights) }
 /* The opponent's book pick in presets: weighted by games, only moves at or above the minimum share;
    "trappy" favours moves that score well in practice for the side playing them. */
 function pickBook(bk,fen){
@@ -439,8 +426,8 @@ function endLine(msg){
     const meanS=S.scored.reduce((a,x)=>a+x.s,0)/S.scored.length;
     const meanD=S.scored.reduce((a,x)=>a+x.d,0)/S.scored.length;
     const E=1/(1+Math.pow(10,(meanD-st.rating)/400));
-    const K=st.n2<R2_PROV?40:16;
-    const w=Math.min(1,S.scored.length/4);
+    const K=TC.lineK(st.n2);
+    const w=TC.lineWeight(S.scored.length);
     delta=Math.round(K*w*(meanS-E));
     st.rating+=delta; st.n2++; st.lines++; st.last=Date.now();
     st.history.push({t:Date.now(),r:st.rating,m:'r'});
