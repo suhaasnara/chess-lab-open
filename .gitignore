@@ -6,5 +6,5 @@ tests/node_modules/
 .DS_Store
 screenshots/
 tests/browser/out/
-tests/browser/node_modules/
+tests/browser/node_modules
 tests/browser/package-lock.json
