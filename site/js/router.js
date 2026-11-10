@@ -7,7 +7,7 @@ const TITLES={today:'Today',openings:'Openings',tactics:'Tactics',calc:'Calculat
 let shown=null, first=true;
 /* The header (shared/nav.js): the same main row and Extra menu as the private Chess Lab, plus Analyze my games. */
 Nav.mount(document.getElementById('tabs'),{
-  main:[['today','Today'],['openings','Openings'],['drills','Drills'],['tactics','Tactics'],['analyze','Analyze my games','Analyze'],['progress','Progress']],
+  main:[['today','Today'],['openings','Openings'],['drills','Drills'],['tactics','Tactics'],['analyze','Analyze my games','Report card and drills from your own games'],['progress','Progress']],
   extra:[['guess','Guess the move','Master games and your own, move by move'],['calc','Calculation','Long puzzles, timed, with a free board'],
     ['endgames','Endgames','Textbook endings against perfect defence'],['watch','Watch','Your video library: place, notes, bookmarks'],
     ['play','Play','Games against Stockfish, blindfold'],['players','Players','Any Lichess or Chess.com player: openings, pre-round sheet']]});
