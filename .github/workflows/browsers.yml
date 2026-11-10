@@ -3,7 +3,7 @@ name: Browsers
 # console errors, and screenshots (light/dark, desktop/phone) in Firefox and Chromium.
 on:
   push:
-    branches: [main, parity-1, positions, one-codebase]
+    branches: [main, parity-1, positions, one-codebase, shared-screens]
   pull_request:
   workflow_dispatch:
     inputs:

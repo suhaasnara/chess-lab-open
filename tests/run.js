@@ -345,10 +345,10 @@ section('t14: Today — a daily session from your drills, puzzles and openings')
   w.Store.put('today',{...t,drills:[]});
   assert(w.TodayTab.plan().drills.length===3,'drills saved after an empty-drill plan join today\u2019s plan');
   w.location.hash='#today'; await sleep(80);
-  assert(w.document.querySelectorAll('#td-list .drill').length===10&&/0<\/b> of 10 done/.test(w.document.getElementById('td-head').innerHTML),'the list shows 10 items (with the endgame), none done');
+  assert(w.document.querySelectorAll('#td-list .drill').length===10&&/0 of 10 done/.test(w.document.getElementById('td-head').textContent),'the list shows 10 items (with the endgame), none done');
   const tp=w.Store.get('tactics-progress')||{}; tp[t.puzzles[0]]={ok:true,t:Date.now()}; w.Store.put('tactics-progress',tp);
   w.TodayTab.render();
-  assert(/1<\/b> of 10 done/.test(w.document.getElementById('td-head').innerHTML),'a puzzle solved today ticks off');
+  assert(/1 of 10 done/.test(w.document.getElementById('td-head').textContent),'a puzzle solved today ticks off');
   w.document.getElementById('td-go').click(); await sleep(120);
   assert(w.document.body.dataset.view==='drills'&&w.DrillsTab.state.cur&&w.DrillsTab.state.cur.id==='a-4','Continue opens the next item (the first drill)');
 }
@@ -368,7 +368,7 @@ section('t15: Punish the mistake and Play it out');
   w.Store.put('adrills',[d,{id:'a00000001',fen:'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',played:'a3',playedUci:'a2a3',best:'e2e4',drop:0.2,before:0.2,date:'2026-11-01',opp:'O',color:'w'}]);
   w.location.hash='#drills'; await sleep(60);
   const chips=[...w.document.querySelectorAll('#d-kinds .chip')].map(c=>c.textContent);
-  assert(chips.join('|')==='All (2)|Your mistakes (1)|Punish the mistake (1)','drill filters: All / Your mistakes / Punish');
+  assert(chips.join('|')==='All 2|Your mistakes 1|Punish 1','drill filters: All / Your mistakes / Punish');
   w.document.querySelectorAll('#d-kinds .chip')[2].click(); await sleep(20);
   assert(w.document.querySelectorAll('#d-list .drill').length===1,'the Punish filter shows the punish drill only');
   w.DrillsTab.load(d); await sleep(20);
@@ -893,7 +893,7 @@ section('t31: Watch — your own video library');
   assert(!$('wa-list').querySelector('iframe'),'no embeds');
   const ex=w.Store.exportAll(); assert(ex.watch&&ex.watch.list.length===2,'the library is in the progress export');
   W.put('abcdefghijk',{w:0,t:120}); w.TodayTab.render();
-  assert(/Watch: 1\. Pawn structures/.test($('td-list').textContent),'Today links to the video in progress');
+  assert(/Watch: 1\. Pawn structures/.test($('today').textContent),'Today links to the video in progress');
 }
 
 section('t32: Players — an opponent’s public games, what they play, train vs, pre-round sheet');
@@ -1292,7 +1292,7 @@ section('t49: Tactics — opening filter (Lichess opening families on the existi
   assert(box&&/Sicilian Defense \(\d+\)/.test(box.parentNode.textContent),'Openings multi-select lists families with counts');
   box.checked=true; box.dispatchEvent(new w.Event('change',{bubbles:true})); await sleep(30);
   const f=w.TacticsTab.filtered(); assert(f.length>0&&f.every(z=>z.op==='Sicilian_Defense'),'choosing an opening keeps only its puzzles ('+f.length+')');
-  assert(/opening phase/.test(w.document.getElementById('t-ops').textContent),'says why only some puzzles have an opening');
+  assert(/opening-phase/.test(w.document.getElementById('t-ops').textContent),'says why only some puzzles have an opening');
   w.document.querySelector('#t-ops [data-all]').click(); await sleep(20); assert(w.TacticsTab.filtered().length>f.length,'Clear brings the rest back');
 }
 

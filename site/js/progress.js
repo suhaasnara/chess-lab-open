@@ -86,6 +86,10 @@ function render(){
     <div class="stat"><b>${tsolved}</b><span class="note">${tsolved===1?'puzzle':'puzzles'} solved</span></div>
     <div class="stat"><b>${Object.values(dp).filter(x=>x.ok).length} / ${dr.length}</b><span class="note">game drills solved</span></div>
     <div class="stat"><b>${eg.solved} / ${eg.total||'–'}</b><span class="note">endgames solved</span></div>`;
+  { const lines=withStats.reduce((a,x)=>a+x.st.lines,0), ds=Object.values(dp).filter(x=>x.ok).length;
+    const parts=[lines?Help.n(lines,'opening line')+' trained':'',tsolved?Help.n(tsolved,'puzzle')+' solved':'',dr.length?`${ds} of ${Help.n(dr.length,'drill')} from your games solved`:'',eg.solved?`${eg.solved} of ${eg.total} endgames won or held`:''].filter(Boolean);
+    $('p-lead').textContent=parts.length?`From this browser: ${parts.join(', ')}.${tac.n>=TAC_MIN?` Puzzle rating ${tac.r} after ${Help.n(tac.n,'rated puzzle')}.`:''}`
+      :'Nothing here yet. Train an opening line, solve a few puzzles, or run Analyze my games: everything you do shows up on this page.' }
   const t=$('p-table');
   t.innerHTML='<tr><th>Opening</th><th>Side</th><th>Lines</th><th>Rating</th><th>Last trained</th></tr>'+(
     withStats.sort((a,b)=>b.st.lines-a.st.lines).map(({o,st})=>{

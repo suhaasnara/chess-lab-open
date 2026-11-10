@@ -1,0 +1,75 @@
+/* Train view (shared screens, stage 2): the list | board | coach-card page used by Today, Drills and Tactics on both
+   sites. Chess Lab's look is the reference: these values are the ones its pages already use (its own rules stay too,
+   so its pages don't change). Everything is scoped to .tv, the grid's class.
+   Home: chess-lab-open/site/shared/ (MIT). The private kit pulls a pinned copy; edit it here, never there. */
+.tv,.grid.tv{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:24px;align-items:start}
+.tv .panel{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,370px);gap:20px;align-items:start}
+.tv .side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.tv .boardwrap{width:100%;--bmax:max(320px,calc(100vh - 150px));max-width:min(100%,720px,max(300px,calc(100vh - 170px)),var(--bfit,9999px));justify-self:center}
+.tv .board,.tv .evalbar{max-width:min(100%,var(--bmax))}
+.tv .boardtools .btn.primary{order:-1}
+
+/* Left panel: a rating line, labelled chip rows, the list */
+.tv .trate{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin:0 0 6px}.tv .trate b{font-size:1.2rem;color:var(--head)}
+.tv .filters{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.tv .chips{display:flex;gap:4px;flex-wrap:wrap;align-items:center;position:relative;padding-left:62px}
+.tv .chips.nolabel{padding-left:0}
+.tv .chip{padding:3px 8px;font-size:.75rem;white-space:nowrap;flex:0 0 auto;border-radius:var(--radius)}
+.tv .chip[aria-pressed="true"]{background:var(--navy);color:var(--on-navy);border-color:var(--head)}
+.tv .flabel{position:absolute;left:0;top:5px;font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tv .tvlabel{margin:2px 0 6px}
+.tv .list{display:flex;flex-direction:column;gap:5px;overflow:auto;padding:2px;max-height:calc(100vh - 330px);min-height:200px}
+.tv .list.long{max-height:calc(100vh - 210px)}.tv .list.longest{max-height:calc(100vh - 130px)}
+.tv .list .empty{margin:0}
+.tv .drill{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;text-align:left;width:100%;background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:7px 10px;cursor:pointer;color:var(--ink);text-decoration:none}
+.tv .drill:hover{border-color:var(--blue)}
+.tv .drill[aria-current="true"]{border-color:var(--head);box-shadow:inset 3px 0 0 var(--navy)}
+.tv .drill .opp{font-weight:600;font-size:.9rem;line-height:1.25;color:var(--head)}
+.tv .drill .meta{color:var(--muted);font-size:.76rem;line-height:1.35}
+.tv .drill.done{opacity:.6}
+.tv .evalchip{font-size:.78rem;font-weight:600;padding:2px 6px;border-radius:3px;background:var(--callout);color:var(--head);white-space:nowrap}
+.tv .src{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;font-weight:600;color:var(--brass-text)}
+.tv .tag{display:inline-block;font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;font-weight:700;padding:1px 6px;border-radius:3px;background:var(--bad-soft);color:var(--bad);margin-left:4px;vertical-align:1px}
+.tv .tag.conv{background:var(--good-soft);color:var(--good)}.tv .tag.punish{background:var(--good-soft);color:var(--good)}
+.tv .tag.info{background:var(--callout);color:var(--blue)}
+.tv .dots{display:flex;gap:4px}
+.tv .dot{width:9px;height:9px;border-radius:50%;background:var(--line)}
+.tv .dot.good{background:var(--good)}.tv .dot.warn{background:var(--brass)}.tv .dot.bad{background:var(--bad)}
+
+/* Search box over the list (Drills) */
+.tv .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.tv .osearch{margin:0 0 8px}
+.tv .osearch input{width:100%;border:1px solid var(--line);border-radius:var(--radius);padding:7px 10px 7px 32px;font-size:.9rem;background:var(--white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23536175' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-3.5-3.5'/%3E%3C/svg%3E") no-repeat 10px 50%}
+.tv .osearch input:focus{border-color:var(--blue);outline:none;box-shadow:0 0 0 3px var(--callout)}
+
+/* The navy session bar (Today) and the small cards under it */
+.tv .session{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--navy);color:var(--on-navy);border-radius:var(--radius);padding:12px 14px;margin-bottom:12px}
+.tv .session .label{color:var(--blue-on-navy)}
+.tv .session b{font-family:var(--serif);font-weight:400;font-size:1.25rem}
+.tv .progressbar{height:6px;border-radius:3px;background:rgba(255,255,255,.18);overflow:hidden;flex:1;min-width:120px}
+.tv .progressbar i{display:block;height:100%;background:var(--brass-light)}
+
+/* Right: the coach card (kicker, title, small pills), then the status and the rest */
+.tv .ohead{padding:10px 14px 12px}
+.tv .ohtop{display:flex;align-items:center;gap:8px}.tv .ohtop .label{margin-right:auto;white-space:nowrap;letter-spacing:.1em;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+.tv .ohtop .label.wrap{white-space:normal;line-height:1.45}
+.tv .ohead h2{font-size:1.2rem;margin:0;min-width:0}
+.tv .ohead .elo{font-size:.8rem;color:var(--muted);font-weight:400}
+.tv .ohchips{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}.tv .ohchips>span{font-size:.72rem;font-weight:600;color:var(--muted);background:var(--band);border:1px solid var(--line);border-radius:999px;padding:0 8px}
+.tv .ohead .seg.mini{display:inline-flex;margin-top:10px}
+.tv .dfoot{font-size:.76rem;margin:0}
+
+/* Narrower windows: the coach card goes under the board; phones: one column, the board first */
+@media (max-width:1180px){.tv,.grid.tv{grid-template-columns:minmax(0,280px) minmax(0,1fr)}.tv .panel{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:860px){.tv,.grid.tv{grid-template-columns:minmax(0,1fr)!important}.tv>div:first-child{order:2}.tv>.panel{order:1}
+  .tv .list,.tv .list.long,.tv .list.longest{max-height:300px;min-height:0}}
+
+/* Report pages (Progress): a title with its controls at the right, a one-paragraph summary, tiles, then sections */
+.report{margin-bottom:28px}
+.report h2{font-size:1.5rem;margin:0 0 4px}
+.report h3{font-size:1.1rem;margin:22px 0 8px}
+.report .lead{margin:0 0 14px;max-width:70ch}
+.rhead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-bottom:6px}
+.rhead h2{margin:0}
+.rbar{display:flex;flex-wrap:wrap;gap:8px}
+body[data-view="progress"] main.inner{padding-top:14px}

@@ -4,8 +4,12 @@
 'use strict';
 (function(){
 let board=null, endbar=null;
-const S={cur:null,g:null,done:false,busy:false,kind:'all'};
-const KINDS=[['all','All'],['mine','Your mistakes'],['punish','Punish the mistake']];
+const S={cur:null,g:null,done:false,busy:false,kind:'all',state:'all',q:''};
+const KINDS=[['all','All'],['mine','Your mistakes'],['punish','Punish']];
+const STATES=[['all','Any'],['new','Not tried'],['missed','Missed'],['solved','Solved']];
+const SITE={lichess:'Lichess',chesscom:'Chess.com','chess.com':'Chess.com'};
+/* an eval in pawns from White's side, as everywhere: +1.6 / −0.8 */
+const fmtW=v=>v==null||isNaN(v)?'—':Math.abs(v)>=50?(v>0?'+M':'−M'):(v>0?'+':v<0?'−':'')+Math.abs(v).toFixed(1);
 const isPunish=d=>d.kind==='punish';
 const DEPTH=13;
 
@@ -13,27 +17,27 @@ const drills=()=>Store.get('adrills')||[];
 const prog=()=>Store.get('adrills-progress')||{};
 function saveResult(id,ok){ const p=prog(); const e=p[id]||{tries:0}; e.tries++; if(ok){ e.ok=true; e.okN=(e.okN||0)+1 } e.t=Date.now(); p[id]=e; Store.put('adrills-progress',p); renderL() }
 
+function shown(){ const p=prog(), q=S.q.trim().toLowerCase();
+  return drills().filter(d=>{ if(S.kind!=='all'&&(S.kind==='punish')!==isPunish(d)) return false;
+    const st=p[d.id]; if(S.state==='new'&&st) return false; if(S.state==='missed'&&!(st&&!st.ok)) return false; if(S.state==='solved'&&!(st&&st.ok)) return false;
+    return !q||String(d.opp||'').toLowerCase().includes(q) }) }
 function renderL(){
-  const el=$('d-list'); el.innerHTML='';
-  const p=prog();
-  const all=drills();
-  const ke=$('d-kinds'); ke.innerHTML='';
-  for(const [v,name] of KINDS){
-    const n=all.filter(d=>v==='all'||(v==='punish')===isPunish(d)).length;
-    const c=document.createElement('button'); c.className='chip'; c.textContent=`${name} (${n})`; c.setAttribute('aria-pressed',String(S.kind===v));
-    c.addEventListener('click',()=>{ S.kind=v; renderL() }); ke.appendChild(c);
-  }
-  for(const d of all.filter(d=>S.kind==='all'||(S.kind==='punish')===isPunish(d))){
-    const st=p[d.id];
-    const b=document.createElement('button'); b.className='drill'; b.setAttribute('aria-current',S.cur&&S.cur.id===d.id?'true':'false');
-    b.innerHTML=`<span class="src">${st?(st.ok?'✓':'✗'):''}</span><span><span class="opp">vs ${esc(d.opp)}</span><br><span class="meta">${esc(d.date)} · ${isPunish(d)?'they played '+esc(d.oppMove)+', you '+esc(d.played):'you played '+esc(d.played)}</span></span>${isPunish(d)?'<span class="pill good">Punish</span>':`<span class="pill ${d.drop>=0.3?'bad':'warn'}">−${Math.round(d.drop*100)}%</span>`}`;
-    b.addEventListener('click',()=>load(d));
-    el.appendChild(b);
-  }
-  if(!el.children.length) el.innerHTML='<p class="empty">No drills yet. Run <b>Analyze my games</b> first and save drills from your mistakes.</p>';
-  const none=!el.querySelector('button.drill')&&!S.cur;   /* nothing to train yet: no buttons that do nothing */
-  for(const id of ['d-next','d-show','d-playout']) $(id).disabled=none;
-  $('d-lichess').hidden=none;
+  const el=$('d-list'), p=prog(), all=drills(), list=shown();
+  const n=v=>all.filter(d=>v==='all'||(v==='punish')===isPunish(d)).length;
+  $('d-kinds').innerHTML=TV.chips('Type','kind',KINDS.map(([v,l])=>[v,`${l} ${n(v)}`]),S.kind);
+  $('d-states').innerHTML=TV.chips('Status','state',STATES,S.state);
+  $('d-searchwrap').hidden=all.length<8;
+  $('d-listlabel').textContent=all.length?`${list.length} of ${all.length} positions`:'';
+  el.innerHTML=list.map(d=>{ const st=p[d.id];
+    return TV.row({badge:fmtW(d.before),badgeTitle:'Stockfish’s eval of this position from White’s side, in pawns (+ favors White)',
+      title:`vs ${esc(d.opp)}${isPunish(d)?'<span class="tag punish">Punish</span>':''}`,
+      meta:`<span class="src">${esc(SITE[d.site]||d.site||'Game')}</span> · ${esc(d.date||'')} · ${d.color==='w'?'W':'B'} · −${Math.round(d.drop*100)}%`,
+      right:TV.dots([[st?(st.ok?'good':'bad'):'','Find the move']]),current:!!(S.cur&&S.cur.id===d.id),data:{id:d.id}}) }).join('');
+  if(!list.length) el.innerHTML=all.length?'<p class="empty">No drills match these filters.</p>':'<p class="empty">No drills yet. Run <a href="#analyze"><b>Analyze my games</b></a> first and save drills from your mistakes.</p>';
+  const none=!all.length&&!S.cur;   /* nothing to train yet: no buttons that do nothing */
+  for(const id of ['d-next','d-show','d-hint']) $(id).disabled=none;
+  $('d-lichess').hidden=none; $('d-gamecard').hidden=!S.cur;
+  if(!S.cur) $('d-head').innerHTML='';
 }
 function load(d){
   if(endbar) endbar.hide();
@@ -41,8 +45,13 @@ function load(d){
   board.set(S.g,{last:null,orient:d.color});
   if(isPunish(d)) status('',`${d.oppMove} was a mistake. Punish it.`,`${S.g.turn()==='w'?'White':'Black'} to move. In the game you played ${d.played}, which let them off (−${Math.round(d.drop*100)}% of the chance they gave you).`,DROP_HELP);
   else status('', (S.g.turn()==='w'?'White':'Black')+' to move — find a better move.',`In the game you played ${d.played} (−${Math.round(d.drop*100)}% winning chances).`,DROP_HELP);
-  const goal=playGoal(d); const pb=$('d-playout'); pb.textContent=goal==='win'?'Play it out: win it from here':'Play it out: don’t lose from here';
-  pb.title=goal==='win'?'Continue against Stockfish from this position. You were winning before the slip: convert it.':'Continue against Stockfish from this position. Hold it: a draw or better counts.';
+  const goal=playGoal(d);
+  $('d-head').innerHTML=TV.head({kicker:`${isPunish(d)?'Punish · ':''}${esc(SITE[d.site]||d.site||'Your game')} · ${esc(d.date||'')}`,
+    title:`vs ${esc(d.opp)}`,
+    chips:[d.color==='w'?'White':'Black',`<span class="mono">${fmtW(d.before)}</span>${Help.q('Stockfish’s eval of this position from White’s side, in pawns (+ favors White).')}`,
+      `−${Math.round(d.drop*100)}% in the game${Help.q(DROP_HELP)}`],
+    extra:`<div class="seg mini" role="group" aria-label="Training mode"><button type="button" aria-pressed="true">Find the move</button><button type="button" id="d-playout" aria-pressed="false" title="${goal==='win'?'Continue against Stockfish from this position. You were winning before the slip: convert it.':'Continue against Stockfish from this position. Hold it: a draw or better counts.'}">Play it out: ${goal==='win'?'win it':'hold it'}</button></div>`});
+  $('d-playout').addEventListener('click',playOut);
   $('d-facts').innerHTML=`<dt>Date</dt><dd>${esc(d.date)}</dd><dt>Opponent</dt><dd>${esc(d.opp)}</dd>
     <dt>You played</dt><dd>${esc(d.played)}</dd><dt>Play it out</dt><dd>${playGoal(d)==='win'?'win from here':'don’t lose from here'}${Help.q('The goal comes from the eval before your slip: from +1.5 or better for you it is a win to convert; otherwise hold the position.')}</dd><dt>Game</dt><dd><a href="${esc(d.url)}" target="_blank" rel="noopener">open ↗</a></dd>`;
   $('d-lichess').href='https://lichess.org/analysis/'+encodeURIComponent(d.fen.replace(/ /g,'_'));
@@ -113,15 +122,18 @@ function status(tone,head,rest,help){ const el=$('d-status'); el.className='stat
 
 function init(){
   board=makeBoard($('d-board'),{onMove:userMove});
+  $('d-list').addEventListener('click',e=>{ const b=e.target.closest('.drill'); if(!b) return; const d=drills().find(x=>x.id===b.dataset.id); if(d){ load(d); if(innerWidth<860) $('d-board').scrollIntoView({behavior:'smooth',block:'start'}) } });
+  TV.onChip($('d-filters'),(k,v)=>{ S[k]=v; renderL() });
+  $('d-search').addEventListener('input',e=>{ S.q=e.target.value; renderL() });
+  TV.fitBoard('#d-wrap','#d-tools');
   endbar=endBanner($('d-board'),()=>next(),'Next drill');
   board.set(new Chess(),{locked:true});
   renderL();
   $('d-next').addEventListener('click',next);
   $('d-show').addEventListener('click',show);
-  $('d-playout').addEventListener('click',playOut);
   $('d-flip').addEventListener('click',()=>board.flip());
   $('d-hint').addEventListener('click',hint);
-  Keys.on('drills',{n:['Next drill',()=>next()],h:['Hint (first the piece, then the move)',()=>hint()],f:['Flip the board',()=>board.flip()]});
+  Keys.on('drills',{'/':['Search drills',()=>{ const i=$('d-search'); if(i&&!$('d-searchwrap').hidden){ i.focus(); i.select() } }],n:['Next drill',()=>next()],h:['Hint (first the piece, then the move)',()=>hint()],f:['Flip the board',()=>board.flip()]});
 }
 window.DrillsTab={init,hint,refresh:renderL,load,next,userMove,show,playOut,get state(){return S}};
 })();

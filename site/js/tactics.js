@@ -4,7 +4,7 @@
 'use strict';
 (function(){
 let LIB=null, board=null, endbar=null;
-const S={cur:null,g:null,step:0,solved:false,failedFirst:false,usedHint:false,hintStage:0,motifs:[],ops:[],lo:null,hi:null,status:'All'};
+const S={cur:null,g:null,step:0,solved:false,failedFirst:false,usedHint:false,hintStage:0,motifs:[],ops:[],lo:null,hi:null,status:'Unsolved',band:null};
 const BANDS=[['All','Any rating'],['1200','1200–1499'],['1500','1500–1799'],['1800','1800–2099'],['2100','2100–2399'],['2400','2400+']];
 const STATUSES=['All','Unsolved','Missed','Solved'];
 
@@ -19,16 +19,20 @@ function saveResult(id,ok){
   renderHeader();
 }
 function renderHeader(){
-  const rt=rating(); $('t-rating').textContent=rt.n?rt.r:'–';
-  $('t-solved').textContent=Object.values(prog()).filter(x=>x.ok).length;
+  const rt=rating(), solved=Object.values(prog()).filter(x=>x.ok).length;
+  $('t-rate').innerHTML=TV.rate('Puzzle rating',rt.n?rt.r:'–',rt.n?`${Help.n(rt.n,'rated puzzle')} · ${solved} solved`:'first try at each puzzle counts');
+  if(S.cur) facts();
 }
 
+/* Rating: Near my rating (±150, the default once 10 puzzles are rated, as in Chess Lab), Any, or the slider's range */
+const bandNow=()=>S.band||(rating().n>=10?'near':'all');
 function filtered(){
   const p=prog();
   return LIB.filter(z=>{
     if(S.motifs.length&&!S.motifs.some(m=>z.motif===m||(z.themes||[]).includes(m))) return false;   /* any of the chosen themes */
     if(S.ops.length&&!S.ops.includes(z.op)) return false;   /* any of the chosen openings */
-    if(S.lo!=null&&z.rating<S.lo) return false; if(S.hi!=null&&z.rating>S.hi) return false;
+    if(bandNow()==='near'){ if(z.rating&&Math.abs(z.rating-rating().r)>150) return false }
+    else{ if(S.lo!=null&&z.rating<S.lo) return false; if(S.hi!=null&&z.rating>S.hi) return false }
     const st=p[z.id];
     if(S.status==='Unsolved'&&st) return false;
     if(S.status==='Missed'&&!(st&&!st.ok)) return false;
@@ -55,31 +59,31 @@ function renderFilters(){
         const o=Object.keys(oc).filter(k=>oc[k]>=10).map(k=>[k,opName(k)+' ('+oc[k]+')']).sort((a,b)=>a[1].localeCompare(b[1]));
         if(!o.length){ $('t-ops').hidden=true; return null }
         const c=Controls.multi($('t-ops'),{label:'Openings',options:o,selected:S.ops,none:'Any opening',onChange:v=>{ S.ops=v; renderL() }});
-        $('t-ops').insertAdjacentHTML('beforeend',`<p class="note" style="margin:4px 0 0;max-width:22em">Lichess tags the opening only on puzzles from the opening phase (${n.toLocaleString()} of ${LIB.length.toLocaleString()} here).</p>`); return c })(),
-      range:Controls.range($('t-bands'),{label:'Puzzle rating',min:lo,max:hi,step:100,lo,hi,onChange:(a,b)=>{ S.lo=a<=lo?null:a; S.hi=b>=hi?null:b; renderL() }})} }
-  const mk=(el,items,cur,fn)=>{ el.innerHTML='';
-    for(const it of items){ const b=document.createElement('button'); b.className='chip'; b.textContent=it; b.setAttribute('aria-pressed',String(it===cur));
-      b.addEventListener('click',()=>{ fn(it); renderFilters(); renderL() }); el.appendChild(b) } };
-  mk($('t-status'),STATUSES,S.status,v=>S.status=v);
+        $('t-ops').insertAdjacentHTML('beforeend',`<p class="note" style="margin:4px 0 0;max-width:22em">${n.toLocaleString()} of ${LIB.length.toLocaleString()} have an opening (Lichess tags opening-phase puzzles only).</p>`); return c })(),
+      range:Controls.range($('t-bands'),{label:'Rating range',min:lo,max:hi,step:100,lo,hi,onChange:(a,b)=>{ S.lo=a<=lo?null:a; S.hi=b>=hi?null:b; S.band=S.lo==null&&S.hi==null?'all':'range'; renderFilters(); renderL() }})};
+    TV.onChip($('t-chiprows'),(k,v)=>{ if(k==='band'){ S.band=v; S.lo=S.hi=null; CTL.range.set(null,null) } else S.status=v; renderFilters(); renderL() }) }
+  const b=bandNow();
+  $('t-chiprows').innerHTML=TV.chips('Rating','band',[['near','Near my rating'],['all','Any']],b==='range'?'':b)+
+    TV.chips('Status','status',[['Unsolved','Unsolved'],['Missed','Missed'],['Solved','Solved'],['All','Any']],S.status);
 }
 function renderL(){
-  const el=$('t-list'); el.innerHTML='';
-  const p=prog();
-  for(const z of daily(filtered()).slice(0,200)){
-    const st=p[z.id];
-    const b=document.createElement('button'); b.className='drill'; b.setAttribute('aria-current',S.cur&&S.cur.id===z.id?'true':'false');
-    b.innerHTML=`<span class="src">${st?(st.ok?'✓':'✗'):''}</span><span><span class="opp">${esc(Puzzles.title(z.id,themeName(z.motif),!!st))}</span><br><span class="meta">${z.rating}</span></span><span class="evalchip">${esc(themeName((z.themes||[])[0]))}</span>`;
-    b.addEventListener('click',()=>load(z));
-    el.appendChild(b);
-  }
-  if(!el.children.length) el.innerHTML='<p class="empty">No puzzles match these filters.</p>';
+  const el=$('t-list'), p=prog(), list=daily(filtered());
+  $('t-listlabel').textContent=`${list.length.toLocaleString()} puzzle${list.length===1?'':'s'}${list.length>200?' · first 200 shown':''} · Next picks the next one`;
+  el.innerHTML=list.slice(0,200).map(z=>{ const st=p[z.id];
+    return TV.row({badge:z.rating||'—',title:esc(Puzzles.title(z.id,themeName(z.motif),!!st)),meta:z.op?esc(opName(z.op)):'Lichess',
+      right:TV.dots([[st?(st.ok?'good':'bad'):'','Puzzle']]),current:!!(S.cur&&S.cur.id===z.id),data:{id:z.id}}) }).join('');
+  if(!list.length) el.innerHTML='<p class="empty">No puzzles match these filters. Try Any rating or Any status.</p>';
 }
 
 /* the facts card; themes stay hidden until the puzzle is done (shared/puzzles.js) */
 function facts(){ const z=S.cur; if(!z) return;
   const done=!!(S.solved||S.failedFirst||prog()[z.id]);   /* themes stay hidden until the puzzle is done (Puzzles) */
-  $('t-facts').innerHTML=`<dt>Puzzle</dt><dd>${esc(z.id)}</dd><dt>Motif</dt><dd>${esc(Puzzles.theme(themeName(z.motif),done))}</dd><dt>Rating</dt><dd>${z.rating||'—'}</dd>
-    <dt>Themes</dt><dd>${esc(Puzzles.theme((z.themes||[]).map(themeName).join(', '),done))}</dd>`;
+  const rt=rating(), toMove=S.g&&S.g.turn()==='w'?'White':'Black';
+  $('t-head').innerHTML=TV.head({kicker:'Lichess #'+esc(z.id)+(z.op?' · '+esc(opName(z.op)):''),right:rt.n?String(rt.r):'',
+    title:esc(Puzzles.title(z.id,themeName(z.motif),done)),
+    chips:[z.rating?`<span class="mono">${z.rating}</span>`:'',toMove+' to move',
+      `<span id="t-facts">Themes: ${esc(Puzzles.theme((z.themes||[]).filter(t=>!['middlegame','endgame','opening','advantage','crushing','mate','short','long','veryLong','oneMove'].includes(t)).map(themeName).join(', ')||themeName(z.motif),done))}</span>`,
+      z.url?`<a href="${esc(z.url)}" target="_blank" rel="noopener">Original game</a>`:'']});
 }
 function load(z){
   if(endbar) endbar.hide();
@@ -134,6 +138,8 @@ function hint(){
   if(S.hintStage===0){ S.hintStage=1; board.setHint(exp.slice(0,2)); status('warn','Hint: this piece moves.','H again shows the move.') }
   else{ board.setHint(exp.slice(0,2),exp.slice(2,4)); status('warn','Answer: '+sanOf(S.g.fen(),exp),'') }
 }
+/* As in Chess Lab, the page opens on the first puzzle of the list (nothing is counted until a move is made) */
+function first(){ const z=daily(filtered())[0]; if(z) load(z) }
 function next(){
   const p=prog();
   const list=daily(filtered());
@@ -146,8 +152,10 @@ function init(){
   board=makeBoard($('t-board'),{onMove:userMove});
   endbar=endBanner($('t-board'),()=>next(),'Next puzzle');
   board.set(new Chess(),{locked:true});
-  fetch('data/tactics.json').then(r=>r.json()).then(j=>{ LIB=j; renderHeader(); renderFilters(); renderL() })
+  fetch('data/tactics.json').then(r=>r.json()).then(j=>{ LIB=j; renderHeader(); renderFilters(); renderL(); if(!S.cur) first() })
     .catch(()=>{ $('t-list').innerHTML='<p class="empty">The puzzle library could not load.</p>'; LIB=[] });
+  $('t-list').addEventListener('click',e=>{ const b=e.target.closest('.drill'); if(!b||!LIB) return; const z=LIB.find(x=>x.id===b.dataset.id); if(z){ load(z); if(innerWidth<860) $('t-board').scrollIntoView({behavior:'smooth',block:'start'}) } });
+  TV.fitBoard('#t-wrap','#t-tools');
   $('t-next').addEventListener('click',next);
   $('t-hint').addEventListener('click',hint);
   $('t-flip').addEventListener('click',()=>board.flip());

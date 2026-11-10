@@ -25,6 +25,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap">
 <link rel="stylesheet" href="shared/theme.css?v=__V__">
 <link rel="stylesheet" href="shared/shared.css?v=__V__">
+<link rel="stylesheet" href="shared/trainview.css?v=__V__">
 <link rel="stylesheet" href="style.css?v=__V__">
 <meta name="color-scheme" content="light dark">
 <script>/* the theme before the first paint (Settings -> Theme: light, dark or auto = match the device) */
@@ -66,16 +67,27 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
       </ul>
       <div class="btns" style="margin-top:10px"><a class="btn primary" href="#analyze" id="welcome-go">Analyze my games</a><button class="btn" id="welcome-ok">Got it</button></div>
     </div>
-    <div class="card">
-      <span class="label">Today</span>
-      <h2 style="margin:6px 0 4px">Your session</h2>
-      <p class="note" style="margin:0 0 10px">A few drills from your own games, five puzzles near your rating, one endgame and one opening line. Made fresh each day from your progress in this browser.</p>
-      <div id="td-head" class="tdhead"></div>
-      <div class="prog"><i id="td-bar" style="width:0%"></i></div>
-      <div class="btns" style="margin-top:12px"><button class="btn primary" id="td-go">Start today’s session</button></div>
-      <p class="note" id="td-note" style="margin-top:10px"></p>
+  </div>
+  <div class="grid tv" id="td-grid">
+    <div>
+      <div id="td-head"></div>
+      <div id="td-cards"></div>
+      <div class="label tvlabel">Up next</div>
+      <div class="list long" id="td-list"></div>
+      <p class="note" id="td-note" style="margin:10px 0 0"></p>
+      <p class="note" style="margin:8px 0 0"><button class="linkbtn" id="td-help" type="button">How Chess Lab Open works</button></p>
     </div>
-    <div class="list" id="td-list" style="margin-top:12px"></div>
+    <div class="panel">
+      <div class="boardwrap" id="td-wrap">
+        <div class="board" id="td-board" role="group" aria-label="Chess board"></div>
+        <div class="boardtools" id="td-tools">
+          <button class="btn sm primary" id="td-go">Start today’s session</button>
+          <button class="btn sm" id="td-next">Next <kbd>N</kbd></button>
+          <button class="btn sm" id="td-flip">Flip <kbd>F</kbd></button>
+        </div>
+      </div>
+      <div class="side"><div id="td-side"></div></div>
+    </div>
   </div>
 </section>
 
@@ -215,31 +227,29 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
 
 <!-- ================= Tactics ================= -->
 <section id="tactics" hidden>
-  <div class="grid">
+  <div class="grid tv">
     <div>
-      <div class="session" id="t-session">
-        <div><span class="label">Puzzle rating</span><br><b id="t-rating">&ndash;</b></div>
-        <div><span class="label">Solved</span><br><b id="t-solved">0</b></div>
+      <div class="filters" id="t-filters">
+        <div id="t-rate"></div>
+        <div class="filters" id="t-chiprows" style="margin:0"></div>
+        <div class="chips tctl"><div id="t-bands"></div><div id="t-motifs"></div><div id="t-ops"></div></div>
       </div>
-      <div class="filters">
-        <div class="btns tfilters" style="align-items:flex-start;gap:14px"><div id="t-motifs"></div><div id="t-ops"></div><div id="t-bands"></div></div>
-        <div class="chips" id="t-status"></div>
-      </div>
-      <div class="list" id="t-list"></div>
+      <div class="label tvlabel" id="t-listlabel"></div>
+      <div class="list longest" id="t-list"></div>
     </div>
     <div class="panel">
-      <div class="boardwrap">
+      <div class="boardwrap" id="t-wrap">
         <div class="board" id="t-board" role="group" aria-label="Chess board"></div>
-        <div class="boardtools">
+        <div class="boardtools" id="t-tools">
           <button class="btn sm primary" id="t-next">Next <kbd>N</kbd></button>
-          <button class="btn sm" id="t-hint">Hint <kbd>H</kbd></button>
           <button class="btn sm" id="t-flip">Flip <kbd>F</kbd></button>
+          <button class="btn sm" id="t-hint">Hint <kbd>H</kbd></button>
           <a class="btn sm" id="t-lichess" target="_blank" rel="noopener">Lichess &#8599;</a>
         </div>
       </div>
       <div class="side">
+        <div id="t-head"></div>
         <div class="status" id="t-status-box" aria-live="polite">Pick a puzzle from the list, or press Next.</div>
-        <div class="card"><span class="label">About this puzzle</span><dl class="facts" id="t-facts"></dl></div>
       </div>
     </div>
   </div>
@@ -351,28 +361,31 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
 
 <!-- ================= Drills ================= -->
 <section id="drills" hidden>
-  <div class="grid">
+  <div class="grid tv">
     <div>
-      <p class="note" style="margin:0 0 10px">Made by <b>Analyze my games</b> from your own games: <b>Your mistakes</b> (find the move
-         you should have played) and <b>Punish the mistake</b> (your opponent erred; find the move that makes them pay).</p>
-      <div class="chips" id="d-kinds" style="margin-bottom:10px"></div>
+      <div class="osearch" id="d-searchwrap" hidden><label for="d-search" class="vh">Search drills</label><input type="search" id="d-search" placeholder="Search opponent  ( / )" autocomplete="off" spellcheck="false"></div>
+      <div class="filters" id="d-filters"><div id="d-kinds"></div><div id="d-states"></div></div>
+      <div class="label tvlabel" id="d-listlabel"></div>
       <div class="list" id="d-list"></div>
+      <p class="note" id="d-about" style="margin:10px 0 0">Made by <a href="#analyze">Analyze my games</a> from your own games: <b>your mistakes</b> (find the move
+         you should have played) and <b>Punish</b> (your opponent erred; find the move that makes them pay).</p>
     </div>
     <div class="panel">
-      <div class="boardwrap">
+      <div class="boardwrap" id="d-wrap">
         <div class="board" id="d-board" role="group" aria-label="Chess board"></div>
-        <div class="boardtools">
+        <div class="boardtools" id="d-tools">
           <button class="btn sm primary" id="d-next">Next <kbd>N</kbd></button>
+          <button class="btn sm" id="d-flip">Flip <kbd>F</kbd></button>
           <button class="btn sm" id="d-hint">Hint <kbd>H</kbd></button>
           <button class="btn sm" id="d-show">Show the answer</button>
-          <button class="btn sm primary" id="d-playout" title="Continue the game from here against Stockfish">Play it out</button>
-          <button class="btn sm" id="d-flip">Flip <kbd>F</kbd></button>
           <a class="btn sm" id="d-lichess" target="_blank" rel="noopener">Lichess &#8599;</a>
         </div>
       </div>
       <div class="side">
+        <div id="d-head"></div>
         <div class="status" id="d-status" aria-live="polite">Pick a drill from the list.</div>
-        <div class="card"><span class="label">The game</span><dl class="facts" id="d-facts"></dl></div>
+        <div class="card" id="d-gamecard"><span class="label">The game</span><dl class="facts" id="d-facts"></dl></div>
+        <p class="note dfoot">Evals are from White's side: + favors White, − favors Black. Live engine: Stockfish in your browser.</p>
       </div>
     </div>
   </div>
@@ -522,19 +535,21 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
 
 <!-- ================= Progress ================= -->
 <section id="progress" hidden>
-  <div class="stats" id="p-stats"></div>
-  <div class="pcharts">
-    <div class="card"><div class="pchead"><span class="label">Opening rating</span><select id="p-op" aria-label="Opening"></select></div><div id="p-opchart" class="pchart"></div></div>
-    <div class="card"><span class="label">Puzzle rating</span><div id="p-tacchart" class="pchart"></div></div>
-    <div class="card"><span class="label">Calculation by difficulty</span><div id="p-calcchart" class="pchart"></div></div>
-    <div class="card"><span class="label">Activity, last 12 weeks</span><div id="p-activity" class="pchart"></div></div>
-  </div>
-  <div class="tablewrap"><table id="p-table"></table></div>
-  <div class="btns" style="margin-top:14px">
-    <button class="btn" id="p-export">Export progress (JSON)</button>
-    <button class="btn" id="p-import">Import progress</button>
-    <input type="file" id="p-file" accept="application/json" hidden>
-    <span class="note" id="p-note">Progress lives in this browser only (localStorage). Export it to move devices.</span>
+  <div class="report">
+    <div class="rhead"><h2>Progress</h2>
+      <div class="rbar"><button class="btn sm" id="p-export">Export progress (JSON)</button><button class="btn sm" id="p-import">Import progress</button><input type="file" id="p-file" accept="application/json" hidden></div>
+    </div>
+    <p class="lead note" id="p-lead"></p>
+    <div class="stats" id="p-stats"></div>
+    <div class="pcharts">
+      <div class="card"><div class="pchead"><span class="label">Opening rating</span><select id="p-op" aria-label="Opening"></select></div><div id="p-opchart" class="pchart"></div></div>
+      <div class="card"><span class="label">Puzzle rating</span><div id="p-tacchart" class="pchart"></div></div>
+      <div class="card"><span class="label">Calculation by difficulty</span><div id="p-calcchart" class="pchart"></div></div>
+      <div class="card"><span class="label">Activity, last 12 weeks</span><div id="p-activity" class="pchart"></div></div>
+    </div>
+    <h3>By opening</h3>
+    <div class="tablewrap"><table id="p-table"></table></div>
+    <p class="note" id="p-note" style="margin-top:12px">Progress lives in this browser only (localStorage). Export it to move devices.</p>
   </div>
 </section>
 
@@ -574,6 +589,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
 <script src="shared/reader.js?v=__V__"></script>
 <script src="shared/controls.js?v=__V__"></script>
 <script src="shared/nav.js?v=__V__"></script>
+<script src="shared/trainview.js?v=__V__"></script>
 <script src="js/shared.js?v=__V__"></script>
 <script src="js/book.js?v=__V__"></script>
 <script src="js/openings.js?v=__V__"></script>

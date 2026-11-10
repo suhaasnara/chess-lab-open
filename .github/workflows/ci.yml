@@ -1,7 +1,7 @@
 name: CI
 on:
   push:
-    branches: [main, parity-1, positions, one-codebase]
+    branches: [main, parity-1, positions, one-codebase, shared-screens]
   pull_request:
 
 jobs:
