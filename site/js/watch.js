@@ -144,6 +144,7 @@ function today(){ const v=all().filter(x=>state(x)==='progress').sort((a,b)=>(re
   return v?{v,url:url(v),label:state(v)==='progress'?'Resume at '+fmt(pos(v)):'Next in '+v.series}:null }
 
 function init(){
+  Keys.on('watch',{'/':['Search videos',()=>{ const i=$('wa-search'); i.focus(); i.select() }]});
   const sec=$('watch'); if(!sec) return;
   sec.addEventListener('click',e=>{
     { const st=e.target.closest('[data-starter]'); if(st){ addStarter(+st.dataset.starter); return } }

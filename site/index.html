@@ -257,41 +257,49 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
 
 <!-- ================= Calculation ================= -->
 <section id="calc" hidden>
-  <div class="grid">
-    <div>
-      <p class="note" style="margin:0 0 10px">See the whole line before you play it: enter your moves <b>and</b> the replies you expect,
-         then Submit. Hard, long Lichess puzzles (4+ moves for you, rated 2200 to 2800), graded against the solution, with Stockfish judging other first moves.</p>
-      <div id="cc-lens" class="ccfilters" style="margin-bottom:10px"></div>
-      <div class="list" id="cc-list"></div>
+  <div class="tvlobby" id="cc-lobby">
+    <div class="card">
+      <h2>Calculation</h2>
+      <p class="note" style="margin-top:0">See the whole line before you play it: enter your moves <b>and</b> the replies you expect, then Submit.
+         Hard, long Lichess puzzles (4+ moves for you, rated 2200 to 2800), graded against the solution, with Stockfish judging other first moves.</p>
+      <div class="tvfilters"><div id="cc-range"></div></div>
+      <div id="cc-lens"></div>
+      <div class="btns" style="margin-top:14px"><button class="btn primary" id="cc-start" type="button">Start · next unsolved</button></div>
+      <div class="tablewrap tvstats" style="margin-top:14px"><table id="cc-stats"></table></div>
     </div>
-    <div class="panel">
-      <div class="boardwrap">
-        <div class="board" id="cc-board" role="group" aria-label="Chess board"></div>
-        <div class="boardtools">
-          <button class="btn sm primary" id="cc-submit">Submit <kbd>↵</kbd></button>
-          <button class="btn sm" id="cc-undo">Undo <kbd>B</kbd></button>
-          <button class="btn sm" id="cc-reset">Reset</button>
-          <button class="btn sm" id="cc-prev" aria-label="Back through the solution">&#8592;</button>
-          <button class="btn sm" id="cc-fwd" aria-label="Forward through the solution">&#8594;</button>
-          <span class="evalchip" id="cc-step"></span>
-          <span id="cc-readslot"></span>
-          <button class="btn sm" id="cc-next">Next <kbd>N</kbd></button>
-          <button class="btn sm" id="cc-flip">Flip <kbd>F</kbd></button>
-          <a class="btn sm" id="cc-lichess" target="_blank" rel="noopener">Lichess &#8599;</a>
-        </div>
+    <div class="card tvlist"><div class="label" id="cc-count"></div><div class="list" id="cc-list"></div></div>
+  </div>
+  <div class="tv3" id="cc-train" hidden>
+    <div class="tvleft">
+      <div id="cc-head"></div>
+      <div class="status" id="cc-status" aria-live="polite">Pick an exercise from the list, or press Next.</div>
+      <button class="btn sm tvback" id="cc-back" type="button">&#8592; All exercises</button>
+    </div>
+    <div class="boardwrap" id="cc-wrap">
+      <div class="board" id="cc-board" role="group" aria-label="Chess board"></div>
+      <div class="boardtools" id="cc-tools">
+        <button class="btn sm primary" id="cc-submit">Submit <kbd>↵</kbd></button>
+        <button class="btn sm" id="cc-undo">Undo <kbd>B</kbd></button>
+        <button class="btn sm" id="cc-reset">Reset <kbd>R</kbd></button>
+        <button class="btn sm" id="cc-prev" aria-label="Back through the solution">&#8592;</button>
+        <button class="btn sm" id="cc-fwd" aria-label="Forward through the solution">&#8594;</button>
+        <span class="evalchip" id="cc-step"></span>
+        <span id="cc-readslot"></span>
+        <button class="btn sm" id="cc-next">Next <kbd>N</kbd></button>
+        <button class="btn sm" id="cc-flip">Flip <kbd>F</kbd></button>
+        <a class="btn sm" id="cc-lichess" target="_blank" rel="noopener">Lichess &#8599;</a>
       </div>
-      <div class="side">
-        <div class="status" id="cc-status" aria-live="polite">Pick an exercise from the list, or press Next.</div>
-        <div class="card"><span class="label">Line <span class="evalchip" id="cc-clock" style="float:right">0:00</span></span><div class="ccline" id="cc-line"></div></div>
-        <div class="card"><span class="label">The exercise</span><dl class="facts" id="cc-facts"></dl></div>
-      </div>
+    </div>
+    <div class="side">
+      <div class="card"><span class="label">Your line <span class="evalchip" id="cc-clock" style="float:right">0:00</span></span><div class="ccline" id="cc-line"></div></div>
+      <div class="card"><span class="label">The exercise</span><dl class="facts" id="cc-facts"></dl></div>
     </div>
   </div>
 </section>
 
 <!-- ================= Endgames ================= -->
 <section id="endgames" hidden>
-  <div class="grid">
+  <div class="grid tv">
     <div>
       <p class="note" style="margin:0 0 10px">Textbook endings against perfect defence. Every move is graded by the
          <a href="https://lichess.org/blog/W3WeMyQAACQAdfAL/7-piece-syzygy-tablebases-are-complete" target="_blank" rel="noopener">Lichess tablebase</a>:
@@ -303,12 +311,13 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
         <p class="note">The live Lichess tablebase says whether the side to move wins or draws, and grades every move.</p>
         <div class="btns"><button class="btn sm primary" id="eg-csave" type="button">Save and train</button><button class="btn sm" id="eg-ccancel" type="button">Cancel</button></div>
         <p class="note" id="eg-cerr" role="status"></p></div>
-      <div class="list" id="eg-list"></div>
+      <div class="list longest" id="eg-list"></div>
     </div>
     <div class="panel">
-      <div class="boardwrap">
+      <div class="boardwrap" id="eg-wrap">
         <div class="board" id="eg-board" role="group" aria-label="Chess board"></div>
-        <div class="boardtools">
+        <div class="boardtools" id="eg-tools">
+          <button class="btn sm primary" id="eg-next">Next <kbd>N</kbd></button>
           <button class="btn sm" id="eg-back">Take back <kbd>B</kbd></button>
           <button class="btn sm" id="eg-hint">Hint <kbd>H</kbd></button>
           <button class="btn sm" id="eg-sol">Solution</button>
@@ -317,7 +326,6 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
           <span class="evalchip" id="eg-step" hidden></span>
           <span id="eg-readslot"></span>
           <button class="btn sm" id="eg-retry">Retry</button>
-          <button class="btn sm" id="eg-next">Next <kbd>N</kbd></button>
           <button class="btn sm" id="eg-flip">Flip <kbd>F</kbd></button>
           <a class="btn sm" id="eg-lichess" target="_blank" rel="noopener" title="Open this position on the Lichess analysis board">Lichess analysis &#8599;</a>
           <button class="btn sm" id="eg-delpos" hidden>Delete position</button>
@@ -393,45 +401,38 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
 
 <!-- ================= Play ================= -->
 <section id="play" hidden>
-  <div class="grid">
-    <div>
-      <div class="card">
-        <span class="label">New game</span>
-        <label class="field" style="margin-top:8px">Strength
-          <select id="pl-elo">
-            <option value="1400">Stockfish 1400</option><option value="1600">1600</option>
+  <div class="tvplay">
+    <div class="boardwrap" id="pl-wrap">
+      <div class="board" id="pl-board" role="group" aria-label="Chess board"></div>
+      <p class="note" id="pl-strip" style="margin:6px 0 0;min-height:1.2em"></p>
+      <div class="boardtools" id="pl-tools">
+        <button class="btn sm" id="pl-hint" title="First the piece, then the move (H). Counted on the saved game.">Hint <kbd>H</kbd></button>
+        <button class="btn sm" id="pl-back" title="Take back your last move and the reply (B). Counted on the saved game." disabled>Take back <kbd>B</kbd></button>
+        <button class="btn sm primary" id="pl-review" hidden title="Import this game to Lichess and open its analysis (or copy the PGN for lichess.org/paste)">Review on Lichess &#8599;</button>
+        <button class="btn sm" id="pl-peek">Peek</button>
+        <button class="btn sm" id="pl-resign">Resign</button>
+      </div>
+      <form class="moveform" id="pl-moveform">
+        <div class="moverow"><input id="pl-movein" placeholder="Type a move (Nf3, e4, O-O)" aria-label="Type a move"><button class="btn">Play</button></div>
+        <p class="note err" id="pl-moveerr"></p>
+      </form>
+    </div>
+    <div class="side">
+      <div class="status" id="pl-status" aria-live="polite">Choose a bot and start. Blindfold hides the pieces until the game ends; type moves or tap the squares.</div>
+      <div class="btns"><button class="btn primary" id="pl-new">New game</button><button class="btn" id="pl-flip">Flip <kbd>F</kbd></button></div>
+      <div class="card pmoves"><span class="label">Moves</span><div class="movelist" id="pl-moves"></div></div>
+      <div class="card"><span class="label">Game setup</span>
+        <div id="pl-setup"></div>
+        <div class="vh"><select id="pl-elo" aria-label="Strength">
+            <option value="1400">1400</option><option value="1600">1600</option>
             <option value="1800" selected>1800</option><option value="2000">2000</option>
             <option value="2200">2200</option><option value="2400">2400</option>
             <option value="2600">2600</option><option value="max">Full strength</option>
-          </select></label>
-        <label class="field" style="margin-top:8px">Your side
-          <select id="pl-color"><option value="w">White</option><option value="b">Black</option><option value="random">Random</option></select></label>
-        <label class="toggle"><input type="checkbox" id="pl-blind"> Blindfold (no pieces shown)</label>
-        <div class="btns" style="margin-top:10px"><button class="btn primary" id="pl-new">Start</button></div>
+          </select><select id="pl-color" aria-label="Your side"><option value="w">White</option><option value="b">Black</option><option value="random">Random</option></select>
+          <input type="checkbox" id="pl-blind" aria-label="Blindfold"></div>
+        <p class="note pnote">Bot ratings are Stockfish’s own scale (held back with its UCI_Elo setting); treat them as rough online-style ratings.</p>
       </div>
-      <div class="card" style="margin-top:12px"><span class="label">Your games</span><div id="pl-games" style="margin-top:6px"></div></div>
-    </div>
-    <div class="panel">
-      <div class="boardwrap">
-        <div class="board" id="pl-board" role="group" aria-label="Chess board"></div>
-        <p class="note" id="pl-strip" style="margin:6px 0 0;min-height:1.2em"></p>
-        <div class="boardtools">
-          <button class="btn sm" id="pl-hint" title="First the piece, then the move (H). Counted on the saved game.">Hint <kbd>H</kbd></button>
-          <button class="btn sm" id="pl-back" title="Take back your last move and the reply (B). Counted on the saved game." disabled>Take back <kbd>B</kbd></button>
-          <button class="btn sm primary" id="pl-review" hidden title="Import this game to Lichess and open its analysis (or copy the PGN for lichess.org/paste)">Review on Lichess &#8599;</button>
-          <button class="btn sm" id="pl-peek">Peek</button>
-          <button class="btn sm" id="pl-resign">Resign</button>
-          <button class="btn sm" id="pl-flip">Flip <kbd>F</kbd></button>
-        </div>
-        <form class="moveform" id="pl-moveform">
-          <div class="moverow"><input id="pl-movein" placeholder="Type a move (Nf3, e4, O-O)" aria-label="Type a move"><button class="btn">Play</button></div>
-          <p class="note err" id="pl-moveerr"></p>
-        </form>
-      </div>
-      <div class="side">
-        <div class="status" id="pl-status" aria-live="polite">Set a strength and press Start.</div>
-        <div class="card"><span class="label">Moves</span><div class="movelist" id="pl-moves"></div></div>
-      </div>
+      <div class="card"><span class="label">Your games</span><div id="pl-games" style="margin-top:6px"></div></div>
     </div>
   </div>
 </section>
@@ -507,9 +508,14 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
 
 <!-- ================= Watch ================= -->
 <section id="watch" hidden>
-  <div class="wawrap">
+  <div class="wawrap tvwatch">
+    <div class="wafilters">
+      <div class="chips" id="wa-view" role="group" aria-label="View"></div><div class="chips" id="wa-kind" role="group" aria-label="Kind"></div><div class="chips" id="wa-state" role="group" aria-label="Watched state"></div>
+      <select id="wa-topic" aria-label="Topic"></select>
+      <span class="wasearch"><input type="search" id="wa-search" placeholder="Search videos  ( / )" aria-label="Search videos" autocomplete="off" spellcheck="false"></span>
+    </div>
     <details class="card waadd" id="wa-addcard">
-      <summary><span class="label">Add a video</span></summary>
+      <summary>Add a video</summary>
       <div class="moverow" style="margin-top:8px"><input type="text" id="wa-aurl" placeholder="YouTube link (a &amp;t= position is kept)" aria-label="YouTube link" autocomplete="off" spellcheck="false"><button class="btn sm" id="wa-aget" type="button" title="Ask YouTube for the title and channel">Get title</button></div>
       <div class="row2" style="margin-top:8px">
         <label class="field">Title <input type="text" id="wa-atitle"></label>
@@ -524,11 +530,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
       <div class="btns" style="margin-top:10px"><button class="btn primary" id="wa-asave" type="button">Add to my library</button><span class="note" id="wa-aerr" role="status"></span></div>
       <p class="note" style="margin:8px 0 0">No videos play on this page: each one opens on YouTube at your saved position. Your library, notes and bookmarks stay in this browser.</p>
     </details>
-    <div class="filters" style="margin-top:12px">
-      <input type="text" id="wa-search" placeholder="Search titles, series, notes…" aria-label="Search videos">
-      <div class="chips" id="wa-view"></div><div class="chips" id="wa-kind"></div><div class="chips" id="wa-state"></div>
-      <div class="btns" style="align-items:center"><select id="wa-topic" aria-label="Topic"></select><span class="note" id="wa-count"></span></div>
-    </div>
+    <div class="label" id="wa-count"></div>
     <div id="wa-list" class="walist"></div>
   </div>
 </section>

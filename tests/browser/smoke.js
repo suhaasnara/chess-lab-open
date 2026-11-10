@@ -166,7 +166,7 @@ async function waitFor(page,fn,arg,ms=20000){ try{ await page.waitForFunction(fn
   /* ---- Calculation: enter the solution's first move, submit ---- */
   await go('calc');
   await waitFor(page,()=>!!CalcTab.lib&&CalcTab.lib.length,null,20000);
-  await page.click('#cc-next'); await sleep(200);
+  await page.click('#cc-start'); await sleep(200);
   const cmv=await page.evaluate(()=>{ const u=CalcTab.state.cur.moves[1]; return [u.slice(0,2),u.slice(2,4)] });
   await tap('cc-board',cmv[0],cmv[1]);
   check('Calculation: a move enters the line',await waitFor(page,()=>CalcTab.state.line.length===1,null,3000));

@@ -155,6 +155,14 @@ function init(){
   board.set(new Chess(),{locked:true});
   renderGames();
   $('pl-new').addEventListener('click',newGame);
+  /* the setup as segmented rows (Chess Lab's look); they drive the form fields the game reads */
+  const setup=()=>{ const seg=(id,opts,cur)=>`<div class="seg mini${opts.length>4?' pwrap':''}" role="group">${opts.map(([v,l])=>`<button type="button" data-f="${id}" data-v="${v}" aria-pressed="${String(cur)===String(v)}">${l}</button>`).join('')}</div>`;
+    $('pl-setup').innerHTML=`<div class="prow"><span class="label">Bot</span>${seg('pl-elo',[...$('pl-elo').options].map(o=>[o.value,o.value==='max'?'Full':o.value]),$('pl-elo').value)}</div>
+      <div class="prow"><span class="label">You play</span>${seg('pl-color',[['w','White'],['b','Black'],['random','Random']],$('pl-color').value)}</div>
+      <div class="prow"><span class="label">Blindfold</span>${seg('pl-blind',[['true','On'],['false','Off']],$('pl-blind').checked)}</div>`; };
+  $('pl-setup').addEventListener('click',e=>{ const b=e.target.closest('button[data-f]'); if(!b) return; const f=$(b.dataset.f);
+    if(f.type==='checkbox') f.checked=b.dataset.v==='true'; else f.value=b.dataset.v; setup() });
+  setup();
   $('pl-resign').addEventListener('click',resign);
   $('pl-back').addEventListener('click',takeBack);
   $('pl-moves').addEventListener('click',e=>{ const b=e.target.closest('[data-ply]'); if(b) viewAt(+b.dataset.ply) });

@@ -8,7 +8,8 @@
 'use strict';
 (function(){
 let board=null, LIB=null, endbar=null;
-const S={cur:null,start:null,g:null,line:[],sub:false,t0:0,tick:null,len:'all',lo:null,hi:null,view:0,busy:false};
+const S={cur:null,start:null,g:null,line:[],sub:false,t0:0,tick:null,len:'all',lo:null,hi:null,view:0,busy:false,st:'all'};
+const STS=[['all','All'],['unsolved','Unsolved'],['missed','Missed or partly'],['solved','Solved']];
 const prog=()=>Store.get('calc-progress')||{};
 const mine=z=>Math.floor(z.moves.length/2);                 /* the solver's moves (the first move is the setup) */
 const LENS=[['all','Any length'],['4','4 moves'],['5','5 moves'],['6','6+ moves']];
@@ -16,28 +17,32 @@ const HARD=[['0','All'],['2200','2200+'],['2400','2400+'],['2600','2600+']];
 
 function list(){
   if(!LIB) return [];
-  return LIB.filter(z=>mine(z)>=4&&(S.lo==null||z.rating>=S.lo)&&(S.hi==null||z.rating<=S.hi)&&(S.len==='all'||(S.len==='6'?mine(z)>=6:mine(z)===+S.len))).sort((a,b)=>a.rating-b.rating);
+  const p=prog();
+  return LIB.filter(z=>{ if(mine(z)<4||(S.lo!=null&&z.rating<S.lo)||(S.hi!=null&&z.rating>S.hi)||!(S.len==='all'||(S.len==='6'?mine(z)>=6:mine(z)===+S.len))) return false;
+    const r=p[z.id]; return S.st==='all'||(S.st==='unsolved'?!r:S.st==='missed'?!!r&&r.score<1:!!r&&r.score>=1) }).sort((a,b)=>a.rating-b.rating);
 }
+/* The lobby (shared screens: Chess Lab's Calculation start page): filters, Start, a summary by length | the list */
+let RNG=null;
+const sideOf=z=>{ try{ return new Chess(z.fen).turn()==='w'?'Black':'White' }catch(e){ return '' } };   /* the setup move is the opponent's */
+function chipFor(r){ return !r?['','—']:r.score>=1?['ok','✓']:r.score>0?['part',Math.round(r.score*100)+'%']:['bad','✗'] }
 function renderList(){
-  const ch=$('cc-lens'); ch.innerHTML=''; const rg=document.createElement('div'); ch.appendChild(rg);
-  if(LIB&&LIB.length){ const rs=LIB.map(z=>z.rating), lo=Math.floor(Math.min(...rs)/100)*100, hi=Math.ceil(Math.max(...rs)/100)*100;   /* rating: two handles, 100-point steps */
-    Controls.range(rg,{label:'Puzzle rating',min:lo,max:hi,step:100,lo:S.lo==null?lo:S.lo,hi:S.hi==null?hi:S.hi,onChange:(a,b)=>{ S.lo=a<=lo?null:a; S.hi=b>=hi?null:b; renderList() }}) }
-  const row=(opts,key)=>{ const r=document.createElement('div'); r.className='chips';
-    for(const [v,n] of opts){ const b=document.createElement('button'); b.className='chip'; b.textContent=n; b.setAttribute('aria-pressed',String(S[key]===v));
-      b.addEventListener('click',()=>{ S[key]=v; renderList() }); r.appendChild(b) }
-    ch.appendChild(r) };
-  row(LENS,'len');
-  const n=list().length; const c=document.createElement('p'); c.className='note'; c.style.margin='6px 0 0';
-  c.textContent=LIB?n.toLocaleString()+' exercises':''; ch.appendChild(c);
-  const el=$('cc-list'); el.innerHTML=''; const p=prog();
-  for(const z of list()){
-    const r=p[z.id];
-    const b=document.createElement('button'); b.className='drill'; b.setAttribute('aria-current',S.cur&&S.cur.id===z.id?'true':'false');
-    b.innerHTML=`<span class="src">${r?(r.score>=1?'✓':Math.round(r.score*100)+'%'):''}</span><span><span class="opp">${mine(z)} moves · ${z.rating}</span><br><span class="meta">${esc(Puzzles.title(z.id,themeName(z.motif),!!r))}</span></span><span class="evalchip">&#9654;</span>`;
-    b.addEventListener('click',()=>load(z)); el.appendChild(b);
-  }
-  if(!el.children.length) el.innerHTML='<p class="empty">Loading exercises…</p>';
+  if(LIB&&LIB.length&&!RNG){ const rs=LIB.map(z=>z.rating), lo=Math.floor(Math.min(...rs)/100)*100, hi=Math.ceil(Math.max(...rs)/100)*100;   /* rating: two handles, 100-point steps */
+    RNG=Controls.range($('cc-range'),{label:'Puzzle rating',min:lo,max:hi,step:100,lo:S.lo==null?lo:S.lo,hi:S.hi==null?hi:S.hi,onChange:(a,b)=>{ S.lo=a<=lo?null:a; S.hi=b>=hi?null:b; renderList() }}) }
+  $('cc-lens').innerHTML=TV.chips('','len',LENS,S.len)+TV.chips('','st',STS,S.st);
+  const L=list(), p=prog();
+  $('cc-count').textContent=LIB?Help.n(L.length,'exercise'):'';
+  $('cc-start').disabled=!L.length; $('cc-start').textContent=L.length?'Start'+(S.st==='all'||S.st==='unsolved'?' · next unsolved':' · first in this list'):'Start';
+  const groups=[['4','4 moves'],['5','5 moves'],['6','6+ moves']].map(([k,n])=>{ const xs=(LIB||[]).filter(z=>k==='6'?mine(z)>=6:mine(z)===+k), done=xs.filter(z=>p[z.id]);
+    const ok=done.filter(z=>p[z.id].score>=1).length, tn=done.filter(z=>p[z.id].secs), t=tn.reduce((a,z)=>a+p[z.id].secs,0);
+    return `<tr><td>${n}</td><td class="num">${done.length}/${xs.length}</td><td class="num">${done.length?Math.round(100*ok/done.length)+'%':'—'}</td><td class="num">${tn.length?fmt(Math.round(t/tn.length)):'—'}</td></tr>` });
+  $('cc-stats').innerHTML=`<thead><tr><th>Length</th><th class="num">Done</th><th class="num">Solved</th><th class="num">Avg time</th></tr></thead><tbody>${groups.join('')}</tbody>`;
+  $('cc-list').innerHTML=L.slice(0,400).map(z=>{ const r=p[z.id], c=chipFor(r);
+    return `<button type="button" class="drill" data-id="${esc(z.id)}" aria-current="${!!(S.cur&&S.cur.id===z.id)}"><span class="evalchip ${c[0]}">${c[1]}</span><span><div class="opp">${esc(Puzzles.title(z.id,themeName(z.motif),!!r))}</div><div class="meta">${mine(z)} moves · ${z.rating} · ${sideOf(z)} to move</div></span><span class="note">${r&&r.secs?fmt(r.secs):''}</span></button>` }).join('')
+    ||`<p class="note">${LIB?'Nothing here with these filters.':'Loading exercises…'}</p>`;
+  if(L.length>400) $('cc-list').insertAdjacentHTML('beforeend','<p class="note">Showing the first 400; narrow the rating or length to see the rest.</p>');
 }
+function showTrain(on){ $('cc-lobby').hidden=on; $('cc-train').hidden=!on }
+function lobby(){ clearInterval(S.tick); S.cur=null; if(endbar) endbar.hide(); showTrain(false); renderList(); scrollTo(0,0) }
 function fmt(s){ return Math.floor(s/60)+':'+String(s%60).padStart(2,'0') }
 function load(z){
   if(endbar) endbar.hide();
@@ -48,6 +53,8 @@ function load(z){
   clearInterval(S.tick); S.t0=Date.now(); S.tick=setInterval(()=>{ $('cc-clock').textContent=fmt(Math.round((Date.now()-S.t0)/1000)) },1000);
   $('cc-clock').textContent='0:00';
   status('',`${S.g.turn()==='w'?'White':'Black'} to move. See ${mine(z)} moves deep.`,'Play the whole line (your moves and the replies you expect), then Submit.');
+  showTrain(true);
+  $('cc-head').innerHTML=TV.head({kicker:'Lichess #'+esc(z.id),title:esc(Puzzles.title(z.id,themeName(z.motif),!!prog()[z.id])),chips:[`<span class="mono">${z.rating}</span>`,`${mine(z)} moves for you`,(S.g.turn()==='w'?'White':'Black')+' to move']});
   $('cc-facts').innerHTML=`<dt>Length</dt><dd>${mine(z)} moves for you</dd><dt>Rating</dt><dd>${z.rating}</dd><dt>Motif</dt><dd>${esc(Puzzles.theme(themeName(z.motif),!!S.sub))}</dd>`;
   $('cc-lichess').href=z.url||'#';
   renderLine(); renderList();
@@ -127,6 +134,11 @@ function init(){
   $('cc-undo').addEventListener('click',undo);
   $('cc-reset').addEventListener('click',reset);
   $('cc-next').addEventListener('click',next);
+  $('cc-back').addEventListener('click',lobby);
+  $('cc-start').addEventListener('click',()=>{ const L=list(), p=prog(); const z=(S.st==='all'||S.st==='unsolved'?L.find(x=>!p[x.id]):null)||L[0]; if(z) load(z) });
+  $('cc-list').addEventListener('click',e=>{ const b=e.target.closest('.drill[data-id]'); if(!b||!LIB) return; const z=LIB.find(x=>x.id===b.dataset.id); if(z) load(z) });
+  TV.onChip($('cc-lens'),(k,v)=>{ S[k]=v; renderList() });
+  TV.fitBoard('#cc-wrap','#cc-tools');
   $('cc-flip').addEventListener('click',()=>board.flip());
   /* stepping through the solution moves the result banner out of the way */
   $('cc-prev').addEventListener('click',()=>{ S.view--; endbar.hide(); showView() });
@@ -146,5 +158,5 @@ function ensure(){
     .then(j=>{ LIB=j; renderList() }).catch(()=>{ LIB=[]; renderList() });
   return libP;
 }
-window.CalcTab={ensure,init,load,userMove,undo,reset,submit,next,get state(){return S},get lib(){return LIB}};
+window.CalcTab={ensure,init,load,lobby,userMove,undo,reset,submit,next,get state(){return S},get lib(){return LIB}};
 })();

@@ -391,7 +391,7 @@ section('t16: Calculation — enter the whole line, graded against the solution'
   assert(calc.length>1000&&ok&&calc.every(z=>z.rating>=2200&&Math.floor(z.moves.length/2)>=4)&&new Set(calc.map(z=>z.id)).size===calc.length,'calc.json: '+calc.length+' exercises, all 2200+, 4+ moves, every move legal, unique ids');
   assert(C.lib.length===calc.length,'Calculation loads calc.json');
   const listed=C.lib.filter(z=>Math.floor(z.moves.length/2)>=4&&z.rating>=2200).length;
-  assert(n>50&&n===listed,'by default the list is the hard long exercises (2200+, 4+ moves for you): '+n);
+  assert(n>50&&n===Math.min(400,listed)&&w.document.getElementById('cc-count').textContent.replace(/\D/g,'')===String(listed),'by default the list is the hard long exercises (2200+, 4+ moves for you): '+n+' shown of '+listed);
   const z=C.lib.find(z=>Math.floor(z.moves.length/2)===4);
   C.load(z); await sleep(20);
   const sol=z.moves.slice(1), play=u=>C.userMove(u.slice(0,2),u.slice(2,4),u[4]);

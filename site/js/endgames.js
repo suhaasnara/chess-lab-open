@@ -238,10 +238,11 @@ function stats(){ const p=prog(); const all=DATA?DATA.positions:[];
   return {total:all.length,solved:all.filter(z=>p[z.id]&&p[z.id].okN).length,tried:all.filter(z=>p[z.id]).length} }
 
 function init(){
+  TV.fitBoard('#eg-wrap','#eg-tools');
   board=makeBoard($('eg-board'),{onMove:userMove});
   endbar=endBanner($('eg-board'),()=>next(),'Next endgame');
   board.set(new Chess('8/8/8/4k3/8/8/8/4K3 w - - 0 1'),{locked:true});
-  fetch('data/endgames.json').then(r=>{ if(!r.ok) throw 0; return r.json() }).then(j=>{ DATA=j; mergeCustoms(); renderList() })
+  fetch('data/endgames.json').then(r=>{ if(!r.ok) throw 0; return r.json() }).then(j=>{ DATA=j; mergeCustoms(); renderList(); if(!S.cur&&DATA.positions.length) load(DATA.positions[0]) })   /* opens on the first ending, as Chess Lab does */
     .catch(()=>{ DATA={groups:[],positions:[]}; renderList() });
   $('eg-back').addEventListener('click',takeBack);
   $('eg-hint').addEventListener('click',hint);
