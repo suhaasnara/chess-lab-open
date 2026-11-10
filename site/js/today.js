@@ -148,7 +148,9 @@ function draw(fresh){
   if(!rows.length) el.innerHTML='<p class="empty">'+((TacticsTab.lib||[]).length?'Nothing to play here today.':'Loading the puzzles…')+'</p>';
   const nd=(Store.get('adrills')||[]).length;
   $('td-note').innerHTML=nd?'':'Drills from your own games appear here once you run <a href="#analyze">Analyze my games</a> and save some.';
-  if(fresh||(!hosted&&!sel)) play(here.find(x=>!x.done)||here[0]||null);
+  /* on opening Today, only a drill or puzzle goes on the board by itself: the opening trainer would start the 6 MB book
+     download (and the endgame its data) while the puzzles are still loading on a slow phone; those come with their card or Next */
+  if(fresh||(!hosted&&!sel)) play(rows.find(x=>!x.done)||rows[0]||null);
   else for(const b of document.querySelectorAll('#td-list .drill[data-k],#td-cards [data-tdrow]')) b.setAttribute('aria-current',String((b.dataset.k||b.dataset.tdrow)===sel));   /* a result came in: the board stays as it is */
 }
 function nextItem(){
