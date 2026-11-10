@@ -25,12 +25,6 @@ body[data-view]:not([data-view=today]) .hero{display:none}
 .hero h1{color:var(--on-navy);margin:0;font-size:1.7rem}
 .hero p{margin:6px 0 0;color:var(--blue-on-navy);font-size:.95rem;max-width:62ch}
 .hero a{color:var(--blue-on-navy)}
-.tabs{background:var(--white);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30}
-.tabs .inner{display:flex;gap:4px;overflow-x:auto}
-.tabs button{border:0;background:none;padding:13px 10px;font-size:.92rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
-.tabs button:hover{color:var(--head)}
-.tabs button[aria-current="true"]{color:var(--head);border-bottom-color:var(--head)}
-.tabs .spacer{flex:1}
 main.inner{padding-block:20px 44px}
 body[data-view="openings"] main.inner,body[data-view="tactics"] main.inner,body[data-view="calc"] main.inner,body[data-view="endgames"] main.inner,body[data-view="drills"] main.inner,body[data-view="play"] main.inner,body[data-view="guess"] main.inner{max-width:1500px}
 
@@ -279,7 +273,6 @@ footer .inner{padding-block:18px;font-size:.85rem;color:var(--muted)}
   .btn.sm{min-height:36px}
 }
 /* Phones: the tab row scrolls sideways; a fade at the right edge shows there are more tabs. */
-@media (max-width:860px){.tabs .inner{scrollbar-width:none;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent)}.tabs .inner::-webkit-scrollbar{display:none}}
 .evalchip:empty{display:none}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 
@@ -352,10 +345,6 @@ footer .inner{padding-block:18px;font-size:.85rem;color:var(--muted)}
 .wbar{flex:0 1 220px;height:5px;border-radius:3px;background:var(--line);overflow:hidden}.wbar i{display:block;height:100%;background:var(--blue-bg)}
 .wabm{margin:4px 0 6px;padding-left:18px}.watags summary{cursor:pointer}
 a.drill{text-decoration:none}
-@media (min-width:861px){.tabs .setlab{display:none}}
-@media (min-width:861px) and (max-width:1320px){.tabs button{padding:13px 7px;font-size:.88rem}}
-@media (min-width:861px) and (max-width:1120px){.tabs button{padding:13px 4px;font-size:.84rem}.tabs .inner{gap:2px}}
-@media (min-width:861px) and (max-width:960px){.tabs button{padding:13px 3px;font-size:.8rem}}   /* 13 tabs since Players + Watch: no sideways scroll above 860 px (Settings = the gear, labelled for screen readers) */
 /* board display settings */
 body.no-coords .coord{display:none}body.no-last .sq.last{background:none}body.no-dests .sq.tgt::after{display:none}body.no-dests .sq.tgt:hover{background:none}
 .npgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}#o-npboard{max-width:420px}
@@ -366,6 +355,3 @@ body.no-coords .coord{display:none}body.no-last .sq.last{background:none}body.no
 .capline{display:flex;flex-wrap:wrap;align-items:center;gap:0;min-height:20px;margin:2px 0}.capline .pc{position:relative;inset:auto;display:inline-block;width:18px;height:18px;margin-right:-4px}.capline .capdiff{margin-left:8px;font-size:13px;color:var(--muted)}
 .skiprow{margin-top:8px}.skiprow .btn{margin:2px}
 /* Settings in the top nav: a clearly visible, 44 px tap target; labelled on wide screens */
-.tabs button[data-route="settings"]{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:1.3rem;line-height:1}
-.tabs button[data-route="settings"] .setlab{font-size:.9rem}
-@media (min-width:1321px){.tabs .setlab{display:inline}}

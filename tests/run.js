@@ -10,7 +10,14 @@ const fs=require('fs'), path=require('path');
 section('t1: page loads, routes, board renders');
 {
   const {w}=await makePage();
-  assert(w.document.querySelectorAll('.tabs button[data-route]').length===13,'thirteen tabs');
+  { const d=w.document, main=[...d.querySelectorAll('nav.tabs .inner > a:not(.settab)')].map(a=>a.dataset.view), ex=[...d.querySelectorAll('#x-menu a:not(.xset)')].map(a=>a.dataset.view);
+    assert(main.join()==='today,openings,drills,tactics,analyze,progress','main row: Today, Openings, Drills, Tactics, Analyze, Progress');
+    assert(ex.length===6&&['guess','calc','endgames','watch','play','players'].every(v=>ex.includes(v)),'Extra holds the other six');
+    assert(d.querySelector('nav.tabs a.settab[href="#settings"]'),'Settings at the right');
+    const xb=d.getElementById('x-btn'), xm=d.getElementById('x-menu'); assert(xm.hidden,'Extra menu starts closed');
+    xb.click(); assert(!xm.hidden&&xb.getAttribute('aria-expanded')==='true','Extra opens'); xb.click(); assert(xm.hidden,'and closes');
+    w.location.hash='#calc'; await sleep(60); assert(xb.classList.contains('cur'),'an Extra page marks the Extra button');
+    w.location.hash='#today'; await sleep(60); assert(!xb.classList.contains('cur')&&d.querySelector('nav.tabs a[data-view="today"]').getAttribute('aria-current')==='page','Today marked'); }
   assert(w.document.body.dataset.view==='today','Today is the default view');
   assert(w.document.querySelectorAll('#o-board .sq').length===64,'the openings board has 64 squares');
   w.location.hash='#tactics'; await sleep(60);

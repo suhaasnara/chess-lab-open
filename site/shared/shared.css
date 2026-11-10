@@ -67,3 +67,27 @@ html.reader-open,html.reader-open body{overflow:hidden}
 .msel-pop{position:absolute;z-index:30;left:0;top:calc(100% + 4px);min-width:220px;max-height:320px;overflow:auto;padding:6px;background:var(--white);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 6px 20px rgba(0,0,0,.18)}
 .msel-row{display:flex;gap:8px;align-items:center;min-height:36px;padding:2px 6px;cursor:pointer}.msel-row:hover{background:var(--band)}
 .msel-acts{display:flex;justify-content:flex-end;padding-bottom:4px;border-bottom:1px solid var(--line);margin-bottom:4px}
+/* Header tabs (shared/nav.js): main tabs, Extra drop-down, Settings at the right; on phones Settings moves into Extra */
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:var(--white);border-bottom:1px solid var(--line)}
+nav.tabs .inner{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;align-items:stretch}
+nav.tabs .inner::-webkit-scrollbar{display:none}
+nav.tabs a{color:var(--muted);text-decoration:none;font-size:.95rem;padding:13px 12px;border-bottom:2px solid transparent;white-space:nowrap}
+nav.tabs a:hover{color:var(--head)}
+nav.tabs a[aria-current="page"]{color:var(--head);border-bottom-color:var(--blue);font-weight:600}
+nav.tabs .xtab{display:inline-flex;align-items:center;gap:6px;background:none;border:0;border-bottom:2px solid transparent;font:inherit;font-size:.95rem;color:var(--muted);padding:13px 12px;cursor:pointer;white-space:nowrap}
+nav.tabs .xtab:hover{color:var(--head)}
+nav.tabs .xtab[aria-expanded="true"] svg{transform:rotate(180deg)}
+nav.tabs .xtab.cur{color:var(--head);border-bottom-color:var(--blue);font-weight:600}
+nav.tabs .tabgap{flex:1 1 auto;min-width:8px}
+nav.tabs a.settab{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;min-width:44px}
+nav.tabs a.settab svg{flex:none;width:22px;height:22px}
+.xmenu{position:fixed;z-index:40;min-width:260px;max-width:calc(100vw - 32px);background:var(--white);border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 28px rgba(19,40,74,.18);padding:6px}
+.xmenu a{display:flex;flex-direction:column;gap:1px;padding:9px 12px;border-radius:6px;text-decoration:none;color:var(--ink)}
+.xmenu a b{font-weight:600;color:var(--head);font-size:.95rem}
+.xmenu a span{font-size:.82rem;color:var(--muted)}
+.xmenu a:hover,.xmenu a:focus-visible{background:var(--accent-soft);outline:none}
+.xmenu a[aria-current="page"] b{color:var(--blue)}
+.xmenu .xset{display:none}
+@media (max-width:480px){nav.tabs a.settab{display:none}.xmenu .xset{display:flex;border-top:1px solid var(--line);margin-top:4px;padding-top:11px}
+  nav.tabs a,nav.tabs .xtab{padding:12px 4px;font-size:.84rem}nav.tabs .tabgap{min-width:0}nav.tabs .inner{gap:0;padding-left:8px;padding-right:8px}}
+@media print{nav.tabs,.xmenu{display:none!important}}

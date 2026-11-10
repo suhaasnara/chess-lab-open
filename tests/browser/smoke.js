@@ -56,7 +56,7 @@ async function waitFor(page,fn,arg,ms=20000){ try{ await page.waitForFunction(fn
 
   console.log(`== ${BROWSER} ${browser.version()} at ${base}`);
   await page.goto(base+'#today',{waitUntil:'load'});
-  check('page loads with every tab',await page.$$eval('.tabs button[data-route]',b=>b.length)>=11);
+  check('page loads with every tab',await page.$$eval('nav.tabs .inner > a[data-view], #x-menu a[data-view]',b=>new Set(b.map(x=>x.dataset.view)).size)>=13);
 
   /* the board's squares: real mouse on the centre of a square */
   const center=async(board,sq)=>{ const el=await page.$(`#${board} .sq[data-sq="${sq}"]`); if(!el) return null; const b=await el.boundingBox(); return b&&[b.x+b.width/2,b.y+b.height/2] };
@@ -232,7 +232,7 @@ async function waitFor(page,fn,arg,ms=20000){ try{ await page.waitForFunction(fn
   }
 
   /* ---- every tab, light and dark, desktop and phone ---- */
-  const VIEWS=await page.$$eval('.tabs button[data-route]',bs=>bs.map(b=>b.dataset.route));
+  const VIEWS=await page.$$eval('nav.tabs .inner > a[data-view], #x-menu a[data-view]',bs=>[...new Set(bs.map(b=>b.dataset.view))]);
   const themes=await page.evaluate(()=>Settings.DEF.theme!==undefined?['light','dark']:['light']);
   for(const theme of themes) for(const [vw,w,h] of [['desktop',1280,900],['phone',390,844]]){
     await page.setViewportSize({width:w,height:h});
