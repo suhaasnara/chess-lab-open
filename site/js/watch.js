@@ -58,6 +58,8 @@ function render(){
   else if(F.q||VIEW==='added') html=L.map(row).join('');
   else if(VIEW==='recent') html=L.slice().sort((x,y)=>((rec(y.id).u||0)-(rec(x.id).u||0))||(x.n-y.n)).map(row).join('');
   else html=renderSeries(L);
+  { const have=new Set(A.map(v=>v.id)), left=STARTERS.map((v,i)=>[v,i]).filter(([v])=>!have.has(v.id));
+    if(left.length) html+=`<div class="card wstarters"><span class="label">Starter videos</span><p class="note">To try the library: add any of these. They open on YouTube at your place, like everything here.</p>${left.map(([v,i])=>`<div class="gamerow"><span>${esc(v.title)} <span class="note">· ${esc(v.channel)}</span></span><button type="button" class="btn sm" data-starter="${i}">Add</button></div>`).join('')}</div>` }
   list.innerHTML=html||'<div class="empty">Nothing matches these filters.</div>';
   if(EXP){ const d=list.querySelector(`.warow[data-id="${String(EXP).replace(/["\\]/g,'\\$&')}"] .wadetail`); if(d) fillDetail(d,EXP) }
 }
@@ -109,6 +111,14 @@ function fillDetail(el,id){
       <div class="btns" style="margin-top:8px"><button type="button" class="btn sm" data-act="meta-save">Save details</button><button type="button" class="btn sm" data-act="remove">Remove this video</button></div></details>`;
 }
 function setMeta(id,patch){ const d=data(); const i=d.list.findIndex(x=>x.id===id); if(i<0) return; d.list[i]=Object.assign({},d.list[i],patch); save(d) }
+/* Starter videos (Session C): real links, checked by hand; deep links as always, no embeds. One click adds one. */
+const STARTERS=[
+  {id:'rgLTiUZAWQY',t:1200,title:'Scandinavian Defense Dissected | GM Naroditsky’s DYI Speedrun (the Najdorf game from 20:00)',channel:'Daniel Naroditsky',series:'Speedruns',kind:'speedrun',topic:'Openings',opening:'Sicilian Najdorf'},
+  {id:'AFntasewn9Q',title:'Mickey Adams Game Review with GM Johan Hellsten | USCS',channel:'U.S. Chess School',series:'U.S. Chess School',kind:'game',topic:'Game review'},
+  {id:'-OeADHFL-nY',title:'GM Sam Shankland: High-Level Defense II | US Chess School 5.7.2021',channel:'ChessDojo',series:'U.S. Chess School',kind:'lecture',topic:'Defence'}];
+function addStarter(i){ const v=STARTERS[i], d=data(); if(!v||d.list.some(x=>x.id===v.id)) return false;
+  d.list.push({id:v.id,title:v.title,channel:v.channel,series:v.series,kind:v.kind,topic:v.topic,opening:v.opening||'',sec:0,added:Date.now()});
+  if(v.t) d.v[v.id]={t:v.t,u:Date.now()}; save(d); render(); return true }
 function add(){
   const err=$('wa-aerr'); err.textContent='';
   const L=parseLink($('wa-aurl').value), title=$('wa-atitle').value.trim();
@@ -136,6 +146,7 @@ function today(){ const v=all().filter(x=>state(x)==='progress').sort((a,b)=>(re
 function init(){
   const sec=$('watch'); if(!sec) return;
   sec.addEventListener('click',e=>{
+    { const st=e.target.closest('[data-starter]'); if(st){ addStarter(+st.dataset.starter); return } }
     const cont=e.target.closest('.waser summary a.wacont'); if(cont){ e.preventDefault(); try{ window.open(cont.href,'_blank','noopener') }catch(_){} return }
     const chip=e.target.closest('.chip'); if(chip){ if(chip.dataset.view){ VIEW=chip.dataset.view; try{ localStorage.setItem('clo-watch-view',VIEW) }catch(_){} } else F[chip.dataset.k]=chip.dataset.v; render(); return }
     if(e.target.id==='wa-asave'){ add(); return } if(e.target.id==='wa-aget'){ getTitle(); return }
@@ -167,5 +178,5 @@ function init(){
   $('wa-aurl').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); if($('wa-atitle').value.trim()) add(); else $('wa-atitle').focus() } });
   render();
 }
-window.WatchTab={init,render,add,parseLink,parseTime,fmt,url,today,get all(){return all()},rec,put};
+window.WatchTab={init,STARTERS,addStarter,render,add,parseLink,parseTime,fmt,url,today,get all(){return all()},rec,put};
 })();

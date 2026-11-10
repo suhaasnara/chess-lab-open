@@ -1218,6 +1218,18 @@ section('t46: Analyze — blitz option, results by colour and rating band (all g
   assert(w.document.querySelector('[data-optab="b"]')&&w.document.querySelector('[data-oppane="b"]').hidden,'openings split into White / Black tabs');
 }
 
+section('t47: Watch — starter videos (real, checked links), added with one click, deep-linked');
+{
+  const {w}=await makePage(); const W=w.WatchTab, $=id=>w.document.getElementById(id);
+  w.location.hash='#watch'; await sleep(100); W.render();
+  assert(W.STARTERS.length===3&&W.STARTERS.every(v=>/^[\w-]{11}$/.test(v.id)),'three starters with real YouTube ids');
+  assert($('watch').querySelectorAll('[data-starter]').length===3,'offered on an empty library');
+  $('watch').querySelector('[data-starter="0"]').click(); await sleep(20);
+  assert(W.all.length===1&&W.all[0].id==='rgLTiUZAWQY','one click adds it');
+  assert(/[?&]t=1200/.test(W.url(W.all[0])),'it opens at the Najdorf game (20:00)');
+  assert($('watch').querySelectorAll('[data-starter]').length===2,'and leaves the other two on offer');
+}
+
 section('t37: shared code (site/shared/) — position ids never change, one PGN reader');
 {
   const {w}=await makePage();
