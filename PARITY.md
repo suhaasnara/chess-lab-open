@@ -93,6 +93,7 @@ Shared files declare one namespace each; each site keeps its own short names as 
 | 8 | `reader.js`, `shared.css` | the phone reader (board on top, notes below, Prev / Next at the bottom) in Openings notes, Guess the move, Calculation, Endgames (and the private Players studies); hidden on iPads and desktops | done, both sites; checked in Firefox and Chromium on iPhone sizes |
 | 9 | `trainview.css`, `trainview.js` | the screens' layouts and render helpers (shared screens, stages 2–6); `TV.pick` (a labelled drop-down, Endgames' category) since `improvements` | done, both sites (the private site pixel-identical; Open re-laid out) |
 | 10 | `router.js` | which section is on screen; each site passes its table of views (branch `improvements-2`) | done, both sites (the private site pixel-identical) |
+| 11 | `site.js` (+ each site's config) and `trainview.css` | one per-site config (`Site.define`: tabs, pieces, data sources; the header and the data fetches read it) and the page spacing / board sizes (`.inner`, `main.inner`, `.card`, `.boardwrap`, Board size) in one place, Chess Lab's values (branch `improvements-3`) | done, both sites (the private site pixel-identical; Open's pages a little more space top and bottom, default boards 580 px) |
 
 Still to share: the opening trainer's line flow around the core, the Guess-the-move parser, and each tab's logic
 (each site still has its own tab files, now thin around the shared modules and layouts).
