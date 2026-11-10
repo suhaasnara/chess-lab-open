@@ -4,7 +4,7 @@
 'use strict';
 (function(){
 let LIB=null, board=null, endbar=null;
-const S={cur:null,g:null,step:0,solved:false,failedFirst:false,usedHint:false,hintStage:0,motif:'All',band:'All',status:'All'};
+const S={cur:null,g:null,step:0,solved:false,failedFirst:false,usedHint:false,hintStage:0,motifs:[],lo:null,hi:null,status:'All'};
 const BANDS=[['All','Any rating'],['1200','1200–1499'],['1500','1500–1799'],['1800','1800–2099'],['2100','2100–2399'],['2400','2400+']];
 const STATUSES=['All','Unsolved','Missed','Solved'];
 
@@ -26,8 +26,8 @@ function renderHeader(){
 function filtered(){
   const p=prog();
   return LIB.filter(z=>{
-    if(S.motif!=='All'&&z.motif!==S.motif) return false;
-    if(S.band!=='All'){ const lo=+S.band, hi=lo===2400?9999:lo+299; if(!(z.rating>=lo&&z.rating<=hi)) return false }
+    if(S.motifs.length&&!S.motifs.some(m=>z.motif===m||(z.themes||[]).includes(m))) return false;   /* any of the chosen themes */
+    if(S.lo!=null&&z.rating<S.lo) return false; if(S.hi!=null&&z.rating>S.hi) return false;
     const st=p[z.id];
     if(S.status==='Unsolved'&&st) return false;
     if(S.status==='Missed'&&!(st&&!st.ok)) return false;
@@ -41,16 +41,17 @@ function daily(list){
   const h=s=>{ let x=2166136261; for(const c of s) x=Math.imul(x^c.charCodeAt(0),16777619); return x>>>0 };
   return list.map(z=>[h(seed+z.id),z]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
 }
+/* Themes: a multi-select of the 30 most common (any of them matches); rating: a two-handle slider in 100-point steps. */
+let CTL=null;
 function renderFilters(){
-  /* the 18 most common motifs */
-  const cnt={}; for(const z of LIB) if(z.motif) cnt[z.motif]=(cnt[z.motif]||0)+1;
-  const motifs=['All',...Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]).slice(0,17).map(m=>[m,themeName(m)])];
-  const mk=(el,items,cur,fn,label)=>{ el.innerHTML='';
-    for(const it of items){ const name=Array.isArray(it)?it[1]:it, val=Array.isArray(it)?it[0]:it;
-      const b=document.createElement('button'); b.className='chip'; b.textContent=name; b.setAttribute('aria-pressed',String(val===cur));
-      b.addEventListener('click',()=>{ fn(val); renderFilters(); renderL() }); el.appendChild(b) } };
-  mk($('t-motifs'),motifs,S.motif,v=>S.motif=v);
-  mk($('t-bands'),BANDS,S.band,v=>S.band=v);
+  if(!CTL){ const cnt={}; for(const z of LIB) for(const t of new Set([z.motif,...(z.themes||[])])) if(t&&!['middlegame','endgame','opening','short','long','veryLong','oneMove','advantage','crushing','master','masterVsMaster','superGM'].includes(t)) cnt[t]=(cnt[t]||0)+1;
+    const opts=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]).slice(0,30).map(m=>[m,themeName(m)]).sort((a,b)=>a[1].localeCompare(b[1]));
+    const rs=LIB.map(z=>z.rating).filter(Boolean), lo=Math.floor(Math.min(...rs)/100)*100, hi=Math.ceil(Math.max(...rs)/100)*100;
+    CTL={motifs:Controls.multi($('t-motifs'),{label:'Themes',options:opts,selected:S.motifs,none:'Any theme',onChange:v=>{ S.motifs=v; renderL() }}),
+      range:Controls.range($('t-bands'),{label:'Puzzle rating',min:lo,max:hi,step:100,lo,hi,onChange:(a,b)=>{ S.lo=a<=lo?null:a; S.hi=b>=hi?null:b; renderL() }})} }
+  const mk=(el,items,cur,fn)=>{ el.innerHTML='';
+    for(const it of items){ const b=document.createElement('button'); b.className='chip'; b.textContent=it; b.setAttribute('aria-pressed',String(it===cur));
+      b.addEventListener('click',()=>{ fn(it); renderFilters(); renderL() }); el.appendChild(b) } };
   mk($('t-status'),STATUSES,S.status,v=>S.status=v);
 }
 function renderL(){

@@ -8,7 +8,7 @@
 'use strict';
 (function(){
 let board=null, LIB=null, endbar=null;
-const S={cur:null,start:null,g:null,line:[],sub:false,t0:0,tick:null,len:'all',hard:'2200',view:0,busy:false};
+const S={cur:null,start:null,g:null,line:[],sub:false,t0:0,tick:null,len:'all',lo:null,hi:null,view:0,busy:false};
 const prog=()=>Store.get('calc-progress')||{};
 const mine=z=>Math.floor(z.moves.length/2);                 /* the solver's moves (the first move is the setup) */
 const LENS=[['all','Any length'],['4','4 moves'],['5','5 moves'],['6','6+ moves']];
@@ -16,15 +16,17 @@ const HARD=[['0','All'],['2200','2200+'],['2400','2400+'],['2600','2600+']];
 
 function list(){
   if(!LIB) return [];
-  return LIB.filter(z=>mine(z)>=4&&z.rating>=+S.hard&&(S.len==='all'||(S.len==='6'?mine(z)>=6:mine(z)===+S.len))).sort((a,b)=>a.rating-b.rating);
+  return LIB.filter(z=>mine(z)>=4&&(S.lo==null||z.rating>=S.lo)&&(S.hi==null||z.rating<=S.hi)&&(S.len==='all'||(S.len==='6'?mine(z)>=6:mine(z)===+S.len))).sort((a,b)=>a.rating-b.rating);
 }
 function renderList(){
-  const ch=$('cc-lens'); ch.innerHTML='';
+  const ch=$('cc-lens'); ch.innerHTML=''; const rg=document.createElement('div'); ch.appendChild(rg);
+  if(LIB&&LIB.length){ const rs=LIB.map(z=>z.rating), lo=Math.floor(Math.min(...rs)/100)*100, hi=Math.ceil(Math.max(...rs)/100)*100;   /* rating: two handles, 100-point steps */
+    Controls.range(rg,{label:'Puzzle rating',min:lo,max:hi,step:100,lo:S.lo==null?lo:S.lo,hi:S.hi==null?hi:S.hi,onChange:(a,b)=>{ S.lo=a<=lo?null:a; S.hi=b>=hi?null:b; renderList() }}) }
   const row=(opts,key)=>{ const r=document.createElement('div'); r.className='chips';
     for(const [v,n] of opts){ const b=document.createElement('button'); b.className='chip'; b.textContent=n; b.setAttribute('aria-pressed',String(S[key]===v));
       b.addEventListener('click',()=>{ S[key]=v; renderList() }); r.appendChild(b) }
     ch.appendChild(r) };
-  row(HARD,'hard'); row(LENS,'len');
+  row(LENS,'len');
   const n=list().length; const c=document.createElement('p'); c.className='note'; c.style.margin='6px 0 0';
   c.textContent=LIB?n.toLocaleString()+' exercises':''; ch.appendChild(c);
   const el=$('cc-list'); el.innerHTML=''; const p=prog();
