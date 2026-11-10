@@ -15,7 +15,7 @@ window.Keys=(()=>{
   const MAPS={}, NOTES={};
   const ORDER=['ArrowLeft','ArrowRight','Home','End','b','r','h','f','n','e','p'];
   const NAME={ArrowLeft:'←',ArrowRight:'→',Home:'Home',End:'End'};
-  const typing=e=>{ const t=e.target; return !!t&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName||'')||!!t.isContentEditable) };
+  const typing=e=>{ const t=e.target; return !!t&&t.nodeType===1&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName||'')||!!t.isContentEditable) };
   const api={view:()=>document.body&&document.body.dataset.view,
     on(view,map,note){ MAPS[view]=Object.assign(MAPS[view]||{},map); if(note) NOTES[view]=note },
     off(view){ delete MAPS[view] },
@@ -31,7 +31,7 @@ window.Keys=(()=>{
     d.addEventListener('click',e=>{ if(e.target===d||e.target.id==='keys-close') close() });
     document.body.appendChild(d); d.querySelector('#keys-close').focus();
   }
-  document.addEventListener('keydown',e=>{
+  addEventListener('keydown',e=>{   /* on window: every key press reaches it */
     if(e.defaultPrevented||e.ctrlKey||e.metaKey||e.altKey||e.isComposing||typing(e)) return;
     if(e.key==='Escape'&&document.getElementById('keys-overlay')){ close(); return }
     if(e.key==='?'){ e.preventDefault(); overlay(); return }
