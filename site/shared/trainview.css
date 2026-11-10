@@ -140,3 +140,17 @@ body[data-view="guess"] main.inner{max-width:1200px;padding-top:14px}
 .tv3>.tvcontents>.side{display:flex;flex-direction:column;gap:12px;min-width:0}
 @media (max-width:1180px){.tv3>.tvcontents>.side{display:contents}.tv3>.tvcontents>.boardwrap{grid-column:1;grid-row:1/span 8}.tv3>.tvcontents>.side>*{grid-column:2}}
 @media (max-width:860px){.tv3>.tvcontents>.boardwrap{grid-column:1;grid-row:auto;order:0;max-width:none}.tv3>.tvcontents>.side>*{grid-column:1}}
+
+/* Settings: groups of rows with segmented buttons | a preview board. Chess Lab's .setwrap values. */
+.tvset.setwrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,300px);gap:20px;align-items:start;max-width:1000px}
+.tvset .setgroup{font-size:1.15rem;margin:22px 0 2px}
+.tvset .setrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 18px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.tvset .setrow:last-child{border-bottom:0}
+.tvset .setname{font-weight:600;color:var(--head)}
+.tvset .setrow .seg{display:inline-flex;flex-wrap:wrap}
+.tvset .setrow .seg button{flex:0 0 auto;padding:7px 12px}
+.tvset .setpreview{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px)}
+.tvset .setpreview .board{margin-top:10px}
+.tvset .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (max-width:860px){.tvset.setwrap{grid-template-columns:minmax(0,1fr)}.tvset .setpreview{position:static;order:-1;max-width:300px}.tvset .setpreview .board{max-width:220px}}
+@media (max-width:560px){.tvset .setrow{grid-template-columns:minmax(0,1fr)}}

@@ -111,7 +111,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
     </div>
     <div id="o-side">
       <div class="card ohead">
-        <div class="ohtop"><div class="seg" role="group" aria-label="Mode">
+        <div class="ohtop"><div class="seg mini" role="group" aria-label="Mode">
           <button id="o-rated" aria-pressed="true">Rated</button>
           <button id="o-training" aria-pressed="false">Training</button>
         </div><button class="btn sm icon gear" id="o-gear" title="Trainer settings" aria-label="Trainer settings">&#9881;</button></div>
@@ -121,16 +121,11 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
           <div class="olevelends" id="o-levelhelp"><span>1000</span><span>Elite 2500+</span></div>
           <p class="note oacct" id="o-acct"></p>
         </div>
-        <h2 id="o-name" style="margin-top:8px">Choose an opening</h2>
+        <h2 id="o-name" class="vh">Choose an opening</h2>
         <div class="ohrate" id="o-rate"></div>
         <div class="btns" id="o-sidebtns" style="margin-top:8px"></div>
       </div>
       <div class="status" id="o-status" aria-live="polite">Pick an opening or import a repertoire to start training.</div>
-      <div class="card" id="o-movecard">
-        <span class="label">Moves</span>
-        <div class="movelist" id="o-movelist"></div>
-        <p class="note pbrowse" id="o-browsenote" hidden></p>
-      </div>
     </div>
     <div class="boardwrap">
       <div class="capline" id="o-capt" hidden></div>
@@ -156,6 +151,11 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
       </form>
     </div>
     <div class="oright">
+      <div class="card" id="o-movecard">
+        <span class="label">Moves</span>
+        <div class="movelist" id="o-movelist"></div>
+        <p class="note pbrowse" id="o-browsenote" hidden></p>
+      </div>
       <div class="card" id="o-notecard" hidden>
         <span class="label">Notes from your PGN</span> <span id="o-readslot"></span>
         <div class="cnotes" id="o-notes"></div>
@@ -563,13 +563,17 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
 
 <!-- ================= Settings ================= -->
 <section id="settings" hidden>
-  <div class="card" style="max-width:640px">
+  <div class="setwrap tvset">
+  <div class="card">
     <h2>Settings</h2>
+    <p class="note" style="margin:0">Kept in this browser.</p>
     <div id="s-rows"></div>
     <p class="note" style="margin-top:14px">Engine: Stockfish 18 (lite, WebAssembly), GPL-3.0 &mdash; served with this site;
        source at <a href="https://github.com/official-stockfish/Stockfish">github.com/official-stockfish/Stockfish</a> and
        <a href="https://github.com/nmrugg/stockfish.js">nmrugg/stockfish.js</a>.
        Book data: the <a href="https://database.nikonoel.fr/">Lichess Elite Database</a> and the <a href="https://database.lichess.org/">Lichess open database</a> (CC0), built into static books that ship with the site. See CREDITS.</p>
+  </div>
+  <div class="card setpreview"><span class="label">Preview</span><div class="board" id="s-board" aria-label="Preview board"></div></div>
   </div>
 </section>
 

@@ -22,7 +22,8 @@ function route(){
   Nav.set(v);   /* shared/nav.js: marks the tab (or Extra) and keeps it in view on narrow screens */
   if(BOARD_VIEWS.includes(v)) SharedEngine.start();   /* the 7 MB engine downloads once a board page is open */
   if(v==='calc') CalcTab.ensure();
-  if(v==='openings'||v==='analyze') Book.ready();   /* start the Elite book download as soon as it may be needed */
+  if(v==='openings'||v==='analyze') Book.ready();
+  if(v==='openings') OpeningsTab.openDefault();   /* as in Chess Lab: the page opens on an opening (your last one, else the top of your list) */   /* start the Elite book download as soon as it may be needed */
   if(v==='progress'){ ProgressTab.render(); CalcTab.ensure().then(()=>{ if(document.body.dataset.view==='progress') ProgressTab.render() }) }
   if(v==='today') TodayTab.render();
   if(v==='drills') DrillsTab.refresh();

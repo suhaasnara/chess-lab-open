@@ -356,3 +356,7 @@ body.no-coords .coord{display:none}body.no-last .sq.last{background:none}body.no
 .capline{display:flex;flex-wrap:wrap;align-items:center;gap:0;min-height:20px;margin:2px 0}.capline .pc{position:relative;inset:auto;display:inline-block;width:18px;height:18px;margin-right:-4px}.capline .capdiff{margin-left:8px;font-size:13px;color:var(--muted)}
 .skiprow{margin-top:8px}.skiprow .btn{margin:2px}
 /* Settings in the top nav: a clearly visible, 44 px tap target; labelled on wide screens */
+
+/* Shared screens stage 5: hidden for sight, kept for screen readers (the opening's name is in the picker) */
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.otrain .ohtop .seg.mini{flex:0 0 auto}

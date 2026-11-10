@@ -193,8 +193,10 @@ function setArrange(on){ S.arrange=on; renderList() }
 function setPop(on){ const p=$('o-pop'); p.hidden=!on; $('o-pick').setAttribute('aria-expanded',String(on));
   if(on){ renderList(); if(innerWidth>860) $('o-search').focus({preventScroll:true}) } else if(S.arrange){ S.arrange=false; renderList() } }
 function firstListed(){ return ordered(openings())[0] }
+function openDefault(){ if(S.op) return; const last=Store.get('olast'), o=(last&&openings().find(x=>x.id===last))||firstListed(); if(o) selectOpening(o.id) }
 function selectOpening(id){
   let o=openings().find(x=>x.id===id)||firstListed(); if(!o) return;
+  Store.put('olast',o.id);
   const as=(Store.get('oas')||{})[o.id]; if(as&&!o.rep&&!o.player&&as!==o.side) o={...o,side:as,asSide:true};
   S.op=o; $('o-pickname').textContent=o.name; $('o-picklab').textContent=`${o.side==='white'?'White':'Black'} · ${o.rep?'repertoire':o.player?'vs a player':o.custom?'your position':o.any?'any opening':'opening'}`;
   if(o.rep) Book.moves(START,'b22');   /* club shares for prepared sidelines the elite book leaves out */
@@ -837,6 +839,6 @@ function init(){
   renderList();
   board.set(new Chess(),{orient:'w',locked:true});
 }
-window.OpeningsTab={init,PRESETS,renderList,endHere,SID,skipList,renderCaptured,customs,saveCustom,deleteCustom,openNew,saveNew,saveCurrent,studyApi,fetchStudy,doImport,syncLevel,soundDemoMoves,get state(){return S},selectOpening,newLine,userMove,parseRepPGN,moveDifficulty,openings,stats,
+window.OpeningsTab={init,openDefault,PRESETS,renderList,endHere,SID,skipList,renderCaptured,customs,saveCustom,deleteCustom,openNew,saveNew,saveCurrent,studyApi,fetchStudy,doImport,syncLevel,soundDemoMoves,get state(){return S},selectOpening,newLine,userMove,parseRepPGN,moveDifficulty,openings,stats,
   takeBack,canTakeBack,browse,annAt,repPick,ordered,saveOrder,setArrange,moveItem,renderStats,openStats,openSettings,firstListed};
 })();
