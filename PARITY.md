@@ -23,9 +23,9 @@ This file records where the two stand (as of the `one-codebase` branch, 9 Nov 20
 | Tactics, Calculation, Endgames, Drills, Play, Today, Progress | Already matched before this branch (on CC0 Lichess data). |
 | Header | Shared code since 10 Nov 2026 (`shared/nav.js`): the same tab row, Extra drop-down and Settings link; Open's main row adds Analyze my games, which moves into Extra on phones. |
 | Every tab's layout | Shared screens (stages 2–6, branch `shared-screens`): `shared/trainview.css` + `shared/trainview.js` hold the private site's layouts (list \| board \| coach card, lobby pages, three columns, Play, Watch, Settings, report pages) and small render helpers. Each site keeps its own tab logic, data and progress keys around them. |
-| Today | Branch `improvements` (10 Nov 2026): played in place, as on the private site. Today hosts the Drills and Tactics panels (their own code, keys and scoring) on its board column; Endgame, Opening line and Watch are cards under the session bar; the Watch card is the private site's balanced plan (resume + one video from up to two other topics). Open keeps its endgame and opening line in the session count. |
-| Players extras | Branch `improvements`: opening names per line in the explorer, a games window (All / 12 / 3 months) and opponent-rating filter (Any / 1800+ / 2000+ / 2200+) that the explorer, records and sheet follow, and your own notes on a player (`pnote-<id>`, printed on the sheet). |
-| Endgames category | Branch `improvements`: a drop-down on both sites (shared `TV.pick`); Open also has "+ Your position" (live tablebase). |
+| Today | Played in place, as on the private site (10 Nov 2026). Today hosts the Drills, Tactics and Endgames panels and the Openings trainer (their own code, keys and scoring) on its board column; Endgame, Opening line and Watch are cards under the session bar (the endgame and the opening line play here when picked, or with Next); only a drill or puzzle goes on the board by itself (the opening trainer would start the book download). The Watch card is the private site's balanced plan. The first-visit guide stays away for anyone with progress. |
+| Players extras | Live 10 Nov 2026: opening names per line in the explorer, a games window (All / 12 / 3 months) and opponent-rating filter (Any / 1800+ / 2000+ / 2200+) that the explorer, records and sheet follow, and your own notes on a player (`pnote-<id>`, printed on the sheet). |
+| Endgames | A category drop-down on both sites (shared `TV.pick`). "+ Your position" on both (live tablebase when saved; the private site stores the best line with it, so it works offline and on the artifact page). |
 
 ## Still different, and why
 
@@ -92,6 +92,7 @@ Shared files declare one namespace each; each site keeps its own short names as 
 | 7 | `keys.js`, `help.js`, `puzzles.js`, `controls.js` | one keyboard layer with a `?` list (never while typing, no browser clashes), the small ? explanations, puzzle titles and themes, the rating slider and multi-select | done, both sites |
 | 8 | `reader.js`, `shared.css` | the phone reader (board on top, notes below, Prev / Next at the bottom) in Openings notes, Guess the move, Calculation, Endgames (and the private Players studies); hidden on iPads and desktops | done, both sites; checked in Firefox and Chromium on iPhone sizes |
 | 9 | `trainview.css`, `trainview.js` | the screens' layouts and render helpers (shared screens, stages 2–6); `TV.pick` (a labelled drop-down, Endgames' category) since `improvements` | done, both sites (the private site pixel-identical; Open re-laid out) |
+| 10 | `router.js` | which section is on screen; each site passes its table of views (branch `improvements-2`) | done, both sites (the private site pixel-identical) |
 
 Still to share: the opening trainer's line flow around the core, the Guess-the-move parser, and each tab's logic
 (each site still has its own tab files, now thin around the shared modules and layouts).
