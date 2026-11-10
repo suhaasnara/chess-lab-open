@@ -423,12 +423,7 @@ function endLine(msg){
   const st=stats(S.op.id);
   let delta=0;
   if(!training()&&S.scored.length){
-    const meanS=S.scored.reduce((a,x)=>a+x.s,0)/S.scored.length;
-    const meanD=S.scored.reduce((a,x)=>a+x.d,0)/S.scored.length;
-    const E=1/(1+Math.pow(10,(meanD-st.rating)/400));
-    const K=TC.lineK(st.n2);
-    const w=TC.lineWeight(S.scored.length);
-    delta=Math.round(K*w*(meanS-E));
+    delta=Math.round(TC.lineDelta(st.rating,st.n2,S.scored));   /* shared rule: each move's expected score, averaged */
     st.rating+=delta; st.n2++; st.lines++; st.last=Date.now();
     st.history.push({t:Date.now(),r:st.rating,m:'r'});
     if(st.history.length>200) st.history=st.history.slice(-200);

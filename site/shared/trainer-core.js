@@ -8,6 +8,10 @@
        good = the right move(s) (uci; matched on from+to), or empty = the most-played move.
      R2_START (1800: every opening's first rating), R2_PROV (8: provisional lines), lineK(n2) = 40 while provisional,
      then 16; lineWeight(n) = short lines count less (full weight from 4 rated moves).
+     lineDelta(rating, n2, scored): the line is rated once at its end. scored = [{s, d}] per rated move (s = 1 found,
+       0.5 inaccuracy or playable alternative, 0 missed; d = its difficulty). Each move is a game: the expected score
+       is averaged over the moves (decided by Suhaas, 9 Nov 2026), so delta = K × weight × (mean s − mean expected).
+       Unrounded; each site rounds or clamps as it always has.
    Opponent replies in a repertoire ("Sidelines in repertoires"):
      VARIETY {realistic, balanced, sidelines}: [label, explanation]
      varietyWeight(x, top, mode): x = the reply's share × the share of games that stay in your file. Replies under 1.5%
@@ -22,6 +26,12 @@ window.TrainerCore=(()=>{
   const R2_START=1800, R2_PROV=8;
   const lineK=n2=>(n2||0)<R2_PROV?40:16;
   const lineWeight=n=>Math.min(1,n/4);
+  const expected=(d,R)=>1/(1+Math.pow(10,(d-R)/400));
+  function lineDelta(R,n2,scored){
+    if(!scored||!scored.length) return 0;
+    const S=scored.reduce((a,x)=>a+x.s,0)/scored.length, E=scored.reduce((a,x)=>a+expected(x.d,R),0)/scored.length;
+    return lineK(n2)*lineWeight(scored.length)*(S-E);
+  }
   function difficulty(bk,good){
     if(!bk||!(bk.total>=20)||!bk.rows||!bk.rows.length) return 2350;
     const p=good&&good.length
@@ -48,5 +58,5 @@ window.TrainerCore=(()=>{
     const tot=weights.reduce((a,b)=>a+b,0); if(!(tot>0)) return items[Math.floor(rnd()*items.length)];
     let r=rnd()*tot; for(let i=0;i<items.length;i++){ r-=weights[i]; if(r<=0) return items[i] } return items[items.length-1];
   }
-  return {R2_START,R2_PROV,lineK,lineWeight,difficulty,VARIETY,varietyWeight,weakness,practical,replyWeights,pick};
+  return {R2_START,R2_PROV,lineK,lineWeight,expected,lineDelta,difficulty,VARIETY,varietyWeight,weakness,practical,replyWeights,pick};
 })();

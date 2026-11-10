@@ -85,16 +85,14 @@ Shared files declare one namespace each; each site keeps its own short names as 
 | 1 | `theme.css`, `shapes.js`, `board.js` | colour variables (light / dark / match device); arrows and circles; `Board.draw`, `Board.bind` (tap or drag, optional input mode), `makeBoard`, `endBanner` | done, both sites |
 | 2 | `pgn.js` | `PGN.normKey` / `PGN.posId` (golden-value tested), NAG signs, note cleaning, arrows, `PGN.read` (games, nested variations, notes, marks, arrows) | done, both sites (repertoire import; the Guess-the-move parsers are still separate) |
 | 3 | `engine.js` | `EngineKit.create(builds)`: one Stockfish worker, watchdog, queue, cache; each site passes where its builds are served from | done, both sites |
-| 4 | `trainer-core.js` | rating v2 scale (difficulty, start 1800, K 40→16, short-line weight), "Sidelines in repertoires" weights, trappy factor, weighted pick | done, both sites — the one rule that still differs is how a line's expected score is averaged (see below) |
+| 4 | `trainer-core.js` | rating v2 scale (difficulty, start 1800, K 40→16, short-line weight), "Sidelines in repertoires" weights, trappy factor, weighted pick | done, both sites (incl. the line-end rule, `lineDelta`) |
 
 Still to share: the rest of the opening trainer around the core (state, line flow, takebacks), the Guess-the-move
 parser, and the tabs themselves; then Open's extras come to the private site and the "Not ported yet" list comes here.
 
-**Rating, the one difference left in the core:** at the end of a rated line Open compares your average score with
-the expected score at the *average* difficulty; the private site averages the expected score of *each* move. They
-agree when a line's moves are about equally hard; with very uneven moves (1600 and 2600 finds in one line) one
-line's update can differ by up to ~9 points while provisional, ~4 after. Averaging each move's expected score (the
-private rule) is the standard Elo reading of "each move is a game". Each site keeps its own until
-Suhaas picks one (no stored rating changes either way; only future updates would).
+**Rating at the end of a line (settled 9 Nov 2026):** both sites now use `TrainerCore.lineDelta`: each rated move is a
+game, and your average score is compared with the average of each move's expected score (the private site's rule; Open
+used to take the expected score at the average difficulty). Same on even lines; on very uneven lines Open's updates move
+by a few points. Stored ratings are untouched.
 
 Privacy: `tools/privacy_guard.py --build site` now checks the exact folder that is deployed, and fails closed.

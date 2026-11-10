@@ -1050,6 +1050,11 @@ section('t37: shared code (site/shared/) — position ids never change, one PGN 
   const o=T.replyWeights([{x:0.6,weak:0.6,seen:3,row:null},{x:0.1,weak:0.6,seen:0,row:null}],{mode:'balanced',useBook:true});
   const pa=Math.pow(0.6,0.4), pb=Math.pow(0.1,0.4), ex=3-3*pa/(pa+pb);
   assert(near(o[0].w,0.85*pa*Math.pow(0.3,ex))&&near(o[1].w,0.85*pb),'a reply that came up more than its share is pushed down');
+  /* line end (decided 9 Nov 2026): each move's expected score, averaged — the private site's rule */
+  const sc=[{s:1,d:1600},{s:0,d:2600},{s:1,d:1600},{s:0,d:2600}], E=(d,R)=>1/(1+Math.pow(10,(d-R)/400));
+  const want=40*1*(0.5-(2*E(1600,1800)+2*E(2600,1800))/4);
+  assert(near(T.lineDelta(1800,0,sc),want)&&Math.abs(T.lineDelta(1800,0,sc)-40*(0.5-E(2100,1800)))>5,'a line is rated against the average of each move\'s expected score ('+want.toFixed(1)+'), not the expected score at the average difficulty');
+  assert(near(T.lineDelta(1800,8,[{s:1,d:1800},{s:1,d:1800}]),16*0.5*0.5)&&T.lineDelta(1800,0,[])===0,'K 16 after 8 lines, half weight for 2 moves, nothing rated = 0');
   assert(T.pick(['a','b'],[0,0],()=>0.99)==='b'&&T.pick(['a','b'],[1,3],()=>0.5)==='b'&&T.pick(['a','b'],[1,3],()=>0.1)==='a','weighted pick');
 }
 
