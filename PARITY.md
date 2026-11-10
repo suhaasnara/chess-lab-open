@@ -26,6 +26,8 @@ This file records where the two stand (as of the `one-codebase` branch, 9 Nov 20
 | Today | Played in place, as on the private site (10 Nov 2026). Today hosts the Drills, Tactics and Endgames panels and the Openings trainer (their own code, keys and scoring) on its board column; Endgame, Opening line and Watch are cards under the session bar (the endgame and the opening line play here when picked, or with Next); only a drill or puzzle goes on the board by itself (the opening trainer would start the book download). The Watch card is the private site's balanced plan. The first-visit guide stays away for anyone with progress. |
 | Players extras | Live 10 Nov 2026: opening names per line in the explorer, a games window (All / 12 / 3 months) and opponent-rating filter (Any / 1800+ / 2000+ / 2200+) that the explorer, records and sheet follow, and your own notes on a player (`pnote-<id>`, printed on the sheet). |
 | Endgames | A category drop-down on both sites (shared `TV.pick`). "+ Your position" on both (live tablebase when saved; the private site stores the best line with it, so it works offline and on the artifact page). |
+| Side lines on the board | `shared/varline.js` (11 Nov 2026): side lines written as text (book notes, PGN variations) become move buttons, Lichess-study style; nested lines start from the right position, a book's prose stays text. Guess the move (once the game is read), Calculation and Endgames solutions on both sites; the private site's drills (the engine's best line) too. ← → step along the line. |
+| Puzzle numbers | "Puzzle 3", not "Puzzle j26z8" (`Puzzles.num`, display only: progress is still keyed by id). |
 
 ## Still different, and why
 
