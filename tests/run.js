@@ -1198,6 +1198,26 @@ section('t45: mobile reader — next/prev, side lines, chapter end, sizes; Read 
   assert(typeof R.isPhone==='function'&&/max-width:599\.98px/.test(R.MQ)&&/max-height:499\.98px/.test(R.MQ),'phone breakpoints: < 600 px portrait, < 500 px tall landscape (iPads keep desktop)');
 }
 
+section('t46: Analyze — blitz option, results by colour and rating band (all games), accuracy by phase, White/Black openings');
+{
+  const mk=(id,user,col,opp,res,moves,ev)=>JSON.stringify({id,createdAt:1762300000000,speed:'rapid',players:{white:{user:{name:col==='w'?user:'Opp'},rating:col==='w'?2000:opp},black:{user:{name:col==='b'?user:'Opp'},rating:col==='b'?2000:opp}},
+    winner:res,moves,analysis:ev?ev.map(e=>({eval:e})):undefined});
+  const mv='e4 e5 Nf3 Nc6 Bb5 a6 Ba4 Nf6 O-O Be7 Re1 b5';
+  const nd=[mk('g1','Me','w',1650,'white',mv,[30,25,35,30,35,30,35,30,40,30,35,30]),mk('g2','Me','b',2250,'white',mv,null),mk('g3','Me','b',1450,'black',mv,null)].join('\n')+'\n';
+  let asked='';
+  const {w}=await makePage({analyse:async()=>[{uci:'e2e4',cp:0.2,mate:null}],fetch:async u=>{ if(u.includes('lichess.org/api/games/user/')){ asked=u; return {ok:true,status:200,text:async()=>nd,json:async()=>({})} } return null }});
+  w.document.getElementById('a-blitz').checked=true; await w.AnalyzeTab.run('lichess','Me'); await sleep(200);
+  assert(/perfType=blitz,rapid,classical/.test(asked),'Include blitz asks Lichess for blitz too');
+  const rep=w.document.getElementById('a-report').textContent;
+  assert(/From all 3 fetched games/.test(rep)&&/White\s*1\s*100%/.test(rep)&&/Black\s*2\s*50%/.test(rep),'results by colour use every fetched game');
+  assert(/1400–1599\s*1\s*100%/.test(rep)&&/1600–1799\s*1\s*100%/.test(rep)&&/2200\+\s*1\s*0%/.test(rep),'results by opponent rating band');
+  assert(/Accuracy by phase/.test(rep)&&/From the \d+ analyzed games/.test(rep),'accuracy by phase, from the analyzed games (sample stated)');
+  const pa=w.AnalyzeTab.phaseAccuracy({color:'w',moves:mv.split(' ')},[30,25,35,30,35,30,35,30,40,30,35,30].map(x=>x/100));
+  assert(pa.opening.length===6&&pa.opening.every(a=>a>90),'steady moves score high in the opening ('+pa.opening.map(Math.round).join(',')+')');
+  assert(w.AnalyzeTab.phaseOf(new w.Chess('4k3/8/8/8/8/8/8/R2QK2R w - - 0 1'))==='endgame'&&w.AnalyzeTab.phaseOf(new w.Chess())==='opening','phase rule: 6 or fewer major/minor pieces = endgame');
+  assert(w.document.querySelector('[data-optab="b"]')&&w.document.querySelector('[data-oppane="b"]').hidden,'openings split into White / Black tabs');
+}
+
 section('t37: shared code (site/shared/) — position ids never change, one PGN reader');
 {
   const {w}=await makePage();

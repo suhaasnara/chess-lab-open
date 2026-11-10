@@ -14,8 +14,8 @@ function note(t){ $('a-note').textContent=t }
 function prog(frac,show=true){ const p=$('a-prog'); p.hidden=!show; p.querySelector('i').style.width=Math.round(frac*100)+'%' }
 
 /* ---------- Fetching ---------- */
-async function fetchLichess(user){
-  const url=`https://lichess.org/api/games/user/${encodeURIComponent(user)}?max=${CAP_LICHESS}&perfType=rapid,classical&rated=true&moves=true&evals=true`;
+async function fetchLichess(user,blitz){
+  const url=`https://lichess.org/api/games/user/${encodeURIComponent(user)}?max=${CAP_LICHESS}&perfType=${blitz?'blitz,':''}rapid,classical&rated=true&moves=true&evals=true`;
   const r=await fetch(url,{headers:{Accept:'application/x-ndjson'}});
   if(r.status===404) throw new Error('No such Lichess user.');
   if(!r.ok) throw new Error('Lichess answered '+r.status+'.');
@@ -34,7 +34,7 @@ async function fetchLichess(user){
       url:'https://lichess.org/'+j.id};
   }).filter(g=>g.moves.length>=10);
 }
-async function fetchChesscom(user){
+async function fetchChesscom(user,blitz){
   const base=`https://api.chess.com/pub/player/${encodeURIComponent(user.toLowerCase())}`;
   const ar=await fetch(base+'/games/archives');
   if(ar.status===404) throw new Error('No such Chess.com user.');
@@ -44,7 +44,7 @@ async function fetchChesscom(user){
   for(const u of archives.slice(-6).reverse()){
     const r=await fetch(u); if(!r.ok) continue;
     for(const j of ((await r.json()).games||[]).reverse()){
-      if(j.rules!=='chess'||j.time_class!=='rapid'&&j.time_class!=='daily') continue;
+      if(j.rules!=='chess'||!(j.time_class==='rapid'||blitz&&j.time_class==='blitz')) continue;
       if(j.time_class==='daily') continue; /* rapid only: chess.com has no classical pool */
       const color=j.white.username.toLowerCase()===user.toLowerCase()?'w':'b';
       const g=new Chess();
@@ -128,13 +128,14 @@ function markGame(game,evs){
 }
 
 /* ---------- The run ---------- */
-async function run(site,user){
+async function run(site,user,blitz){
+  blitz=blitz==null?!!($('a-blitz')&&$('a-blitz').checked):blitz;
   if(running) return; running=true;
   $('a-go').disabled=true; $('a-report').innerHTML=''; prog(0);
   try{
     note('Fetching games…');
-    const games=site==='lichess'?await fetchLichess(user):await fetchChesscom(user);
-    if(!games.length) throw new Error('No recent rapid/classical games found.');
+    const games=site==='lichess'?await fetchLichess(user,blitz):await fetchChesscom(user,blitz); LAST={games};
+    if(!games.length) throw new Error(`No recent ${blitz?'blitz, ':''}rapid or classical games found.`);
     const needEngine=games.filter(g=>!g.analysis).length;
     note(`${games.length} games.${needEngine?` ${Math.min(needEngine,MAX_ENGINE_GAMES)} without stored evals — analyzing with Stockfish in your browser (depth ${ENGINE_DEPTH}), this takes a while…`:''}`);
     const budget={games:MAX_ENGINE_GAMES};
@@ -144,7 +145,7 @@ async function run(site,user){
       const evs=await evalsFor(game,budget,f=>prog((i+f)/games.length));
       prog((i+1)/games.length);
       if(!evs||evs.length<6) continue;
-      rows.push({game,marks:markGame(game,evs)});
+      rows.push({game,marks:Object.assign(markGame(game,evs),{phase:phaseAccuracy(game,evs)})});
       renderReport(user,site,rows,games.length,false);
     }
     renderReport(user,site,rows,games.length,true);
@@ -153,6 +154,21 @@ async function run(site,user){
   prog(0,false); $('a-go').disabled=false; running=false;
 }
 
+/* ---------- Phases and accuracy ----------
+   Phases as Lichess divides a game: the middlegame starts when 10 or fewer major and minor pieces are left, or a back
+   rank is sparse (fewer than 4 of a side's own pieces on it); the endgame when 6 or fewer major and minor pieces are left.
+   Accuracy per move is Lichess's: 103.1668 × e^(−0.04354 × drop in win %) − 3.1669, the win % from your side. */
+function phaseOf(g){ let mm=0, wb=0, bb=0; for(const [r,row] of g.board().entries()) for(const p of row){ if(!p) continue; if(p.type!=='k'&&p.type!=='p') mm++; if(r===7&&p.color==='w') wb++; if(r===0&&p.color==='b') bb++ }
+  return mm<=6?'endgame':(mm<=10||wb<4||bb<4)?'middlegame':'opening' }
+function phaseAccuracy(game,evs){
+  const out={opening:[],middlegame:[],endgame:[]}, g=new Chess(); let prev=0.2, phase='opening';
+  const winPct=(ev,mover)=>50+50*wc((mover==='w'?1:-1)*ev);
+  for(let i=0;i<game.moves.length&&i<evs.length;i++){ const mover=g.turn(); const before=prev; const m=g.move(game.moves[i],{sloppy:true}); if(!m) break;
+    const cur=evs[i]==null?before:evs[i]; prev=cur; if(phase!=='endgame'){ const p=phaseOf(g); if(p==='endgame'||phase==='opening') phase=p }
+    if(mover!==game.color) continue;
+    const drop=Math.max(0,winPct(before,mover)-winPct(cur,mover)); out[phase].push(Math.max(0,Math.min(100,103.1668*Math.exp(-0.04354*drop)-3.1669))) }
+  return out }
+let LAST=null;
 function renderReport(user,site,rows,total,final){
   if(!rows.length){ $('a-report').innerHTML='<p class="empty">No analyzable games yet…</p>'; return }
   const W=rows.filter(r=>r.marks.score===1).length, D=rows.filter(r=>r.marks.score===0.5).length, L=rows.length-W-D;
@@ -165,6 +181,17 @@ function renderReport(user,site,rows,total,final){
   for(const r of rows){ const nm=Book.nameOf(r.marks.fens.slice(0,21)); const key=nm?nm[1].split(':')[0]:'Other';
     const o=ops.get(key)||{n:0,s:0,blun:0,mist:0,inacc:0}; o.n++; o.s+=r.marks.score; o.blun+=r.marks.blun; o.mist+=r.marks.mist; o.inacc+=r.marks.inacc; ops.set(key,o) }
   const opRows=[...ops.entries()].sort((a,b)=>b[1].n-a[1].n).slice(0,10);
+  const opBy=c=>{ const m=new Map(); for(const r of rows.filter(r=>r.game.color===c)){ const nm=Book.nameOf(r.marks.fens.slice(0,21)); const key=nm?nm[1].split(':')[0]:'Other';
+      const o=m.get(key)||{n:0,s:0,blun:0,mist:0,inacc:0}; o.n++; o.s+=r.marks.score; o.blun+=r.marks.blun; o.mist+=r.marks.mist; o.inacc+=r.marks.inacc; m.set(key,o) } return [...m.entries()].sort((a,b)=>b[1].n-a[1].n).slice(0,10) };
+  /* no engine needed: from every game fetched */
+  const all=(LAST&&LAST.games)||rows.map(r=>r.game), sc=g=>g.result==='1/2-1/2'?0.5:(g.result==='1-0')===(g.color==='w')?1:0;
+  const byCol=['w','b'].map(c=>{ const gs=all.filter(g=>g.color===c); return [c,gs.length,gs.reduce((a,g)=>a+sc(g),0)] });
+  const band=r=>r==null?null:r<1200?'under 1200':r>=2200?'2200+':`${Math.floor(r/200)*200}–${Math.floor(r/200)*200+199}`;
+  const bands=new Map(); for(const g of all){ const b=band(g.color==='w'?g.br:g.wr); if(!b) continue; const o=bands.get(b)||{n:0,s:0}; o.n++; o.s+=sc(g); bands.set(b,o) }
+  const bandRows=[...bands.entries()].sort((a,b)=>(parseInt(a[0])||0)-(parseInt(b[0])||0)||(a[0]<b[0]?-1:1));
+  const ph={opening:[],middlegame:[],endgame:[]}; for(const r of rows) if(r.marks.phase) for(const k in ph) ph[k].push(...r.marks.phase[k]);
+  const avg=a=>a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length):null;
+  const opTable=list=>`<table style="margin-top:6px"><tr><th>Opening</th><th>Games</th><th>Score</th><th>Blunders / mistakes / inaccuracies per game</th></tr>${list.map(([k,o])=>`<tr><td>${esc(k)}</td><td>${o.n}</td><td>${Math.round(100*o.s/o.n)}%</td><td>${(o.blun/o.n).toFixed(1)} / ${(o.mist/o.n).toFixed(1)} / ${(o.inacc/o.n).toFixed(1)}</td></tr>`).join('')||'<tr><td colspan="4" class="note">No games with this colour.</td></tr>'}</table>`;
   const mistakes=rows.flatMap(r=>r.marks.drops.map(d=>({...d,game:r.game}))).sort((a,b)=>b.drop-a.drop);
   const pun=rows.flatMap(r=>r.marks.punish.map(d=>({...d,game:r.game})));
   const toPunish=pun.filter(p=>p.verdict!=='punished').sort((a,b)=>b.drop-a.drop);
@@ -179,7 +206,17 @@ function renderReport(user,site,rows,total,final){
     <div class="stat"><b>${pun.length?pun.length-toPunish.length+' / '+pun.length:'—'}</b><span class="note">opponents’ mistakes you punished${Help.q("Your opponents' moves that cost them 20 points or more of winning chances, and how many of them you made pay for (your next move kept most of the gain).")}</span></div>
   </div>
   <div class="repgrid">
+    <div class="card"><span class="label">Results by colour and by opponent rating${Help.q('Every game fetched counts here, analyzed or not: results need no engine. Score = your points as a share of the games.')}</span>
+      <p class="note">From all ${all.length} fetched games.</p>
+      <table style="margin-top:6px"><tr><th>You had</th><th>Games</th><th>Score</th></tr>${byCol.map(([c,n,s])=>`<tr><td>${c==='w'?'White':'Black'}</td><td>${n}</td><td>${n?Math.round(100*s/n)+'%':'—'}</td></tr>`).join('')}</table>
+      <table style="margin-top:10px"><tr><th>Opponent rated</th><th>Games</th><th>Score</th></tr>${bandRows.map(([b,o])=>`<tr><td>${esc(b)}</td><td>${o.n}</td><td>${Math.round(100*o.s/o.n)}%</td></tr>`).join('')}</table></div>
+    <div class="card"><span class="label">Accuracy by phase${Help.q('Lichess’s accuracy for each of your moves (100 = no winning chances lost), averaged per phase. Phases as Lichess divides a game: the middlegame starts when 10 or fewer major and minor pieces are left or a back rank is sparse; the endgame when 6 or fewer are left.')}</span>
+      <p class="note">From the ${rows.length} analyzed games (engine evals needed).</p>
+      <table style="margin-top:6px"><tr><th>Phase</th><th>Your moves</th><th>Accuracy</th></tr>${['opening','middlegame','endgame'].map(k=>`<tr><td>${k[0].toUpperCase()+k.slice(1)}</td><td>${ph[k].length}</td><td>${avg(ph[k])==null?'—':avg(ph[k])+'%'}</td></tr>`).join('')}</table></div>
     <div class="card"><span class="label">Openings in these games</span>
+      <div class="seg mseg" role="group" style="margin-top:6px"><button type="button" data-optab="w" aria-pressed="true">As White</button><button type="button" data-optab="b" aria-pressed="false">As Black</button></div>
+      <div data-oppane="w">${opTable(opBy('w'))}</div><div data-oppane="b" hidden>${opTable(opBy('b'))}</div></div>
+    <div class="card" hidden><span class="label">Openings (all)</span>
       <table style="margin-top:6px"><tr><th>Opening</th><th>Games</th><th>Score${Help.q('Your points as a share of the games: a win is 1, a draw ½.')}</th><th>Blunders / mistakes / inaccuracies per game${Help.q("Your own errors in that opening's games, divided by its games.")}</th></tr>
       ${opRows.map(([k,o])=>`<tr><td>${esc(k)}</td><td>${o.n}</td><td>${Math.round(100*o.s/o.n)}%</td><td>${(o.blun/o.n).toFixed(1)} / ${(o.mist/o.n).toFixed(1)} / ${(o.inacc/o.n).toFixed(1)}</td></tr>`).join('')}</table></div>
     <div class="card"><span class="label">Your costliest moments (${mistakes.length})${Help.q('Your moves that dropped your own winning chances the most. −34% means your chances fell by 34 points with that move (from your side).')}</span>
@@ -222,6 +259,8 @@ function init(){
     run($('a-site').value,u) });
   $('a-demo').addEventListener('click',()=>{ $('a-site').value='chesscom'; $('a-user').value='CoachSuhaas'; run('chesscom','CoachSuhaas') });
   $('a-user').addEventListener('keydown',e=>{ if(e.key==='Enter') $('a-go').click() });
+  $('a-report').addEventListener('click',e=>{ const b=e.target.closest('[data-optab]'); if(!b) return; const c=b.dataset.optab;
+    $('a-report').querySelectorAll('[data-optab]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); $('a-report').querySelectorAll('[data-oppane]').forEach(x=>{ x.hidden=x.dataset.oppane!==c }) });
 }
-window.AnalyzeTab={init,run,markGame,fetchLichess,fetchChesscom,evalsFor,get running(){return running}};
+window.AnalyzeTab={init,phaseAccuracy,phaseOf,run,markGame,fetchLichess,fetchChesscom,evalsFor,get running(){return running}};
 })();
