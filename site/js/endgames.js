@@ -17,11 +17,7 @@ const has=(s,u)=>!!s&&s.split(' ').includes(u);
 function node(fen){ return S.cur&&S.cur.nodes?S.cur.nodes[normKey(fen)]:undefined }
 async function live(fen){
   if(EndgamesTab.offline) return null;
-  try{
-    const ctl=new AbortController(), t=setTimeout(()=>ctl.abort(),6000);
-    const r=await fetch('https://tablebase.lichess.ovh/standard?fen='+encodeURIComponent(fen),{signal:ctl.signal}); clearTimeout(t);
-    if(!r.ok) return null; return await r.json();
-  }catch(e){ return null }
+  return Net.tablebase(fen);   /* shared/net.js */
 }
 const res=c=>({loss:'W',win:'L','maybe-loss':'W','maybe-win':'L'})[c]||'D';
 const met=m=>m.dtm!=null?Math.abs(m.dtm):10000+Math.abs(m.dtz||0);

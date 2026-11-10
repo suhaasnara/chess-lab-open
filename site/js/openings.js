@@ -74,6 +74,15 @@ function stats(id){ const s=deep(Store.get('stats-'+id))||{};
   const r=Object.assign({rating:R2_START,lines:0,history:[],n2:0},s);
   if(!Array.isArray(r.history)) r.history=[]; return r }
 const saveStats=(id,s)=>Store.put('stats-'+id,s);
+/* "Play as": the other side of a preset, custom position or Anything keeps its own rating and review list (stats-<id>@<side>) */
+const SID=()=>S.op?(S.op.asSide?S.op.id+'@'+S.op.side:S.op.id):'';
+/* the review queue: positions you missed, replayed until you find the move first try (stats.mistakes, newest 40) */
+function addMistake(fen){ const s=stats(SID()); const k=posId(normKey(fen)); s.mistakes=Array.isArray(s.mistakes)?s.mistakes:[];
+  if(s.mistakes.some(m=>m.key===k)) return; const i=S.log.findIndex(x=>x.before===fen); const path=(i>=0?S.log.slice(0,i):S.log).map(x=>x.san);
+  s.mistakes.push({key:k,path,added:new Date().toISOString().slice(0,10)}); s.mistakes=s.mistakes.slice(-40); saveStats(SID(),s) }
+function clearMistake(k){ const s=stats(SID()); if(!Array.isArray(s.mistakes)) return; s.mistakes=s.mistakes.filter(m=>m.key!==k); saveStats(SID(),s) }
+/* "Never play this reply" (repertoires): oskip-<id> = [{k:'<posId>|<uci>', san}] */
+const skipList=id=>Store.get('oskip-'+id)||[];
 
 /* How hard the right move is to find here (masters' share of the good moves). */
 async function moveDifficulty(fen,good){
@@ -180,22 +189,24 @@ function setPop(on){ const p=$('o-pop'); p.hidden=!on; $('o-pick').setAttribute(
   if(on){ renderList(); if(innerWidth>860) $('o-search').focus({preventScroll:true}) } else if(S.arrange){ S.arrange=false; renderList() } }
 function firstListed(){ return ordered(openings())[0] }
 function selectOpening(id){
-  const o=openings().find(x=>x.id===id)||firstListed(); if(!o) return;
+  let o=openings().find(x=>x.id===id)||firstListed(); if(!o) return;
+  const as=(Store.get('oas')||{})[o.id]; if(as&&!o.rep&&!o.player&&as!==o.side) o={...o,side:as,asSide:true};
   S.op=o; $('o-pickname').textContent=o.name; $('o-picklab').textContent=`${o.side==='white'?'White':'Black'} · ${o.rep?'repertoire':o.player?'vs a player':o.custom?'your position':o.any?'any opening':'opening'}`;
   if(o.rep) Book.moves(START,'b22');   /* club shares for prepared sidelines the elite book leaves out */
   newLine();
 }
 
 /* ---------- Line play ---------- */
-function newLine(){
+function newLine(review){
   if(!S.op) return;
+  S.review=review&&review.key?review:null;
   S.lineId++;
   $('o-endbar').hidden=true; $('o-boardbox').classList.remove('end-good','end-warn');
   S.g=new Chess(startFen()); S.phase='await'; S.busy=false; S.outBook=0; S.log=[]; S.userMoves=0; S.misses=[]; S.scored=[]; S.hintStage=0; S.fens=[S.g.fen()]; S.endMsg=''; S.browse=null; S.oppPicks=[]; S.tb=null; S.finalEv=null; S.orientSet=false;
-  S.startRating=stats(S.op.id).rating;
-  for(const san of (S.op.moves||[])){ const m=S.g.move(san,{sloppy:true}); if(!m) break; S.log.push({san:m.san,uci:m.from+m.to+(m.promotion||''),who:'book',before:S.fens[S.fens.length-1]}); S.fens.push(S.g.fen()) }
+  S.startRating=stats(SID()).rating;
+  for(const san of (S.review?S.review.path:(S.op.moves||[]))){ const m=S.g.move(san,{sloppy:true}); if(!m) break; S.log.push({san:m.san,uci:m.from+m.to+(m.promotion||''),who:'book',before:S.fens[S.fens.length-1]}); S.fens.push(S.g.fen()) }
   draw();
-  if(S.g.turn()!==myColor()) opponentMove(); else status('','Your move.','Play your prep. Hint is H.');
+  if(S.g.turn()!==myColor()) opponentMove(); else status('',S.review?'Review: a position you missed.':'Your move.',S.review?'Find the move you missed before. First try takes it off the list.':'Play your prep. Hint is H.');
   renderSide(); renderBook(); renderEval();
 }
 function viewPos(){ if(!browsing()) return {g:S.g,last:lastMove(S.g)}; const g=new Chess(S.fens[S.browse]); return {g,last:lastMove(g)} }
@@ -204,7 +215,19 @@ function draw(){
   board.set(v.g,{last:v.last,orient:board?.orient&&S.orientSet?board.orient:myColor(),locked:browsing()||S.phase!=='await'});
   $('o-board').classList.toggle('browsing',browsing());
   Shapes.auto($('o-board'),noteShapes());
+  renderCaptured(v.g);
   tools();
+}
+/* Captured pieces above and below the board, with the material balance (Settings: Show captured pieces). */
+function renderCaptured(g){
+  const top=$('o-capt'), bot=$('o-capb'); if(!top||!bot) return;
+  if(!Settings.get('ocaptured')||!g){ top.innerHTML=bot.innerHTML=''; top.hidden=bot.hidden=true; return } top.hidden=bot.hidden=false;
+  const full={p:8,n:2,b:2,r:2,q:1}, val={p:1,n:3,b:3,r:5,q:9}, have={w:{p:0,n:0,b:0,r:0,q:0},b:{p:0,n:0,b:0,r:0,q:0}};
+  for(const row of g.board()) for(const p of row) if(p&&p.type!=='k') have[p.color][p.type]++;
+  const mat=c=>Object.keys(val).reduce((a,t)=>a+val[t]*have[c][t],0), diff=mat('w')-mat('b');
+  const taken=c=>{ const o=c==='w'?'b':'w'; return ['q','r','b','n','p'].map(t=>`<span class="pc ${o}${t.toUpperCase()}"></span>`.repeat(Math.max(0,full[t]-have[o][t]))).join('') };
+  const line=c=>{ const d=c==='w'?diff:-diff; return taken(c)+(d>0?`<span class="capdiff mono">+${d}</span>`:'') };
+  const botC=board&&board.orient||myColor(), topC=botC==='w'?'b':'w'; top.innerHTML=line(topC); bot.innerHTML=line(botC);
 }
 function lastMove(g){ const h=g.history({verbose:true}); const m=h[h.length-1]; return m?{from:m.from,to:m.to}:null }
 
@@ -238,6 +261,7 @@ function repRecord(fen,ok){ if(training()) return; const s=stats(S.op.id); s.rep
 function repPick(fen,file){
   const bk=oppBookNow(fen), useBook=!!(bk&&!bk.demo&&bk.total>=20), rs=stats(S.op.id).rep||{};
   let kids=file.slice();
+  { const sk=new Set(skipList(S.op.id).map(x=>x.k)), pid=posId(normKey(fen)); const keep=kids.filter(u=>!sk.has(pid+'|'+u)); if(keep.length) kids=keep }
   const min=(+Settings.get('ominshare')||0)/100;
   if(min>0&&useBook){ const keep=kids.filter(u=>replyShare(fen,u,bk)>=min); if(keep.length) kids=keep }
   const recent=recentLines(), opp=fen.split(' ')[1], trappy=!!Settings.get('otrappy');
@@ -342,7 +366,7 @@ async function userMove(from,to,promo){
     if(hit){ repRecord(fen,true); await accept(fen,m,uci,file,1,'In your repertoire.',lid) }
     else{
       if(!file.length){ S.busy=false; return endLine('End of your prep in this line.') }
-      S.misses.push({fen,played:m.san,answer:file.map(u=>sanOf(fen,u)).join(' or ')}); repRecord(fen,false);
+      S.misses.push({fen,played:m.san,answer:file.map(u=>sanOf(fen,u)).join(' or ')}); repRecord(fen,false); addMistake(fen);
       if(!scoredAt(fen)) S.scored.push({fen,s:0,d:await moveDifficulty(fen,file),miss:true});
       if(lid!==S.lineId) return;
       S.busy=false; tools();
@@ -382,7 +406,7 @@ async function userMove(from,to,promo){
           verdictText=`${m.san} loses about ${(best-mine).toFixed(1)} pawns. Best here: ${top?sanOf(fen,top.uci):sanOf(fen,a[0].uci)}.`;
         }
       }else if(top){ verdictText=`Not a book move. Elite players prefer ${sanOf(fen,top.uci)}.` }
-      S.misses.push({fen,played:m.san,answer:top?sanOf(fen,top.uci):'',drop});
+      S.misses.push({fen,played:m.san,answer:top?sanOf(fen,top.uci):'',drop}); addMistake(fen);
       if(!scoredAt(fen)) S.scored.push({fen,s:0,d:await moveDifficulty(fen),miss:true});
       if(lid!==S.lineId) return;
       S.busy=false; tools();
@@ -398,6 +422,7 @@ async function accept(fen,m,uci,good,score,noteText,lid){
   S.g.move({from:m.from,to:m.to,promotion:m.promotion});
   S.log.push({san:m.san,uci,who:'me',ok:score>=1?'ok':'half',before:fen}); S.fens.push(S.g.fen());
   S.userMoves++; S.busy=false; S.hintStage=0; S.browse=null;
+  { const k=posId(normKey(fen)); if(score>=1&&!S.misses.some(x=>x.fen===fen)&&!(S.tb&&S.tb.has(fen))&&(stats(SID()).mistakes||[]).some(x=>x.key===k)){ clearMistake(k); noteText=(noteText?noteText+' ':'')+'Off your review list.' } }
   draw(); board.flash([m.from,m.to],'good');
   status('good',score>=1?`${m.san} ✓`:`${m.san} — half credit`,noteText||'');
   renderSide(); renderEval();
@@ -420,20 +445,27 @@ function takeBack(){
 
 function endLine(msg){
   S.phase='done'; S.busy=false; S.browse=null;
-  const st=stats(S.op.id);
+  const st=stats(SID());
   let delta=0;
   if(!training()&&S.scored.length){
     delta=Math.round(TC.lineDelta(st.rating,st.n2,S.scored));   /* shared rule: each move's expected score, averaged */
     st.rating+=delta; st.n2++; st.lines++; st.last=Date.now();
     st.history.push({t:Date.now(),r:st.rating,m:'r'});
     if(st.history.length>200) st.history=st.history.slice(-200);
-    saveStats(S.op.id,st);
-  }else if(training()){ st.lines++; st.last=Date.now(); st.history.push({t:Date.now(),r:st.rating,m:'t'}); if(st.history.length>200) st.history=st.history.slice(-200); saveStats(S.op.id,st) }
+    saveStats(SID(),st);
+  }else if(training()){ st.lines++; st.last=Date.now(); st.history.push({t:Date.now(),r:st.rating,m:'t'}); if(st.history.length>200) st.history=st.history.slice(-200); saveStats(SID(),st) }
   rememberLine();
   S.endMsg=msg;
-  const missTxt=S.misses.length?`<br>${S.misses.length} miss${S.misses.length>1?'es':''}: ${S.misses.map(x=>`${esc(x.played)}${x.answer?' (prep: '+esc(x.answer)+')':''}`).join(', ')}`:'<br>Every move you played was right.';
+  const show=Settings.get('omistakes')||'all', inacc=S.log.filter(x=>x.who==='me'&&x.ok==='half');
+  let missTxt=S.misses.length?`<br>${S.misses.length} miss${S.misses.length>1?'es':''}: ${S.misses.map(x=>`${esc(x.played)}${x.answer?' (prep: '+esc(x.answer)+')':''}`).join(', ')}`:'<br>Every move you played was right.';
+  if(show==='all'&&inacc.length) missTxt+=`<br>${inacc.length} half-credit move${inacc.length>1?'s':''} (rare or off book but playable): ${inacc.map(x=>esc(x.san)).join(', ')}`;
+  if(show==='none') missTxt=S.misses.length?`<br>${S.misses.length} miss${S.misses.length>1?'es':''}.`:'';
   status(S.misses.length?'warn':'good',`${msg}${training()?'':` · ${delta>=0?'+':''}${delta} rating`}`,'');
   $('o-status').innerHTML+=missTxt+'<span id="o-sfinfo"></span>';
+  if(S.op.rep){ const sk=new Set(skipList(S.op.id).map(x=>x.k)); const opp=S.log.filter(x=>x.who==='opp'&&repMovesAt(x.before).length>1&&!sk.has(posId(normKey(x.before))+'|'+x.uci));
+    if(opp.length){ const d=document.createElement('div'); d.className='note skiprow'; d.innerHTML='Never play this reply again: '+opp.map(x=>`<button type="button" class="btn sm" data-skip="${esc(posId(normKey(x.before))+'|'+x.uci)}" data-san="${esc(x.san)}">${esc(x.san)}</button>`).join(' ');
+      d.addEventListener('click',e=>{ const b=e.target.closest('[data-skip]'); if(!b) return; const l=skipList(S.op.id); l.push({k:b.dataset.skip,san:b.dataset.san}); Store.put('oskip-'+S.op.id,l); b.disabled=true; b.textContent+=' — skipped' });
+      $('o-status').appendChild(d) } }
   const nx=document.createElement('button'); nx.className='btn primary endnext'; nx.textContent='Next line (N)';
   nx.addEventListener('click',newLine); $('o-status').appendChild(nx);
   /* a banner on the board itself, so the end of the line is obvious on a phone */
@@ -503,13 +535,19 @@ function renderSide(){
   if(!S.op){ $('o-name').textContent='Choose an opening'; return }
   const names=Book.nameOf(S.fens);
   $('o-name').textContent=S.op.name;
-  const st=stats(S.op.id);
+  const st=stats(SID());
   const delta=st.rating-S.startRating;
   $('o-rate').innerHTML=training()?'<span class="note">Training mode: the rating doesn’t move.</span>'
     :`<b>${st.rating}</b><span class="delta ${delta>0?'up':delta<0?'down':''}">${delta?(delta>0?'+':'')+delta+' this line':''}</span><span class="note">· ${st.lines} lines</span>`;
   const btns=$('o-sidebtns'); btns.innerHTML='';
   { const b=document.createElement('button'); b.className='btn sm'; b.id='o-savepos'; b.textContent='Save this position'; b.title='Make the moves on the board a position of your own, to train from';
     b.disabled=!S.g; b.addEventListener('click',()=>saveCurrent()); btns.appendChild(b) }
+  if(!S.op.rep&&!S.op.player){ const other=S.op.side==='white'?'black':'white', b=document.createElement('button'); b.className='btn sm'; b.id='o-playas';
+    b.textContent='Play as '+(other==='white'?'White':'Black'); b.title='Train the other side of this line (it keeps its own rating)';
+    b.addEventListener('click',()=>{ const m=Store.get('oas')||{}, base=openings().find(x=>x.id===S.op.id); if(base&&other===base.side) delete m[S.op.id]; else m[S.op.id]=other; Store.put('oas',m); selectOpening(S.op.id) }); btns.appendChild(b) }
+  { const ms=stats(SID()).mistakes||[]; if(ms.length){ const b=document.createElement('button'); b.className='btn sm'; b.id='o-review'; b.textContent=`Review mistakes (${ms.length})`;
+    b.title='Replay a position you missed in this opening; finding the move first try takes it off the list';
+    b.addEventListener('click',()=>{ const l=stats(SID()).mistakes||[]; if(l.length) newLine(l[Math.floor(Math.random()*l.length)]) }); btns.appendChild(b) } }
   if(S.op.custom){ const e=document.createElement('button'); e.className='btn sm'; e.id='o-editpos'; e.textContent='Rename or edit'; e.addEventListener('click',()=>openNew(S.op)); btns.appendChild(e);
     const d=document.createElement('button'); d.className='btn sm'; d.id='o-delpos'; d.textContent='Delete position';
     d.addEventListener('click',()=>{ if(confirm('Delete this position and its stats?')) deleteCustom(S.op.id) }); btns.appendChild(d) }
@@ -595,25 +633,16 @@ async function hint(){
 /* ---------- Import ---------- */
 function openImport(){ $('o-importmodal').hidden=false; $('o-reperr').textContent=''; setPop(false) }
 /* A Lichess study link -> its PGN (public API, no login; private studies are refused by Lichess). */
-function studyApi(url){
-  const m=String(url).trim().match(/lichess\.org\/study\/([A-Za-z0-9]{8})(?:\/([A-Za-z0-9]{8}))?/);
-  return m?'https://lichess.org/api/study/'+m[1]+(m[2]?'/'+m[2]:'')+'.pgn':null;
-}
+function studyApi(url){ return Net.studyApi(url) }   /* shared/net.js */
 async function fetchStudy(){
-  const api=studyApi($('o-studyurl').value); const err=$('o-reperr');
-  if(!api){ err.textContent='That is not a Lichess study link (https://lichess.org/study/…).'; return false }
-  err.textContent='Fetching the study…';
+  const err=$('o-reperr'); err.textContent='Fetching the study…';
   try{
-    const r=await fetch(api); if(r.status===403||r.status===404){ err.textContent='Lichess would not share that study: make it public or unlisted, then try again.'; return false }
-    if(!r.ok) throw new Error('Lichess answered '+r.status);
-    const pgn=await r.text(); if(!/\d\.\s*[A-Za-z]/.test(pgn)) throw new Error('the study has no moves');
-    $('o-pgnbox').value=pgn;
-    const tag=k=>{ const m=pgn.match(new RegExp('\\['+k+' "([^"]*)"\\]')); return m?m[1]:'' };
-    if(!$('o-repname').value.trim()) $('o-repname').value=(tag('StudyName')||tag('Event')||'').slice(0,60);
-    const o=tag('Orientation'); if(o==='black'||o==='white') $('o-repside').value=o;
-    const n=(pgn.match(/\[Event /g)||[]).length;
-    err.textContent=`Fetched ${n} chapter${n===1?'':'s'}. Check the name and side, then Import.`; return true;
-  }catch(e){ err.textContent='Could not fetch the study ('+(e.message||e)+').'; return false }
+    const st=await Net.fetchStudy($('o-studyurl').value);
+    $('o-pgnbox').value=st.pgn;
+    if(!$('o-repname').value.trim()) $('o-repname').value=st.name;
+    if(st.side) $('o-repside').value=st.side;
+    err.textContent=`Fetched ${st.chapters} chapter${st.chapters===1?'':'s'}. Check the name and side, then Import.`; return true;
+  }catch(e){ err.textContent=String(e.message||e); return false }
 }
 async function doImport(){
   if(!$('o-pgnbox').value.trim()&&$('o-studyurl').value.trim()){ if(!await fetchStudy()) return }
@@ -647,7 +676,7 @@ function syncLevel(){
 }
 
 /* ---------- Trainer settings (the gear on the Openings tab) ---------- */
-const SETTINGS_KEYS=['olen','ovariety','ominshare','otrappy','evalCol','osfinfo','oshare','sfDepth'];
+const SETTINGS_KEYS=['olen','ovariety','ominshare','otrappy','evalCol','osfinfo','oshare','sfDepth','omistakes','ocaptured'];
 function renderSetModal(){
   const D=k=>Settings.get(k);
   const seg=(k,opts)=>`<div class="seg mseg" role="group">${opts.map(([v,l])=>`<button type="button" data-seg="${k}" data-v="${v}" aria-pressed="${String(D(k))===String(v)}">${esc(l)}</button>`).join('')}</div>`;
@@ -661,6 +690,9 @@ function renderSetModal(){
       <input type="range" data-k="ominshare" min="0" max="80" step="5" value="${+D('ominshare')||0}"></label>
       <p class="note">Measured in the opponent's book at each position. 0% plays any book move, in proportion to how often it is chosen. If no move reaches the bar, the most played one is used. In repertoires it skips the prepared replies that are rarely played.</p></div>`+
     sw('otrappy','Opponent prefers trappy lines','Book replies lean toward the ones that score best in practice for the side playing them. Past the book, Stockfish picks among moves within 0.1 winning chances of its best instead of 0.05.')+
+    sel('omistakes','Show mistakes after a line',[['all','All (misses and half-credit moves)'],['mistakes','Misses only'],['none','Just the count']])+
+    sw('ocaptured','Show captured pieces','The pieces each side has taken, above and below the board, with the material balance.')+
+    (S.op&&S.op.rep&&skipList(S.op.id).length?`<div class="mset"><b>Replies you skipped</b><p class="note">${skipList(S.op.id).map(x=>esc(x.san)).join(', ')}</p><button type="button" class="btn sm" id="o-unskip">Bring them back</button></div>`:'')+
     sw('evalCol','Show eval','An eval bar under the board (Stockfish, White’s side). In Rated mode it appears when the line ends.')+
     sw('osfinfo','Stockfish info after each line','Stockfish’s eval and best move for the final position, under the result.')+
     sel('oshare','Book move threshold (presets)',[['1','1%'],['3','3%'],['5','5%'],['10','10%']],'A preset move below this share of elite games counts as rare (half credit).')+
@@ -742,7 +774,7 @@ function init(){
     $('o-pgnbox').value=await f.text(); if(!$('o-repname').value.trim()) $('o-repname').value=f.name.replace(/\.pgn$/i,'').slice(0,60);
     $('o-reperr').textContent=`Read ${f.name}. Check the name and side, then Import.`; e.target.value='' });
   /* settings modal: every control writes its setting at once */
-  $('o-setbody').addEventListener('click',e=>{ const b=e.target.closest('[data-seg]'); if(!b) return; Settings.set(b.dataset.seg,b.dataset.v); renderSetModal() });
+  $('o-setbody').addEventListener('click',e=>{ if(e.target.id==='o-unskip'&&S.op){ Store.del('oskip-'+S.op.id); renderSetModal(); return } const b=e.target.closest('[data-seg]'); if(!b) return; Settings.set(b.dataset.seg,b.dataset.v); renderSetModal() });
   $('o-setbody').addEventListener('input',e=>{ const t=e.target; if(t.type==='range'){ $('o-minv').textContent=t.value+'%' } });
   $('o-setbody').addEventListener('change',e=>{ const t=e.target, k=t.dataset.k; if(!k) return; Settings.set(k,t.type==='checkbox'?t.checked:t.type==='range'?+t.value:t.value); renderSetModal() });
   $('o-setreset').addEventListener('click',()=>{ for(const k of SETTINGS_KEYS) Settings.set(k,Settings.DEF[k]); renderSetModal() });
@@ -789,6 +821,6 @@ function init(){
   renderList();
   board.set(new Chess(),{orient:'w',locked:true});
 }
-window.OpeningsTab={init,customs,saveCustom,deleteCustom,openNew,saveNew,saveCurrent,studyApi,fetchStudy,doImport,syncLevel,soundDemoMoves,get state(){return S},selectOpening,newLine,userMove,parseRepPGN,moveDifficulty,openings,stats,
+window.OpeningsTab={init,SID,skipList,renderCaptured,customs,saveCustom,deleteCustom,openNew,saveNew,saveCurrent,studyApi,fetchStudy,doImport,syncLevel,soundDemoMoves,get state(){return S},selectOpening,newLine,userMove,parseRepPGN,moveDifficulty,openings,stats,
   takeBack,canTakeBack,browse,annAt,repPick,ordered,saveOrder,setArrange,moveItem,renderStats,openStats,openSettings,firstListed};
 })();

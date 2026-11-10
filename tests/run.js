@@ -1024,6 +1024,45 @@ section('t36: Save this position — from the trainer');
   const id2=O.saveCurrent('Just 1.c4'); assert(w.Store.get(id2).moves.join(' ')==='c4','while browsing, it saves the position shown');
 }
 
+section('t38: trainer extras from Chess Lab — Play as, review queue, Never play this reply, mistakes after a line, captured pieces');
+{
+  const {w}=await makePage({analyse:async()=>null});
+  const O=w.OpeningsTab, $=id=>w.document.getElementById(id), S=O.state;
+  /* Play as: the other side of a preset, with its own rating */
+  O.selectOpening('preset-english'); await sleep(300);
+  assert(S.op.side==='white'&&$('o-playas')&&/Black/.test($('o-playas').textContent),'presets offer Play as Black');
+  $('o-playas').click(); await sleep(1500);
+  assert(S.op.side==='black'&&S.op.asSide&&O.SID()==='preset-english@black','Play as Black: you are Black, stats kept apart ('+O.SID()+')');
+  assert(S.g.turn()==='b'&&S.log.map(x=>x.san).join()==='c4','as Black you answer 1.c4');
+  $('o-playas').click(); await sleep(300); assert(S.op.side==='white'&&O.SID()==='preset-english','and back to White');
+  /* review queue + mistakes after a line: an imported repertoire, a miss, then review */
+  const pgn='[Event "a"]\n1. e4 e5 2. Nf3 Nc6 3. Bb5 *\n\n[Event "b"]\n1. e4 e5 2. Nf3 d6 3. d4 *';
+  $('o-pgnbox').value=pgn; $('o-repname').value='Extras rep'; $('o-repside').value='white'; await O.doImport(); await sleep(300);
+  assert(S.op.rep&&S.log.length===0,'the repertoire is open');
+  await O.userMove('d2','d4'); await sleep(200);
+  const st=O.stats(O.SID()); assert((st.mistakes||[]).length===1&&st.mistakes[0].path.length===0,'a miss goes on the review list (with the moves to get there)');
+  await O.userMove('e2','e4'); await sleep(1200);
+  assert($('o-review')&&/Review mistakes \(1\)/.test($('o-review').textContent),'Review mistakes (1) is offered');
+  $('o-review').click(); await sleep(200);
+  assert(S.review&&S.log.length===0,'review replays the missed position');
+  await O.userMove('e2','e4'); await sleep(200);
+  assert(!(O.stats(O.SID()).mistakes||[]).length&&/Off your review list/.test($('o-status').textContent),'found first try: off the list');
+  /* never play this reply: play the line out to its end */
+  for(let i=0;i<6&&S.phase!=='done';i++){ await sleep(900); const g=S.g, me=S.op.side[0]; if(g.turn()!==me) continue;
+    const ok=['g1f3','f1b5','d2d4'].find(u=>g.moves({verbose:true}).some(m=>m.from+m.to===u)); if(!ok) break; await O.userMove(ok.slice(0,2),ok.slice(2,4)) }
+  await sleep(300);
+  const skipBtn=$('o-status').querySelector('[data-skip]');
+  assert(S.phase==='done'&&skipBtn,'at the end, the replies chosen from several prepared ones can be skipped');
+  const which=skipBtn.dataset.san; skipBtn.click();
+  assert(O.skipList(S.op.id).length===1,'skipped ('+which+')');
+  for(let k=0;k<6;k++){ O.newLine(); await sleep(150); await O.userMove('e2','e4'); await sleep(900); await O.userMove('g1','f3'); await sleep(900);
+    assert(!S.log.some(x=>x.who==='opp'&&x.san===which),'a skipped reply is never played (line '+(k+1)+')') }
+  /* captured pieces */
+  w.Settings.set('ocaptured',true); const g2=new w.Chess('rnbqkbnr/ppp2ppp/8/8/8/8/PPPP1PPP/RNBQKBNR w KQkq - 0 3'); O.renderCaptured(g2);
+  assert(!$('o-capt').hidden&&$('o-capt').querySelectorAll('.pc').length+$('o-capb').querySelectorAll('.pc').length===3,'captured pieces show, three pawns taken in all');
+  w.Settings.set('ocaptured',false); O.renderCaptured(g2); assert($('o-capt').hidden,'and hide when the setting is off');
+}
+
 section('t37: shared code (site/shared/) — position ids never change, one PGN reader');
 {
   const {w}=await makePage();

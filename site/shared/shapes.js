@@ -1,7 +1,7 @@
 /* Shared (Chess Lab and Chess Lab Open). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
    Needs nothing from either site: only boards made of .board > .sq[data-sq] (> .pc). */
 /* ---------- Arrows and circles, Lichess style, on every board ----------
-   Right-click a square for a circle, right-drag to another square for an arrow: plain = green, Shift = red,
+   Right-click a square for a circle, right-drag to another square for an arrow: plain = green (Settings can change it), Shift = red,
    Alt (or Ctrl / Cmd) = blue, Shift+Alt = yellow; drawing the same shape again removes it. A left click on the
    board, or a new position, clears what you drew. A tab shows a PGN's own [%cal]/[%csl] shapes with
    Shapes.auto(boardEl, "Ge2e4 Rd4d5 Yd4"); they stay until the position changes.
@@ -29,7 +29,10 @@ window.Shapes=(()=>{
     const p=pos(el); svg.innerHTML=list.map(([x,op])=>shape(p,x,op)).join('') }
   function auto(el,s){ if(!el) return; const o=S(el); o.auto=parse(s); o.asig=o.auto.length?sigOf(el):null; draw(el) }
   function clear(el){ const o=st.get(el); if(o&&(o.user.length||o.tmp)){ o.user=[]; o.tmp=null; draw(el) } }
-  const colorOf=e=>e.shiftKey&&(e.altKey||e.ctrlKey||e.metaKey)?'Y':e.shiftKey?'R':(e.altKey||e.ctrlKey||e.metaKey)?'B':'G';
+  /* Firefox always opens its menu on Shift+right-click, so the colour a plain right-click draws is a setting
+     (Settings.get('shapeColor'): G, R, B or Y; default green). Shift / Alt / Shift+Alt still pick red / blue / yellow. */
+  const plain=()=>{ try{ const c=window.Settings&&Settings.get('shapeColor'); return /^[GRBY]$/.test(c||'')?c:'G' }catch(e){ return 'G' } };
+  const colorOf=e=>e.shiftKey&&(e.altKey||e.ctrlKey||e.metaKey)?'Y':e.shiftKey?'R':(e.altKey||e.ctrlKey||e.metaKey)?'B':plain();
   const sqAt=(el,e)=>{ const t=document.elementFromPoint(e.clientX,e.clientY); const q=t&&t.closest&&t.closest('.sq'); return q&&el.contains(q)?q.dataset.sq:null };
   const boardOf=t=>t&&t.closest?t.closest('.board'):null;
   let dr=null;

@@ -10,7 +10,9 @@
        (Settings → Move input on the private site; Open has no setting yet, so 'both').
    makeBoard(el, opts) -> {set(game,{last,orient,locked,keepHint}), setHint(sq,to), flip(), flash(squares,tone), orient, render}
    endBanner(boardEl, onNext, label) -> {show(tone,text,btn), hide(), shown, text}
-   Board.dragOver(el, e) outlines the square under a dragged piece (e = null clears it). */
+   Board.dragOver(el, e) outlines the square under a dragged piece (e = null clears it).
+   Sound.play('move'|'capture') and BoardFX.after(el, last) (slide the piece that just moved, play the sound) read the
+   site's Settings: sound (true/false), anim (none/fast/normal/slow). makeBoard runs BoardFX after every redraw. */
 window.Board=(()=>{
   const FILES='abcdefgh', NAME={p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'};
   function draw(el,g,o={}){
@@ -82,6 +84,35 @@ window.Board=(()=>{
   return {draw,bind,dragOver};
 })();
 
+/* Move sounds: a short synthesized wooden click, louder and lower for captures. */
+window.Sound=(()=>{ let ctx=null;
+  function play(kind){ if(!Settings.get('sound')) return; try{
+    ctx=ctx||new (window.AudioContext||window.webkitAudioContext)(); if(ctx.state==='suspended') ctx.resume();
+    const cap=kind==='capture', len=cap?0.09:0.06, buf=ctx.createBuffer(1,Math.floor(ctx.sampleRate*len),ctx.sampleRate), d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,cap?3:4);
+    const src=ctx.createBufferSource(); src.buffer=buf; const f=ctx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=cap?900:1400; f.Q.value=cap?1.2:2.5;
+    const g=ctx.createGain(); g.gain.value=cap?0.9:0.7; src.connect(f).connect(g).connect(ctx.destination); src.start() }catch(e){} }
+  return {play} })();
+
+/* Board effects, run after every redraw: slide the piece that just moved (and the rook when castling), play the sound.
+   A redraw that only changed the selection, a takeback or a jump to a new position does nothing. */
+window.BoardFX={ ANIM:{none:0,fast:120,normal:250,slow:500},
+  after(el,last,opts={}){
+    const now={}; el.querySelectorAll('.sq').forEach(q=>{ const p=q.querySelector('.pc'); now[q.dataset.sq]=p?p.className:'' });
+    const prev=el._pos; el._pos=now; const skip=el._skipAnim; el._skipAnim=false;
+    if(!prev||!last||!last.from||!(last.to in now)) return;
+    if(prev[last.from]===now[last.from]&&prev[last.to]===now[last.to]) return;
+    if(!prev[last.from]||now[last.from]||!now[last.to]) return;
+    if(Object.keys(now).filter(k=>prev[k]!==now[k]).length>4) return;
+    if(!opts.silent) Sound.play(last.captured||(last.flags||'').includes('e')?'capture':'move');
+    const ms=this.ANIM[Settings.get('anim')]; if(skip||!ms||(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+    const slide=(f,t)=>{ const fe=el.querySelector(`.sq[data-sq="${f}"]`), te=el.querySelector(`.sq[data-sq="${t}"]`), pc=te&&te.querySelector('.pc');
+      if(!fe||!pc||!pc.animate) return; pc.style.zIndex=5;
+      pc.animate([{transform:`translate(${fe.offsetLeft-te.offsetLeft}px,${fe.offsetTop-te.offsetTop}px)`},{transform:'translate(0,0)'}],{duration:ms,easing:'cubic-bezier(.25,.1,.25,1)'}).onfinish=()=>{ pc.style.zIndex='' } };
+    slide(last.from,last.to);
+    const fl=last.flags||''; if(fl.includes('k')||fl.includes('q')){ const r=last.to[1], k=fl.includes('k'); slide((k?'h':'a')+r,(k?'f':'d')+r) }
+  } };
+
 /* A result banner on a board: a coloured frame plus a bar with the result and a Next button, so the end
    of an exercise is obvious on a phone. Wraps the board in .boardbox (the board re-renders its own
    children only). Tap the result text to hide the bar and see the whole board. */
@@ -105,9 +136,9 @@ function endBanner(boardEl,onNext,label){
    (tap a piece then a square, or drag); opts.input() as in Board.bind. */
 function makeBoard(el,opts={}){
   const B={game:null,last:null,orient:'w',sel:null,hint:null,hintTo:null,locked:false};
-  const render=()=>Board.draw(el,B.game,{orient:B.orient,sel:B.sel,last:B.last,hint:B.hint,hintTo:B.hintTo});
+  const render=()=>{ Board.draw(el,B.game,{orient:B.orient,sel:B.sel,last:B.last,hint:B.hint,hintTo:B.hintTo}); BoardFX.after(el,B.last) };
   Board.bind(el,()=>({g:B.game,can:()=>!B.locked&&!!B.game,sel:()=>B.sel,setSel:v=>{ B.sel=v },redraw:render}),
-    (f,t,p)=>{ opts.onMove&&opts.onMove(f,t,p) },{input:opts.input});
+    (f,t,p)=>{ opts.onMove&&opts.onMove(f,t,p) },{input:opts.input||(()=>{ const v=window.Settings&&Settings.get('input'); return v==='tap'?'both':v })});
   return {
     set(game,o={}){ B.game=game; if(o.last!==undefined) B.last=o.last; if(o.orient) B.orient=o.orient; B.sel=null; if(!o.keepHint){B.hint=null;B.hintTo=null} B.locked=!!o.locked; render() },
     setHint(sq,to){ B.hint=sq||null; B.hintTo=to||null; render() },

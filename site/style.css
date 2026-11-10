@@ -361,3 +361,7 @@ body.no-coords .coord{display:none}body.no-last .sq.last{background:none}body.no
 .npgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}#o-npboard{max-width:420px}
 @media (max-width:700px){.npgrid{grid-template-columns:minmax(0,1fr)}}
 .drill.newpos{border-style:dashed}
+
+/* captured pieces beside the opening board (Settings: Show captured pieces) */
+.capline{display:flex;flex-wrap:wrap;align-items:center;gap:0;min-height:20px;margin:2px 0}.capline .pc{position:relative;inset:auto;display:inline-block;width:18px;height:18px;margin-right:-4px}.capline .capdiff{margin-left:8px;font-size:13px;color:var(--muted)}
+.skiprow{margin-top:8px}.skiprow .btn{margin:2px}
