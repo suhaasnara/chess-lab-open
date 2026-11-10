@@ -39,6 +39,7 @@ async function makePage(opts={}){
   w.TextEncoder=TextEncoder;
   try{ Object.defineProperty(w,'crypto',{value:require('crypto').webcrypto}) }catch(e){}
   w.confirm=()=>true;
+  if(opts.beforeLoad) opts.beforeLoad(w);
   w.fetch=async(url,init)=>{
     url=String(url);
     if(opts.fetch){ const r=await opts.fetch(url,init); if(r) return r }

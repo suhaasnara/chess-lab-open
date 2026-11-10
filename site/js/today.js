@@ -157,9 +157,17 @@ function start(it){
 }
 function select(it){ play(it) }
 /* First visit: a short guide on Today (dismissable; "How it works" in the header brings it back). */
+/* Someone who has trained here before is not a first visitor, even if they never pressed Got it: the guide stays
+   away (it pushed Today's board below the fold). Progress keys only; settings and the day's plan don't count. */
+const PROGRESS=['adrills','adrills-progress','tactics-progress','tac-history','endgame-progress','calc-progress','gtm-results','play-games','today-streak','watch'];
+function hasProgress(){
+  for(const k of PROGRESS){ const v=Store.get(k); if(v&&(Array.isArray(v)?v.length:Object.keys(v).length)) return true }
+  try{ for(let i=0;i<localStorage.length;i++) if(/^clo:stats-/.test(localStorage.key(i))) return true }catch(e){}
+  return false;
+}
 function welcome(show){
   const el=$('welcome'); if(!el) return;
-  let seen=false; try{ seen=localStorage.getItem('clo-welcome')==='seen' }catch(e){}
+  let seen=false; try{ seen=localStorage.getItem('clo-welcome')==='seen'||hasProgress() }catch(e){}
   el.hidden=show===true?false:seen;
   /* returning visitors get Chess Lab's board page (no big header on Today); the guide brings it back */
   document.body.classList.toggle('welcomed',el.hidden);

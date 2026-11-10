@@ -505,6 +505,11 @@ section('t19: first-visit guide and link preview');
   assert(el.hidden&&w.localStorage.getItem('clo-welcome')==='seen','Got it hides it and remembers');
   w.document.getElementById('help-open').click(); await sleep(60);
   assert(!el.hidden&&w.document.body.dataset.view==='today','How it works (header) brings it back');
+}
+{
+  const {w}=await makePage({beforeLoad:win=>{ win.localStorage.setItem('clo:tactics-progress',JSON.stringify({p1:{ok:true,t:1}})) }}); await sleep(100);
+  assert(w.document.getElementById('welcome').hidden&&w.document.body.classList.contains('welcomed'),'someone who has trained here before never pressed Got it: no guide, the board page (no hero)');
+  assert(w.localStorage.getItem('clo-welcome')===null,'(nothing written: it is worked out from their progress)');
   const meta=n=>{ const m=w.document.querySelector(`meta[property="${n}"],meta[name="${n}"]`); return m&&m.content };
   assert(/^https:\/\/suhaasnarayanan\.com\/chess-lab-open\/assets\/og\.jpg$/.test(meta('og:image'))&&fs.existsSync(path.join(H.SITE,'assets','og.jpg')),'og:image points at the preview image, which exists');
   assert(meta('twitter:card')==='summary_large_image'&&/Chess Lab Open/.test(meta('og:title')),'Open Graph and Twitter tags are set');
