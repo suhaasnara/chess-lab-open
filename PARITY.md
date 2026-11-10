@@ -5,7 +5,7 @@ same tool. The only intended difference is the data: the private site is built a
 calculation books and opponents, and none of that can be published. Everything that works on open data, or on the
 visitor's own data, belongs in both.
 
-This file records where the two stand (as of the `parity-1` branch, November 2026) and how to close the rest.
+This file records where the two stand (as of the `one-codebase` branch, 9 Nov 2026) and how to close the rest.
 
 ## Now the same in both
 
@@ -38,18 +38,14 @@ This file records where the two stand (as of the `parity-1` branch, November 202
 
 ## Not ported yet (no private data needed)
 
-These would fit Open as they are; they were left for a later pass:
+Done on `one-codebase` (9 Nov 2026): board and input settings (animation, coordinates, last move, move dots, sounds,
+auto-next, tap/drag), the opening-trainer extras (Never play this reply, the review queue of your mistakes, Play as
+the other side, captured pieces, the eval column, Show mistakes after a line), and a plain right-click colour setting
+(so Firefox users get red without Shift). Still open:
 
-1. **Board and input settings**: piece animation speed, coordinates on/off, last-move and move-dot toggles, board
-   size, sounds, opponent delay, auto-next after a clean line.
-2. **Opening trainer extras**: "Never play this reply" (skip a reply in a repertoire), a review queue of your
-   repertoire mistakes, "Play as" the other side of a preset,
-   captured pieces beside the board, the move-list eval column, "Show mistakes after a line" (all / mistakes only).
-3. **Players**: opening names per line in the explorer, a rating/time-window filter, and your own notes on a player.
-4. **Watch on Today**: the private site's balanced daily plan (resume + one video from two other topics). Open shows
+1. **Players**: opening names per line in the explorer, a rating/time-window filter, and your own notes on a player.
+2. **Watch on Today**: the private site's balanced daily plan (resume + one video from two other topics). Open shows
    only the video in progress.
-5. **Firefox and red arrows**: Firefox always opens its menu on Shift+right-click, so a non-Shift alternative for red
-   would help Firefox users.
 
 ## Plan: one source, two builds
 
@@ -87,8 +83,13 @@ Shared files declare one namespace each; each site keeps its own short names as 
 | 3 | `engine.js` | `EngineKit.create(builds)`: one Stockfish worker, watchdog, queue, cache; each site passes where its builds are served from | done, both sites |
 | 4 | `trainer-core.js` | rating v2 scale (difficulty, start 1800, K 40→16, short-line weight), "Sidelines in repertoires" weights, trappy factor, weighted pick | done, both sites (incl. the line-end rule, `lineDelta`) |
 
-Still to share: the rest of the opening trainer around the core (state, line flow, takebacks), the Guess-the-move
-parser, and the tabs themselves; then Open's extras come to the private site and the "Not ported yet" list comes here.
+| 5 | `net.js` | everything that needs the internet: Lichess studies, the tablebase, import-to-Lichess review, one clear "needs internet" card (also where a page can't reach other sites) | done, both sites |
+| 6 | `endgame-core.js` | tablebase grading and the defender's reply (keeps the result, keeps material, fewest saving replies, resists longest when losing) | done, both sites |
+| 7 | `keys.js`, `help.js`, `puzzles.js`, `controls.js` | one keyboard layer with a `?` list (never while typing, no browser clashes), the small ? explanations, puzzle titles and themes, the rating slider and multi-select | done, both sites |
+| 8 | `reader.js`, `shared.css` | the phone reader (board on top, notes below, Prev / Next at the bottom) in Openings notes, Guess the move, Calculation, Endgames (and the private Players studies); hidden on iPads and desktops | done, both sites; checked in Firefox and Chromium on iPhone sizes |
+
+Still to share: the opening trainer's line flow around the core, the Guess-the-move parser, and the tabs themselves
+(each site still has its own tab files, now thin around the shared modules).
 
 **Rating at the end of a line (settled 9 Nov 2026):** both sites now use `TrainerCore.lineDelta`: each rated move is a
 game, and your average score is compared with the average of each move's expected score (the private site's rule; Open

@@ -71,10 +71,17 @@ accounts, no uploads: progress lives in localStorage with JSON export/import.
   notes (timestamps become links) and bookmarks, grouped by series, with Resume / Continue. No embeds: every video
   opens on YouTube at your saved place.
 - **On every board** — right-click a square for a circle, right-drag for an arrow (Shift red, Alt or Ctrl blue,
-  Shift+Alt yellow; a left click clears them), as on Lichess. (Firefox always opens its own menu on
-  Shift+right-click and doesn't let a page block it, so red shapes are awkward there; the other colours work.)
+  Shift+Alt yellow; a left click clears them), as on Lichess. Firefox always opens its own menu on
+  Shift+right-click, so Settings → *Arrow colour (plain right-click)* lets you make red the no-modifier colour.
 - **Dark mode** — Settings → Theme: Match device (default), Light or Dark.
 - **Progress** — totals and per-opening ratings, with JSON export/import.
+- **On a phone** — Openings notes, Guess the move, Calculation and Endgame solutions open in a **reader**: the board on
+  top, the notes below with the current move at the top, Prev / Next at the bottom within thumb reach, and the screen
+  kept awake. iPads and desktops keep the side-by-side layout.
+- **Keyboard** — press **?** on any tab for its keys (← → through moves, H hint, B take back, N next, F flip …).
+  Keys never fire while you type in a box and never take over browser shortcuts.
+- **Needs internet** — Lichess studies, the live tablebase and Review on Lichess say so plainly when you are offline,
+  instead of failing quietly.
 
 ## Data sources
 
@@ -122,7 +129,10 @@ push (workflow *Browsers*; screenshots are the run's artifacts). Locally:
 
 ```sh
 cd tests/browser && npm install && npx playwright install firefox chromium && node smoke.js firefox
+node reader.js chromium    # the phone reader on iPhone 15 / SE sizes, and no reader on iPads
 ```
+
+The code both Chess Lab sites run lives in `site/shared/` (see PARITY.md); the private kit pulls a pinned copy.
 
 CI also runs `tools/privacy_guard.py`, which fails the build if anything from
 the private kit (course filenames, personal PGNs, opponent names) ever shows up
