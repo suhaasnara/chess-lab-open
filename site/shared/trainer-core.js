@@ -10,7 +10,7 @@
      then 16; lineWeight(n) = short lines count less (full weight from 4 rated moves).
      lineDelta(rating, n2, scored): the line is rated once at its end. scored = [{s, d}] per rated move (s = 1 found,
        0.5 inaccuracy or playable alternative, 0 missed; d = its difficulty). Each move is a game: the expected score
-       is averaged over the moves (decided by Suhaas, 9 Nov 2026), so delta = K × weight × (mean s − mean expected).
+       is averaged over the moves (the rule both sites use since 9 Nov 2026), so delta = K × weight × (mean s − mean expected).
        Unrounded; each site rounds or clamps as it always has.
    Opponent replies in a repertoire ("Sidelines in repertoires"):
      VARIETY {realistic, balanced, sidelines}: [label, explanation]
