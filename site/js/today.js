@@ -199,7 +199,7 @@ function init(){
   /* keys: with a tab's panel on the board, that tab's own keymap (its N goes to the next item in the session) */
   Keys.on('today',{n:['Next in session',nextItem],f:['Flip the board',()=>board.flip()]});
   const view0=Keys.view; Keys.view=()=>{ const v=view0(); return v==='today'&&hosted?VIEW[hosted]:v };
-  addEventListener('hashchange',()=>{ if(document.body.dataset.view!=='today') undock() });   /* runs after the router */
+  addEventListener('hashchange',()=>{ if(Router.parse(location.hash).name!=='today') undock() });   /* from the address, so the order of listeners doesn't matter */
   addEventListener('watch-change',refresh);
   TV.fitBoard('#td-wrap','#td-tools');
   welcome();
