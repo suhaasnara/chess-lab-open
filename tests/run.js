@@ -1352,6 +1352,22 @@ section('t49: Tactics — opening filter (Lichess opening families on the existi
   w.document.querySelector('#t-ops [data-all]').click(); await sleep(20); assert(w.TacticsTab.filtered().length>f.length,'Clear brings the rest back');
 }
 
+section('t50: one per-site config (shared/site.js + js/config.js): tabs, pieces, data sources');
+{
+  const {w}=await makePage(); await sleep(150);
+  const C=w.SITE; assert(C&&C.id==='open'&&Object.isFrozen(C)&&Object.isFrozen(C.tabs.main),'SITE defined once and frozen');
+  assert(C.pieces==='cburnett','pieces: cburnett (alpha is personal-use only and stays on the private site)');
+  const css=fs.readFileSync(path.join(__dirname,'../site/style.css'),'utf8'), pcs=css.match(/assets\/pieces\/(\w+)\//g)||[];
+  assert(pcs.length===12&&pcs.every(x=>x==='assets/pieces/'+C.pieces+'/'),'style.css draws the configured set ('+pcs.length+' pieces)');
+  const tabs=[...w.document.querySelectorAll('nav.tabs .inner > a[href^="#"]')].map(a=>a.getAttribute('href').slice(1)).filter(h=>h!=='settings');
+  assert(JSON.stringify(tabs)===JSON.stringify(C.tabs.main.map(t=>t[0])),'the header main row comes from SITE.tabs: '+tabs.join(' '));
+  const xs=[...w.document.querySelectorAll('#x-menu a[href^="#"]')].map(a=>a.getAttribute('href').slice(1));
+  assert(C.tabs.extra.every(t=>xs.includes(t[0])),'the Extra menu comes from SITE.tabs');
+  assert(w.Site.url('tactics')==='data/tactics.json'&&w.Site.url('gtm','x.json')==='data/gtm/x.json','data sources by name');
+  let threw=0; try{ w.Site.url('nope') }catch(e){ threw++ } try{ w.Site.define({id:'x'}) }catch(e){ threw++ }
+  assert(threw===2,'an unknown data source and a second define both throw');
+}
+
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));
 process.exit(H.failures?1:0);
 })().catch(e=>{ console.error('Test run crashed:',e); process.exit(1) });

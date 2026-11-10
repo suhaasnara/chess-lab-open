@@ -2,6 +2,16 @@
    sites. Chess Lab's look is the reference: these values are the ones its pages already use (its own rules stay too,
    so its pages don't change). Everything is scoped to .tv, the grid's class.
    Home: chess-lab-open/site/shared/ (MIT). The private kit pulls a pinned copy; edit it here, never there. */
+
+/* Page spacing and board sizes (v82): one copy for both sites, Chess Lab's values (the page width and its side padding,
+   the space above and below a page, a card, a board's default width and Settings -> Board size). A page's own layout
+   (.tv, .tv3, .tvplay below, the opening trainer) still sizes its board from these. */
+.inner{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+main.inner{padding-block:24px 56px}
+.card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px}
+.boardwrap{width:100%;max-width:min(580px,100%)}
+body[data-size="small"] .boardwrap{max-width:min(420px,100%)}
+body[data-size="large"] .boardwrap{max-width:min(760px,100%)}
 .tv,.grid.tv{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:24px;align-items:start}
 .tv .panel{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,370px);gap:20px;align-items:start}
 .tv .side{display:flex;flex-direction:column;gap:12px;min-width:0}

@@ -153,8 +153,8 @@ function init(){
 /* data/calc.json loads the first time Calculation or Progress is opened (not on every visit). */
 let libP=null;
 function ensure(){
-  if(!libP) libP=fetch('data/calc.json').then(r=>{ if(!r.ok) throw 0; return r.json() })
-    .catch(()=>fetch('data/tactics.json').then(r=>r.json()))
+  if(!libP) libP=fetch(Site.url('calc')).then(r=>{ if(!r.ok) throw 0; return r.json() })
+    .catch(()=>fetch(Site.url('tactics')).then(r=>r.json()))
     .then(j=>{ LIB=j; renderList() }).catch(()=>{ LIB=[]; renderList() });
   return libP;
 }

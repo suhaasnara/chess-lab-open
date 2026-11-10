@@ -155,7 +155,7 @@ function init(){
   board=makeBoard($('t-board'),{onMove:userMove});
   endbar=endBanner($('t-board'),()=>next(),'Next puzzle');
   board.set(new Chess(),{locked:true});
-  fetch('data/tactics.json').then(r=>r.json()).then(j=>{ LIB=j; dispatchEvent(new Event('tactics-lib')); renderHeader(); renderFilters(); renderL(); if(!S.cur) first() })
+  fetch(Site.url('tactics')).then(r=>r.json()).then(j=>{ LIB=j; dispatchEvent(new Event('tactics-lib')); renderHeader(); renderFilters(); renderL(); if(!S.cur) first() })
     .catch(()=>{ $('t-list').innerHTML='<p class="empty">The puzzle library could not load.</p>'; LIB=[] });
   $('t-list').addEventListener('click',e=>{ const b=e.target.closest('.drill'); if(!b||!LIB) return; const z=LIB.find(x=>x.id===b.dataset.id); if(z){ load(z); if(innerWidth<860) $('t-board').scrollIntoView({behavior:'smooth',block:'start'}) } });
   TV.fitBoard('#t-wrap','#t-tools');

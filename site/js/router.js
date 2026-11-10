@@ -5,11 +5,7 @@ const VIEWS=['today','openings','tactics','calc','endgames','analyze','drills','
 const BOARD_VIEWS=['openings','tactics','calc','endgames','drills','play','guess','players'];
 const TITLES={today:'Today',openings:'Openings',tactics:'Tactics',calc:'Calculation',endgames:'Endgames',analyze:'Analyze my games',drills:'Drills',play:'Play',guess:'Guess the move',players:'Players',watch:'Watch',progress:'Progress',settings:'Settings'};
 /* The header (shared/nav.js): the same main row and Extra menu as the private Chess Lab, plus Analyze my games. */
-Nav.mount(document.getElementById('tabs'),{
-  main:[['today','Today'],['openings','Openings'],['drills','Drills'],['tactics','Tactics'],['analyze','Analyze my games','Report card and drills from your own games'],['progress','Progress']],
-  extra:[['guess','Guess the move','Master games and your own, move by move'],['calc','Calculation','Long puzzles, timed, with a free board'],
-    ['endgames','Endgames','Textbook endings against perfect defence'],['watch','Watch','Your video library: place, notes, bookmarks'],
-    ['play','Play','Games against Stockfish, blindfold'],['players','Players','Any Lichess or Chess.com player: openings, pre-round sheet']]});
+Nav.mount(document.getElementById('tabs'),SITE.tabs);   /* js/config.js */
 /* the section on screen: shared/router.js with this site's views; the rest is this site's own work for each view */
 function onShow(v){
   const h=$('view-title'); if(h){ h.textContent=v==='today'?'':'Chess Lab Open: '+TITLES[v]; h.hidden=v==='today' }

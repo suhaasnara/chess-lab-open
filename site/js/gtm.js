@@ -41,7 +41,7 @@ function showTrain(on){ $('g-lobby').hidden=on; $('g-train').hidden=!on }
 function lobby(){ S.gen=(S.gen||0)+1; S.game=null; if(endbar) endbar.hide(); showTrain(false); renderList(); scrollTo(0,0) }
 
 async function load(file){
-  const game=typeof file==='object'&&file?deep(file):await fetch('data/gtm/'+file).then(r=>r.json()).catch(()=>null);
+  const game=typeof file==='object'&&file?deep(file):await fetch(Site.url('gtm',file)).then(r=>r.json()).catch(()=>null);
   if(!game){ status('bad','Could not load the game.',''); return }
   if(endbar) endbar.hide();
   S.game=game; S.g=new Chess(game.fen||undefined); S.ply=0; S.pts=0; S.got=0; S.missed=0; S.alsoGood=0; S.done=false; S.busy=false; S.hintStage=0; S.rows=[]; S.view=null; S.read=false; S.gen=(S.gen||0)+1;
@@ -253,7 +253,7 @@ function init(){
   board=makeBoard($('g-board'),{onMove:userMove});
   endbar=endBanner($('g-board'),()=>{ const i=(INDEX||[]).findIndex(e=>S.game&&e.id===S.game.id); const e=INDEX[(i+1)%INDEX.length]; if(e) load(e.file) },'Next game');
   board.set(new Chess(),{locked:true});
-  fetch('data/gtm/index.json').then(r=>r.json()).then(j=>{ INDEX=j; renderList() }).catch(()=>{ INDEX=[]; renderList() });
+  fetch(Site.url('gtmIndex')).then(r=>r.json()).then(j=>{ INDEX=j; renderList() }).catch(()=>{ INDEX=[]; renderList() });
   $('g-src').addEventListener('change',e=>{ if(e.target.name==='g-src'){ S.src=e.target.value; renderList() } });
   $('g-list').addEventListener('click',ev=>{ const d=ev.target.closest('[data-del]'); if(d){ ev.stopPropagation(); removeOwn(d.dataset.del); return }
     const b=ev.target.closest('.drill[data-id]'); if(b){ const f=entry(b.dataset.id); if(f) load(f) } });
