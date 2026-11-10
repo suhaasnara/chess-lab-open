@@ -1,0 +1,14 @@
+/* Shared (Chess Lab and Chess Lab Open). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
+   Styles for the shared components, using only the theme's colour variables (shared/theme.css). */
+/* ? = the keys on this page (shared/keys.js) */
+#keys-overlay{position:fixed;inset:0;background:rgba(19,40,74,.45);display:grid;place-items:center;z-index:80;padding:16px}
+#keys-overlay .card{background:var(--white);color:var(--ink);border-radius:var(--radius);padding:16px 18px;max-width:440px;width:100%;max-height:calc(100vh - 32px);overflow:auto;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+#keys-overlay h2{margin:0 0 6px;font:700 20px/1.2 var(--serif);color:var(--head)}
+.keystable{border-collapse:collapse;margin:8px 0}.keystable td{padding:4px 10px 4px 0;vertical-align:top}
+.keystable kbd{display:inline-block;min-width:2.2em;text-align:center;padding:1px 6px;border:1px solid var(--line);border-radius:4px;font:600 12px/1.6 var(--sans);background:var(--band)}
+/* "?" help beside a stat (shared/help.js) */
+.qhelp{display:inline-grid;place-items:center;width:18px;height:18px;margin-left:4px;padding:0;border:1px solid var(--line);border-radius:50%;background:var(--white);color:var(--muted);font:600 11px/1 var(--sans);cursor:help;vertical-align:middle}
+.qhelp:hover,.qhelp:focus-visible{color:var(--head);border-color:var(--muted)}
+.qpop{display:block;margin:4px 0;padding:6px 8px;max-width:320px;background:var(--callout);color:var(--ink);border-radius:var(--radius);font-size:13px;line-height:1.35;font-weight:400;text-align:left;white-space:normal}
+/* "needs internet" card (shared/net.js) */
+.needs-net p{margin:4px 0}

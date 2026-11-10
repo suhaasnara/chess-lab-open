@@ -26,7 +26,7 @@ window.Keys=(()=>{
     if(document.getElementById('keys-overlay')){ close(); return }
     const v=api.view(), m=MAPS[v]||{};
     const rows=ORDER.filter(k=>m[k]).map(k=>`<tr><td><kbd>${NAME[k]||k.toUpperCase()}</kbd></td><td>${String(m[k][0]).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</td></tr>`).join('');
-    const d=document.createElement('div'); d.id='keys-overlay'; d.className='modal keysmodal'; d.setAttribute('role','dialog'); d.setAttribute('aria-label','Keyboard shortcuts');
+    const d=document.createElement('div'); d.id='keys-overlay'; d.className='keysmodal'; d.setAttribute('role','dialog'); d.setAttribute('aria-label','Keyboard shortcuts');
     d.innerHTML=`<div class="card"><h2>Keys on this page</h2>${rows?`<table class="keystable">${rows}</table>`:'<p class="note">No board keys on this page.</p>'}${NOTES[v]?`<p class="note">${NOTES[v]}</p>`:''}<p class="note"><kbd>?</kbd> shows or hides this list. Keys don't work while you type in a box.</p><div class="btns"><button type="button" class="btn sm" id="keys-close">Close</button></div></div>`;
     d.addEventListener('click',e=>{ if(e.target===d||e.target.id==='keys-close') close() });
     document.body.appendChild(d); d.querySelector('#keys-close').focus();
