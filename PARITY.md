@@ -21,6 +21,7 @@ This file records where the two stand (as of the `one-codebase` branch, 9 Nov 20
 | Watch | Same library logic (series, Resume/Continue, position, watched, Watched up to here, notes with timestamp links, bookmarks, tag edits, deep links and no embeds), on videos the visitor adds. |
 | Guess the move | Scoring, notes after each move, Show the game, arrows keys, eval graph; plus your own PGNs (notes, side lines, marks, arrows), judged live by Stockfish. |
 | Tactics, Calculation, Endgames, Drills, Play, Today, Progress | Already matched before this branch (on CC0 Lichess data). |
+| Header | Shared code since 10 Nov 2026 (`shared/nav.js`): the same tab row, Extra drop-down and Settings link; Open's main row adds Analyze my games, which moves into Extra on phones. Next: the screens themselves (Project doc `claude/shared-screens-plan.md`). |
 
 ## Still different, and why
 
