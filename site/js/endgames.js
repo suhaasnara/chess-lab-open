@@ -105,6 +105,7 @@ async function saveCustomPos(){
   const d=await Net.tablebase(fen,8000); if(!d||!d.category){ err.textContent=Net.online()?'The tablebase didn’t answer. Try again in a moment.':Net.why(); return }
   const cat=EndgameCore.res(d.category==='win'?'loss':d.category==='loss'?'win':'draw');   /* d.category is for the side to move */
   if(cat==='L'){ err.textContent='The side to move loses with best play. Set it up with the other side to move, or flip the colours.'; return }
+  err.textContent='';
   const pawns=/p/i.test(fen.split(' ')[0]);
   const c={id:'my-'+Date.now().toString(36),title:name||'My position',fen:g.fen(),goal:cat==='W'?'win':'draw',end:cat==='W'?(pawns?'convert':'mate'):'hold:20',
     text:cat==='W'?'Your position: the tablebase says it is a win.':'Your position: the tablebase says it is a draw. Hold it for 20 moves.',tb:{cat:d.category,dtz:d.dtz,dtm:d.dtm},custom:true};
