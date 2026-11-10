@@ -195,7 +195,10 @@ function renderReport(user,site,rows,total,final){
   const mistakes=rows.flatMap(r=>r.marks.drops.map(d=>({...d,game:r.game}))).sort((a,b)=>b.drop-a.drop);
   const pun=rows.flatMap(r=>r.marks.punish.map(d=>({...d,game:r.game})));
   const toPunish=pun.filter(p=>p.verdict!=='punished').sort((a,b)=>b.drop-a.drop);
+  const SITE={lichess:'Lichess',chesscom:'Chess.com'}[site]||site;
   $('a-report').innerHTML=`
+  <div class="rhead"><h2>Report card: ${esc(user)}</h2><span class="note">${esc(SITE)} · ${all.length} games fetched${final?'':' · analyzing…'}</span></div>
+  <p class="lead note">Your results, mistakes and the positions worth drilling, from your own recent games.</p>
   <div class="stats">
     <div class="stat"><b>${rows.length}</b><span class="note">games analyzed${final?'':' of '+total+'…'}</span></div>
     <div class="stat"><b>${W}–${D}–${L}</b><span class="note">your wins / draws / losses${Help.q('Results of the games analyzed here, from your side.')}</span></div>

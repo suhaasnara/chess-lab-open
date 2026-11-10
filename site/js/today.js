@@ -185,9 +185,14 @@ function init(){
   $('welcome-x').addEventListener('click',dismiss); $('welcome-ok').addEventListener('click',dismiss);
   $('welcome-go').addEventListener('click',dismiss);
   $('td-help').addEventListener('click',()=>{ welcome(true); setTimeout(()=>{ const e=$('welcome'); if(e.scrollIntoView) e.scrollIntoView({block:'start'}) },30) });
-  $('help-open').addEventListener('click',()=>{ location.hash='#today'; welcome(true); setTimeout(()=>{ const e=$('welcome'); if(e.scrollIntoView) e.scrollIntoView({block:'start'}) },30) });
+  /* the hero's link and the footer's (the hero hides for returning visitors): the guide on Today */
+  for(const id of ['help-open','help-foot']){ const b=$(id); if(b) b.addEventListener('click',()=>{ location.hash='#today'; welcome(true); setTimeout(()=>{ const e=$('welcome'); if(e.scrollIntoView) e.scrollIntoView({block:'start'}) },30) }) }
   /* the puzzle library loads after this page: rebuild an empty plan once it is there */
-  let tries=0; const wait=setInterval(()=>{ tries++; if(((TacticsTab.lib||[]).length&&EndgamesTab.data)||tries>40){ clearInterval(wait); if(document.body.dataset.view==='today'){ if(hosted) refresh(); else render() } } },250);
+  /* draw as soon as the puzzles are there, and again when the endgames arrive (the plan gains its endgame) */
+  let tries=0, had=0; const tick=()=>{ tries++; const lib=(TacticsTab.lib||[]).length>0, eg=!!EndgamesTab.data, now=(lib?1:0)+(eg?1:0);
+    if(now>had&&lib&&document.body.dataset.view==='today'){ had=now; if(hosted) refresh(); else render() }
+    if((lib&&eg)||tries>100) clearInterval(wait) };
+  const wait=setInterval(tick,100); addEventListener('tactics-lib',()=>setTimeout(tick,0));
 }
 window.TodayTab={init,render,plan,items,start,select,next:nextItem,get hosted(){return hosted},get sel(){return sel}};
 })();
