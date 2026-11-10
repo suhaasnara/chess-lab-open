@@ -38,7 +38,7 @@
 .tv .dot.good{background:var(--good)}.tv .dot.warn{background:var(--brass)}.tv .dot.bad{background:var(--bad)}
 
 /* Search box over the list (Drills) */
-.tv .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.tv .vh{position:absolute;left:0;top:0;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .tv .osearch{margin:0 0 8px}
 .tv .osearch input{width:100%;border:1px solid var(--line);border-radius:var(--radius);padding:7px 10px 7px 32px;font-size:.9rem;background:var(--white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23536175' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-3.5-3.5'/%3E%3C/svg%3E") no-repeat 10px 50%}
 .tv .osearch input:focus{border-color:var(--blue);outline:none;box-shadow:0 0 0 3px var(--callout)}
@@ -113,7 +113,7 @@ body[data-view="progress"] main.inner{padding-top:14px}
 .tvplay .prow{display:grid;grid-template-columns:76px minmax(0,1fr);gap:8px;align-items:center;margin-top:8px}
 .tvplay .pwrap{flex-wrap:wrap}.tvplay .pwrap button{flex:0 0 auto}
 .tvplay .pnote{margin:8px 0 0;font-size:.78rem}
-.tvplay .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.tvplay .vh{position:absolute;left:0;top:0;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 @media (max-width:860px){.tvplay{grid-template-columns:minmax(0,1fr);gap:12px}.tvplay>.boardwrap{max-width:none}}
 
 /* Watch: one row of filters (view, kind, state, topic, search), then Add a video, then the library. Chess Lab's #wa-mod values. */
@@ -151,6 +151,7 @@ body[data-view="guess"] main.inner{max-width:1200px;padding-top:14px}
 .tvset .setrow .seg button{flex:0 0 auto;padding:7px 12px}
 .tvset .setpreview{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px)}
 .tvset .setpreview .board{margin-top:10px}
-.tvset .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.tvset .setrow{position:relative}
+.tvset .vh{position:absolute;left:0;top:0;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 @media (max-width:860px){.tvset.setwrap{grid-template-columns:minmax(0,1fr)}.tvset .setpreview{position:static;order:-1;max-width:300px}.tvset .setpreview .board{max-width:220px}}
 @media (max-width:560px){.tvset .setrow{grid-template-columns:minmax(0,1fr)}}

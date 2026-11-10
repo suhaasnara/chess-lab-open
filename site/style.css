@@ -358,5 +358,5 @@ body.no-coords .coord{display:none}body.no-last .sq.last{background:none}body.no
 /* Settings in the top nav: a clearly visible, 44 px tap target; labelled on wide screens */
 
 /* Shared screens stage 5: hidden for sight, kept for screen readers (the opening's name is in the picker) */
-.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.vh{position:absolute;left:0;top:0;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .otrain .ohtop .seg.mini{flex:0 0 auto}
