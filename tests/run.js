@@ -10,10 +10,11 @@ const fs=require('fs'), path=require('path');
 section('t1: page loads, routes, board renders');
 {
   const {w}=await makePage();
-  { const d=w.document, main=[...d.querySelectorAll('nav.tabs .inner > a:not(.settab)')].map(a=>a.dataset.view), ex=[...d.querySelectorAll('#x-menu a:not(.xset)')].map(a=>a.dataset.view);
+  { const d=w.document, main=[...d.querySelectorAll('nav.tabs .inner > a:not(.settab)')].map(a=>a.dataset.view), ex=[...d.querySelectorAll('#x-menu a:not(.xset):not(.ph-x)')].map(a=>a.dataset.view);
     assert(main.join()==='today,openings,drills,tactics,analyze,progress','main row: Today, Openings, Drills, Tactics, Analyze, Progress');
     assert(ex.length===6&&['guess','calc','endgames','watch','play','players'].every(v=>ex.includes(v)),'Extra holds the other six');
     assert(d.querySelector('nav.tabs a.settab[href="#settings"]'),'Settings at the right');
+    assert(d.querySelector('nav.tabs .inner > a.ph-x[data-view="analyze"]')&&d.querySelector('#x-menu a.ph-x[data-view="analyze"]'),'Analyze moves into Extra on phones');
     const xb=d.getElementById('x-btn'), xm=d.getElementById('x-menu'); assert(xm.hidden,'Extra menu starts closed');
     xb.click(); assert(!xm.hidden&&xb.getAttribute('aria-expanded')==='true','Extra opens'); xb.click(); assert(xm.hidden,'and closes');
     w.location.hash='#calc'; await sleep(60); assert(xb.classList.contains('cur'),'an Extra page marks the Extra button');
