@@ -62,10 +62,9 @@ function due(e){ if(!e) return true; if(!e.ok) return e.t<new Date().setHours(0,
 function list(){ return DATA?DATA.positions.filter(p=>S.group==='all'||p.group===S.group):[] }
 function renderList(){
   const ch=$('eg-groups'); ch.innerHTML='';
-  if(DATA){ const r=document.createElement('label'); r.className='field egcat'; r.innerHTML='<span class="label">Category</span>';
-    const sel=document.createElement('select'); sel.id='eg-cat'; sel.setAttribute('aria-label','Category');
-    for(const [v,n] of [['all','All endings'],...DATA.groups.filter(g=>DATA.positions.some(p=>p.group===g[0]))]){ const o=document.createElement('option'); o.value=v; o.textContent=n; sel.appendChild(o) }
-    sel.value=S.group; sel.addEventListener('change',()=>{ S.group=sel.value; renderList() }); r.appendChild(sel);
+  if(DATA){ const r=document.createElement('span'); r.className='egcat';   /* shared/trainview.js TV.pick: the same drop-down as Chess Lab's */
+    r.innerHTML=TV.pick('Category','group',[['all','All endings'],...DATA.groups.filter(g=>DATA.positions.some(p=>p.group===g[0]))],S.group);
+    const sel=r.querySelector('select'); sel.id='eg-cat'; sel.addEventListener('change',()=>{ S.group=sel.value; renderList() });
     const add=document.createElement('button'); add.type='button'; add.className='btn sm'; add.id='eg-addpos'; add.textContent='+ Your position'; add.addEventListener('click',openCustom);
     ch.appendChild(r); ch.appendChild(add);
     const p=prog(), solved=DATA.positions.filter(z=>p[z.id]&&p[z.id].okN).length;

@@ -61,5 +61,10 @@ function fitBoard(wrapSel,ctlSel){
   if(window.MutationObserver) new MutationObserver(later).observe(document.body,{attributes:true,attributeFilter:['data-size','data-view']});
   later();
 }
-window.TV={esc,chips,onChip,rate,row,dots,head,session,fitBoard};
+/* A labelled drop-down (Endgames' category on both sites): pick('Category','group',[[value,label]…],current) -> HTML.
+   Uses the sites' .field / .label styles; read it with onPick(container, (key, value) => …). */
+function pick(label,key,opts,cur){ return `<label class="field tvpick"><span class="label">${esc(label)}</span><select data-k="${esc(key)}" aria-label="${esc(label)}">`+
+  opts.map(([v,l])=>`<option value="${esc(v)}"${String(v)===String(cur)?' selected':''}>${esc(l)}</option>`).join('')+'</select></label>' }
+function onPick(el,fn){ el.addEventListener('change',e=>{ const s=e.target.closest('.tvpick select[data-k]'); if(s) fn(s.dataset.k,s.value) }) }
+window.TV={esc,chips,onChip,rate,row,dots,head,session,fitBoard,pick,onPick};
 })();
