@@ -417,7 +417,9 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
         <div class="board" id="pl-board" role="group" aria-label="Chess board"></div>
         <p class="note" id="pl-strip" style="margin:6px 0 0;min-height:1.2em"></p>
         <div class="boardtools">
-          <button class="btn sm" id="pl-back" title="Take back your last move and the reply (T). Counted on the saved game." disabled>Take back <kbd>T</kbd></button>
+          <button class="btn sm" id="pl-hint" title="First the piece, then the move (H). Counted on the saved game.">Hint <kbd>H</kbd></button>
+          <button class="btn sm" id="pl-back" title="Take back your last move and the reply (B). Counted on the saved game." disabled>Take back <kbd>B</kbd></button>
+          <button class="btn sm primary" id="pl-review" hidden title="Import this game to Lichess and open its analysis (or copy the PGN for lichess.org/paste)">Review on Lichess &#8599;</button>
           <button class="btn sm" id="pl-peek">Peek</button>
           <button class="btn sm" id="pl-resign">Resign</button>
           <button class="btn sm" id="pl-flip">Flip <kbd>F</kbd></button>

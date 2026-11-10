@@ -6,12 +6,12 @@
 'use strict';
 (function(){
 let board=null;
-const S={g:null,me:'w',elo:1800,blind:false,peeks:0,over:false,busy:false,resignArm:false,moves:[],start:null,goal:null,label:'',takebacks:0,gid:0};
+const S={g:null,me:'w',elo:1800,blind:false,peeks:0,over:false,busy:false,resignArm:false,moves:[],start:null,goal:null,label:'',takebacks:0,hints:0,hintStage:0,view:null,gid:0};
 
 function games(){ return Store.get('play-games')||[] }
 function saveGame(result,reason){
   const list=games();
-  list.unshift({t:Date.now(),me:S.me,elo:S.elo,blind:S.blind,peeks:S.peeks,takebacks:S.takebacks||undefined,result,reason,moves:S.moves.join(' '),fen:S.start||undefined,goal:S.goal||undefined,label:S.label||undefined});
+  list.unshift({t:Date.now(),me:S.me,elo:S.elo,blind:S.blind,peeks:S.peeks,takebacks:S.takebacks||undefined,hints:S.hints||undefined,result,reason,moves:S.moves.join(' '),fen:S.start||undefined,goal:S.goal||undefined,label:S.label||undefined});
   Store.put('play-games',list.slice(0,30)); renderGames();
 }
 function renderGames(){
@@ -26,7 +26,7 @@ function renderGames(){
 }
 function newGame(){
   S.start=null; S.goal=null; S.label='';
-  S.g=new Chess(); S.moves=[]; S.over=false; S.busy=false; S.resignArm=false; S.peeks=0; S.takebacks=0; S.gid++;
+  S.g=new Chess(); S.moves=[]; S.over=false; S.busy=false; S.resignArm=false; S.peeks=0; S.takebacks=0; S.hints=0; S.hintStage=0; S.view=null; S.result=null; S.gid++; { const b=$('pl-review'); if(b) b.hidden=true }
   S.elo=$('pl-elo').value==='max'?'max':+$('pl-elo').value;
   const c=$('pl-color').value; S.me=c==='random'?(Math.random()<0.5?'w':'b'):c;
   S.blind=$('pl-blind').checked;
@@ -38,7 +38,7 @@ function newGame(){
 }
 /* From a drill: same strength setting, no blindfold; goal 'win' (convert) or 'hold' (don't lose). */
 function fromPosition(fen,me,goal,label){
-  S.g=new Chess(fen); S.start=fen; S.goal=goal; S.label=label||''; S.moves=[]; S.over=false; S.busy=false; S.resignArm=false; S.peeks=0; S.takebacks=0; S.gid++;
+  S.g=new Chess(fen); S.start=fen; S.goal=goal; S.label=label||''; S.moves=[]; S.over=false; S.busy=false; S.resignArm=false; S.peeks=0; S.takebacks=0; S.hints=0; S.hintStage=0; S.view=null; S.result=null; S.gid++; { const b=$('pl-review'); if(b) b.hidden=true }
   S.elo=$('pl-elo').value==='max'?'max':+$('pl-elo').value; S.me=me; S.blind=false;
   $('pl-board').classList.remove('blind');
   board.set(S.g,{orient:S.me,last:null});
@@ -85,7 +85,7 @@ function userMove(from,to,promo){
   if(S.g.turn()!==S.me) return;
   const m=S.g.move({from,to,promotion:promo||'q'});
   if(!m) return;
-  S.moves.push(m.san); S.resignArm=false;
+  S.moves.push(m.san); S.resignArm=false; S.hintStage=0; S.view=null;
   board.set(S.g,{last:{from:m.from,to:m.to},orient:S.me});
   renderMoves();
   if(!checkEnd()){ status('', 'Stockfish is thinking…',''); botMove() }
@@ -109,7 +109,9 @@ function endGame(result,reason){
   status(result==='win'||met?'good':result==='draw'?'':'bad',
     (result==='win'?'You won!':result==='draw'?'Draw.':'Stockfish wins.')+(S.goal?(met?' Goal met ✓':' Goal missed'):''),
     reason+(S.blind?` · blindfold${S.peeks?', '+S.peeks+' peeks':''}`:'')+'. The pieces are back; review below.');
+  S.result=result==='draw'?'1/2-1/2':(result==='win')===(S.me==='w')?'1-0':'0-1';
   saveGame(result,reason); tools();
+  { const b=$('pl-review'); if(b) b.hidden=false }
 }
 function resign(){
   if(!S.g||S.over) return;
@@ -124,12 +126,28 @@ function peek(){
   setTimeout(()=>{ if(S.blind&&!S.over) b.classList.add('blind') },2000);
 }
 function renderMoves(){
-  const el=$('pl-moves'); let html='';
-  S.moves.forEach((s,i)=>{ if(i%2===0) html+=`<span class="note">${i/2+1}.</span> `; html+=`<b>${esc(s)}</b> ` });
+  const el=$('pl-moves'); let html=''; const cur=S.view==null?S.moves.length:S.view;
+  S.moves.forEach((s,i)=>{ if(i%2===0) html+=`<span class="note">${i/2+1}.</span> `; html+=`<button type="button" class="omv${i+1===cur&&S.view!=null?' cur':''}" data-ply="${i+1}">${esc(s)}</button> ` });
   el.innerHTML=html||'<span class="note">No moves yet.</span>';
   const strip=S.moves.slice(-8);
   $('pl-strip').innerHTML=strip.map((s,i)=>i===strip.length-1?`<b>${esc(s)}</b>`:esc(s)).join(' · ');
 }
+/* ← → Home End: step through the game on the board (view only; your move again at the end) */
+function viewAt(k){ if(!S.g||!S.moves.length) return false; const n=S.moves.length; k=Math.max(0,Math.min(n,k)); S.view=k===n?null:k;
+  const g=new Chess(S.start||undefined); let last=null; for(let i=0;i<(S.view==null?n:k);i++){ const m=g.move(S.moves[i]); last=m?{from:m.from,to:m.to}:null }
+  board.set(S.view==null?S.g:g,{last,orient:board.orient,locked:S.view!=null||S.over}); if(S.view==null) $('pl-board').classList.toggle('blind',S.blind&&!S.over); else $('pl-board').classList.remove('blind'); renderMoves() }
+/* H: two-step hint (the piece, then the move), counted on the saved game like takebacks */
+async function hint(){
+  if(!S.g||S.over||S.busy||S.g.turn()!==S.me||S.view!=null) return false;
+  const a=await SharedEngine.analyse(S.g.fen(),14,1,6000).catch(()=>null); const u=a&&a[0]&&a[0].uci; if(!u) return;
+  if(!S.hintStage){ S.hints++; S.hintStage=1; board.setHint(u.slice(0,2)); status('warn','Hint: this piece.','H again for the move. Hints are saved with the game.') }
+  else { board.setHint(u.slice(0,2),u.slice(2,4)); status('warn','Hint: '+sanOf(S.g.fen(),u),`Hints this game: ${S.hints}.`) }
+}
+const numbered=(fen,sans)=>{ const t=(fen||'x w - - 0 1').split(' '); let n=+t[5]||1, w=t[1]!=='b'; return sans.map((s,i)=>{ const x=w?n+'. '+s:(i===0?n+'... '+s:s); if(!w) n++; w=!w; return x }).join(' ') };
+function pgn(){ const d=new Date(); const tags=[['Event','Chess Lab Open: Play'],['Site','Chess Lab Open'],['Date',d.toISOString().slice(0,10).replace(/-/g,'.')],
+    ['White',S.me==='w'?'Me':'Stockfish '+S.elo],['Black',S.me==='b'?'Me':'Stockfish '+S.elo],['Result',S.result||'*']].concat(S.start?[['SetUp','1'],['FEN',S.start]]:[]);
+  return tags.map(([k,v])=>`[${k} "${v}"]`).join('\n')+'\n\n'+numbered(S.start,S.moves)+' '+(S.result||'*') }
+async function reviewLichess(){ const r=await Net.review(pgn()); if(!r.ok) status('warn','Lichess import didn’t work here.',(r.copied?'The PGN is copied: paste it on the page that opened. ':'Copy the PGN below and paste it on lichess.org/paste. ')+r.why) }
 function status(tone,head,rest){ const el=$('pl-status'); el.className='status'+(tone?' '+tone:''); el.innerHTML=`<strong>${esc(head)}</strong>${esc(rest||'')}` }
 
 function init(){
@@ -139,7 +157,11 @@ function init(){
   $('pl-new').addEventListener('click',newGame);
   $('pl-resign').addEventListener('click',resign);
   $('pl-back').addEventListener('click',takeBack);
-  Keys.on('play',{b:['Take back your move and the reply',()=>takeBack()],f:['Flip the board',()=>board.flip()],p:['Peek (blindfold)',()=>peek()]});
+  $('pl-moves').addEventListener('click',e=>{ const b=e.target.closest('[data-ply]'); if(b) viewAt(+b.dataset.ply) });
+  $('pl-review').addEventListener('click',reviewLichess); $('pl-hint').addEventListener('click',()=>hint());
+  Keys.on('play',{ArrowLeft:['Back a move (view only)',()=>viewAt((S.view==null?S.moves.length:S.view)-1)],ArrowRight:['Forward a move',()=>{ if(S.view==null) return false; viewAt(S.view+1) }],
+    Home:['Start of the game',()=>viewAt(0)],End:['Back to the current move',()=>viewAt(S.moves.length)],
+    b:['Take back your move and the reply',()=>takeBack()],h:['Hint (first the piece, then the move)',()=>hint()],f:['Flip the board',()=>board.flip()],p:['Peek (blindfold)',()=>peek()]});
   $('pl-peek').addEventListener('click',peek);
   $('pl-flip').addEventListener('click',()=>board.flip());
   $('pl-moveform').addEventListener('submit',e=>{
@@ -151,5 +173,5 @@ function init(){
     $('pl-movein').value=''; userMove(mv.from,mv.to,mv.promotion);
   });
 }
-window.PlayTab={init,newGame,fromPosition,userMove,resign,peek,takeBack,canTakeBack,get state(){return S}};
+window.PlayTab={init,hint,viewAt,pgn,reviewLichess,newGame,fromPosition,userMove,resign,peek,takeBack,canTakeBack,get state(){return S}};
 })();

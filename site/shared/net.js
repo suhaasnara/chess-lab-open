@@ -7,6 +7,8 @@
    Net.studyApi(url)               the PGN export URL of a lichess.org/study/<id>[/<chapter>] link, or null
    Net.fetchStudy(url)             -> {pgn, name, side ('white'|'black'|''), chapters}; throws Error with a message for people
    Net.tablebase(fen, ms=6000)     -> the Lichess tablebase's JSON for a position (7 pieces or fewer), or null
+   Net.lichessImport(pgn)          -> the game's analysis URL on lichess.org (imported); throws Error when it can't
+   Net.review(pgn)                 imports and opens it; if that fails, copies the PGN and opens lichess.org/paste
    Net.needs(el, what, retry)      draws the "needs internet" card into el (what = "Lichess study import", ...)
    Net.blockedHere                 set by a site whose page can't reach other addresses (string: where it does work) */
 window.Net=(()=>{
@@ -41,10 +43,24 @@ window.Net=(()=>{
   async function tablebase(fen,ms=6000){
     try{ const r=await get('https://tablebase.lichess.ovh/standard?fen='+encodeURIComponent(fen),ms,'json'); return r.ok?r.body:null }catch(e){ return null }
   }
+  async function lichessImport(pgn){
+    if(!online()) throw new Error(why());
+    let r; try{ r=await fetch('https://lichess.org/api/import',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded','Accept':'application/json'},body:'pgn='+encodeURIComponent(pgn)}) }
+    catch(e){ throw new Error(why(e)) }
+    if(!r.ok) throw new Error('Lichess answered '+r.status+'.');
+    const j=await r.json(); if(!j||!j.url) throw new Error('Lichess sent no game link.'); return j.url;
+  }
+  async function review(pgn){
+    const w=window.open('about:blank','_blank');
+    try{ const u=await lichessImport(pgn); if(w) w.location=u; else open(u,'_blank'); return {ok:true,url:u} }
+    catch(e){ let copied=false; try{ await navigator.clipboard.writeText(pgn); copied=true }catch(_){}
+      if(w) w.location='https://lichess.org/paste'; else open('https://lichess.org/paste','_blank');
+      return {ok:false,copied,why:e.message} }
+  }
   function needs(el,what,retry){
     if(!el) return; el.innerHTML=`<div class="card needs-net"><p><b>${escH(what)} needs the internet.</b></p><p class="note">${escH(why())}</p>${retry?'<button type="button" class="btn sm">Try again</button>':''}</div>`;
     if(retry) el.querySelector('button').onclick=retry;
   }
-  const api={online,studyApi,fetchStudy,tablebase,needs,why,get,blockedHere:''};
+  const api={online,studyApi,fetchStudy,tablebase,lichessImport,review,needs,why,get,blockedHere:''};
   return api;
 })();

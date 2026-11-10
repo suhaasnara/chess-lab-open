@@ -1152,6 +1152,27 @@ section('t43: Endgames — category dropdown, your own position (tablebase-grade
   assert(!$('eg-delpos').hidden,'your positions can be deleted');
 }
 
+section('t44: Play — hint, ← → through the moves, Review on Lichess (import, else copy + paste page)');
+{
+  let posted=null, w0=null; const {w}=await makePage({analyse:async fen=>{ const m=new w0.Chess(fen).moves({verbose:true})[0]; return [{uci:m.from+m.to,cp:0.2,mate:null}] },
+    fetch:async(u,init)=>{ if(/lichess\.org\/api\/import/.test(u)){ posted=decodeURIComponent(String(init&&init.body||'').replace(/^pgn=/,'')); return {ok:true,status:200,json:async()=>({id:'abcd1234',url:'https://lichess.org/abcd1234'})} } return null }});
+  w0=w; const P=w.PlayTab, $=id=>w.document.getElementById(id);
+  w.SharedEngine.play=async fen=>{ const m=new w.Chess(fen).moves({verbose:true})[0]; return m.from+m.to };
+  P.newGame&&P.newGame(); await sleep(100);
+  await P.hint(); assert(P.state.hints===1&&w.document.querySelector('#pl-board .sq.hint')&&!w.document.querySelector('#pl-board .sq.hintto'),'H: the piece first, counted');
+  await P.hint(); assert(w.document.querySelector('#pl-board .sq.hintto')&&P.state.hints===1,'H again: the move (still one hint)');
+  P.userMove('e2','e4'); await sleep(900); P.userMove('d2','d4'); await sleep(900);
+  assert(P.state.moves.length>=3,'moves played ('+P.state.moves.join(' ')+')');
+  P.viewAt(1); assert(P.state.view===1&&$('pl-moves').querySelector('.cur'),'← → step through the moves (view only)');
+  P.viewAt(99); assert(P.state.view===null,'End: back to the game');
+  P.resign(); P.resign(); await sleep(20);
+  assert(!$('pl-review').hidden,'Review on Lichess appears when the game ends');
+  const pg=P.pgn(); assert(/\[Result "0-1"\]/.test(pg)&&/1\. e4 /.test(pg),'the PGN carries the moves and the result');
+  w.open=()=>({location:''}); const r=await w.Net.review(pg); assert(r.ok&&r.url==='https://lichess.org/abcd1234'&&/1\. e4/.test(posted),'imported to Lichess (recorded response)');
+  w.fetch=async()=>{ throw new Error('blocked') }; const r2=await w.Net.review(pg); assert(!r2.ok,'when the import fails it falls back to copy + lichess.org/paste');
+  assert(w.Store.get('play-games')[0].hints===1,'hints are saved with the game');
+}
+
 section('t37: shared code (site/shared/) — position ids never change, one PGN reader');
 {
   const {w}=await makePage();
