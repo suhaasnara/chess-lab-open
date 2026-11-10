@@ -43,6 +43,7 @@ body[data-view="openings"] main.inner,body[data-view="tactics"] main.inner,body[
 .btn:disabled{opacity:.5;cursor:default}
 .btn.sm{padding:5px 10px;font-size:.82rem}
 .btn kbd{font-family:var(--sans);font-size:.68rem;color:var(--muted);border:1px solid var(--line);border-radius:3px;padding:0 4px;margin-left:6px;font-weight:600}
+.btn.primary kbd{color:rgba(255,255,255,.8);border-color:rgba(255,255,255,.35)}   /* Chess Lab's: the key hint on a navy button (was 2.3:1) */
 .status{border-radius:var(--radius);padding:11px 14px;font-size:.95rem;background:var(--callout);color:var(--ink)}
 .status strong{display:block;margin-bottom:2px;color:var(--head)}
 .status.good{background:var(--good-soft)}.status.good strong{color:var(--good)}
