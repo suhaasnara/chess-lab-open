@@ -33,6 +33,7 @@ function renderL(){
       title:`vs ${esc(d.opp)}${isPunish(d)?'<span class="tag punish">Punish</span>':''}`,
       meta:`<span class="src">${esc(SITE[d.site]||d.site||'Game')}</span> · ${esc(d.date||'')} · ${d.color==='w'?'W':'B'} · −${Math.round(d.drop*100)}%`,
       right:TV.dots([[st?(st.ok?'good':'bad'):'','Find the move']]),current:!!(S.cur&&S.cur.id===d.id),data:{id:d.id}}) }).join('');
+  el.classList.toggle('isempty',!list.length);
   if(!list.length) el.innerHTML=all.length?'<p class="empty">No drills match these filters.</p>':'<p class="empty">No drills yet. Run <a href="#analyze"><b>Analyze my games</b></a> first and save drills from your mistakes.</p>';
   const none=!all.length&&!S.cur;   /* nothing to train yet: no buttons that do nothing */
   for(const id of ['d-next','d-show','d-hint']) $(id).disabled=none;

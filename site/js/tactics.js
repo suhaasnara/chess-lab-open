@@ -72,6 +72,7 @@ function renderL(){
   el.innerHTML=list.slice(0,200).map(z=>{ const st=p[z.id];
     return TV.row({badge:z.rating||'—',title:esc(Puzzles.title(z.id,themeName(z.motif),!!st)),meta:z.op?esc(opName(z.op)):'Lichess',
       right:TV.dots([[st?(st.ok?'good':'bad'):'','Puzzle']]),current:!!(S.cur&&S.cur.id===z.id),data:{id:z.id}}) }).join('');
+  el.classList.toggle('isempty',!list.length);
   if(!list.length) el.innerHTML='<p class="empty">No puzzles match these filters. Try Any rating or Any status.</p>';
 }
 

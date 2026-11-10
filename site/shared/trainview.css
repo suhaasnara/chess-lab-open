@@ -21,6 +21,7 @@
 .tv .list{display:flex;flex-direction:column;gap:5px;overflow:auto;padding:2px;max-height:calc(100vh - 330px);min-height:200px}
 .tv .list.long{max-height:calc(100vh - 210px)}.tv .list.longest{max-height:calc(100vh - 130px)}
 .tv .list .empty{margin:0}
+.tv .list.isempty{min-height:0}
 .tv .drill{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;text-align:left;width:100%;background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:7px 10px;cursor:pointer;color:var(--ink);text-decoration:none}
 .tv .drill:hover{border-color:var(--blue)}
 .tv .drill[aria-current="true"]{border-color:var(--head);box-shadow:inset 3px 0 0 var(--navy)}
