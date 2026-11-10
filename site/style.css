@@ -367,3 +367,7 @@ body.no-coords .coord{display:none}body.no-last .sq.last{background:none}body.no
 .skiprow{margin-top:8px}.skiprow .btn{margin:2px}
 /* ? = the keys on this page (shared/keys.js) */
 .keysmodal .card{max-width:420px;width:100%}.keystable{border-collapse:collapse;margin:8px 0}.keystable td{padding:4px 10px 4px 0;vertical-align:top}.keystable kbd{min-width:2.2em;text-align:center}
+/* "?" help beside a stat (shared/help.js) */
+.qhelp{display:inline-grid;place-items:center;width:18px;height:18px;margin-left:4px;padding:0;border:1px solid var(--line);border-radius:50%;background:var(--white);color:var(--muted);font:600 11px/1 var(--sans);cursor:help;vertical-align:middle}
+.qhelp:hover,.qhelp:focus-visible{color:var(--head);border-color:var(--muted)}
+.qpop{display:block;margin:4px 0;padding:6px 8px;max-width:320px;background:var(--callout);color:var(--ink);border-radius:var(--radius);font-size:13px;line-height:1.35;font-weight:400;text-align:left}

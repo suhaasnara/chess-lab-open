@@ -163,7 +163,7 @@ function renderReport(user,site,rows,total,final){
   /* openings */
   const ops=new Map();
   for(const r of rows){ const nm=Book.nameOf(r.marks.fens.slice(0,21)); const key=nm?nm[1].split(':')[0]:'Other';
-    const o=ops.get(key)||{n:0,s:0,blun:0}; o.n++; o.s+=r.marks.score; o.blun+=r.marks.blun+r.marks.mist; ops.set(key,o) }
+    const o=ops.get(key)||{n:0,s:0,blun:0,mist:0,inacc:0}; o.n++; o.s+=r.marks.score; o.blun+=r.marks.blun; o.mist+=r.marks.mist; o.inacc+=r.marks.inacc; ops.set(key,o) }
   const opRows=[...ops.entries()].sort((a,b)=>b[1].n-a[1].n).slice(0,10);
   const mistakes=rows.flatMap(r=>r.marks.drops.map(d=>({...d,game:r.game}))).sort((a,b)=>b.drop-a.drop);
   const pun=rows.flatMap(r=>r.marks.punish.map(d=>({...d,game:r.game})));
@@ -171,17 +171,18 @@ function renderReport(user,site,rows,total,final){
   $('a-report').innerHTML=`
   <div class="stats">
     <div class="stat"><b>${rows.length}</b><span class="note">games analyzed${final?'':' of '+total+'…'}</span></div>
-    <div class="stat"><b>${W}–${D}–${L}</b><span class="note">win / draw / loss</span></div>
-    <div class="stat"><b>${blun} / ${mist}</b><span class="note">blunders / mistakes (yours)</span></div>
-    <div class="stat"><b>${conv==null?'—':conv+'%'}</b><span class="note">conversion from +2 (${convs.length} games)</span></div>
-    <div class="stat"><b>${save==null?'—':save+'%'}</b><span class="note">saves from −2 (${saves.length} games)</span></div>
-    <div class="stat"><b>${pun.length?pun.length-toPunish.length+' / '+pun.length:'—'}</b><span class="note">opponents’ mistakes you punished</span></div>
+    <div class="stat"><b>${W}–${D}–${L}</b><span class="note">your wins / draws / losses${Help.q('Results of the games analyzed here, from your side.')}</span></div>
+    <div class="stat"><b>${blun} / ${mist} / ${inacc}</b><span class="note">your blunders / mistakes / inaccuracies${Help.q("Each of your moves is judged by how much it dropped your winning chances: 30 points or more is a blunder, 20 a mistake, 10 an inaccuracy (Lichess's scale).")}</span></div>
+    <div class="stat"><b>${(blun/rows.length).toFixed(1)} / ${(mist/rows.length).toFixed(1)} / ${(inacc/rows.length).toFixed(1)}</b><span class="note">per game${Help.q('The same three counts divided by the number of games analyzed.')}</span></div>
+    <div class="stat"><b>${conv==null?'—':conv+'%'}</b><span class="note">won from +2 (${convs.length} games)${Help.q('Of the games where you were 2 pawns or more ahead (by the engine), the share you went on to win.')}</span></div>
+    <div class="stat"><b>${save==null?'—':save+'%'}</b><span class="note">saved from −2 (${saves.length} games)${Help.q('Of the games where you were 2 pawns or more behind, the share you drew or won.')}</span></div>
+    <div class="stat"><b>${pun.length?pun.length-toPunish.length+' / '+pun.length:'—'}</b><span class="note">opponents’ mistakes you punished${Help.q("Your opponents' moves that cost them 20 points or more of winning chances, and how many of them you made pay for (your next move kept most of the gain).")}</span></div>
   </div>
   <div class="repgrid">
     <div class="card"><span class="label">Openings in these games</span>
-      <table style="margin-top:6px"><tr><th>Opening</th><th>Games</th><th>Score</th><th>Errors</th></tr>
-      ${opRows.map(([k,o])=>`<tr><td>${esc(k)}</td><td>${o.n}</td><td>${Math.round(100*o.s/o.n)}%</td><td>${o.blun}</td></tr>`).join('')}</table></div>
-    <div class="card"><span class="label">Your costliest moments (${mistakes.length})</span>
+      <table style="margin-top:6px"><tr><th>Opening</th><th>Games</th><th>Score${Help.q('Your points as a share of the games: a win is 1, a draw ½.')}</th><th>Blunders / mistakes / inaccuracies per game${Help.q("Your own errors in that opening's games, divided by its games.")}</th></tr>
+      ${opRows.map(([k,o])=>`<tr><td>${esc(k)}</td><td>${o.n}</td><td>${Math.round(100*o.s/o.n)}%</td><td>${(o.blun/o.n).toFixed(1)} / ${(o.mist/o.n).toFixed(1)} / ${(o.inacc/o.n).toFixed(1)}</td></tr>`).join('')}</table></div>
+    <div class="card"><span class="label">Your costliest moments (${mistakes.length})${Help.q('Your moves that dropped your own winning chances the most. −34% means your chances fell by 34 points with that move (from your side).')}</span>
       <div style="margin-top:6px">${mistakes.slice(0,10).map(m=>`<div class="gamerow"><span class="src">${esc(m.game.date)}</span>
         <span>${esc(m.san)} <span class="note">vs ${esc(m.game.color==='w'?m.game.black:m.game.white)}</span></span>
         <span class="pill ${m.drop>=0.3?'bad':'warn'}">−${Math.round(m.drop*100)}%</span>

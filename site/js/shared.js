@@ -7,7 +7,7 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 
 /* ---------- Settings (per browser) ---------- */
 window.Settings=(()=>{
-  const DEF={board:'maple',input:'both',omistakes:'all',ocaptured:false,anim:'normal',sound:false,shapeColor:'G',olevel:'masters',olen:'long',omode:'rated',sfDepth:'auto',oshare:3,theme:'auto',
+  const DEF={ptheme:false,board:'maple',input:'both',omistakes:'all',ocaptured:false,anim:'normal',sound:false,shapeColor:'G',olevel:'masters',olen:'long',omode:'rated',sfDepth:'auto',oshare:3,theme:'auto',
     ovariety:'balanced',ominshare:0,otrappy:false,evalCol:true,osfinfo:false,coords:true,lastMove:true,dests:true,autoNext:false};
   let cur={};
   try{ cur=JSON.parse(localStorage.getItem('clo-settings')||'{}') }catch(e){}

@@ -10,6 +10,7 @@ const ROWS=[
   {k:'input',label:'How you move pieces',opts:[['both','Tap or drag'],['click','Tap two squares'],['drag','Drag only']]},
   {k:'shapeColor',label:'Arrow colour (plain right-click)',note:'Right-click a square for a circle, right-drag for an arrow. Shift = red, Alt = blue, Shift+Alt = yellow. Firefox opens its own menu on Shift+right-click, so pick red here instead.',
    opts:[['G','Green'],['R','Red'],['B','Blue'],['Y','Yellow']]},
+  {k:'ptheme',label:'Show theme in puzzle titles',note:'Off: Today, Tactics and Calculation name a puzzle by its id, and its themes show once it is done, so the title doesn’t give the idea away.',opts:[['false','No'],['true','Yes']]},
   {k:'coords',label:'Board coordinates',opts:[['true','Show'],['false','Hide']]},
   {k:'lastMove',label:'Highlight the last move',opts:[['true','Yes'],['false','No']]},
   {k:'dests',label:'Show where a piece can go',opts:[['true','Yes'],['false','No']]},

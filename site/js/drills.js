@@ -37,12 +37,14 @@ function renderL(){
 }
 function load(d){
   if(endbar) endbar.hide();
-  S.cur=d; S.g=new Chess(d.fen); S.done=false; S.busy=false;
+  S.cur=d; S.g=new Chess(d.fen); S.done=false; S.busy=false; S.hintStage=0; S.hinted=false;
   board.set(S.g,{last:null,orient:d.color});
-  if(isPunish(d)) status('',`${d.oppMove} was a mistake. Punish it.`,`${S.g.turn()==='w'?'White':'Black'} to move. In the game you played ${d.played}, which let them off (−${Math.round(d.drop*100)}% of the chance they gave you).`);
-  else status('', (S.g.turn()==='w'?'White':'Black')+' to move — find a better move.',`In the game you played ${d.played} (−${Math.round(d.drop*100)}% winning chances).`);
+  if(isPunish(d)) status('',`${d.oppMove} was a mistake. Punish it.`,`${S.g.turn()==='w'?'White':'Black'} to move. In the game you played ${d.played}, which let them off (−${Math.round(d.drop*100)}% of the chance they gave you).`,DROP_HELP);
+  else status('', (S.g.turn()==='w'?'White':'Black')+' to move — find a better move.',`In the game you played ${d.played} (−${Math.round(d.drop*100)}% winning chances).`,DROP_HELP);
+  const goal=playGoal(d); const pb=$('d-playout'); pb.textContent=goal==='win'?'Play it out: win it from here':'Play it out: don’t lose from here';
+  pb.title=goal==='win'?'Continue against Stockfish from this position. You were winning before the slip: convert it.':'Continue against Stockfish from this position. Hold it: a draw or better counts.';
   $('d-facts').innerHTML=`<dt>Date</dt><dd>${esc(d.date)}</dd><dt>Opponent</dt><dd>${esc(d.opp)}</dd>
-    <dt>You played</dt><dd>${esc(d.played)}</dd><dt>Game</dt><dd><a href="${esc(d.url)}" target="_blank" rel="noopener">open ↗</a></dd>`;
+    <dt>You played</dt><dd>${esc(d.played)}</dd><dt>Play it out</dt><dd>${playGoal(d)==='win'?'win from here':'don’t lose from here'}${Help.q('The goal comes from the eval before your slip: from +1.5 or better for you it is a win to convert; otherwise hold the position.')}</dd><dt>Game</dt><dd><a href="${esc(d.url)}" target="_blank" rel="noopener">open ↗</a></dd>`;
   $('d-lichess').href='https://lichess.org/analysis/'+encodeURIComponent(d.fen.replace(/ /g,'_'));
   renderL();
 }
@@ -76,7 +78,7 @@ function finish(m,ok,text){
   board.set(S.g,{last:{from:m.from,to:m.to}});
   board.flash([m.from,m.to],'good');
   status('good',`${m.san} ✓`,text||'');
-  saveResult(S.cur.id,true);
+  saveResult(S.cur.id,!S.hinted);   /* a hinted drill is played through but not counted solved */
   endbar.show('good',`${m.san} ✓ Solved`,'Next drill');
 }
 async function show(){
@@ -91,14 +93,23 @@ async function show(){
 }
 /* Play it out: continue from the drill position against Stockfish (Play tab). The goal comes from the eval
    before the slip: from +1.5 for you it is a win (convert); otherwise don't lose (hold), as in the private kit. */
+const playGoal=d=>((d.before||0)*(d.color==='w'?1:-1))>=1.5?'win':'hold';
+const DROP_HELP='Winning chances (Lichess’s scale, from your side): −34% means the move cut your chances of winning by 34 points.';
 function playOut(){
   const d=S.cur; if(!d) return;
-  const mine=(d.before||0)*(d.color==='w'?1:-1);
   location.hash='#play';
-  setTimeout(()=>PlayTab.fromPosition(d.fen,d.color,mine>=1.5?'win':'hold','Drill vs '+d.opp),30);
+  setTimeout(()=>PlayTab.fromPosition(d.fen,d.color,playGoal(d),'Drill vs '+d.opp),30);
+}
+/* H: the same two-step hint as the opening trainer (first the piece, then the move); a hinted drill isn't counted solved. */
+async function hint(){
+  const d=S.cur; if(!d||S.done||S.busy) return;
+  let u=d.best; if(!u){ const a=await SharedEngine.analyse(S.g.fen(),DEPTH,1,10000).catch(()=>null); u=a&&a[0]&&a[0].uci } if(!u) return;
+  S.hinted=true; S.hintStage=Math.min(2,(S.hintStage||0)+1);
+  if(S.hintStage===1){ board.setHint(u.slice(0,2)); status('warn','Hint: this piece.','Press H again for the move. A hinted drill doesn’t count as solved.') }
+  else { board.setHint(u.slice(0,2),u.slice(2,4)); status('warn','Hint: '+sanOf(S.g.fen(),u),'Play it to finish. It doesn’t count as solved.') }
 }
 function next(){ const p=prog(); const d=drills().find(x=>!p[x.id]||!p[x.id].ok)||drills()[0]; if(d) load(d) }
-function status(tone,head,rest){ const el=$('d-status'); el.className='status'+(tone?' '+tone:''); el.innerHTML=`<strong>${esc(head)}</strong>${esc(rest||'')}` }
+function status(tone,head,rest,help){ const el=$('d-status'); el.className='status'+(tone?' '+tone:''); el.innerHTML=`<strong>${esc(head)}</strong>${esc(rest||'')}${help?Help.q(help):''}` }
 
 function init(){
   board=makeBoard($('d-board'),{onMove:userMove});
@@ -109,7 +120,8 @@ function init(){
   $('d-show').addEventListener('click',show);
   $('d-playout').addEventListener('click',playOut);
   $('d-flip').addEventListener('click',()=>board.flip());
-  Keys.on('drills',{n:['Next drill',()=>next()],f:['Flip the board',()=>board.flip()]});
+  $('d-hint').addEventListener('click',hint);
+  Keys.on('drills',{n:['Next drill',()=>next()],h:['Hint (first the piece, then the move)',()=>hint()],f:['Flip the board',()=>board.flip()]});
 }
-window.DrillsTab={init,refresh:renderL,load,next,userMove,show,playOut,get state(){return S}};
+window.DrillsTab={init,hint,refresh:renderL,load,next,userMove,show,playOut,get state(){return S}};
 })();

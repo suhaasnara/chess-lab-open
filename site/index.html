@@ -368,8 +368,9 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
         <div class="board" id="d-board" role="group" aria-label="Chess board"></div>
         <div class="boardtools">
           <button class="btn sm primary" id="d-next">Next <kbd>N</kbd></button>
+          <button class="btn sm" id="d-hint">Hint <kbd>H</kbd></button>
           <button class="btn sm" id="d-show">Show the answer</button>
-          <button class="btn sm" id="d-playout" title="Continue the game from here against Stockfish">Play it out</button>
+          <button class="btn sm primary" id="d-playout" title="Continue the game from here against Stockfish">Play it out</button>
           <button class="btn sm" id="d-flip">Flip <kbd>F</kbd></button>
           <a class="btn sm" id="d-lichess" target="_blank" rel="noopener">Lichess &#8599;</a>
         </div>
@@ -570,6 +571,8 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
 <script src="shared/net.js?v=__V__"></script>
 <script src="shared/endgame-core.js?v=__V__"></script>
 <script src="shared/keys.js?v=__V__"></script>
+<script src="shared/puzzles.js?v=__V__"></script>
+<script src="shared/help.js?v=__V__"></script>
 <script src="js/shared.js?v=__V__"></script>
 <script src="js/book.js?v=__V__"></script>
 <script src="js/openings.js?v=__V__"></script>

@@ -59,13 +59,19 @@ function renderL(){
   for(const z of daily(filtered()).slice(0,200)){
     const st=p[z.id];
     const b=document.createElement('button'); b.className='drill'; b.setAttribute('aria-current',S.cur&&S.cur.id===z.id?'true':'false');
-    b.innerHTML=`<span class="src">${st?(st.ok?'✓':'✗'):''}</span><span><span class="opp">${esc(themeName(z.motif)||'Tactic')}</span><br><span class="meta">${z.rating}</span></span><span class="evalchip">${esc(themeName((z.themes||[])[0]))}</span>`;
+    b.innerHTML=`<span class="src">${st?(st.ok?'✓':'✗'):''}</span><span><span class="opp">${esc(Puzzles.title(z.id,themeName(z.motif),!!st))}</span><br><span class="meta">${z.rating}</span></span><span class="evalchip">${esc(themeName((z.themes||[])[0]))}</span>`;
     b.addEventListener('click',()=>load(z));
     el.appendChild(b);
   }
   if(!el.children.length) el.innerHTML='<p class="empty">No puzzles match these filters.</p>';
 }
 
+/* the facts card; themes stay hidden until the puzzle is done (shared/puzzles.js) */
+function facts(){ const z=S.cur; if(!z) return;
+  const done=!!(S.solved||S.failedFirst||prog()[z.id]);   /* themes stay hidden until the puzzle is done (Puzzles) */
+  $('t-facts').innerHTML=`<dt>Puzzle</dt><dd>${esc(z.id)}</dd><dt>Motif</dt><dd>${esc(Puzzles.theme(themeName(z.motif),done))}</dd><dt>Rating</dt><dd>${z.rating||'—'}</dd>
+    <dt>Themes</dt><dd>${esc(Puzzles.theme((z.themes||[]).map(themeName).join(', '),done))}</dd>`;
+}
 function load(z){
   if(endbar) endbar.hide();
   S.gen=(S.gen||0)+1;   /* a reply still on its timer belongs to the puzzle it was made for */
@@ -75,8 +81,7 @@ function load(z){
   if(z.pre!==false&&z.moves.length>1){ const u=z.moves[0]; const m=S.g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'}); if(m) last={from:m.from,to:m.to}; S.step=1 }
   board.set(S.g,{last,orient:S.g.turn()});
   status('', (S.g.turn()==='w'?'White':'Black')+' to move.','Find the best move.');
-  $('t-facts').innerHTML=`<dt>Motif</dt><dd>${esc(themeName(z.motif)||'—')}</dd><dt>Rating</dt><dd>${z.rating||'—'}</dd>
-    <dt>Themes</dt><dd>${esc((z.themes||[]).map(themeName).join(', '))||'—'}</dd>`;
+  facts();
   $('t-lichess').href=z.url||('https://lichess.org/analysis/'+encodeURIComponent(S.g.fen()));
   renderL();
 }
@@ -89,7 +94,7 @@ function userMove(from,to,promo){
   const hit=uci===exp||uci.slice(0,4)===exp.slice(0,4)&&(!exp[4]||exp[4]===uci[4]);
   /* any mate also counts, as on Lichess */
   if(!hit&&!test.in_checkmate()){
-    if(S.step===(S.cur.pre!==false?1:0)&&!S.failedFirst&&!S.usedHint){ S.failedFirst=true; saveResult(S.cur.id,false) }
+    if(S.step===(S.cur.pre!==false?1:0)&&!S.failedFirst&&!S.usedHint){ S.failedFirst=true; saveResult(S.cur.id,false); facts() }
     board.flash([from,to],'bad');
     status('bad',`${m.san} isn’t it.`,'Try again, or use Hint (H).');
     return;
@@ -100,7 +105,7 @@ function userMove(from,to,promo){
   S.step++;
   const reply=S.cur.moves[S.step];
   if(!reply||test.in_checkmate()){
-    S.solved=true;
+    S.solved=true; facts();
     if(!S.failedFirst&&!S.usedHint) saveResult(S.cur.id,true);
     status('good','Solved!',S.failedFirst||S.usedHint?'(no rating: not a clean first try)':'');
     const clean=!S.failedFirst&&!S.usedHint;

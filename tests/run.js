@@ -1118,6 +1118,19 @@ section('t41: Openings — Anything vs e4 / d4 / sidelines, Hide and Restore');
   $('s-unhide').click(); assert(O.openings().some(o=>o.id==='preset-italian'),'Restore brings it back');
 }
 
+section('t42: puzzle titles don’t give the idea away');
+{
+  const {w}=await makePage({analyse:async()=>null});
+  const $=id=>w.document.getElementById(id), T=w.TacticsTab;
+  await sleep(300); T.load(T.lib.find(p=>p.moves.length>=4)); await sleep(50);
+  const z=T.state.cur; assert(z,'a puzzle is loaded');
+  const item=$('t-list').querySelector('.opp'); assert(item&&/^Puzzle /.test(item.textContent),'the list names puzzles by id ('+(item&&item.textContent)+')');
+  assert(/shown when solved/.test($('t-facts').textContent)&&!$('t-facts').textContent.includes(w.themeName?w.themeName(z.motif):'@@'),'motif and themes hidden before solving');
+  const sol=z.moves.slice(z.pre!==false?1:0); for(let i=0;i<sol.length;i+=2){ T.userMove(sol[i].slice(0,2),sol[i].slice(2,4)); await sleep(900) }
+  assert(T.state.solved&&!/shown when solved/.test($('t-facts').textContent),'solved: the themes show');
+  w.Settings.set('ptheme',true); assert(w.Puzzles.title('x','Fork',false)==='Fork','Settings → Show theme in puzzle titles');
+}
+
 section('t37: shared code (site/shared/) — position ids never change, one PGN reader');
 {
   const {w}=await makePage();
