@@ -21,7 +21,8 @@ This file records where the two stand (as of the `one-codebase` branch, 9 Nov 20
 | Watch | Same library logic (series, Resume/Continue, position, watched, Watched up to here, notes with timestamp links, bookmarks, tag edits, deep links and no embeds), on videos the visitor adds. |
 | Guess the move | Scoring, notes after each move, Show the game, arrows keys, eval graph; plus your own PGNs (notes, side lines, marks, arrows), judged live by Stockfish. |
 | Tactics, Calculation, Endgames, Drills, Play, Today, Progress | Already matched before this branch (on CC0 Lichess data). |
-| Header | Shared code since 10 Nov 2026 (`shared/nav.js`): the same tab row, Extra drop-down and Settings link; Open's main row adds Analyze my games, which moves into Extra on phones. Next: the screens themselves (Project doc `claude/shared-screens-plan.md`). |
+| Header | Shared code since 10 Nov 2026 (`shared/nav.js`): the same tab row, Extra drop-down and Settings link; Open's main row adds Analyze my games, which moves into Extra on phones. |
+| Every tab's layout | Shared screens (stages 2–6, branch `shared-screens`): `shared/trainview.css` + `shared/trainview.js` hold the private site's layouts (list \| board \| coach card, lobby pages, three columns, Play, Watch, Settings, report pages) and small render helpers. Each site keeps its own tab logic, data and progress keys around them. |
 
 ## Still different, and why
 
@@ -89,8 +90,10 @@ Shared files declare one namespace each; each site keeps its own short names as 
 | 7 | `keys.js`, `help.js`, `puzzles.js`, `controls.js` | one keyboard layer with a `?` list (never while typing, no browser clashes), the small ? explanations, puzzle titles and themes, the rating slider and multi-select | done, both sites |
 | 8 | `reader.js`, `shared.css` | the phone reader (board on top, notes below, Prev / Next at the bottom) in Openings notes, Guess the move, Calculation, Endgames (and the private Players studies); hidden on iPads and desktops | done, both sites; checked in Firefox and Chromium on iPhone sizes |
 
-Still to share: the opening trainer's line flow around the core, the Guess-the-move parser, and the tabs themselves
-(each site still has its own tab files, now thin around the shared modules).
+| 9 | `trainview.css`, `trainview.js` | the screens' layouts and render helpers (shared screens, stages 2–6) | done, both sites (the private site pixel-identical; Open re-laid out) |
+
+Still to share: the opening trainer's line flow around the core, the Guess-the-move parser, and each tab's logic
+(each site still has its own tab files, now thin around the shared modules and layouts).
 
 **Rating at the end of a line (settled 9 Nov 2026):** both sites now use `TrainerCore.lineDelta`: each rated move is a
 game, and your average score is compared with the average of each move's expected score (the private site's rule; Open
