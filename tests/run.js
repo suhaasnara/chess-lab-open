@@ -950,6 +950,25 @@ section('t32: Players — an opponent’s public games, what they play, train vs
   assert(S.op&&S.op.id==='pl-li-rival-w'&&S.op.side==='white','Train vs opens the trainer with you as White');
   await w.OpeningsTab.userMove('e2','e4'); await sleep(900);
   assert(S.log[1]&&S.log[1].san==='c5'&&/played c5 in 3 of 3/.test($('o-status').textContent),'the opponent plays their own move (1...c5, 3 of 3 games)');
+  /* PARITY 7: opening names per line, a rating / time-window filter, your own notes on a player */
+  w.location.hash='#players'; await sleep(20); P.select('li-rival'); await sleep(10);
+  $('p-view').querySelector('[data-col="b"]').click(); await sleep(10);
+  $('p-moves').querySelector('[data-uci="e2e4"]').click(); await sleep(10);
+  assert(/Sicilian/.test($('p-moves').textContent)&&/King's Pawn|e4/.test($('p-line').textContent),'each move names the opening it leads into (1...c5: Sicilian)');
+  $('p-filt').querySelector('.chip[data-k="band"][data-v="2000"]').click(); await sleep(10);
+  assert(P.gamesOf(P.data('li-rival')).length===0&&/0 of 10 games/.test($('p-filt').textContent)&&P.movesAt('li-rival','w',start).length===0,'opponents 2000+: none of these games (opponents 1900–1950), and the explorer follows');
+  $('p-filt').querySelector('.chip[data-k="band"][data-v="1800"]').click(); await sleep(10);
+  assert(P.gamesOf(P.data('li-rival')).length===10&&P.movesAt('li-rival','w',start)[0].n===6,'opponents 1800+: all 10 again');
+  $('p-filt').querySelector('.chip[data-k="win"][data-v="3"]').click(); await sleep(10);
+  const inWin=P.data('li-rival').games.filter(g=>g.d>=new Date(Date.now()-3*30.44*864e5).toISOString().slice(0,10)).length;
+  assert(P.gamesOf(P.data('li-rival')).length===inWin,'last 3 months: only games in the window ('+inWin+')');
+  $('p-filt').querySelector('.chip[data-k="win"][data-v="all"]').click(); $('p-filt').querySelector('.chip[data-k="band"][data-v="all"]').click(); await sleep(10);
+  const ta=$('pl-note'); ta.value='Plays fast; takes risks in the Sicilian.'; ta.dispatchEvent(new w.Event('input',{bubbles:true}));
+  assert(w.Store.get('pnote-li-rival')==='Plays fast; takes risks in the Sicilian.','your notes on a player are kept (their own key)');
+  $('p-view').querySelector('[data-act="sheet"]').click(); await sleep(10);
+  assert(/Your notes:/.test($('p-sheet').textContent)&&/takes risks in the Sicilian/.test($('p-sheet').textContent),'the notes print on the pre-round sheet');
+  await P.addPlayer('lichess','Rival',['blitz','rapid','classical']);
+  assert(w.Store.get('pnote-li-rival')&&w.Store.get('player-li-rival').games.length===10,'Refresh games keeps your notes');
 }
 
 

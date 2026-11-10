@@ -331,6 +331,13 @@ body.welcomed[data-view="today"] .hero{display:none}
 /* Players */
 .phead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}.ptxt{margin:4px 0 8px;line-height:1.7}
 .pmrow{grid-template-columns:4em 1fr 3em 6em}.pmrow .mv{font-weight:700;text-decoration:none;color:var(--head)}
+.pmrow .pmname{grid-column:1/-1;margin-top:-4px;font-size:.78rem}   /* the opening this move leads into */
+/* Players' filter rows: the shared chip rows (.tv values; this card sits in .tv3) */
+#p-filt .chips{display:flex;gap:4px;flex-wrap:wrap;align-items:center;position:relative;padding-left:92px;margin:0 0 6px}
+#p-filt .chip{padding:3px 8px;font-size:.75rem;white-space:nowrap;flex:0 0 auto;border-radius:var(--radius)}
+#p-filt .chip[aria-pressed="true"]{background:var(--navy);color:var(--on-navy);border-color:var(--head)}
+#p-filt .flabel{position:absolute;left:0;top:5px;font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+#pl-note{font:inherit;font-size:.9rem;border:1px solid var(--line);border-radius:6px;padding:8px;background:var(--white);color:var(--ink);resize:vertical;box-sizing:border-box}
 .psheet .shgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:12px;margin-top:12px}
 .shblock h2{margin:0 0 6px}.shline{font-size:1rem;line-height:1.9;margin:4px 0 2px}.sm-they{font-weight:700;color:var(--head)}.sm-prep{text-decoration:underline;text-decoration-color:var(--brass);text-underline-offset:3px}
 .shkey{font-size:.76rem;margin:0 0 8px}.shtab{font-size:.85rem}.shtab td{padding:5px 8px}

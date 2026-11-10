@@ -6,11 +6,17 @@
 'use strict';
 (function(){
 const MAX_GAMES=200, PLIES=30;
-const S={pid:null,color:'w',line:[],board:null,sheet:false,busy:false};
+const S={pid:null,color:'w',line:[],board:null,sheet:false,busy:false,win:'all',band:'all'};   /* win: months of games (all/12/3); band: opponents rated N+ */
 const index=()=>Store.get('players-index')||[];
 const pdata=id=>Store.get('player-'+id);
 const TREES=new Map();
 const SPEEDS=[['bullet','Bullet'],['blitz','Blitz'],['rapid','Rapid'],['classical','Classical']];
+const WINS=[['all','All'],['12','Last 12 months'],['3','Last 3 months']], BANDS=[['all','Any'],['1800','1800+'],['2000','2000+'],['2200','2200+']];
+/* the games the explorer, records and sheet use: the window and opponent-rating filter */
+function gamesOf(p){ if(!p) return []; const since=S.win==='all'?'':new Date(Date.now()-(+S.win)*30.44*864e5).toISOString().slice(0,10), min=S.band==='all'?0:+S.band;
+  return p.games.filter(g=>(!since||g.d>=since)&&(!min||(g.or||0)>=min)) }
+const filterKey=()=>S.win+'/'+S.band;
+const noteOf=id=>Store.get('pnote-'+id)||'';   /* your own notes on a player (kept apart from their games, so Refresh keeps them) */
 
 /* ---------- Fetching (public APIs, in your browser) ---------- */
 async function fetchLichess(user,speeds){
@@ -62,15 +68,15 @@ async function addPlayer(site,user,speeds){
   const p={id,site,user,name:f.name,t:Date.now(),speeds,games:f.games};
   Store.put('player-'+id,p); if(!Store.get('player-'+id)) throw new Error('This browser has no room left to keep these games.');
   const idx=index().filter(x=>x.id!==id); idx.unshift({id,site,user,name:f.name,n:f.games.length,t:p.t}); Store.put('players-index',idx);
-  TREES.delete(id); return p;
+  for(const k of [...TREES.keys()]) if(k.startsWith(id+'|')) TREES.delete(k); return p;
 }
 
 /* ---------- Their tree: every position from their games with that colour (first 30 plies) ---------- */
 /* tree.get(posId) = {n: games through here, mv: {uci: {n, s, san, me}}}; me = the player made this move; s = their score sum */
 function tree(id,color){
-  const k=id+'|'+color; if(TREES.has(k)) return TREES.get(k);
+  const k=id+'|'+color+'|'+filterKey(); if(TREES.has(k)) return TREES.get(k);
   const p=pdata(id), t=new Map(); if(!p){ TREES.set(k,t); return t }
-  for(const g of p.games){ if(g.c!==color) continue; const c=new Chess();
+  for(const g of gamesOf(p)){ if(g.c!==color) continue; const c=new Chess();
     for(const san of g.m.split(' ')){ const key=posId(normKey(c.fen())); const turn=c.turn(); const m=c.move(san); if(!m) break;
       const e=t.get(key)||{n:0,mv:{}}; e.n++; const u=m.from+m.to+(m.promotion||''); const x=e.mv[u]||(e.mv[u]={n:0,s:0,c:0,san:m.san,me:turn===color});
       x.n++; if(g.r!=null){ x.s+=g.r; x.c++ } t.set(key,e) } }
@@ -79,7 +85,7 @@ function tree(id,color){
 /* their moves at fen (they are `color`): [{uci,san,n,score}] most played first */
 function movesAt(id,color,fen){ const e=tree(id,color).get(posId(normKey(fen))); if(!e) return [];
   return Object.entries(e.mv).map(([uci,x])=>({uci,san:x.san,n:x.n,score:x.c?x.s/x.c:null,me:x.me})).sort((a,b)=>b.n-a.n) }
-function record(p,color){ let w=0,d=0,l=0; for(const g of p.games) if(!color||g.c===color){ if(g.r===1) w++; else if(g.r===0.5) d++; else if(g.r===0) l++ } return {w,d,l,n:w+d+l} }
+function record(p,color){ let w=0,d=0,l=0; for(const g of gamesOf(p)) if(!color||g.c===color){ if(g.r===1) w++; else if(g.r===0.5) d++; else if(g.r===0) l++ } return {w,d,l,n:w+d+l} }
 const pct=r=>r.n?Math.round(100*(r.w+r.d/2)/r.n)+'%':'—';
 const lineText=(ms,from=0)=>ms.map((m,i)=>{ const ply=i+from; return (ply%2===0?(ply/2+1)+'.':i===0?Math.ceil(ply/2)+'…':'')+m }).join(' ');
 
@@ -103,7 +109,7 @@ function expectLine(id,theirColor){
   return out;
 }
 function firstMoves(id,color){ const p=pdata(id); const o={};
-  for(const g of p.games){ if(g.c!==color) continue; const ms=g.m.split(' '); const k=color==='w'?ms[0]:ms[0]+' '+ms[1]; const r=o[k]||(o[k]={n:0,s:0,c:0}); r.n++; if(g.r!=null){ r.s+=g.r; r.c++ } }
+  for(const g of gamesOf(p)){ if(g.c!==color) continue; const ms=g.m.split(' '); const k=color==='w'?ms[0]:ms[0]+' '+ms[1]; const r=o[k]||(o[k]={n:0,s:0,c:0}); r.n++; if(g.r!=null){ r.s+=g.r; r.c++ } }
   return Object.entries(o).sort((a,b)=>b[1].n-a[1].n) }
 
 /* ---------- Rendering ---------- */
@@ -121,7 +127,7 @@ function render(){
   const p=S.pid&&pdata(S.pid);
   if(!p){ v.innerHTML='<div class="boardwrap"><div class="card"><span class="label">Players</span><h2>Scout an opponent</h2><p class="note">Add a player to see what they play with White and Black, browse their moves on a board, train against their openings and print a pre-round sheet.</p></div></div><div class="side"></div>'; if(S.board) S.board=null; return }
   if(S.sheet){ sh.innerHTML=sheetHtml(p); return }
-  const rw=record(p,'w'), rb=record(p,'b'), col=S.color;
+  const rw=record(p,'w'), rb=record(p,'b'), col=S.color, G=gamesOf(p), span=G.length?`${esc(G[G.length-1].d)} to ${esc(G[0].d)}`:'no games in this window';
   const fm=(c)=>firstMoves(p.id,c).slice(0,6).map(([k,r])=>`<b>${esc(c==='w'?'1.'+k:'1.'+k.replace(' ',' '))}</b> ${r.n}${r.c?` <span class="note">(${Math.round(100*r.s/r.c)}%)</span>`:''}`).join(' · ')||'<span class="note">none</span>';
   const link=`${p.site==='chesscom'?'https://www.chess.com/member/':'https://lichess.org/@/'}${esc(encodeURIComponent(p.user))}`;
   v.innerHTML=`<div class="boardwrap" id="p-wrap"><div class="board" id="p-board" role="group" aria-label="Their moves on a board"></div>
@@ -131,10 +137,13 @@ function render(){
       <div class="card" style="margin-top:12px"><span class="label" id="p-movehead">Moves</span><div id="p-moves"></div></div></div>
     <div class="side">${TV.head({kicker:`${p.site==='chesscom'?'Chess.com':'Lichess'} · ${p.games.length} games${p.speeds?' · '+esc(p.speeds.join(', ')):''}`,
         title:`<a href="${link}" target="_blank" rel="noopener">${esc(p.name)}</a>`,
-        chips:[`As White ${rw.w}–${rw.l}${rw.d?' ='+rw.d:''} (${pct(rw)})`,`As Black ${rb.w}–${rb.l}${rb.d?' ='+rb.d:''} (${pct(rb)})`,`${esc(p.games[p.games.length-1].d)} to ${esc(p.games[0].d)}`],
+        chips:[`As White ${rw.w}–${rw.l}${rw.d?' ='+rw.d:''} (${pct(rw)})`,`As Black ${rb.w}–${rb.l}${rb.d?' ='+rb.d:''} (${pct(rb)})`,span],
         extra:`<div class="btns" style="margin-top:10px"><button class="btn sm primary" data-act="sheet">Pre-round sheet</button><button class="btn sm" data-act="refresh">Refresh games</button><button class="btn sm" data-act="remove">Remove</button></div>
           <div class="btns" style="margin-top:8px;align-items:center"><span class="note">Train vs ${esc(p.name)}</span><button class="btn sm" data-train="w">you have White</button><button class="btn sm" data-train="b">you have Black</button></div>`})}
-      <div class="card"><span class="label">As White they open</span><p class="ptxt">${fm('w')}</p><span class="label">As Black they answer</span><p class="ptxt">${fm('b')}</p></div></div>`;
+      <div class="card" id="p-filt"><div class="filters" style="margin:0">${TV.chips('Games','win',WINS,S.win)}${TV.chips('Opponents','band',BANDS,S.band)}</div>
+        <p class="note" style="margin:6px 0 0">${gamesOf(p).length} of ${p.games.length} games${gamesOf(p).length?'':': none match, so nothing shows'}. The explorer, records and sheet follow this.</p></div>
+      <div class="card"><span class="label">As White they open</span><p class="ptxt">${fm('w')}</p><span class="label">As Black they answer</span><p class="ptxt">${fm('b')}</p></div>
+      <div class="card"><label class="label" for="pl-note">Your notes on ${esc(p.name)}</label><textarea id="pl-note" rows="4" placeholder="What you know about them: favourite lines, time trouble, how your games went…" style="width:100%;margin-top:6px">${esc(noteOf(p.id))}</textarea><p class="note" style="margin:4px 0 0">Kept on this device, printed on the pre-round sheet.</p></div></div>`;
   S.board=makeBoard($('p-board'),{onMove:(f,t,pr)=>{ const g=cur(); const m=g.move({from:f,to:t,promotion:pr||'q'}); if(m){ S.line.push(m.san); drawExplorer() } }});
   drawExplorer();
 }
@@ -143,15 +152,20 @@ function drawExplorer(){
   if(!S.board||!S.pid) return; const g=cur(), fen=g.fen(), here=movesAt(S.pid,S.color,fen), tot=here.reduce((a,x)=>a+x.n,0), p=pdata(S.pid);
   const h=g.history({verbose:true}), last=h[h.length-1];
   S.board.set(g,{last:last?{from:last.from,to:last.to}:null,orient:S.orientSet?S.board.orient:(S.color==='w'?'b':'w')});
-  $('p-line').textContent=S.line.length?lineText(S.line):'Starting position';
+  const fens=[], walk=new Chess(); fens.push(walk.fen()); for(const s of S.line){ if(!walk.move(s)) break; fens.push(walk.fen()) }
+  const nm=window.Book&&Book.nameOf(fens);
+  $('p-line').textContent=(S.line.length?lineText(S.line):'Starting position')+(nm?'  ·  '+nm[1]:'');
+  /* each move's opening name: the name reached after it, when it adds one */
+  const after=uci=>{ if(!window.Book) return ''; const x=new Chess(fen); const m=x.move({from:uci.slice(0,2),to:uci.slice(2,4),promotion:uci[4]||'q'}); if(!m) return '';
+    const n=Book.nameOf([...fens,x.fen()]); return n&&(!nm||n[1]!==nm[1])?n[1]:'' };
   const theirTurn=g.turn()===S.color;
   $('p-movehead').textContent=theirTurn?`${p.name} plays · ${tot} game${tot===1?'':'s'}`:`Their opponents played · ${tot} game${tot===1?'':'s'}`;
-  $('p-moves').innerHTML=here.length?here.map(x=>`<div class="bookrow pmrow"><button type="button" class="linkbtn mv" data-uci="${x.uci}">${esc(x.san)}</button><span class="wdl" title="${p.name}'s score after this move"><i class="w" style="width:${x.score==null?0:Math.round(100*x.score)}%;background:var(--good)"></i></span><span class="note">${Math.round(100*x.n/tot)}%</span><span class="note">${x.n} · ${x.score==null?'—':Math.round(100*x.score)+'%'}</span></div>`).join('')
+  $('p-moves').innerHTML=here.length?here.map(x=>`<div class="bookrow pmrow"><button type="button" class="linkbtn mv" data-uci="${x.uci}">${esc(x.san)}</button><span class="wdl" title="${p.name}'s score after this move"><i class="w" style="width:${x.score==null?0:Math.round(100*x.score)}%;background:var(--good)"></i></span><span class="note">${Math.round(100*x.n/tot)}%</span><span class="note">${x.n} · ${x.score==null?'—':Math.round(100*x.score)+'%'}</span>${(o=>o?`<span class="note pmname">${esc(o)}</span>`:'')(after(x.uci))}</div>`).join('')
     :`<p class="note">${tot?'':'None of their games reach this position.'}</p>`;
 }
 function sheetHtml(p){
   const block=myColor=>{ const their=myColor==='w'?'b':'w', l=expectLine(p.id,their), r=record(p,their), fm=firstMoves(p.id,their).slice(0,5), tot=fm.reduce((a,[,x])=>a+x.n,0);
-    const recent=p.games.filter(g=>g.c===their).slice(0,5);
+    const recent=gamesOf(p).filter(g=>g.c===their).slice(0,5);
     return `<section class="card shblock"><h2>You have ${myColor==='w'?'White':'Black'}</h2>
       <p class="note" style="margin:0 0 6px">${esc(p.name)} with ${their==='w'?'White':'Black'}: ${r.w} won, ${r.d} drawn, ${r.l} lost (${pct(r)}) in ${r.n} game${r.n===1?'':'s'}</p>
       <span class="label">${their==='w'?'First move':'Answers to your first move'}</span>
@@ -162,9 +176,11 @@ function sheetHtml(p){
       <span class="label">Recent games</span>
       <table class="shtab"><tbody>${recent.map(g=>`<tr><td class="mono">${esc(g.d)}</td><td>vs ${esc(g.o)}${g.or?` <span class="note">${g.or}</span>`:''}</td><td><b>${g.r===1?'won':g.r===0?'lost':g.r===0.5?'drew':'?'}</b></td><td class="mono note">${esc(lineText(g.m.split(' ').slice(0,8)))}</td></tr>`).join('')}</tbody></table>
       <div class="btns shbtns noprint"><button class="btn sm primary" data-train="${myColor}">Train vs ${esc(p.name)}</button></div></section>` };
+  const G=gamesOf(p), note=noteOf(p.id), filt=[S.win!=='all'?'last '+S.win+' months':'',S.band!=='all'?'opponents '+S.band+'+':''].filter(Boolean).join(', ');
   return `<div class="btns noprint" style="margin-bottom:10px"><button class="btn sm" data-act="unsheet">← Back</button><button class="btn sm primary" data-act="print">Print</button></div>
     <header class="card shhead"><span class="label">Pre-round sheet · ${p.site==='chesscom'?'Chess.com':'Lichess'} games</span><h1 style="margin:4px 0">${esc(p.name)}</h1>
-      <p class="note" style="margin:0">${p.games.length} online games (${esc((p.speeds||[]).join(', '))}), ${esc(p.games[p.games.length-1].d)} to ${esc(p.games[0].d)}. Online habits; over the board may differ.</p></header>
+      <p class="note" style="margin:0">${G.length} online games (${esc((p.speeds||[]).join(', '))}${filt?'; '+esc(filt):''})${G.length?`, ${esc(G[G.length-1].d)} to ${esc(G[0].d)}`:''}. Online habits; over the board may differ.</p>
+      ${note?`<p class="shnote" style="margin:8px 0 0;white-space:pre-wrap"><b>Your notes:</b> ${esc(note)}</p>`:''}</header>
     <div class="shgrid">${block('w')}${block('b')}</div>`;
 }
 function select(id){ S.pid=id; S.line=[]; S.sheet=false; S.orientSet=false; render() }
@@ -183,7 +199,9 @@ function init(){
     try{ const p=await addPlayer($('p-site').value,$('p-user').value,speeds); err.textContent=`${p.games.length} games.`; $('p-user').value=''; select(p.id) }
     catch(x){ err.textContent=x instanceof TypeError?'Could not reach '+($('p-site').value==='chesscom'?'Chess.com':'Lichess')+' (offline, or blocked by a browser extension).':String(x.message||x) }
     S.busy=false; $('p-go').disabled=false });
+  sec.addEventListener('input',e=>{ if(e.target.id==='pl-note'&&S.pid){ const v=e.target.value; if(v.trim()) Store.put('pnote-'+S.pid,v); else Store.del('pnote-'+S.pid) } });
   sec.addEventListener('click',async e=>{
+    const ch=e.target.closest('#p-filt .chip[data-k]'); if(ch){ S[ch.dataset.k]=ch.dataset.v; S.line=[]; render(); return }
     const pb=e.target.closest('[data-pid]'); if(pb){ select(pb.dataset.pid); return }
     const c=e.target.closest('[data-col]'); if(c){ S.color=c.dataset.col; S.line=[]; S.orientSet=false; render(); return }
     const u=e.target.closest('[data-uci]'); if(u){ const g=cur(); const m=g.move({from:u.dataset.uci.slice(0,2),to:u.dataset.uci.slice(2,4),promotion:u.dataset.uci[4]||'q'}); if(m){ S.line.push(m.san); drawExplorer() } return }
@@ -193,7 +211,7 @@ function init(){
     else if(act==='flip'){ S.board.flip(); S.orientSet=true }
     else if(act==='sheet'){ S.sheet=true; render(); if(document.scrollingElement) document.scrollingElement.scrollTop=0 } else if(act==='unsheet'){ S.sheet=false; render() }
     else if(act==='print'){ document.body.classList.add('print-sheet'); const done=()=>{ document.body.classList.remove('print-sheet'); removeEventListener('afterprint',done) }; addEventListener('afterprint',done); try{ window.print() }catch(_){ done() } }
-    else if(act==='remove'){ if(!confirm('Remove this player and their games from this browser?')) return; Store.del('player-'+S.pid); for(const k of ['w','b']) Store.del('stats-pl-'+S.pid+'-'+k); Store.put('players-index',index().filter(x=>x.id!==S.pid)); S.pid=null; render() }
+    else if(act==='remove'){ if(!confirm('Remove this player and their games from this browser?')) return; Store.del('player-'+S.pid); Store.del('pnote-'+S.pid); for(const k of ['w','b']) Store.del('stats-pl-'+S.pid+'-'+k); Store.put('players-index',index().filter(x=>x.id!==S.pid)); S.pid=null; render() }
     else if(act==='refresh'){ const p=pdata(S.pid); if(!p||S.busy) return; S.busy=true; a.disabled=true; a.textContent='Fetching…';
       try{ await addPlayer(p.site,p.user,p.speeds||['blitz','rapid','classical']); select(p.id) }catch(x){ a.textContent='Could not refresh'; } S.busy=false }
   });
@@ -201,5 +219,5 @@ function init(){
     Home:['Back to the start',()=>{ if(!S.board||S.sheet) return false; S.line=[]; drawExplorer() }]});
   render();
 }
-window.PlayersTab={init,render,select,addPlayer,movesAt,expectLine,tree,pgnMoves,index,data:pdata,get state(){return S}};
+window.PlayersTab={init,render,select,addPlayer,movesAt,expectLine,tree,pgnMoves,index,data:pdata,gamesOf,note:noteOf,get state(){return S}};
 })();
