@@ -89,7 +89,6 @@ Shared files declare one namespace each; each site keeps its own short names as 
 | 6 | `endgame-core.js` | tablebase grading and the defender's reply (keeps the result, keeps material, fewest saving replies, resists longest when losing) | done, both sites |
 | 7 | `keys.js`, `help.js`, `puzzles.js`, `controls.js` | one keyboard layer with a `?` list (never while typing, no browser clashes), the small ? explanations, puzzle titles and themes, the rating slider and multi-select | done, both sites |
 | 8 | `reader.js`, `shared.css` | the phone reader (board on top, notes below, Prev / Next at the bottom) in Openings notes, Guess the move, Calculation, Endgames (and the private Players studies); hidden on iPads and desktops | done, both sites; checked in Firefox and Chromium on iPhone sizes |
-
 | 9 | `trainview.css`, `trainview.js` | the screens' layouts and render helpers (shared screens, stages 2–6) | done, both sites (the private site pixel-identical; Open re-laid out) |
 
 Still to share: the opening trainer's line flow around the core, the Guess-the-move parser, and each tab's logic
