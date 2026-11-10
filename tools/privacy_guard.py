@@ -8,10 +8,17 @@ Chess Lab kit leaks into this public repo:
   normalized tokens, so the guard itself puts none of those names in the repo.
 - binary data files that have no place here (.pgn with headers, .hce)
 
-Run from the repo root: python3 tools/privacy_guard.py
-CI runs it on every push. A hit prints file:line and a masked token.
+Run from the repo root: python3 tools/privacy_guard.py [.]
+  python3 tools/privacy_guard.py --build site    the exported build: the exact folder that is deployed
+CI runs it on every push (the repo), and the deploy job runs --build on the folder it uploads, after the
+version stamp, so what reaches GitHub Pages is what was checked. A hit prints file:line and a masked token.
+
+Fails closed: a file it can't read, text that isn't valid UTF-8, a file type it doesn't know (only the
+binary types in BINARY_EXT are allowed, and their embedded text runs are scanned too), JSON it can't parse,
+or a scan that finds no files all fail the check instead of passing it. Escaped JSON strings (\u0041...)
+are decoded and scanned as well.
 """
-import hashlib, os, re, sys
+import hashlib, json, os, re, sys
 
 BANNED_PATHS = [
     r'(^|/)input(/|$)', r'(^|/)work(/|$)', r'(^|/)out(/|$)',
@@ -77,17 +84,16 @@ fc3617e4bb65b221a546f90ad2eb809a38822912553e72d8e257cc4fca5dd171
 fc660aeb6eaa85d069a6f23dcc75d6226c2c7fa1ca7ae39e61784ae6590e487d
 """.split())
 
-TEXT_EXT = {'.js','.css','.html','.md','.json','.py','.yml','.yaml','.txt','.tsv','.svg','.sh'}
+TEXT_EXT = {'.js','.css','.html','.md','.json','.py','.yml','.yaml','.txt','.tsv','.svg','.sh','.csv','.xml','.webmanifest',''}
+# binary files that may be published (images, fonts, the Stockfish WebAssembly): their printable text runs are scanned
+BINARY_EXT = {'.wasm','.jpg','.jpeg','.png','.webp','.gif','.ico','.woff','.woff2'}
 SKIP = {'.git','node_modules'}
+SKIP_REPO_ONLY = {'__pycache__'}   # local Python caches (never committed); the --build scan skips nothing
 TOKEN = re.compile(r"[a-z0-9][a-z0-9_@.\-]*")
 h = lambda s: hashlib.sha256(s.encode()).hexdigest()
 
-def check_file(path, rel):
+def scan_text(text, rel):
     hits = []
-    try:
-        text = open(path, encoding='utf-8', errors='ignore').read()
-    except OSError:
-        return hits
     for ln, line in enumerate(text.lower().splitlines(), 1):
         toks = TOKEN.findall(line)
         cand = list(toks)
@@ -99,10 +105,50 @@ def check_file(path, rel):
                 hits.append((rel, ln, c[0] + '*' * (len(c) - 1)))
     return hits
 
-def main(root='.'):
-    bad = []
+def json_strings(o):
+    """every string (keys too) in a parsed JSON value, so \\u-escaped text is scanned decoded"""
+    if isinstance(o, str):
+        yield o
+    elif isinstance(o, dict):
+        for k, v in o.items():
+            yield k
+            yield from json_strings(v)
+    elif isinstance(o, list):
+        for v in o:
+            yield from json_strings(v)
+
+def check_file(path, rel, ext):
+    """-> (hits, problem). problem = why the file couldn't be checked (the guard then fails)."""
+    try:
+        raw = open(path, 'rb').read()
+    except OSError as e:
+        return [], f'unreadable ({e.__class__.__name__})'
+    if ext in BINARY_EXT:
+        runs = b'\n'.join(re.findall(rb'[\x20-\x7e]{4,}', raw)).decode('ascii')
+        return scan_text(runs, rel), None
+    try:
+        text = raw.decode('utf-8')
+    except UnicodeDecodeError:
+        return [], 'not valid UTF-8 text (unknown binary?)'
+    hits = scan_text(text, rel)
+    if ext == '.json' and '\\u' in text:
+        try:
+            decoded = '\n'.join(json_strings(json.loads(text)))
+        except ValueError:
+            return hits, 'JSON that does not parse'
+        hits += [(r, 0, m + ' (decoded JSON)') for r, _, m in scan_text(decoded, rel)]
+    return hits, None
+
+def main(root='.', build=False):
+    if not os.path.isdir(root):
+        print(f'PRIVACY GUARD FAILED — {root} is not a folder'); return 1
+    if build and not os.path.isfile(os.path.join(root, 'index.html')):
+        print(f'PRIVACY GUARD FAILED — {root} has no index.html; is this the exported build?'); return 1
+    if len(HASHES) < 40:
+        print('PRIVACY GUARD FAILED — the denylist looks truncated'); return 1
+    bad, scanned = [], 0
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in SKIP]
+        dirnames[:] = [d for d in dirnames if d not in SKIP and (build or d not in SKIP_REPO_ONLY)]
         for name in filenames:
             rel = os.path.relpath(os.path.join(dirpath, name), root).replace(os.sep, '/')
             for pat in BANNED_PATHS:
@@ -111,15 +157,32 @@ def main(root='.'):
             if name.lower().endswith('.pgn'):
                 bad.append((rel, 0, 'a .pgn file has no place in this repo'))
             ext = os.path.splitext(name)[1].lower()
-            if ext in TEXT_EXT:
-                bad += check_file(os.path.join(dirpath, name), rel)
+            if name.startswith('.') and '.' not in name[1:]:
+                ext = ''                                         # .gitignore, .nojekyll: text
+            if ext not in TEXT_EXT and ext not in BINARY_EXT:
+                bad.append((rel, 0, f'unknown file type {ext!r}: not scanned, so not allowed (add it to TEXT_EXT/BINARY_EXT on purpose)'))
+                continue
+            hits, problem = check_file(os.path.join(dirpath, name), rel, ext)
+            bad += hits
+            if problem:
+                bad.append((rel, 0, problem))
+            scanned += 1
+    if scanned == 0:
+        print(f'PRIVACY GUARD FAILED — no files scanned in {root}'); return 1
     if bad:
         print('PRIVACY GUARD FAILED — private-kit content must not enter this repo:')
         for rel, ln, what in bad:
             print(f'  {rel}:{ln}  {what}')
         return 1
-    print('Privacy guard: clean.')
+    print(f'Privacy guard: clean ({scanned} files{", exported build" if build else ""}).')
     return 0
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv[1] if len(sys.argv) > 1 else '.'))
+    args = sys.argv[1:]
+    build = '--build' in args
+    args = [a for a in args if a != '--build']
+    try:
+        sys.exit(main(args[0] if args else ('site' if build else '.'), build))
+    except Exception as e:                                       # fail closed: a crash is a failure, never a pass
+        print(f'PRIVACY GUARD FAILED — error while scanning: {e!r}')
+        sys.exit(1)

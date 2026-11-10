@@ -1024,6 +1024,24 @@ section('t36: Save this position — from the trainer');
   const id2=O.saveCurrent('Just 1.c4'); assert(w.Store.get(id2).moves.join(' ')==='c4','while browsing, it saves the position shown');
 }
 
+section('t37: shared code (site/shared/) — position ids never change, one PGN reader');
+{
+  const {w}=await makePage();
+  /* golden values from the code before it moved to shared/pgn.js: opening progress, repertoires and books are keyed by these */
+  const GOLD=[["rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1","rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -","h2o5hvmfhv"],["rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1","rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq -","1jnvk0eso24"],["rnbqkbnr/ppp1p1pp/8/3pPp2/8/8/PPPP1PPP/RNBQKBNR w KQkq f6 0 3","rnbqkbnr/ppp1p1pp/8/3pPp2/8/8/PPPP1PPP/RNBQKBNR w KQkq f6","1a1h4jc9avk"],["r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4","r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq -","gsi0gkd7oh"],["8/8/8/4k3/8/8/4P3/4K3 w - - 0 1","8/8/8/4k3/8/8/4P3/4K3 w - -","16fzkkppx05"]];
+  assert(GOLD.every(([f,k,id])=>w.PGN.normKey(f)===k&&w.PGN.posId(k)===id),'PGN.normKey / PGN.posId give the same ids as before (en passant kept only when legal)');
+  assert(w.eval('posId(normKey(GOLD0))'.replace('GOLD0',JSON.stringify(GOLD[2][0])))===GOLD[2][2],'the site’s posId/normKey are the shared ones');
+  const r=w.PGN.read('[Event "a"]\n{intro} 1. e4! $14 {Good [%cal Ge2e4,Rd7d5]} (1. d4 $6 {or this}) 1... e5 2. Nf3 (2. Qh5?? -- Nc6 $1) *\n\n[Event "b"]\n[FEN "8/8/8/4k3/8/8/4P3/4K3 w - - 0 1"]\n1. Kd2 *');
+  const k1=w.PGN.posId(w.PGN.normKey('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'));
+  assert(r.games===2&&r.bad===0&&r.starts[0]===''&&/^8\/8\/8\/4k3/.test(r.starts[1]),'two games; the second starts from its FEN');
+  const e4=r.notes[k1+'|e2e4'], d4=r.notes[k1+'|d2d4'];
+  assert(e4&&e4.mk==='!⩲'&&e4.text==='intro\n\nGood'&&e4.sh==='Ge2e4 Rd7d5','marks, the note before the first move, the note after it, and its arrows');
+  assert(d4&&d4.mk==='?!'&&d4.text==='or this','a variation keeps its own marks and notes');
+  const nc6=Object.keys(r.notes).find(k=>/\|b8c6$/.test(k));
+  assert(!nc6,'after a null move the line is skipped, and its $1 is not pinned on the move before');
+  assert(r.edges.get('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -').join()==='e2e4,d2d4','both first moves, in the order met');
+}
+
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));
 process.exit(H.failures?1:0);
 })().catch(e=>{ console.error('Test run crashed:',e); process.exit(1) });

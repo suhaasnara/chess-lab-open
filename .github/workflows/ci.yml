@@ -1,7 +1,7 @@
 name: CI
 on:
   push:
-    branches: [main, parity-1, positions]
+    branches: [main, parity-1, positions, one-codebase]
   pull_request:
 
 jobs:
@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Privacy guard (nothing from the private kit may enter this repo)
-        run: python3 tools/privacy_guard.py .
+        run: python3 tools/privacy_guard.py . && python3 tests/guard_test.py
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -32,6 +32,8 @@ jobs:
       - uses: actions/configure-pages@v5
       - name: Version the script and style links (no stale JS after a deploy)
         run: sed -i "s/__V__/${GITHUB_SHA::7}/g" site/index.html && grep -c "?v=${GITHUB_SHA::7}" site/index.html
+      - name: Privacy guard on the exported build (the exact folder uploaded next; fails closed)
+        run: python3 tools/privacy_guard.py --build site
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

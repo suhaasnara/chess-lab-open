@@ -48,42 +48,13 @@ function repStart(id){ const u=Store.get('ostart-'+id); return u&&Array.isArray(
    {pos: {posId: [uci...]} (both sides' moves), ann: {"posId|uci": [marks, text, shapes]}, positions, moves, games, bad, startFen}.
    A [FEN] header starts that game from its position; one FEN shared by every game becomes the repertoire's start. */
 function parseRepPGN(text){
-  const pos={}, ann={}; let moves=0, games=0, bad=0; const starts=new Set();
-  const add=(fen,mv)=>{ const k=posId(normKey(fen)); const u=mv.from+mv.to+(mv.promotion||'');
-    pos[k]=pos[k]||[]; if(!pos[k].includes(u)){ pos[k].push(u); moves++ } };
-  const note=(k,txt,mk)=>{ const e=ann[k]||(ann[k]=['','','']); if(mk&&!e[0].includes(mk)) e[0]+=mk; if(txt&&!e[1].includes(txt)) e[1]=e[1]?e[1]+'\n\n'+txt:txt };
-  const re=/\[\s*(\w+)\s+"((?:[^"\\]|\\.)*)"\s*\]|\{[^}]*\}|;[^\n]*|\(|\)|\$\d+|[^\s(){}[\];]+/g;
-  const src=String(text).replace(/^﻿/,'').replace(/\r/g,'');
-  let start=null, g=null, before=null, stack=[], broken=false, inGame=false, lastKey=null, pre='', m;
-  const begin=()=>{ let ok=false; if(start){ try{ ok=new Chess().validate_fen(start).valid }catch(e){} }
-    g=ok?new Chess(start):new Chess(); before=null; stack=[]; broken=false; inGame=true; games++; starts.add(ok?normKey(g.fen()):''); lastKey=null };
-  while((m=re.exec(src))){
-    const t=m[0];
-    if(m[1]){ if(inGame){ inGame=false; start=null; pre='' } if(m[1].toLowerCase()==='fen') start=m[2].trim(); continue }
-    if(t[0]==='{'){ const c=cleanNote(t.slice(1,-1)); const sh=pgnShapes(t);
-      if(lastKey&&!broken){ if(c) note(lastKey,c); if(sh){ const e=ann[lastKey]||(ann[lastKey]=['','','']); e[2]=e[2]?e[2]+' '+sh:sh } }
-      else if(c) pre=pre?pre+' '+c:c;
-      continue }
-    if(t[0]==='$'){ const mk=NAGS[+t.slice(1)]; if(mk&&lastKey&&!broken) note(lastKey,'',mk); continue }
-    if(t[0]===';') continue;
-    if(/^(1-0|0-1|1\/2-1\/2|\*)$/.test(t)){ if(inGame){ inGame=false; start=null } pre=''; continue }
-    if(!inGame) begin();
-    if(t==='('){ stack.push({fen:g.fen(),before,broken,lastKey}); if(before){ g=new Chess(before); broken=false } else broken=true; before=null; lastKey=null; pre=''; continue }
-    if(t===')'){ const s=stack.pop(); if(s){ g=new Chess(s.fen); before=s.before; broken=s.broken; lastKey=s.lastKey } pre=''; continue }
-    const mk=(t.match(/[!?]+$/)||[''])[0];
-    const san=t.replace(/^\d+\.+/,'').replace(/^\.+/,'').replace(/[!?]+$/,'').replace(/^0-0-0/,'O-O-O').replace(/^0-0/,'O-O');
-    if(!san||/^\d+$/.test(san)||san==='e.p.'||broken) continue;
-    if(san==='--'||san==='Z0'){ broken=true; continue }
-    const fb=g.fen(); const r=g.move(san,{sloppy:true});
-    if(!r){ bad++; broken=true; continue }
-    add(fb,r); before=fb;
-    lastKey=posId(normKey(fb))+'|'+r.from+r.to+(r.promotion||'');
-    if(mk) note(lastKey,'',mk); if(pre){ note(lastKey,pre); pre='' }
-  }
-  for(const k in ann) if(!ann[k][0]&&!ann[k][1]&&!ann[k][2]) delete ann[k];
+  const r=PGN.read(text);   /* shared/pgn.js */
+  const pos={}, ann={}; let moves=0;
+  for(const [k,us] of r.edges){ pos[posId(k)]=us.slice(); moves+=us.length }
+  for(const k in r.notes){ const e=r.notes[k]; ann[k]=[e.mk,e.text,e.sh] }
   if(!moves) throw new Error('No moves found in that PGN.');
-  const st=[...starts]; const startFen=st.length===1&&st[0]&&st[0]!==normKey(START)?st[0]+' 0 1':null;
-  return {pos,ann,positions:Object.keys(pos).length,moves,games,bad,startFen};
+  const st=[...new Set(r.starts.map(f=>f?normKey(f):''))]; const startFen=st.length===1&&st[0]&&st[0]!==normKey(START)?st[0]+' 0 1':null;
+  return {pos,ann,positions:Object.keys(pos).length,moves,games:r.games,bad:r.bad,startFen};
 }
 
 /* ---------- State ---------- */

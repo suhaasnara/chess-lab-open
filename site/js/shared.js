@@ -47,17 +47,9 @@ const themeName=t=>{ if(!t) return ''; if(t==='attackingF2F7') return 'Attacking
 
 /* ---------- Position ids (same scheme as the private kit: progress stays compatible) ---------- */
 /* Key: 'board side castling ep' with the en passant square kept only when the capture is legal. */
-function normKey(fen){
-  const f=fen.split(' ');
-  if(f[3]!=='-'){ const g=new Chess(fen); if(!g.moves({verbose:true}).some(m=>m.flags.includes('e'))) f[3]='-' }
-  return f.slice(0,4).join(' ');
-}
+function normKey(fen){ return PGN.normKey(fen) }   /* shared/pgn.js */
 /* 53-bit FNV of the key, base 36. */
-function posId(k){
-  let h1=0x811c9dc5, h2=(0x01000193^0x9e3779b9)>>>0;
-  for(const ch of new TextEncoder().encode(k)){ h1=Math.imul((h1^ch)>>>0,0x01000193)>>>0; h2=Math.imul((h2^ch)>>>0,0x01000193)>>>0 }
-  return ((h1&0x1fffff)*4294967296+h2).toString(36);
-}
+function posId(k){ return PGN.posId(k) }
 /* Drill ids: prefix + sha1(fen|playedUci)[:8] — never change this; progress is keyed by it. */
 async function drillId(prefix,fen,uci){
   const data=new TextEncoder().encode(fen+'|'+uci);
@@ -170,12 +162,11 @@ function sanOf(fen,uci){
 /* Arrows and circles (window.Shapes): shared/shapes.js. */
 
 /* ---------- PGN move marks and evaluation signs ($1 = !, $14 = ⩲, ...) ---------- */
-const NAGS={1:'!',2:'?',3:'!!',4:'??',5:'!?',6:'?!',7:'□',8:'□',10:'=',11:'=',12:'=',13:'∞',14:'⩲',15:'⩱',16:'±',17:'∓',18:'+−',19:'−+',22:'⨀',23:'⨀',32:'⟳',33:'⟳',36:'→',37:'→',40:'↑',41:'↑',132:'⇆',133:'⇆',138:'⊕',139:'⊕',140:'∆',146:'N'};
+const NAGS=PGN.NAGS;   /* shared/pgn.js: $n -> sign */
 /* a comment's [%cal Ge2e4,Rd4d5] / [%csl Yd4] shapes as "Ge2e4 Rd4d5 Yd4" (Shapes.auto's format) */
-function pgnShapes(c){ const out=[]; String(c).replace(/\[%c(?:al|sl)\s+([^\]]*)\]/g,(_,l)=>{ for(const x of l.split(/[\s,]+/)) if(/^[GRBY][a-h][1-8]([a-h][1-8])?$/.test(x)) out.push(x); return '' }); return [...new Set(out)].join(' ') }
+function pgnShapes(c){ return PGN.shapes(c) }
 /* a PGN comment as plain text: no [%clk]/[%eval]/[%cal] tags, no Lichess or Chessable export markers */
-function cleanNote(c){ return String(c).replace(/\[%[^\]]*\]/g,'').replace(/StartFEN[\s\S]*?EndFEN/g,' ').replace(/StartBracket/g,'(').replace(/EndBracket/g,')')
-  .replace(/\[\/(?:course|variation)\/[^\]]*\]/g,'').replace(/[-�]/g,'').replace(/\s+/g,' ').replace(/\(\s+/g,'(').replace(/\s+\)/g,')').trim().replace(/^[()\s]*$/,'') }
+function cleanNote(c){ return PGN.cleanNote(c) }
 /* move marks (!, ?, ...) and evaluation signs (⩲, ±, ...) as styled spans: good marks green, mistakes red, signs muted */
 const MARK_NAMES={'!':'good move','?':'mistake','!!':'brilliant move','??':'blunder','!?':'interesting move','?!':'dubious move','□':'only move','=':'equal position','∞':'unclear position','⩲':'White is slightly better','⩱':'Black is slightly better','±':'White is better','∓':'Black is better','+−':'White is winning','−+':'Black is winning','N':'novelty','⟳':'development advantage','→':'with an attack','↑':'with the initiative','⇆':'with counterplay','∆':'with the idea','⊕':'time trouble','⨀':'zugzwang'};
 const MARK_CLS={'!':'mk-good','!!':'mk-good','!?':'mk-int','?!':'mk-warn','?':'mk-bad','??':'mk-bad','□':'mk-good'};
