@@ -522,6 +522,8 @@ function noteShapes(){ if(!S.op||!S.g||!peek()) return ''; const i=(browsing()?S
 function renderNotes(){
   const card=$('o-notecard'), el=$('o-notes'); const A=S.op&&S.op.rep&&repAnn(S.op.id);
   card.hidden=!A; if(!A||!S.g){ el.innerHTML=''; return }
+  { const slot=$('o-readslot'); slot.innerHTML=''; if(peek()&&S.log.length) slot.appendChild(Reader.button(()=>Reader.open({title:S.op.name,fen:startFen(),orient:myColor(),
+      lines:S.log.map((x,i)=>{ const a=annAt(i)||{}; return {san:x.san,note:a.text,marks:a.marks,shapes:a.shapes} }),at:browsing()?S.browse:S.log.length}))) }
   const open=peek(), t=startFen().split(' '), off=t[1]==='b'?1:0, n0=+t[5]||1, cur=browsing()?S.browse-1:S.log.length-1;
   const out=[]; let line=[], notes=0;
   const flush=()=>{ if(line.length) out.push(`<p class="cline">${line.join(' ')}</p>`); line=[] };

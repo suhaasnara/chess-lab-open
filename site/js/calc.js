@@ -39,7 +39,7 @@ function renderList(){
 function fmt(s){ return Math.floor(s/60)+':'+String(s%60).padStart(2,'0') }
 function load(z){
   if(endbar) endbar.hide();
-  S.cur=z; S.line=[]; S.sub=false; S.view=0; S.busy=false;
+  S.cur=z; S.line=[]; S.sub=false; S.view=0; S.busy=false; { const sl=$('cc-readslot'); if(sl) sl.innerHTML='' }
   const g=new Chess(z.fen); const u=z.moves[0]; const m=g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'});
   S.start=g.fen(); S.g=new Chess(S.start); S.last=m?{from:m.from,to:m.to}:null;
   board.set(S.g,{last:S.last,orient:S.g.turn(),locked:false});
@@ -111,6 +111,7 @@ function showView(){
   for(let i=0;i<S.view;i++){ const u=sol[i]; const m=g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'}); if(m) last={from:m.from,to:m.to} }
   S.g=g; board.set(g,{last,locked:true});
   $('cc-step').textContent=`${S.view} / ${sol.length}`;
+  const slot=$('cc-readslot'); if(slot&&!slot.firstChild){ const ss=sanLine(S.start,sol); slot.appendChild(Reader.button(()=>Reader.open({title:'Solution · Puzzle '+S.cur.id,fen:S.start,orient:board.orient,lines:ss.map(san=>({san})),at:S.view}))) }
 }
 function next(){ const p=prog(); const L=list(); const i=L.findIndex(z=>S.cur&&z.id===S.cur.id);
   const z=L.slice(i+1).find(x=>!p[x.id]||p[x.id].score<1)||L.find(x=>!p[x.id])||L[0]; if(z) load(z) }

@@ -1173,6 +1173,31 @@ section('t44: Play — hint, ← → through the moves, Review on Lichess (impor
   assert(w.Store.get('play-games')[0].hints===1,'hints are saved with the game');
 }
 
+section('t45: mobile reader — next/prev, side lines, chapter end, sizes; Read buttons in every place');
+{
+  const {w}=await makePage({analyse:async()=>null});
+  const R=w.Reader, $=s=>w.document.querySelector(s);
+  let nextCh=0;
+  const lines=[{san:'e4',note:'Best by test',shapes:'Ge2e4'},{san:'e5',vars:[[{san:'c5',note:'The Sicilian'},{san:'Nf3'}]]},{san:'Nf3'}];
+  R.open({title:'Test',lines,at:0,chapter:'Ch 1',nextChapter:()=>nextCh++});
+  assert($('.reader')&&$('.rd-prev').disabled&&/0 \/ 3/.test($('.rd-pos').textContent),'opens at the start; Previous disabled at the first move');
+  R.next(); assert(/Best by test/.test($('.rd-notes').textContent)&&$('.rd-row.cur').textContent.includes('e4')&&$('.reader .board svg.shapes'),'Next: the move, its note, its arrows');
+  assert($('.rd-bar').lastElementChild.classList.contains('rd-next')&&$('.rd-bar').firstElementChild.classList.contains('rd-prev'),'Previous far left, Next far right');
+  R.next(); assert($('.rd-vars')&&/1 side line/.test($('.rd-vars').textContent),'side lines are collapsed under their move');
+  R.next(); R.next(); assert(/Side line after/.test($('.rd-notes').textContent)&&R.state.li===1&&R.state.at===1,'Next at the end of the line goes to the next line (the side line)');
+  assert(!$('.rd-main').hidden,'Back to main line is offered'); R.next(); R.next();
+  assert(/Chapter complete/.test($('.rd-notes').textContent)&&$('#rd-nextch'),'end of the last line: Chapter complete → Next chapter (no automatic jump)');
+  $('#rd-nextch').click(); assert(nextCh===1&&!$('.reader'),'Next chapter is called');
+  R.open({title:'T2',lines,at:1}); $('.rd-var')&&null; w.document.querySelectorAll('.rd-row')[2].click(); w.document.querySelector('.rd-var').click();
+  assert(R.state.li===1&&/c5/.test($('.rd-row.cur').textContent),'tapping a side line plays it'); $('.rd-main').click(); assert(R.state.li===0,'and Main line comes back');
+  const v=R.textLine('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1','1...c5 {the Sicilian} 2.Nf3 d6!? 3.Qxx9 e5');
+  assert(v.map(x=>x.san).join(' ')==='c5 Nf3 d6'&&v[0].note==='the Sicilian'&&v[2].marks==='!?','text side lines become moves (notes kept, stops at an illegal move)');
+  w.localStorage.setItem('reader-board','60'); R.close(); R.open({title:'T3',lines}); assert($('.reader').style.getPropertyValue('--rb')==='60','the board size is remembered on this device');
+  const kev=new w.KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true,cancelable:true}); w.dispatchEvent(kev); assert(R.state.at===1,'→ steps on a desktop keyboard');
+  R.close(); assert(!$('.reader')&&!w.document.documentElement.classList.contains('reader-open'),'closes cleanly');
+  assert(typeof R.isPhone==='function'&&/max-width:599\.98px/.test(R.MQ)&&/max-height:499\.98px/.test(R.MQ),'phone breakpoints: < 600 px portrait, < 500 px tall landscape (iPads keep desktop)');
+}
+
 section('t37: shared code (site/shared/) — position ids never change, one PGN reader');
 {
   const {w}=await makePage();

@@ -118,7 +118,7 @@ async function liveLine(z){ const g=new Chess(z.fen), out=[];
   return out }
 function load(z){
   if(!z) return; if(endbar) endbar.hide();
-  S.cur=z; S.g=new Chess(z.fen); S.hist=[]; S.phase='play'; S.busy=false; S.me=S.g.turn(); S.moves=0; S.grades=[]; S.assisted=false; S.counted=false; S.sol=null; S.view=0;
+  S.cur=z; S.g=new Chess(z.fen); S.hist=[]; { const sl=$('eg-readslot'); if(sl) sl.innerHTML='' } S.phase='play'; S.busy=false; S.me=S.g.turn(); S.moves=0; S.grades=[]; S.assisted=false; S.counted=false; S.sol=null; S.view=0;
   board.set(S.g,{last:null,orient:S.me,locked:false});
   status('',goalText(z),'');
   $('eg-facts').innerHTML=`<dt>Goal</dt><dd>${esc(goalText(z))}</dd><dt>Best play</dt><dd>${esc(par(z))}</dd><dt>Graded by</dt><dd id="eg-src">the Lichess tablebase</dd>`;
@@ -210,6 +210,8 @@ async function solution(){
   if(!S.cur) return; if(S.phase==='play'&&S.hist.length) S.assisted=true;
   if(!S.cur.line&&S.cur.custom){ status('','Asking the tablebase for the best line…',''); S.cur.line=await liveLine(S.cur); if(!S.cur.line.length){ S.cur.line=null; status('warn','No line: the tablebase didn’t answer.',Net.online()?'':Net.why()); return } }
   S.sol=S.cur.line||[]; S.view=0; showSol(); buttons();
+  { const slot=$('eg-readslot'); slot.innerHTML=''; const g0=new Chess(S.cur.fen), sans=[]; for(const u of S.sol){ const m=g0.move(U(u)); if(!m) break; sans.push(m.san) }
+    slot.appendChild(Reader.button(()=>Reader.open({title:S.cur.title+' · best play',fen:S.cur.fen,orient:S.me,lines:sans.map(san=>({san})),at:S.view}))) }
   const g=new Chess(S.cur.fen); const sans=[]; for(const u of S.sol){ const m=g.move(U(u)); if(!m) break; sans.push(m.san) }
   const white=S.cur.fen.split(' ')[1]==='w';
   $('eg-moves').innerHTML='<span class="label">Best play (tablebase)</span><br>'+sans.map((s,i)=>{ const ply=i+(white?0:1); const no=Math.floor(ply/2)+1;

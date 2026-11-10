@@ -162,7 +162,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
     </div>
     <div class="oright">
       <div class="card" id="o-notecard" hidden>
-        <span class="label">Notes from your PGN</span>
+        <span class="label">Notes from your PGN</span> <span id="o-readslot"></span>
         <div class="cnotes" id="o-notes"></div>
       </div>
       <div class="card" id="o-bookcard">
@@ -277,11 +277,12 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
         <div class="board" id="cc-board" role="group" aria-label="Chess board"></div>
         <div class="boardtools">
           <button class="btn sm primary" id="cc-submit">Submit <kbd>↵</kbd></button>
-          <button class="btn sm" id="cc-undo">Undo <kbd>←</kbd></button>
+          <button class="btn sm" id="cc-undo">Undo <kbd>B</kbd></button>
           <button class="btn sm" id="cc-reset">Reset</button>
           <button class="btn sm" id="cc-prev" aria-label="Back through the solution">&#8592;</button>
           <button class="btn sm" id="cc-fwd" aria-label="Forward through the solution">&#8594;</button>
           <span class="evalchip" id="cc-step"></span>
+          <span id="cc-readslot"></span>
           <button class="btn sm" id="cc-next">Next <kbd>N</kbd></button>
           <button class="btn sm" id="cc-flip">Flip <kbd>F</kbd></button>
           <a class="btn sm" id="cc-lichess" target="_blank" rel="noopener">Lichess &#8599;</a>
@@ -322,6 +323,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
           <button class="btn sm" id="eg-prev" aria-label="Back through the solution" hidden>&#8592;</button>
           <button class="btn sm" id="eg-fwd" aria-label="Forward through the solution" hidden>&#8594;</button>
           <span class="evalchip" id="eg-step" hidden></span>
+          <span id="eg-readslot"></span>
           <button class="btn sm" id="eg-retry">Retry</button>
           <button class="btn sm" id="eg-next">Next <kbd>N</kbd></button>
           <button class="btn sm" id="eg-flip">Flip <kbd>F</kbd></button>
@@ -452,16 +454,17 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
           <button class="btn sm" id="g-hint">Hint <kbd>H</kbd></button>
           <span class="gnav" id="g-nav" hidden><button class="btn sm" id="g-prev" aria-label="Previous move">&#9664;</button><button class="btn sm" id="g-next" aria-label="Next move">&#9654;</button></span>
           <button class="btn sm" id="g-show" hidden title="Skip the guessing and read the game">Show the game</button>
+          <span id="g-readslot"></span>
           <button class="btn sm" id="g-restart">Restart game</button>
           <button class="btn sm" id="g-flip">Flip <kbd>F</kbd></button>
           <span class="evalchip" id="g-score"></span>
         </div>
+        <div class="card gunder" id="g-graphcard" hidden><span class="label">Eval graph</span><div class="evgraph" id="g-graph"></div><p class="note" id="g-graphnote"></p></div>
       </div>
       <div class="side">
         <div class="status" id="g-status" aria-live="polite">Pick a game from the list.</div>
         <div class="card"><span class="label">Moves and notes</span><div class="movelist gmoves" id="g-moves"></div></div>
         <div class="card"><span class="label">The game</span><dl class="facts" id="g-facts"></dl></div>
-        <div class="card" id="g-graphcard" hidden><span class="label">Eval graph</span><div class="evgraph" id="g-graph"></div><p class="note" id="g-graphnote"></p></div>
         <div class="tablewrap" id="g-tablewrap" hidden><table id="g-table"></table></div>
       </div>
     </div>
@@ -584,6 +587,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
 <script src="shared/keys.js?v=__V__"></script>
 <script src="shared/puzzles.js?v=__V__"></script>
 <script src="shared/help.js?v=__V__"></script>
+<script src="shared/reader.js?v=__V__"></script>
 <script src="js/shared.js?v=__V__"></script>
 <script src="js/book.js?v=__V__"></script>
 <script src="js/openings.js?v=__V__"></script>

@@ -20,8 +20,8 @@ function renderList(){
   // two groups when master games are present (index rows with set:"masters"): master games first, then mine
   const rows=INDEX||[], masters=rows.filter(e=>e.set==='masters'), mine=rows.filter(e=>e.set!=='masters');
   const own=ownGames().map(o=>({id:o.game.id,own:o.game.id,title:o.title,meta:o.meta}));
-  const groups=masters.length?[['Master games',masters],['Suhaas’s games',mine]]:[['',mine]];
-  groups.push(['Your games',own]);
+  /* your own games first (imported or fetched), then Suhaas's, then the master games */
+  const groups=[['Your games',own],['Suhaas’s games',mine]]; if(masters.length) groups.push(['Master games',masters]);
   for(const [head,list] of groups){
    if(head&&(list.length||head==='Your games')){ const h=document.createElement('h3'); h.className='label glabel'; h.textContent=head; el.appendChild(h) }
    if(head==='Your games'){ const a=document.createElement('div'); a.className='btns gown'; a.innerHTML='<button class="btn sm" id="g-add">Add a game (PGN)</button>'+(list.length?'':'<span class="note">Paste a game with your notes to play through it here.</span>'); el.appendChild(a); a.querySelector('#g-add').addEventListener('click',openAdd) }
@@ -221,6 +221,7 @@ function viewAt(ply){
   const c=new Chess(g.fen||undefined); let m=null; for(let i=0;i<ply;i++) m=c.move(g.moves[i]);
   board.set(c,{last:m?{from:m.from,to:m.to}:null,orient:board.orient,locked:true});
   Shapes.auto($('g-board'),ply>0&&g.notes&&g.notes[ply-1]&&g.notes[ply-1].sh||'');   /* the note's own arrows, when reading */
+  readSlot();
   renderMoves(); readTools();
 }
 function readTools(){
@@ -276,6 +277,11 @@ function removeOwn(id){ if(!confirm('Remove this game from this browser?')) retu
 function openAdd(){ $('g-addmodal').hidden=false; $('g-adderr').textContent=''; $('g-addbox').focus() }
 /* A PGN (one or more games) -> Guess-the-move games: the main line's moves; each move's comment, side lines (as text),
    move marks ($1, !, ?, ⩲ ...) and Lichess arrows ([%cal]/[%csl]); a comment before the first move is the intro. */
+/* the mobile reader (shared/reader.js): the game with its notes and side lines, once it is being read */
+function readerLines(g){ const c=new Chess(g.fen||undefined); return g.moves.map((san,i)=>{ const n=(g.notes&&g.notes[i])||{}, before=c.fen(); c.move(san,{sloppy:true});
+  return {san,note:n.t,marks:n.mk,shapes:n.sh,vars:(n.v||[]).map(t=>Reader.textLine(before,t)).filter(v=>v.length)} }) }
+function readSlot(){ const slot=$('g-readslot'); if(!slot) return; slot.innerHTML=''; if(!S.game||!(S.done||S.read)) return;
+  slot.appendChild(Reader.button(()=>Reader.open({title:`${S.game.white} – ${S.game.black}`,chapter:S.game.event||'',fen:S.game.fen||undefined,orient:board.orient,lines:readerLines(S.game),at:S.view==null?S.game.moves.length:S.view}))) }
 function parseGames(text){
   const out=[]; const re=/\[\s*(\w+)\s+"((?:[^"\\]|\\.)*)"\s*\]|\{[^}]*\}|;[^\n]*|\(|\)|\$\d+|[^\s(){}[\];]+/g;
   const src=String(text).replace(/^\uFEFF/,'').replace(/\r/g,'');
