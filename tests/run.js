@@ -1518,6 +1518,25 @@ section('t55: null moves in imported files ("--", "Z0", "0000") end their line a
     assert(S.phase==='done','line '+(k+1)+' ends ('+S.g.history().join(' ')+')') }
 }
 
+section('t56: shared/engine.js — a build’s wasm can be looked up first (a copy in the browser’s cache), or skipped');
+{
+  const {w}=await makePage();
+  const made=[]; const RealWorker=w.Worker, RealCOU=w.URL.createObjectURL; w.URL.createObjectURL=()=>'blob:boot';   /* jsdom has neither */
+  w.Worker=function(u){ made.push(String(u)); const me={postMessage(m){ if(m==='uci') setTimeout(()=>me.onmessage&&me.onmessage({data:'uciok'}),5) },terminate(){}}; return me };
+  try{
+    const E=w.EngineKit.create([['A','a.js',()=>false,1000],['B','b.js',()=>Promise.resolve('blob:local/1'),1000],['C','c.js',null,1000]]);
+    E.start(); for(let t=0;t<40&&!E.ready;t++) await sleep(25);
+    assert(E.ready&&E.name==='B','false skips a build; the looked-up one starts ('+E.name+')');
+    assert(made.length===1&&made[0].endsWith('#'+encodeURIComponent('blob:local/1')),'its wasm URL is the looked-up one ('+made.join()+')');
+    assert(E.started===true,'started is true once asked to start');
+    const E2=w.EngineKit.create([['P','p.js','plain.wasm',1000]]); assert(E2.started===false,'started is false before');
+    E2.start(); for(let t=0;t<40&&!E2.ready;t++) await sleep(25);
+    assert(E2.ready&&made[1].endsWith('#plain.wasm'),'a plain wasm URL works as before');
+    const E3=w.EngineKit.create([['X','x.js',()=>{ throw new Error('no cache here') },1000]]); E3.start(); for(let t=0;t<40&&!E3.ready;t++) await sleep(25);
+    assert(E3.ready&&!/#/.test(made[2]),'a lookup that throws: the build starts without a wasm hint (the script’s own default)');
+  } finally { w.Worker=RealWorker; w.URL.createObjectURL=RealCOU }
+}
+
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));
 process.exit(H.failures?1:0);
 })().catch(e=>{ console.error('Test run crashed:',e); process.exit(1) });

@@ -2,7 +2,7 @@
    One Stockfish worker for the whole app, with a watchdog and a result cache. Each site passes its own list of builds
    (where its Stockfish files are served from), best first:
 
-     window.SharedEngine = EngineKit.create([[name, scriptUrl, wasmUrl|null, startTimeoutMs], ...])
+     window.SharedEngine = EngineKit.create([[name, scriptUrl, wasmUrl|null|()=>url|Promise<url>|false, startTimeoutMs], ...])
 
    SharedEngine.analyse(fen, depth, multipv=1, limitMs=12000) -> [{uci, cp, mate}] best first, cp in pawns from the
      side to move (callers show evals from White's side); null if the engine failed. Finished searches are cached
@@ -19,10 +19,17 @@ window.EngineKit=(()=>{
     const emit=()=>dispatchEvent(new Event('engine-change'));
     let w=null, ok=false, queue=Promise.resolve(), listener=null, failed=false, name='', started=false, readyRes, why='', okIdx=-1, restarts=0;
     let ready=new Promise(r=>readyRes=r);
+    /* a build's wasm may be a function (a site's own lookup, e.g. a copy kept in the browser's cache): it returns, or
+       resolves to, the URL to use; false skips that build */
     function tryUrl(k){
       if(k>=URLS.length){ failed=true; readyRes(); emit(); return }
+      const wv=URLS[k][2];
+      if(typeof wv==='function'){ Promise.resolve().then(wv).catch(()=>null).then(u=>u===false?tryUrl(k+1):build(k,u||null)); return }
+      build(k,wv);
+    }
+    function build(k,wasm){
       const boot="var F=function(m){postMessage('__sf_fail:'+String(m||'').slice(0,120))};self.addEventListener('unhandledrejection',function(e){e.preventDefault();F(e.reason&&(e.reason.message||e.reason))});self.addEventListener('error',function(e){e.preventDefault();F(e.message)});try{importScripts('"+URLS[k][1]+"')}catch(e){F(e.message)}";
-      let nw; try{ nw=new Worker(URL.createObjectURL(new Blob([boot],{type:'application/javascript'}))+(URLS[k][2]?'#'+encodeURIComponent(URLS[k][2]):'')) }catch(e){ return tryUrl(k+1) }
+      let nw; try{ nw=new Worker(URL.createObjectURL(new Blob([boot],{type:'application/javascript'}))+(wasm?'#'+encodeURIComponent(wasm):'')) }catch(e){ return tryUrl(k+1) }
       const timer=setTimeout(()=>{ if(!ok){ try{nw.terminate()}catch(_){} if(!why) why=URLS[k][0]+' did not answer in time'; tryUrl(k+1) } },URLS[k][3]);
       nw.onmessage=e=>{ const l=typeof e.data==='string'?e.data:''; if(!ok&&l.startsWith('__sf_fail')){ clearTimeout(timer); try{nw.terminate()}catch(_){} if(!why) why=URLS[k][0]+' could not start here ('+(l.slice(10)||'unknown reason')+')'; return tryUrl(k+1) } if(!ok&&l==='uciok'){ ok=true; clearTimeout(timer); name=URLS[k][0]; w=nw; okIdx=k; readyRes(); emit() } else if(ok) listener&&listener(l) };
       nw.onerror=()=>{ clearTimeout(timer); if(!ok){ try{nw.terminate()}catch(_){} tryUrl(k+1) } else { failed=true; emit() } };
