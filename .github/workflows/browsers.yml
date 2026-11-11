@@ -36,6 +36,9 @@ jobs:
       - name: Mobile reader in ${{ matrix.browser }} (iPhone 15 portrait/landscape, iPhone SE, iPad mini, iPad)
         if: ${{ !github.event.inputs.base }}
         run: cd tests/browser && node reader.js ${{ matrix.browser }} out/${{ matrix.browser }}/reader
+      - name: The engine downloads only where it is used, in ${{ matrix.browser }}
+        if: ${{ !github.event.inputs.base }}
+        run: cd tests/browser && node engine.js ${{ matrix.browser }}
       - name: Screenshots and summary
         if: always()
         uses: actions/upload-artifact@v4

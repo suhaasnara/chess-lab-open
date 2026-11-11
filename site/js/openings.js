@@ -213,6 +213,7 @@ function newLine(review){
   $('o-endbar').hidden=true; $('o-boardbox').classList.remove('end-good','end-warn');
   S.g=new Chess(startFen()); S.phase='await'; S.busy=false; S.outBook=0; S.log=[]; S.userMoves=0; S.misses=[]; S.scored=[]; S.hintStage=0; S.repDone=new Set(); S.fens=[S.g.fen()]; S.endMsg=''; S.browse=null; S.oppPicks=[]; S.tb=null; S.finalEv=null; S.orientSet=false;
   S.startRating=stats(SID()).rating;
+  if(!S.op.rep) SharedEngine.start();   /* presets, custom positions, Anything as White/Black: off-book moves are checked by Stockfish (a repertoire answers from your file) */
   if(redo){ for(let i=0;i<redo.upto;i++){ const m=S.g.move(redo.log[i].san); if(!m) break; S.log.push({...redo.log[i]}); S.fens.push(S.g.fen()); if(redo.log[i].who==='me') S.userMoves++ }
     S.tb=new Set(redo.seen); S.redoSeen=redo.seen }
   else { S.redoSeen=null; for(const san of (S.review?S.review.path:(S.op.moves||[]))){ const m=S.g.move(san,{sloppy:true}); if(!m) break; S.log.push({san:m.san,uci:m.from+m.to+(m.promotion||''),who:'book',before:S.fens[S.fens.length-1]}); S.fens.push(S.g.fen()) } }
@@ -522,7 +523,11 @@ function endLine(msg){
 function endHere(){ if(!S.op||!S.g||S.phase!=='await'||S.busy) return false; if(!S.userMoves) return false; endLine('Line ended here.') }
 /* Stockfish's view of the final position (White's side): stored with the line for Statistics; shown with "Stockfish info". */
 async function finalEval(id,lid){
-  if(SharedEngine.failed) return; const fen=S.g.fen(); const g=new Chess(fen); if(g.game_over()) return;
+  if(SharedEngine.failed) return;
+  /* in a repertoire, a statistic alone doesn't start the 7 MB download (11 Nov 2026): it is kept when the engine is
+     running anyway, or when you asked to see it (Stockfish info, or the eval bar, which shows it) */
+  if(S.op&&S.op.rep&&!SharedEngine.started&&!Settings.get('osfinfo')&&!Settings.get('evalCol')) return;
+  const fen=S.g.fen(); const g=new Chess(fen); if(g.game_over()) return;
   const a=await SharedEngine.analyse(fen,12,1,6000).catch(()=>null); if(!a||!a.length||lid!==S.lineId) return;
   const p=a[0].mate!=null?(a[0].mate>0?99:-99):a[0].cp, white=fen.split(' ')[1]==='w'?p:-p;
   const st=stats(id); const h=st.history[st.history.length-1]; if(h&&Date.now()-h.t<120000){ h.e=Math.max(-20,Math.min(20,Math.round(white*100)/100)); saveStats(id,st) }

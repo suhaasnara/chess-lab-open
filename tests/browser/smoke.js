@@ -38,7 +38,7 @@ async function waitFor(page,fn,arg,ms=20000){ try{ await page.waitForFunction(fn
   const LIVE=process.env.BASE||''; const srv=LIVE?null:await serve(); const base=LIVE?(LIVE.endsWith('/')?LIVE:LIVE+'/'):`http://127.0.0.1:${srv.address().port}/`;
   const soft=(name,ok,detail)=>{ if(LIVE&&!ok) warnings.push('not on this deploy: '+name+(detail?' — '+detail:'')); else check(name,ok,detail) };
   const type={chromium,firefox,webkit}[BROWSER]; if(!type) throw new Error('unknown browser '+BROWSER);
-  const browser=await type.launch();
+  const browser=await type.launch(BROWSER==='chromium'&&process.env.CHROME?{executablePath:process.env.CHROME}:{});   /* CHROME=<path>: a local Chrome */
   /* Headless Chromium says "HeadlessChrome" in its user agent, and Lichess's game export answers that with a 404;
      a real Chrome doesn't, so the test uses the normal Chrome user agent */
   let ua; if(BROWSER==='chromium'){ const t=await browser.newPage(); ua=(await t.evaluate(()=>navigator.userAgent)).replace('HeadlessChrome','Chrome'); await t.close() }

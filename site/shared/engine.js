@@ -8,7 +8,7 @@
      side to move (callers show evals from White's side); null if the engine failed. Finished searches are cached
      (3,000 positions) and a search already queued or running is shared, not repeated.
    SharedEngine.play(fen, elo, movetime=700) -> uci at limited strength (UCI_Elo 1320-3190, switched off right after).
-   SharedEngine.start(), .restart(); getters failed, ready, name, why, restarts. Fires 'engine-change' on window.
+   SharedEngine.start(), .restart(); getters failed, ready, started (asked to start: downloading or ready), name, why, restarts. Fires 'engine-change' on window.
 
    The worker is a small boot script that importScripts() the build; the .wasm is found from the worker URL's #fragment.
    A build that can't start reports it at once (__sf_fail), so the next one starts without waiting for its timer.
@@ -68,7 +68,7 @@ window.EngineKit=(()=>{
       }));
       const p=queue.then(job); queue=p.catch(()=>{}); return p;
     }
-    const E={start,analyse,play,restart,get failed(){return failed},get ready(){return ok},get name(){return name},get why(){return why},get restarts(){return restarts}};
+    const E={start,analyse,play,restart,get failed(){return failed},get ready(){return ok},get started(){return started},get name(){return name},get why(){return why},get restarts(){return restarts}};
     /* Remember finished searches, so revisiting a position answers instantly; share searches already in flight. */
     const raw=E.analyse, cache=new Map(), inflight=new Map();
     E.analyse=function(fen,depth,mpv=1,limitMs){ const k=fen+'|'+depth+'|'+mpv; if(cache.has(k)) return Promise.resolve(cache.get(k));
