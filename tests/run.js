@@ -1552,6 +1552,42 @@ section('t57: a side line that stops on the opponent’s move ends the line at o
   assert(!S.misses.length,'nothing counted as a miss');
 }
 
+section('t58: Retry the miss (Y): the line again from your first miss, nothing rated again (as the private site’s v92)');
+{
+  const {w}=await makePage({analyse:async()=>[{uci:'b1c3',cp:0.3,mate:null}]});
+  const $=id=>w.document.getElementById(id), O=w.OpeningsTab, S=O.state;
+  w.Settings.set('omode','rated');
+  $('o-pgnbox').value='[Event "Retry"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 *'; $('o-repname').value='Retry rep'; $('o-repside').value='white'; $('o-repsave').click(); await sleep(150);
+  const myTurn=()=>S.phase==='await'&&!S.busy&&S.g.turn()==='w';
+  const waitMine=async()=>{ for(let t=0;t<80&&!(S.phase==='done'||myTurn());t++) await sleep(25) };
+  const FILE={0:'e2e4',2:'g1f3',4:'f1b5',6:'b5a4'};
+  async function play(missAt){ for(let n=0;n<8&&S.phase!=='done';n++){ await waitMine(); if(S.phase==='done') break; const ply=S.g.history().length;
+      if(ply===missAt){ await O.userMove('a2','a3'); for(let t=0;t<40&&S.busy;t++) await sleep(25) }
+      const u=FILE[ply]; await O.userMove(u.slice(0,2),u.slice(2,4)) }
+    for(let t=0;t<80&&S.phase!=='done';t++) await sleep(25) }
+  O.newLine(); await play(-1);
+  assert(S.phase==='done'&&!$('o-status').querySelector('[data-retry]'),'no Retry the miss after a line without a miss');
+  O.newLine(); await play(2);
+  assert(S.phase==='done'&&S.misses.length===1&&S.misses[0].at===2,'one miss, at ply 2 ('+JSON.stringify(S.misses.map(m=>m.at))+')');
+  const old=S.log.map(x=>x.san).join(' '), b=$('o-status').querySelector('[data-retry]');
+  assert(b&&/Retry the miss/.test(b.textContent),'the end card offers Retry the miss');
+  assert(w.Keys.map('openings').y,'Y is in the keymap');
+  const rating=O.stats(O.SID()).rating;
+  b.click(); for(let t=0;t<60&&!(myTurn()&&S.log.length===2);t++) await sleep(25);
+  assert(S.log.length===2&&S.log.map(x=>x.san).join(' ')==='e4 e5'&&myTurn(),'back at the position of the miss ('+S.log.map(x=>x.san).join(' ')+')');
+  await play(-1);
+  assert(S.log.map(x=>x.san).join(' ')===old,'the same line to its end ('+S.log.map(x=>x.san).join(' ')+')');
+  assert(S.scored.length===0,'nothing rated again'); assert(O.stats(O.SID()).rating===rating,'rating unchanged');
+  /* two misses: the label says so, and Y goes back to the first */
+  O.newLine(); for(let n=0;n<8&&S.phase!=='done';n++){ await waitMine(); if(S.phase==='done') break; const ply=S.g.history().length;
+    if(ply===2||ply===4){ await O.userMove('a2','a3'); for(let t=0;t<40&&S.busy;t++) await sleep(25) } const u=FILE[ply]; await O.userMove(u.slice(0,2),u.slice(2,4)) }
+  for(let t=0;t<80&&S.phase!=='done';t++) await sleep(25);
+  assert(/Retry from 1st miss/.test(($('o-status').querySelector('[data-retry]')||{}).textContent||''),'two misses: Retry from 1st miss');
+  w.Keys.map('openings').y[1]({});   /* the Y key's action (the page here isn't on the Openings view) */
+  for(let t=0;t<60&&!(myTurn()&&S.log.length===2);t++) await sleep(25);
+  assert(S.log.length===2&&myTurn(),'Y: back to the first miss');
+}
+
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));
 process.exit(H.failures?1:0);
 })().catch(e=>{ console.error('Test run crashed:',e); process.exit(1) });

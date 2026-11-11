@@ -229,8 +229,8 @@ function newLine(review){
 function redoBase(){ const i=S.log?S.log.findIndex(x=>x.who!=='book'):-1; return i<0?(S.log?S.log.length:0):i }
 function canRedo(){ return !!(S.op&&S.g&&S.phase==='done'&&S.log.length>redoBase()&&S.log.some(x=>x.who!=='book')) }
 function redoFrom(){ const b=redoBase(); return browsing()?Math.max(b,S.browse):b }
-function redoLine(){ if(!canRedo()) return false;
-  const base=redoBase(), upto=redoFrom(), log=S.log.map(x=>({...x}));
+function redoLine(at){ if(!canRedo()) return false;
+  const base=redoBase(), upto=typeof at==='number'?Math.max(base,Math.min(at,S.log.length)):redoFrom(), log=S.log.map(x=>({...x}));
   const seen=new Set(log.filter((x,i)=>i>=base&&x.who==='me').map(x=>x.before));
   const avoidAt=upto>base&&upto<log.length&&log[upto].who==='opp'?upto:-1;
   S.redoNext={log,base,upto,seen,avoidAt}; newLine() }
@@ -239,6 +239,11 @@ function redoScript(){ const r=S.redo; if(!r) return null; const i=S.log.length;
   if(i===r.avoidAt||i>=r.log.length||r.log[i].before!==S.g.fen()) return null; return r.log[i].uci }
 function redoAvoid(){ const r=S.redo; return r&&S.log.length===r.avoidAt?r.log[r.avoidAt].uci.slice(0,4):null }
 const notAvoided=(xs,u)=>{ const av=redoAvoid(); if(!av) return xs; const k=xs.filter(x=>u(x).slice(0,4)!==av); return k.length?k:xs };
+/* Retry the miss (Y, or the button when a line with a miss ends; from his roadmap, as on the private Chess Lab v92): the line
+   again from the position of your first miss, the opponent repeating last time's replies while you follow it (Redo's
+   machinery), so later misses come up again too. Nothing on the old line is rated again. */
+function firstMiss(){ const b=redoBase(); return (S.misses||[]).find(m=>m.at!=null&&m.at>=b&&m.at<S.log.length)||null }
+function retryMiss(){ const m=canRedo()&&firstMiss(); if(!m) return false; S.browse=null; return redoLine(m.at) }
 const redoLabel=()=>browsing()&&redoFrom()>redoBase()?'Redo from here':'Redo line';
 function refreshRedo(){ document.querySelectorAll('[data-redo]').forEach(b=>{ b.textContent=redoLabel()+(b.dataset.redo==='k'?' (D)':''); b.disabled=!canRedo() }) }
 function viewPos(){ if(!browsing()) return {g:S.g,last:lastMove(S.g)}; const g=new Chess(S.fens[S.browse]); return {g,last:lastMove(g)} }
@@ -409,7 +414,7 @@ async function userMove(from,to,promo){
     if(hit){ repRecord(fen,true); await accept(fen,m,uci,file,1,'In your repertoire.',lid) }
     else{
       if(!file.length){ S.busy=false; return endLine('End of your prep in this line.') }
-      S.misses.push({fen,played:m.san,answer:file.map(u=>sanOf(fen,u)).join(' or ')}); repRecord(fen,false); addMistake(fen);
+      S.misses.push({fen,at:S.log.length,played:m.san,answer:file.map(u=>sanOf(fen,u)).join(' or ')}); repRecord(fen,false); addMistake(fen);
       if(!scoredAt(fen)) S.scored.push({fen,s:0,d:await moveDifficulty(fen,file),miss:true});
       if(lid!==S.lineId) return;
       S.busy=false; tools();
@@ -449,7 +454,7 @@ async function userMove(from,to,promo){
           verdictText=`${m.san} loses about ${(best-mine).toFixed(1)} pawns. Best here: ${top?sanOf(fen,top.uci):sanOf(fen,a[0].uci)}.`;
         }
       }else if(top){ verdictText=`Not a book move. Elite players prefer ${sanOf(fen,top.uci)}.` }
-      S.misses.push({fen,played:m.san,answer:top?sanOf(fen,top.uci):'',drop}); addMistake(fen);
+      S.misses.push({fen,at:S.log.length,played:m.san,answer:top?sanOf(fen,top.uci):'',drop}); addMistake(fen);
       if(!scoredAt(fen)) S.scored.push({fen,s:0,d:await moveDifficulty(fen),miss:true});
       if(lid!==S.lineId) return;
       S.busy=false; tools();
@@ -512,7 +517,10 @@ function endLine(msg){
   const nx=document.createElement('button'); nx.className='btn primary endnext'; nx.textContent=H?'Next in session (N)':'Next line (N)';
   nx.addEventListener('click',()=>H?H.next():newLine()); $('o-status').appendChild(nx);
   const rd=document.createElement('button'); rd.className='btn endredo'; rd.type='button'; rd.dataset.redo='k'; rd.title='Play this line again: the opponent repeats his replies while you repeat your moves. Use ← or the move list to redo from a later move.';
-  rd.addEventListener('click',redoLine); $('o-status').appendChild(rd); refreshRedo();
+  rd.addEventListener('click',()=>redoLine()); $('o-status').appendChild(rd); refreshRedo();
+  if(firstMiss()){ const rt=document.createElement('button'); rt.className='btn endredo endretry'; rt.type='button'; rt.dataset.retry='k';
+    rt.title='Play the line again from the position of your first miss. Nothing is rated again.';
+    rt.textContent=(new Set(S.misses.map(x=>x.at)).size>1?'Retry from 1st miss':'Retry the miss')+' (Y)'; rt.addEventListener('click',retryMiss); $('o-status').appendChild(rt) }
   /* a banner on the board itself, so the end of the line is obvious on a phone */
   const box=$('o-boardbox'); box.classList.remove('end-good','end-warn'); box.classList.add(S.misses.length?'end-warn':'end-good');
   $('o-endtext').textContent=(S.misses.length?`${msg} ${S.misses.length} miss${S.misses.length>1?'es':''}`:`${msg} ✓ All right`)+(training()?'':` · ${delta>=0?'+':''}${delta}`);
@@ -806,7 +814,7 @@ function init(){
   });
   $('o-newline').addEventListener('click',()=>H?H.next():newLine());
   $('o-endnext').addEventListener('click',newLine);
-  $('o-endredo').addEventListener('click',redoLine);
+  $('o-endredo').addEventListener('click',()=>redoLine());
   $('o-hint').addEventListener('click',hint);
   $('o-back').addEventListener('click',takeBack);
   $('o-endhere').addEventListener('click',endHere);
@@ -880,11 +888,12 @@ function init(){
     Home:['Start of the line',ok(()=>{ if(!S.g) return false; browse(0) })], End:['Back to the current move',ok(()=>{ if(!S.g) return false; browse(null) })],
     b:['Take back your move and the reply',ok(()=>takeBack())], r:['Restart: a new line',ok(()=>newLine())], h:['Hint (first the piece, then the move)',ok(()=>hint())],
     f:['Flip the board',ok(()=>$('o-flip').click())], n:['Next line',ok(()=>H?H.next():newLine())], e:['End the line here (Rated: only the moves you played count)',ok(()=>endHere())],
-    d:['Redo this line (after it ends; from the move you are looking at)',ok(()=>redoLine())]});
+    d:['Redo this line (after it ends; from the move you are looking at)',ok(()=>redoLine())],
+    y:['Retry from your first miss (after a line with a miss)',ok(()=>retryMiss())]});
   addEventListener('settings-change',()=>{ STAY.clear(); if(document.body.dataset.view==='openings'){ renderSide(); renderBook(); renderEval() } });
   renderList();
   board.set(new Chess(),{orient:'w',locked:true});
 }
 window.OpeningsTab={init,host:h=>{ H=h||null; $('o-newline').firstChild.textContent=H?'Next ':'Next line ' },flip:()=>$('o-flip').click(),openDefault,PRESETS,renderList,endHere,SID,skipList,renderCaptured,customs,saveCustom,deleteCustom,openNew,saveNew,saveCurrent,studyApi,fetchStudy,doImport,syncLevel,soundDemoMoves,get state(){return S},selectOpening,newLine,userMove,parseRepPGN,moveDifficulty,openings,stats,
-  takeBack,canTakeBack,redoLine,canRedo,browse,hint,repMap,annAt,repPick,ordered,saveOrder,setArrange,moveItem,renderStats,openStats,openSettings,firstListed};
+  takeBack,canTakeBack,redoLine,canRedo,retryMiss,browse,hint,repMap,annAt,repPick,ordered,saveOrder,setArrange,moveItem,renderStats,openStats,openSettings,firstListed};
 })();
