@@ -130,6 +130,7 @@ push (workflow *Browsers*; screenshots are the run's artifacts). Locally:
 ```sh
 cd tests/browser && npm install && npx playwright install firefox chromium && node smoke.js firefox
 node reader.js chromium    # the phone reader on iPhone 15 / SE sizes, and no reader on iPads
+node keys.js firefox       # the arrow keys through side lines (← → ↓ ↑), pressed for real
 ```
 
 The code both Chess Lab sites run lives in `site/shared/` (see PARITY.md); the private kit pulls a pinned copy.

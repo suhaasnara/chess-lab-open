@@ -30,6 +30,9 @@ jobs:
         env:
           BASE: ${{ github.event.inputs.base }}
         run: cd tests/browser && DUMP=1 node smoke.js ${{ matrix.browser }} out/${{ matrix.browser }}
+      - name: Arrow keys through side lines in ${{ matrix.browser }}
+        if: ${{ !github.event.inputs.base }}
+        run: cd tests/browser && node keys.js ${{ matrix.browser }}
       - name: Mobile reader in ${{ matrix.browser }} (iPhone 15 portrait/landscape, iPhone SE, iPad mini, iPad)
         if: ${{ !github.event.inputs.base }}
         run: cd tests/browser && node reader.js ${{ matrix.browser }} out/${{ matrix.browser }}/reader
