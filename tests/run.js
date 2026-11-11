@@ -1114,14 +1114,18 @@ section('t38: trainer extras from Chess Lab — Play as, review queue, Never pla
   await O.userMove('e2','e4'); await sleep(200);
   assert(!(O.stats(O.SID()).mistakes||[]).length&&/Off your review list/.test($('o-status').textContent),'found first try: off the list');
   /* never play this reply: play the line out to its end */
-  for(let i=0;i<6&&S.phase!=='done';i++){ await sleep(900); const g=S.g, me=S.op.side[0]; if(g.turn()!==me) continue;
+  /* v89 (kit Part 3): waits on the trainer's state instead of fixed sleeps, which failed on a slow runner */
+  const until=async(f,ms=8000)=>{ const t=Date.now(); while(Date.now()-t<ms){ if(f()) return true; await sleep(20) } return !!f() };
+  const myTurn=()=>S.phase==='done'||(S.phase==='await'&&!S.busy&&S.g.turn()===S.op.side[0]);
+  for(let i=0;i<6&&S.phase!=='done';i++){ await until(myTurn); if(S.phase==='done') break; const g=S.g;
     const ok=['g1f3','f1b5','d2d4'].find(u=>g.moves({verbose:true}).some(m=>m.from+m.to===u)); if(!ok) break; await O.userMove(ok.slice(0,2),ok.slice(2,4)) }
-  await sleep(300);
+  await until(()=>S.phase==='done'&&$('o-status').querySelector('[data-skip]'));
   const skipBtn=$('o-status').querySelector('[data-skip]');
   assert(S.phase==='done'&&skipBtn,'at the end, the replies chosen from several prepared ones can be skipped');
   const which=skipBtn.dataset.san; skipBtn.click();
   assert(O.skipList(S.op.id).length===1,'skipped ('+which+')');
-  for(let k=0;k<6;k++){ O.newLine(); await sleep(150); await O.userMove('e2','e4'); await sleep(900); await O.userMove('g1','f3'); await sleep(900);
+  for(let k=0;k<6;k++){ O.newLine(); await until(myTurn); await O.userMove('e2','e4'); await until(()=>myTurn()&&S.log.length>=2);
+    if(S.phase!=='done'){ await O.userMove('g1','f3'); await until(()=>S.phase==='done'||S.log.length>=4) }
     assert(!S.log.some(x=>x.who==='opp'&&x.san===which),'a skipped reply is never played (line '+(k+1)+')') }
   /* captured pieces */
   w.Settings.set('ocaptured',true); const g2=new w.Chess('rnbqkbnr/ppp2ppp/8/8/8/8/PPPP1PPP/RNBQKBNR w KQkq - 0 3'); O.renderCaptured(g2);
@@ -1440,7 +1444,10 @@ section('t53: Redo line / Redo from here in the opening trainer');
       await O.userMove(mv.slice(0,2),mv.slice(2,4)); }
     for(let t=0;t<60&&S.phase!=='done';t++) await sleep(30) }
   /* get the short side line first (the opponent's pick is random; at most 30 tries) */
-  let got=false; const seen=new Set(); for(let k=0;k<40&&!got;k++){ O.newLine(); await play(); const t=S.log.map(x=>x.san).join(' '); seen.add(t); got=t==='e4 e5 Nf3 d6 d4' }
+  /* v89: 2...d6 is a few percent of master games, so 40 random lines sometimes never reached it (about 1 run in 3 failed
+     here). The pick takes the last candidate when the random draw is near 1, and the file lists the side line last. */
+  const rnd=w.Math.random; w.Math.random=()=>0.9999;
+  let got=false; const seen=new Set(); try{ for(let k=0;k<5&&!got;k++){ O.newLine(); await play(); const t=S.log.map(x=>x.san).join(' '); seen.add(t); got=t==='e4 e5 Nf3 d6 d4' } } finally { w.Math.random=rnd }
   assert(got,'played the short side line 2...d6 3.d4 (got: '+[...seen].join(' | ')+')');
   assert(O.canRedo()&&$('o-status').querySelector('[data-redo]')&&!$('o-endredo').disabled,'Redo offered on the end card and the board banner');
   const lines=O.stats(O.SID()).lines;
