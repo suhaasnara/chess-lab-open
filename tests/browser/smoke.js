@@ -268,6 +268,30 @@ async function waitFor(page,fn,arg,ms=20000){ try{ await page.waitForFunction(fn
     else check('LIVE (informational): Lichess’s game export answers this page',false,'status '+live.status+', '+live.games+' games');
   }
 
+  /* ---- a Chess Lab pack (made-up player): load it, play a Blunder check with the real mouse, see Progress's report card ---- */
+  { await page.setViewportSize({width:1280,height:900}); await go('progress');
+    const r=await page.evaluate(async()=>{
+      const sha=async s=>[...new Uint8Array(await crypto.subtle.digest('SHA-1',new TextEncoder().encode(s)))].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,8);
+      const g=new Chess(); for(const m of ['e4','e5','Nf3','Nc6','Bc4','Nf6','Ng5','d5','exd5','Na5']) g.move(m); const fen=g.fen();
+      const s=n=>({games:n,wins:n/2,draws:0,losses:n/2,score:50,convN:4,convWon:3,convDrawn:0,conversion:75,saveN:4,saveHeld:1,saveRate:25});
+      const pack={_app:'chess-lab-pack',_v:1,player:{name:'Pat Example'},meta:{built:'2026-11-11',games:40,rapid:10,blitz:30},
+        drills:[{id:'a'+await sha(fen+'|d2d3'),fen,played:'d3',playedUci:'d2d3',best:'c4b5',drop:0.2,before:0.4,date:'2026-10-02',opp:'made_up_opp',site:'chesscom',url:'',color:'w',pack:1}],
+        bc:[{id:'k'+await sha(fen+'|d2d3'),fen,null:fen.replace(' w ',' b '),color:'white',opp:'made_up_opp',oppElo:'1800',date:'2026-10-02',moveNo:6,played:'d3',playedUci:'d2d3',reply:'h6',replyUci:'h7h6',
+          w0:62,w1:41,threat:'h6',threatUci:'h7h6',threats:['h7h6'],gain:1.4,ignored:true,best:'Bb5+',bestUci:'c4b5',goods:['c4b5'],strong:false,site:'chesscom',url:''}],
+        report:{since:null,views:{'online|all':{overall:s(40),bySpeed:{'Chess.com blitz':s(30),'Chess.com rapid':s(10)},byBand:{'Under 1800':s(20)},byYear:{},byQuarter:{},openings:[]}}},prep:null,reps:[]};
+      return Store.importPack(pack) });
+    check('Pack: Store.importPack loads a pack',r&&r.added===1&&r.bc===1,JSON.stringify(r));
+    await go('blundercheck'); await sleep(300);
+    await tap('bc-board','h7','h6'); await sleep(1700);
+    check('Pack: Blunder check step 1 (the threat, by mouse) then step 2',await page.evaluate(()=>BlunderCheckTab.state.phase==='move'));
+    await tap('bc-board','c4','b5'); await sleep(300);
+    check('Pack: Blunder check solved with the mouse',await page.evaluate(()=>{ const p=Store.get('bc-progress')||{}; return Object.values(p).some(x=>x.ok) }));
+    await go('progress'); await sleep(300);
+    check('Pack: the report card on Progress',await page.evaluate(()=>!document.getElementById('p-report').hidden&&/From 40 online games/.test(document.getElementById('p-report').textContent)));
+    await page.screenshot({path:path.join(OUT,'pack-progress-desktop.png'),fullPage:true});
+    await go('blundercheck'); await page.screenshot({path:path.join(OUT,'pack-blundercheck-desktop.png')});
+  }
+
   /* ---- every tab, light and dark, desktop and phone ---- */
   const VIEWS=await page.$$eval('nav.tabs .inner > a[data-view], #x-menu a[data-view]',bs=>[...new Set(bs.map(b=>b.dataset.view))]);
   const themes=await page.evaluate(()=>Settings.DEF.theme!==undefined?['light','dark']:['light']);
