@@ -388,3 +388,22 @@ body.no-coords .coord{display:none}body.no-last .sq.last{background:none}body.no
 .gmoves:not(.vread) .vmv{cursor:default;font-weight:400;color:inherit}.gmoves:not(.vread) .vmv:hover{background:none}
 .gmoves .gnote .vline{margin:2px 0 4px}
 .ccline .vmv.cur{color:var(--on-navy)}
+
+/* ---------- Chess Lab pack on Progress (report card as the private Chess Lab lays it out) ---------- */
+.packnote.good{color:var(--good)}.packnote.err{color:var(--bad)}
+.packcard{margin:0 0 18px}.packcard .stats{margin:6px 0 10px}
+.packreport{margin:0 0 22px}.packreport h3{margin:18px 0 8px}
+.packreport .rbar .seg{margin-left:0}
+.tgood{color:var(--good);font-weight:600}.tbad{color:var(--bad);font-weight:600}
+td.num,th.num{text-align:right;white-space:nowrap}
+.repfoot{margin-top:10px;max-width:80ch}
+@media (max-width:640px){
+  .rtable thead{display:none}
+  .rtable,.rtable tbody,.rtable tr,.rtable td{display:block;width:auto}
+  .rtable tr{border-bottom:1px solid var(--line);padding:10px 12px}
+  .rtable td{border:0;padding:2px 0;text-align:left}
+  .rtable td[data-l]{display:flex;gap:6px;justify-content:flex-end;align-items:baseline}
+  .rtable td[data-l]::before{content:attr(data-l);color:var(--muted);font-size:.8rem;flex:none;margin-right:auto}
+  .rtable td:first-child{font-weight:600;margin-bottom:4px}
+  .rtable td:last-child:empty{display:none}.rtable td:last-child{padding-top:6px}
+}

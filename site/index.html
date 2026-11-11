@@ -64,6 +64,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
         <li><b><a href="#tactics">Tactics</a>, <a href="#calc">Calculation</a>, <a href="#endgames">Endgames</a>, <a href="#play">Play</a> and <a href="#guess">Guess the move</a></b> (add your own games too) for everything else.</li>
         <li><b>On every board:</b> right-click or right-drag for circles and arrows (Shift red, Alt or Ctrl blue). Settings → Theme switches to dark.</li>
         <li><b>Private by design:</b> no account, nothing uploaded. Your progress stays in this browser (Progress → Export to move it).</li>
+        <li><b>Got a pack from a friend?</b> A Chess Lab pack is one file with drills, a Blunder check and a report card from your own games: load it in <a href="#progress">Progress</a> → <i>Load a Chess Lab pack</i>.</li>
       </ul>
       <div class="btns" style="margin-top:10px"><a class="btn primary" href="#analyze" id="welcome-go">Analyze my games</a><button class="btn" id="welcome-ok">Got it</button></div>
     </div>
@@ -374,7 +375,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
       <div class="filters" id="d-filters"><div id="d-kinds"></div><div id="d-states"></div></div>
       <div class="label tvlabel" id="d-listlabel"></div>
       <div class="list" id="d-list"></div>
-      <p class="note" id="d-about" style="margin:10px 0 0">Made by <a href="#analyze">Analyze my games</a> from your own games: <b>your mistakes</b> (find the move
+      <p class="note" id="d-about" style="margin:10px 0 0">Made by <a href="#analyze">Analyze my games</a> from your own games (or loaded from a <a href="#progress">Chess Lab pack</a>): <b>your mistakes</b> (find the move
          you should have played) and <b>Punish</b> (your opponent erred; find the move that makes them pay).</p>
     </div>
     <div class="panel">
@@ -393,6 +394,36 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
         <div class="status" id="d-status" aria-live="polite">Pick a drill from the list.</div>
         <div class="card" id="d-gamecard"><span class="label">The game</span><dl class="facts" id="d-facts"></dl></div>
         <p class="note dfoot">Evals are from White's side: + favors White, − favors Black. Live engine: Stockfish in your browser.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= Blunder check (positions from a Chess Lab pack) ================= -->
+<section id="blundercheck" hidden>
+  <div class="grid tv">
+    <div>
+      <div class="filters" id="bc-filters"></div>
+      <div class="label tvlabel" id="bc-listlabel"></div>
+      <div class="list" id="bc-list"></div>
+      <p class="note" id="bc-about" style="margin:10px 0 0">Positions from your own games where your move was a blunder (your Win% fell 15 points or more).
+         First the question you skipped: <b>what does your opponent threaten?</b> Then <b>your move</b>. From a <a href="#progress">Chess Lab pack</a>.</p>
+    </div>
+    <div class="panel">
+      <div class="boardwrap" id="bc-wrap">
+        <div class="board" id="bc-board" role="group" aria-label="Chess board"></div>
+        <div class="boardtools" id="bc-tools">
+          <button class="btn sm primary" id="bc-next">Next <kbd>N</kbd></button>
+          <button class="btn sm" id="bc-flip">Flip <kbd>F</kbd></button>
+          <button class="btn sm" id="bc-show">Show the threat <kbd>S</kbd></button>
+          <a class="btn sm" id="bc-lichess" target="_blank" rel="noopener" hidden>Lichess &#8599;</a>
+        </div>
+      </div>
+      <div class="side">
+        <div id="bc-head"></div>
+        <div class="status" id="bc-status" aria-live="polite">Pick a position from the list.</div>
+        <div id="bc-reveal"></div>
+        <p class="note dfoot">Step 1: play the opponent’s move as if they could move again now (any move within half a pawn of the strongest counts). Step 2: your move (any of Stockfish’s top three within 0.3 pawns of the best counts). Win% from your side.</p>
       </div>
     </div>
   </div>
@@ -544,10 +575,13 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
 <section id="progress" hidden>
   <div class="report">
     <div class="rhead"><h2>Progress</h2>
-      <div class="rbar"><button class="btn sm" id="p-export">Export progress (JSON)</button><button class="btn sm" id="p-import">Import progress</button><input type="file" id="p-file" accept="application/json" hidden></div>
+      <div class="rbar"><button class="btn sm" id="p-export">Export progress (JSON)</button><button class="btn sm" id="p-import">Import progress</button><input type="file" id="p-file" accept="application/json" hidden><button class="btn sm" id="p-loadpack" title="A file a friend built for you with the private Chess Lab kit: drills, Blunder check and a report card from your own games">Load a Chess Lab pack</button><input type="file" id="p-packfile" accept="application/json,.json" hidden></div>
     </div>
     <p class="lead note" id="p-lead"></p>
+    <p class="note packnote" id="p-packnote" role="status" hidden></p>
     <div class="stats" id="p-stats"></div>
+    <div class="card packcard" id="p-pack" hidden></div>
+    <div class="report packreport" id="p-report" hidden></div>
     <div class="pcharts">
       <div class="card"><div class="pchead"><span class="label">Opening rating</span><select id="p-op" aria-label="Opening"></select></div><div id="p-opchart" class="pchart"></div></div>
       <div class="card"><span class="label">Puzzle rating</span><div id="p-tacchart" class="pchart"></div></div>
@@ -620,6 +654,8 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
 <script src="js/players.js?v=__V__"></script>
 <script src="js/watch.js?v=__V__"></script>
 <script src="js/today.js?v=__V__"></script>
+<script src="js/blundercheck.js?v=__V__"></script>
+<script src="js/packreport.js?v=__V__"></script>
 <script src="js/progress.js?v=__V__"></script>
 <script src="js/settingspage.js?v=__V__"></script>
 <script src="js/router.js?v=__V__"></script>

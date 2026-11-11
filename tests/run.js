@@ -12,7 +12,7 @@ section('t1: page loads, routes, board renders');
   const {w}=await makePage();
   { const d=w.document, main=[...d.querySelectorAll('nav.tabs .inner > a:not(.settab)')].map(a=>a.dataset.view), ex=[...d.querySelectorAll('#x-menu a:not(.xset):not(.ph-x)')].map(a=>a.dataset.view);
     assert(main.join()==='today,openings,drills,tactics,analyze,progress','main row: Today, Openings, Drills, Tactics, Analyze, Progress');
-    assert(ex.length===6&&['guess','calc','endgames','watch','play','players'].every(v=>ex.includes(v)),'Extra holds the other six');
+    assert(ex.length===7&&['guess','calc','endgames','watch','play','players','blundercheck'].every(v=>ex.includes(v)),'Extra holds the other seven (Blunder check since the pack import)');
     assert(d.querySelector('nav.tabs a.settab[href="#settings"]'),'Settings at the right');
     assert(d.querySelector('nav.tabs .inner > a.ph-x[data-view="analyze"]')&&d.querySelector('#x-menu a.ph-x[data-view="analyze"]'),'Analyze moves into Extra on phones');
     const xb=d.getElementById('x-btn'), xm=d.getElementById('x-menu'); assert(xm.hidden,'Extra menu starts closed');
@@ -1586,6 +1586,129 @@ section('t58: Retry the miss (Y): the line again from your first miss, nothing r
   w.Keys.map('openings').y[1]({});   /* the Y key's action (the page here isn't on the Openings view) */
   for(let t=0;t<60&&!(myTurn()&&S.log.length===2);t++) await sleep(25);
   assert(S.log.length===2&&myTurn(),'Y: back to the first miss');
+}
+
+section('t59: a Chess Lab pack — Store.importPack merges by id, keeps your results, rejects other files, says when storage is full; Progress, Blunder check, Drills, Today');
+{
+  /* A made-up player (never a real one): two drills and two blunder checks on positions from a short game, ids as Open makes them. */
+  const sha=s=>crypto.createHash('sha1').update(s).digest('hex').slice(0,8);
+  const {w}=await makePage(); const $=id=>w.document.getElementById(id), S=w.Store;
+  const g=new w.Chess(); for(const m of ['e4','e5','Nf3','Nc6','Bc4','Nf6','Ng5','d5','exd5','Na5']) g.move(m);
+  const fen1=g.fen();                                  /* White to move: 6.Bb5+ is best, the made-up game had 6.d3 */
+  const g2=new w.Chess(); for(const m of ['d4','d5','c4','e6','Nc3','Nf6','Bg5','Be7']) g2.move(m);
+  const fen2=g2.fen();
+  const dA={id:'a'+sha(fen1+'|d2d3'),fen:fen1,played:'d3',playedUci:'d2d3',best:'c4b5',drop:0.12,before:0.4,date:'2026-10-02',opp:'made_up_opp',site:'chesscom',url:'https://www.chess.com/game/live/1',color:'w',pack:1,type:'convert',tc:'10+0'};
+  const dB={id:'a'+sha(fen2+'|e2e3'),fen:fen2,played:'e3',playedUci:'e2e3',best:'g1f3',drop:0.21,before:-0.3,date:'2026-09-12',opp:'another_opp',site:'chesscom',url:'',color:'w',pack:1,type:'save',tc:'15+10'};
+  const nullFen=fen1.replace(' w ',' b ');
+  const bcA={id:'k'+sha(fen1+'|d2d3'),fen:fen1,null:nullFen,color:'white',opp:'made_up_opp',oppElo:'1801',date:'2026-10-02',event:'',moveNo:6,played:'d3',playedUci:'d2d3',reply:'h6',replyUci:'h7h6',
+    w0:62,w1:41,e0:0.5,e1:-0.9,threat:'h6',threatUci:'h7h6',threats:['h7h6','f8c5'],gain:1.4,ignored:true,best:'Bb5+',bestUci:'c4b5',goods:['c4b5','b1c3'],strong:false,site:'chesscom',url:'',tc:'10+0'};
+  const bcB=Object.assign({},bcA,{id:'k'+sha(fen2+'|e2e3'),fen:fen2,null:fen2.replace(' w ',' b '),played:'e3',playedUci:'e2e3',threats:['f6e4'],threat:'Ne4',threatUci:'f6e4',goods:['g1f3'],best:'Nf3',bestUci:'g1f3',strong:true,oppElo:'2210'});
+  const pack={_app:'chess-lab-pack',_v:1,_t:'2026-11-11T12:00:00Z',player:{name:'Pat Example',chesscom:'pat_example',lichess:''},
+    meta:{built:'2026-11-11',games:120,rapid:40,blitz:80,newest:'2026-11-10',oldest:'2025-11-12'},
+    drills:[dA,dB],bc:[bcA,bcB],
+    report:{since:null,overall:{games:120},views:{'online|all':{overall:{games:120,wins:60,draws:10,losses:50,score:54.2,convN:30,convWon:21,convDrawn:3,conversion:70,saveN:25,saveHeld:6,saveRate:24},
+      bySpeed:{'Chess.com blitz':{games:80,wins:40,draws:6,losses:34,score:53.8,convN:20,convWon:14,convDrawn:2,conversion:70,saveN:17,saveHeld:4,saveRate:23.5},'Chess.com rapid':{games:40,wins:20,draws:4,losses:16,score:55,convN:10,convWon:7,convDrawn:1,conversion:70,saveN:8,saveHeld:2,saveRate:25}},
+      byYear:{'2025':{games:20,wins:9,draws:2,losses:9,score:50,convN:5,convWon:3,convDrawn:1,conversion:60,saveN:4,saveHeld:1,saveRate:25},'2026':{games:100,wins:51,draws:8,losses:41,score:55,convN:25,convWon:18,convDrawn:2,conversion:72,saveN:21,saveHeld:5,saveRate:23.8}},
+      byQuarter:{'2026 Q2':{games:50,wins:25,draws:5,losses:20,score:55,convN:12,convWon:8,convDrawn:1,conversion:66.7,saveN:10,saveHeld:3,saveRate:30},'2026 Q3':{games:50,wins:26,draws:3,losses:21,score:55,convN:13,convWon:10,convDrawn:1,conversion:76.9,saveN:11,saveHeld:2,saveRate:18.2}},
+      byBand:{'Under 1800':{games:70,wins:45,draws:5,losses:20,score:67.9,convN:20,convWon:16,convDrawn:1,conversion:80,saveN:10,saveHeld:4,saveRate:40}},
+      openings:[{family:'Italian Game',side:'white',games:30,wins:16,draws:2,losses:12,score:56.7,convN:8,convWon:6,convDrawn:0,conversion:75,saveN:5,saveHeld:1,saveRate:20,ev12:0.31,line:['e4','e5','Nf3','Nc6','Bc4']}]}}},
+    prep:null,reps:[]};
+
+  /* other files are refused, with a clear reason */
+  const bad=(o,re,msg)=>{ let e=null; try{ S.importPack(o) }catch(x){ e=x } assert(e&&re.test(e.message),msg+' ('+(e&&e.message)+')') };
+  bad({_app:'chess-lab-open',_v:1},/progress export/i,'a progress export is refused (use Import progress)');
+  bad({_app:'something-else'},/Not a Chess Lab pack/,'another app’s file is refused');
+  bad(Object.assign({},pack,{_v:2}),/newer version/,'a pack from a newer version is refused');
+  assert(!S.get('pack-meta')&&!(S.get('adrills')||[]).length,'nothing was stored by a refused file');
+
+  /* the same move found earlier by Analyze my games: one drill, your result kept */
+  S.put('adrills',[{id:dA.id,fen:fen1,played:'d3',playedUci:'d2d3',best:null,drop:0.1,before:0.5,date:'2026-10-02',opp:'made_up_opp',site:'chesscom',url:'',color:'w'}]);
+  S.put('adrills-progress',{[dA.id]:{tries:2,ok:true,okN:1,t:1700000000000}});
+  const prog0=JSON.stringify(S.get('adrills-progress'));
+  const r=S.importPack(pack);
+  assert(r.added===1&&r.updated===1&&r.bc===2&&r.games===120,'counts: 1 new drill, 1 already there, 2 blunder checks, 120 games ('+JSON.stringify(r)+')');
+  const D=S.get('adrills');
+  assert(D.length===2&&D.filter(d=>d.id===dA.id).length===1,'merged by id: no duplicate');
+  assert(D.find(d=>d.id===dA.id).best==='c4b5'&&D.every(d=>d.pack===1),'the pack’s verified record (best move) replaces the old one, marked as from the pack');
+  assert(JSON.stringify(S.get('adrills-progress'))===prog0,'adrills-progress untouched');
+  const r2=S.importPack(pack);
+  assert(r2.added===0&&r2.updated===2&&S.get('adrills').length===2,'loading it again adds nothing');
+  assert(S.get('pack-player').name==='Pat Example'&&S.get('pack-bc').length===2&&S.get('pack-report').views['online|all'],'player, blunder check and report stored (pack-*)');
+  /* a junk record in a pack is skipped, not stored */
+  const r3=S.importPack(Object.assign({},pack,{drills:[...pack.drills,{id:'zz',fen:'x'}],bc:[...pack.bc,{id:'k123'}]}));
+  assert(r3.drills===2&&r3.bc===2,'records without a valid id / fen / answer lists are skipped');
+
+  /* storage full: all or nothing, and the reason in plain words */
+  { const ls=w.localStorage, SP=w.Storage.prototype, real=SP.setItem; const before=ls.getItem('clo:adrills'), bcBefore=ls.getItem('clo:pack-bc');
+    SP.setItem=function(k,v){ if(k==='clo:pack-report'){ const e=new Error('quota'); e.name='QuotaExceededError'; throw e } return real.call(this,k,v) };
+    const big=Object.assign({},pack,{drills:[...pack.drills,Object.assign({},dB,{id:'a'+sha('x|y'),fen:fen2})]});
+    let err=null; try{ S.importPack(big) }catch(e){ err=e }
+    SP.setItem=real;
+    assert(err&&/doesn’t fit in this browser’s storage/.test(err.message)&&/Nothing was changed/.test(err.message),'storage full: a clear message ('+(err&&err.message.slice(0,60))+'…)');
+    assert(ls.getItem('clo:adrills')===before&&ls.getItem('clo:pack-bc')===bcBefore,'storage full: what was written is put back'); }
+
+  /* Progress: the load button, what the pack holds, its report card */
+  assert($('p-loadpack')&&$('p-packfile')&&$('p-packfile').accept.includes('json'),'Progress has "Load a Chess Lab pack"');
+  w.location.hash='#progress'; await sleep(80);
+  assert(!$('p-pack').hidden&&/Pat Example/.test($('p-pack').textContent)&&/120 games \(40 rapid, 80 blitz\)/.test($('p-pack').textContent),'the pack card: whose, how many games');
+  assert(/1 \/ 2/.test($('p-pack').textContent)&&/0 \/ 2/.test($('p-pack').textContent),'pack drills solved (1 of 2, the result from Analyze kept) and blunder checks passed');
+  const rc=$('p-report'); assert(!rc.hidden&&/Report card/.test(rc.textContent),'the report card shows');
+  assert(/From 120 online games/.test(rc.textContent)&&/70%/.test(rc.textContent),'lead and tiles from the pack (120 games, 70% conversion)');
+  const hs=[...rc.querySelectorAll('h3')].map(h=>h.textContent);
+  assert(['By opponent rating','By opening','By game type','By year','By quarter'].every(t=>hs.includes(t)),'tables: opponent rating, opening, game type, year, quarter ('+hs.join(', ')+')');
+  assert(!rc.querySelector('[data-prv]'),'online games only: no Over the board / Combined switch, no period switch');
+  assert(/\+0\.31/.test(rc.textContent),'eval after move 12 from White’s side (+0.31 as White)');
+  const drill=rc.querySelector('[data-pdrill]'); assert(drill,'"Drill this" on the opening row');
+  drill.click(); await sleep(150);
+  assert(w.location.hash==='#openings'&&w.OpeningsTab.state.op&&w.OpeningsTab.state.op.name==='Italian Game as White','Drill this opens the line in the opening trainer');
+  drill.click(); await sleep(150);
+  assert(w.OpeningsTab.customs().filter(c=>c.name==='Italian Game as White').length===1,'a second Drill this reuses it');
+
+  /* the file input path, end to end */
+  w.location.hash='#progress'; await sleep(60);
+  if(!w.File.prototype.text) w.File.prototype.text=function(){ return new Promise(res=>{ const r=new w.FileReader(); r.onload=()=>res(r.result); r.readAsText(this) }) };   /* jsdom has no Blob.text */
+  const fi=$('p-packfile'); const file=new w.File([JSON.stringify(pack)],'pack.json',{type:'application/json'});
+  Object.defineProperty(fi,'files',{value:[file],configurable:true}); fi.dispatchEvent(new w.Event('change')); await sleep(150);
+  assert(/Loaded Pat Example’s Chess Lab pack: 0 new drills \(2 you already had, kept with your results\), 2 Blunder check positions, a report card from 120 games\./.test($('p-packnote').textContent),'loading from the file says what came in: '+$('p-packnote').textContent);
+  Object.defineProperty(fi,'files',{value:[new w.File(['not json'],'x.json')],configurable:true}); fi.dispatchEvent(new w.Event('change')); await sleep(120);
+  assert(/isn’t JSON/.test($('p-packnote').textContent)&&$('p-packnote').classList.contains('err'),'a broken file: a clear error');
+
+  /* Drills and Today use the pack's drills */
+  w.location.hash='#drills'; await sleep(80);
+  assert(w.document.querySelectorAll('#d-list .drill').length===2,'Drills lists the pack’s drills');
+  w.Store.del('today'); w.location.hash='#today'; await sleep(120);
+  assert((w.Store.get('today')||{drills:[]}).drills.includes(dB.id),'Today picks the untried pack drill');
+
+  /* Blunder check: the threat, then your move */
+  w.location.hash='#blundercheck'; await sleep(100);
+  const B=w.BlunderCheckTab;
+  assert(w.document.querySelectorAll('#bc-list .drill').length===2,'Blunder check lists the pack’s positions');
+  assert(B.state.cur&&B.state.phase==='threat','opening the tab opens the first position at step 1');
+  B.open(bcA.id); assert(/what does made_up_opp threaten/.test($('bc-status').textContent),'step 1 asks for the threat');
+  B.move('a7','a6'); assert($('bc-status').classList.contains('bad')&&B.state.phase==='threat','a wrong threat: try again');
+  B.move('f8','c5'); assert($('bc-status').classList.contains('good'),'another threat within half a pawn counts');
+  await sleep(1450); assert(B.state.phase==='move','then step 2: your move');
+  B.move('c4','b5'); assert(B.state.phase==='done'&&/Bb5\+ holds/.test($('bc-status').textContent),'a good move holds');
+  assert(w.Store.get('bc-progress')[bcA.id].ok===false,'a missed first try at the threat: not solved, back tomorrow');
+  assert(/Back tomorrow/.test($('bc-reveal').textContent)&&/That was exactly the threat/.test($('bc-reveal').textContent),'the game: what happened');
+  B.open(bcB.id); B.move('f6','e4'); await sleep(1450); B.move('g1','f3');
+  assert(w.Store.get('bc-progress')[bcB.id].ok===true&&/back in 3 days/.test($('bc-reveal').textContent),'both steps right first time: solved, back in 3 days');
+  assert(B.status(bcB)==='solved'&&B.status(bcA)==='missed','statuses');
+  B.open(bcA.id); B.show(); assert(/The threat: h6/.test($('bc-status').textContent),'Show the threat'); await sleep(1600); B.show();
+  assert(B.state.phase==='done'&&/Stockfish: Bb5\+/.test($('bc-status').textContent),'Show the move');
+  assert(w.Keys.map('blundercheck').n&&w.Keys.map('blundercheck').s,'keys N and S');
+  /* a newer pack keeps the results (same ids) */
+  S.importPack(pack); assert(w.Store.get('bc-progress')[bcB.id].ok===true,'a reloaded pack keeps Blunder check results');
+
+  /* remove the pack: its report and positions go, results and tried drills stay */
+  w.location.hash='#progress'; await sleep(60);
+  w.Store.put('adrills-progress',{[dA.id]:{tries:2,ok:true,okN:1,t:1700000000000}});
+  $('p-packrm').click(); await sleep(60);
+  assert(!S.get('pack-meta')&&!S.get('pack-bc')&&$('p-pack').hidden&&$('p-report').hidden,'Remove the pack: report and Blunder check gone');
+  assert(S.get('adrills').map(d=>d.id).join()===dA.id&&S.get('bc-progress')[bcB.id],'tried drills and every result stay');
+  w.location.hash='#blundercheck'; await sleep(60);
+  assert(/needs a Chess Lab pack/.test($('bc-list').textContent),'Blunder check without a pack explains where positions come from');
+  assert([...w.document.querySelectorAll('#welcome li')].some(li=>/Got a pack from a friend\?/.test(li.textContent)),'the welcome card mentions packs');
 }
 
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));

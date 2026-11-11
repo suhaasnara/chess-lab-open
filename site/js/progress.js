@@ -97,6 +97,16 @@ function render(){
       return `<tr><td>${esc(o.name)}</td><td>${o.side}</td><td>${st.lines}</td><td>${st.rating}</td><td>${last}</td></tr>`;
     }).join('')||'<tr><td colspan="5" class="note">Nothing trained yet. Opening lines you play in Rated mode show up here.</td></tr>');
   charts(withStats);
+  if(window.PackReport) PackReport.render();   /* a loaded Chess Lab pack: what it holds and its report card */
+}
+/* Load a Chess Lab pack (a file built for you by the private kit): merged in, your results kept. */
+function loadPack(txt){
+  let o; try{ o=JSON.parse(txt) }catch(e){ throw new Error('That file is not a Chess Lab pack (it isn’t JSON).') }
+  const r=Store.importPack(o);
+  const parts=[`${r.added} new drill${r.added===1?'':'s'}${r.updated?` (${r.updated} you already had, kept with your results)`:''}`,`${r.bc} Blunder check position${r.bc===1?'':'s'}`];
+  if(r.games) parts.push(`a report card from ${r.games} games`);
+  if(r.reps) parts.push(`${r.reps} repertoire${r.reps===1?'':'s'}`);
+  return `Loaded ${r.player?r.player+'’s ':''}Chess Lab pack: ${parts.join(', ')}.`;
 }
 function init(){
   $('p-op').addEventListener('change',()=>render());
@@ -107,6 +117,15 @@ function init(){
     setTimeout(()=>URL.revokeObjectURL(a.href),5000);
   });
   $('p-import').addEventListener('click',()=>$('p-file').click());
+  $('p-loadpack').addEventListener('click',()=>$('p-packfile').click());
+  $('p-packfile').addEventListener('change',e=>{
+    const f=e.target.files[0]; if(!f) return; const n=$('p-packnote');
+    f.text().then(txt=>{ n.textContent=loadPack(txt); n.className='note packnote good'; n.hidden=false;
+        if(window.DrillsTab) DrillsTab.refresh(); if(window.BlunderCheckTab) BlunderCheckTab.refresh(); render() })
+      .catch(err=>{ n.textContent=String(err.message||err); n.className='note packnote err'; n.hidden=false });
+    e.target.value='';
+  });
+  if(window.PackReport) PackReport.init();
   $('p-file').addEventListener('change',e=>{
     const f=e.target.files[0]; if(!f) return;
     f.text().then(txt=>{ const n=Store.importAll(JSON.parse(txt)); $('p-note').textContent=`Imported ${n} entries.`; render() })
@@ -114,5 +133,5 @@ function init(){
     e.target.value='';
   });
 }
-window.ProgressTab={init,render};
+window.ProgressTab={init,render,loadPack};
 })();
