@@ -277,6 +277,10 @@ async function waitFor(page,fn,arg,ms=20000){ try{ await page.waitForFunction(fn
     for(const v of VIEWS){ await go(v); await sleep(200);
       const sw=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1);
       if(vw==='phone') check(`no sideways scroll on ${v} (phone, ${theme})`,!sw);
+      /* overnight-2: the sheet's game dates stay on one line on phones (they wrapped as "2026-" / "10-01"), as on the private site */
+      if(vw==='phone'&&v==='players'&&theme==='light') check('Players sheet: game dates on one line (phone)',await page.evaluate(()=>{
+        const tds=[...document.querySelectorAll('#p-sheet .shtab td.mono:first-child')].filter(td=>td.offsetParent);
+        return tds.length>0&&tds.every(td=>{ const lh=parseFloat(getComputedStyle(td).lineHeight)||16, r=document.createRange(); r.selectNodeContents(td); return r.getClientRects().length===1&&r.getBoundingClientRect().height<lh*1.5 }) }));
       await page.screenshot({path:path.join(OUT,`${v}-${vw}-${theme}.png`),fullPage:vw==='phone'});
       if(process.env.DUMP) await page.screenshot({path:path.join(OUT,'small',`${v}-${vw}-${theme}.jpg`),type:'jpeg',quality:42}) }
   }

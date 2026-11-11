@@ -344,6 +344,7 @@ body.welcomed[data-view="today"] .hero{display:none}
 .psheet .shgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:12px;margin-top:12px}
 .shblock h2{margin:0 0 6px}.shline{font-size:1rem;line-height:1.9;margin:4px 0 2px}.sm-they{font-weight:700;color:var(--head)}.sm-prep{text-decoration:underline;text-decoration-color:var(--brass);text-underline-offset:3px}
 .shkey{font-size:.76rem;margin:0 0 8px}.shtab{font-size:.85rem}.shtab td{padding:5px 8px}
+.shtab td.mono:first-child{white-space:nowrap}   /* overnight-2: dates on one line on phones, as on the private site (v57) */
 @media print{
   body.print-sheet .tabs,body.print-sheet .hero,body.print-sheet footer,body.print-sheet .p-left,body.print-sheet .noprint,body.print-sheet section:not(#players){display:none!important}
   body.print-sheet #players .tv3{display:block}body.print-sheet #p-grid{display:none!important}body.print-sheet .card{border:1px solid #ccc;break-inside:avoid}
