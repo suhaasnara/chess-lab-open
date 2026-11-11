@@ -131,6 +131,8 @@ body[data-board="grey"] .board{background:repeating-conic-gradient(#9a9a9a 0 25%
 .mtable td.ev{text-align:right;color:var(--muted);width:4em}
 .mtable .ok{color:var(--good);font-weight:600}.mtable .inacc{color:var(--warn);font-weight:600}.mtable .bad{color:var(--bad);font-weight:600}
 .endnext{margin-top:12px;width:100%;display:flex;justify-content:center;align-items:center;padding:10px 14px;font-size:1rem}
+.endredo{margin-top:6px;width:100%;display:flex;justify-content:center;align-items:center}
+.endbar .endbtns{display:flex;gap:6px;flex:none}
 
 /* Explorer */
 .bookrow{display:grid;grid-template-columns:3.4em 1fr 3.4em 5.5em;gap:8px;align-items:center;font-size:.88rem;padding:5px 0;border-bottom:1px solid var(--line)}

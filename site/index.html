@@ -131,7 +131,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
       <div class="capline" id="o-capt" hidden></div>
       <div class="boardbox" id="o-boardbox">
         <div class="board" id="o-board" role="group" aria-label="Chess board"></div>
-        <div class="endbar" id="o-endbar" hidden><span id="o-endtext"></span><button class="btn sm primary" id="o-endnext">Next line</button></div>
+        <div class="endbar" id="o-endbar" hidden><span id="o-endtext"></span><span class="endbtns"><button class="btn sm primary" id="o-endnext">Next line</button><button class="btn sm" id="o-endredo" data-redo="">Redo line</button></span></div>
       </div>
       <div class="capline" id="o-capb" hidden></div>
       <div class="evalrow" id="o-evalwrap"><div class="evalbar" id="o-evalbar" hidden><i style="width:50%"></i></div><span class="note mono" id="o-evaltxt"></span></div>

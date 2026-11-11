@@ -207,16 +207,39 @@ let H=null;   /* Today, when it hosts this trainer: Next goes to the next item i
 /* ---------- Line play ---------- */
 function newLine(review){
   if(!S.op) return;
+  const redo=S.redoNext||null; S.redoNext=null; S.redo=redo; if(redo) review=null;
   S.review=review&&review.key?review:null;
   S.lineId++;
   $('o-endbar').hidden=true; $('o-boardbox').classList.remove('end-good','end-warn');
   S.g=new Chess(startFen()); S.phase='await'; S.busy=false; S.outBook=0; S.log=[]; S.userMoves=0; S.misses=[]; S.scored=[]; S.hintStage=0; S.fens=[S.g.fen()]; S.endMsg=''; S.browse=null; S.oppPicks=[]; S.tb=null; S.finalEv=null; S.orientSet=false;
   S.startRating=stats(SID()).rating;
-  for(const san of (S.review?S.review.path:(S.op.moves||[]))){ const m=S.g.move(san,{sloppy:true}); if(!m) break; S.log.push({san:m.san,uci:m.from+m.to+(m.promotion||''),who:'book',before:S.fens[S.fens.length-1]}); S.fens.push(S.g.fen()) }
+  if(redo){ for(let i=0;i<redo.upto;i++){ const m=S.g.move(redo.log[i].san); if(!m) break; S.log.push({...redo.log[i]}); S.fens.push(S.g.fen()); if(redo.log[i].who==='me') S.userMoves++ }
+    S.tb=new Set(redo.seen); S.redoSeen=redo.seen }
+  else { S.redoSeen=null; for(const san of (S.review?S.review.path:(S.op.moves||[]))){ const m=S.g.move(san,{sloppy:true}); if(!m) break; S.log.push({san:m.san,uci:m.from+m.to+(m.promotion||''),who:'book',before:S.fens[S.fens.length-1]}); S.fens.push(S.g.fen()) } }
   draw();
-  if(S.g.turn()!==myColor()) opponentMove(); else status('',S.review?'Review: a position you missed.':'Your move.',S.review?'Find the move you missed before. First try takes it off the list.':'Play your prep. Hint is H.');
+  if(S.g.turn()!==myColor()) opponentMove(); else status('',S.review?'Review: a position you missed.':redo?'Redo: your move.':'Your move.',S.review?'Find the move you missed before. First try takes it off the list.':redo?'The opponent repeats his replies while you repeat your moves. Play something else where you went off the main line (Hint is H).':'Play your prep. Hint is H.');
   renderSide(); renderBook(); renderEval();
 }
+/* Redo this line (D, or the button when a line ends): play the same line again. The opponent repeats last time's replies
+   for as long as you repeat your moves, so you can play something else where your file's side line ended the line early
+   (Hint shows the file's first move). Looking back at a move (← or a click in the list) makes it "Redo from here": the line
+   is played out to that position, and if it is the opponent's move there, he picks a different reply when he has one.
+   Positions of the old line aren't rated again. Same as the private Chess Lab (its v87). */
+function redoBase(){ const i=S.log?S.log.findIndex(x=>x.who!=='book'):-1; return i<0?(S.log?S.log.length:0):i }
+function canRedo(){ return !!(S.op&&S.g&&S.phase==='done'&&S.log.length>redoBase()&&S.log.some(x=>x.who!=='book')) }
+function redoFrom(){ const b=redoBase(); return browsing()?Math.max(b,S.browse):b }
+function redoLine(){ if(!canRedo()) return false;
+  const base=redoBase(), upto=redoFrom(), log=S.log.map(x=>({...x}));
+  const seen=new Set(log.filter((x,i)=>i>=base&&x.who==='me').map(x=>x.before));
+  const avoidAt=upto>base&&upto<log.length&&log[upto].who==='opp'?upto:-1;
+  S.redoNext={log,base,upto,seen,avoidAt}; newLine() }
+function redoScript(){ const r=S.redo; if(!r) return null; const i=S.log.length;
+  for(let j=r.base;j<i;j++) if(!r.log[j]||S.log[j].san!==r.log[j].san){ S.redo=null; return null }
+  if(i===r.avoidAt||i>=r.log.length||r.log[i].before!==S.g.fen()) return null; return r.log[i].uci }
+function redoAvoid(){ const r=S.redo; return r&&S.log.length===r.avoidAt?r.log[r.avoidAt].uci.slice(0,4):null }
+const notAvoided=(xs,u)=>{ const av=redoAvoid(); if(!av) return xs; const k=xs.filter(x=>u(x).slice(0,4)!==av); return k.length?k:xs };
+const redoLabel=()=>browsing()&&redoFrom()>redoBase()?'Redo from here':'Redo line';
+function refreshRedo(){ document.querySelectorAll('[data-redo]').forEach(b=>{ b.textContent=redoLabel()+(b.dataset.redo==='k'?' (D)':''); b.disabled=!canRedo() }) }
 function viewPos(){ if(!browsing()) return {g:S.g,last:lastMove(S.g)}; const g=new Chess(S.fens[S.browse]); return {g,last:lastMove(g)} }
 function draw(){
   const v=viewPos();
@@ -265,11 +288,12 @@ const practical=TC.practical;
 function recentLines(){ return (Store.get('orecent')||{})[S.op.id]||[] }
 function rememberLine(){ if(!S.op||!S.op.rep||!S.oppPicks.length) return; const all=Store.get('orecent')||{};
   all[S.op.id]=(all[S.op.id]||[]).concat([S.oppPicks.slice(0,40)]).slice(-6); Store.put('orecent',all) }
-function repRecord(fen,ok){ if(training()) return; const s=stats(S.op.id); s.rep=s.rep||{}; const id=posId(normKey(fen)); const st=s.rep[id]||{n:0,w:0}; st.n++; if(!ok) st.w++; s.rep[id]=st; saveStats(S.op.id,s) }
+function repRecord(fen,ok){ if(training()||(S.redoSeen&&S.redoSeen.has(fen))) return; const s=stats(S.op.id); s.rep=s.rep||{}; const id=posId(normKey(fen)); const st=s.rep[id]||{n:0,w:0}; st.n++; if(!ok) st.w++; s.rep[id]=st; saveStats(S.op.id,s) }
 function repPick(fen,file){
   const bk=oppBookNow(fen), useBook=!!(bk&&!bk.demo&&bk.total>=20), rs=stats(S.op.id).rep||{};
   let kids=file.slice();
   { const sk=new Set(skipList(S.op.id).map(x=>x.k)), pid=posId(normKey(fen)); const keep=kids.filter(u=>!sk.has(pid+'|'+u)); if(keep.length) kids=keep }
+  kids=notAvoided(kids,u=>u);
   const min=(+Settings.get('ominshare')||0)/100;
   if(min>0&&useBook){ const keep=kids.filter(u=>replyShare(fen,u,bk)>=min); if(keep.length) kids=keep }
   const recent=recentLines(), opp=fen.split(' ')[1], trappy=!!Settings.get('otrappy');
@@ -287,6 +311,7 @@ function pickBook(bk,fen){
   const min=Math.max(0.01,(+Settings.get('ominshare')||0)/100), mover=fen.split(' ')[1], trappy=!!Settings.get('otrappy');
   const no=S.op&&S.op.firstNot&&S.log.length===0?S.op.firstNot:null;   /* "Anything vs sidelines": never 1.e4 / 1.d4 */
   if(no){ const keep=bk.rows.filter(r=>!no.includes(r.uci.slice(0,4))); if(keep.length) bk={...bk,rows:keep} }
+  bk={...bk,rows:notAvoided(bk.rows,r=>r.uci)};
   let rows=bk.rows.filter(r=>r.share>=min); if(!rows.length) rows=[bk.rows.slice().sort((a,b)=>b.games-a.games)[0]];
   const w=r=>trappy?Math.sqrt(r.games)*(r.games>=20?Math.pow(practical(r,mover)/0.5,6):1):Math.pow(Math.max(r.share,0.005),0.75);
   return pickW(rows,rows.map(w)).uci;
@@ -298,7 +323,9 @@ async function opponentMove(){
   S.phase='busy'; S.busy=true; draw(); status('','Thinking…','');
   const fen=S.g.fen();
   let uci=null, note='';
-  if(S.op.rep){
+  const sc=redoScript();
+  if(sc){ uci=sc; note='Redo: the same reply as last time.'; if(S.op.rep){ await Book.oppMoves(fen); if(lid!==S.lineId) return } }
+  else if(S.op.rep){
     const file=repMovesAt(fen);
     if(!file.length) return endLine('End of your prep in this line.');
     const bk=await Book.oppMoves(fen); await Book.moves(fen,'b22'); if(lid!==S.lineId) return;
@@ -306,7 +333,7 @@ async function opponentMove(){
     if(bk&&!bk.demo&&bk.level&&bk.level!=='masters') note=(note?note+' · ':'')+Book.levelLabel(bk.level)+' opponent';
   }else{
     /* against a player: their own moves while their games go, then the book */
-    const theirs=S.op.player&&window.PlayersTab?PlayersTab.movesAt(S.op.player,S.op.their,fen).filter(x=>x.me):[];
+    const theirs=notAvoided(S.op.player&&window.PlayersTab?PlayersTab.movesAt(S.op.player,S.op.their,fen).filter(x=>x.me):[],x=>x.uci);
     const bk=theirs.length?null:await Book.oppMoves(fen); if(lid!==S.lineId) return;
     if(theirs.length){ const tot=theirs.reduce((a,x)=>a+x.n,0); const x=pickW(theirs,theirs.map(y=>y.n)); uci=x.uci;
       note=`${S.op.name.replace(/^vs /,'')} played ${x.san} in ${x.n} of ${tot} game${tot>1?'s':''} here.` }
@@ -341,7 +368,7 @@ async function engineReply(fen){
   if(!a||!a.length) return null;
   const val=l=>l.mate!=null?(l.mate>0?15:-15):l.cp;
   const best=wc(val(a[0])), lim=Settings.get('otrappy')?0.1:0.05;
-  const ok=a.filter(l=>best-wc(val(l))<=lim);
+  const ok=notAvoided(a.filter(l=>best-wc(val(l))<=lim),l=>l.uci);
   return pickW(ok.map(l=>l.uci),ok.map(l=>Math.exp(-(best-wc(val(l)))/0.015)));
 }
 /* Demo-book moves Stockfish rates within 0.06 winning chances of the best of them (depth 12),
@@ -361,7 +388,7 @@ async function soundDemoMoves(fen,ucis){
   return out.filter(x=>best-x.c<=0.06).map(x=>({uci:x.uci,w:Math.exp(-(best-x.c)/0.02)}));
 }
 /* a position you took back isn't rated again in this line (its first try already counted) */
-const scoredAt=fen=>S.scored.some(s=>s.fen===fen);
+const scoredAt=fen=>S.scored.some(s=>s.fen===fen)||!!(S.redoSeen&&S.redoSeen.has(fen));
 
 async function userMove(from,to,promo){
   if(!S.op||S.phase!=='await'||S.busy||browsing()) return;
@@ -478,6 +505,8 @@ function endLine(msg){
       $('o-status').appendChild(d) } }
   const nx=document.createElement('button'); nx.className='btn primary endnext'; nx.textContent=H?'Next in session (N)':'Next line (N)';
   nx.addEventListener('click',()=>H?H.next():newLine()); $('o-status').appendChild(nx);
+  const rd=document.createElement('button'); rd.className='btn endredo'; rd.type='button'; rd.dataset.redo='k'; rd.title='Play this line again: the opponent repeats his replies while you repeat your moves. Use ← or the move list to redo from a later move.';
+  rd.addEventListener('click',redoLine); $('o-status').appendChild(rd); refreshRedo();
   /* a banner on the board itself, so the end of the line is obvious on a phone */
   const box=$('o-boardbox'); box.classList.remove('end-good','end-warn'); box.classList.add(S.misses.length?'end-warn':'end-good');
   $('o-endtext').textContent=(S.misses.length?`${msg} ${S.misses.length} miss${S.misses.length>1?'es':''}`:`${msg} ✓ All right`)+(training()?'':` · ${delta>=0?'+':''}${delta}`);
@@ -611,7 +640,7 @@ function tools(){
   $('o-browsenote').hidden=!browsing(); if(browsing()) $('o-browsenote').textContent=`Viewing move ${S.browse} of ${n} · → or End to come back`;
 }
 /* step through the line on the board (view only; the board takes moves again at the end) */
-function browse(k){ if(!S.g||!S.log.length) return; S.browse=(k==null||k>=S.log.length)?null:Math.max(0,k); draw(); renderSide(); renderEval() }
+function browse(k){ if(!S.g||!S.log.length) return; S.browse=(k==null||k>=S.log.length)?null:Math.max(0,k); draw(); renderSide(); renderEval(); refreshRedo() }
 async function renderBook(){
   const el=$('o-bookrows');
   const show=training()||S.phase==='done';
@@ -766,6 +795,7 @@ function init(){
   });
   $('o-newline').addEventListener('click',()=>H?H.next():newLine());
   $('o-endnext').addEventListener('click',newLine);
+  $('o-endredo').addEventListener('click',redoLine);
   $('o-hint').addEventListener('click',hint);
   $('o-back').addEventListener('click',takeBack);
   $('o-endhere').addEventListener('click',endHere);
@@ -838,11 +868,12 @@ function init(){
     ArrowRight:['Forward a move',ok(()=>{ if(!browsing()) return false; browse(S.browse+1) })],
     Home:['Start of the line',ok(()=>{ if(!S.g) return false; browse(0) })], End:['Back to the current move',ok(()=>{ if(!S.g) return false; browse(null) })],
     b:['Take back your move and the reply',ok(()=>takeBack())], r:['Restart: a new line',ok(()=>newLine())], h:['Hint (first the piece, then the move)',ok(()=>hint())],
-    f:['Flip the board',ok(()=>$('o-flip').click())], n:['Next line',ok(()=>H?H.next():newLine())], e:['End the line here (Rated: only the moves you played count)',ok(()=>endHere())]});
+    f:['Flip the board',ok(()=>$('o-flip').click())], n:['Next line',ok(()=>H?H.next():newLine())], e:['End the line here (Rated: only the moves you played count)',ok(()=>endHere())],
+    d:['Redo this line (after it ends; from the move you are looking at)',ok(()=>redoLine())]});
   addEventListener('settings-change',()=>{ STAY.clear(); if(document.body.dataset.view==='openings'){ renderSide(); renderBook(); renderEval() } });
   renderList();
   board.set(new Chess(),{orient:'w',locked:true});
 }
 window.OpeningsTab={init,host:h=>{ H=h||null; $('o-newline').firstChild.textContent=H?'Next ':'Next line ' },flip:()=>$('o-flip').click(),openDefault,PRESETS,renderList,endHere,SID,skipList,renderCaptured,customs,saveCustom,deleteCustom,openNew,saveNew,saveCurrent,studyApi,fetchStudy,doImport,syncLevel,soundDemoMoves,get state(){return S},selectOpening,newLine,userMove,parseRepPGN,moveDifficulty,openings,stats,
-  takeBack,canTakeBack,browse,annAt,repPick,ordered,saveOrder,setArrange,moveItem,renderStats,openStats,openSettings,firstListed};
+  takeBack,canTakeBack,redoLine,canRedo,browse,annAt,repPick,ordered,saveOrder,setArrange,moveItem,renderStats,openStats,openSettings,firstListed};
 })();

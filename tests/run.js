@@ -1426,6 +1426,42 @@ section('t52: side lines on the board (shared/varline.js), numbered puzzles, who
     key('Home'); await sleep(10); assert(!S.vr&&S.view===0,'Home goes back to the game'); }
 }
 
+section('t53: Redo line / Redo from here in the opening trainer');
+{
+  const {w}=await makePage({analyse:async()=>[{uci:'b1c3',cp:0.3,mate:null}]});
+  const $=id=>w.document.getElementById(id);
+  /* a file with a short side line for the opponent (2...d6 ends at once) and a longer main line (2...Nc6 3.Bb5 a6 4.Ba4) */
+  const pgn='[Event "Redo"]\n\n1. e4 e5 2. Nf3 Nc6 (2... d6 3. d4) 3. Bb5 a6 4. Ba4 *';
+  $('o-pgnbox').value=pgn; $('o-repname').value='Redo rep'; $('o-repside').value='white'; $('o-repsave').click(); await sleep(150);
+  const O=w.OpeningsTab, S=O.state;
+  async function play(){ for(let n=0;n<10&&S.phase!=='done';n++){ for(let t=0;t<60&&!(S.phase==='done'||(S.phase==='await'&&!S.busy&&S.g.turn()==='w'));t++) await sleep(30); if(S.phase==='done') break;
+      const f=O.repPick?null:null; const file=S.op&&S.g?(()=>{ const g=new w.Chess(S.g.fen()); return g })():null;
+      const mv=({'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR':'e2e4'})[S.g.fen().split(' ')[0]]||(S.g.history().length===2?'g1f3':S.g.history().slice(-1)[0]==='d6'?'d2d4':S.g.history().slice(-1)[0]==='Nc6'?'f1b5':'b5a4');
+      await O.userMove(mv.slice(0,2),mv.slice(2,4)); }
+    for(let t=0;t<60&&S.phase!=='done';t++) await sleep(30) }
+  /* get the short side line first (the opponent's pick is random; at most 30 tries) */
+  let got=false; const seen=new Set(); for(let k=0;k<40&&!got;k++){ O.newLine(); await play(); const t=S.log.map(x=>x.san).join(' '); seen.add(t); got=t==='e4 e5 Nf3 d6 d4' }
+  assert(got,'played the short side line 2...d6 3.d4 (got: '+[...seen].join(' | ')+')');
+  assert(O.canRedo()&&$('o-status').querySelector('[data-redo]')&&!$('o-endredo').disabled,'Redo offered on the end card and the board banner');
+  const lines=O.stats(O.SID()).lines;
+  /* Redo: the same replies while you repeat your moves; nothing rated again */
+  assert(w.Keys.map('openings').d,'D is in the keymap');
+  O.redoLine(); await sleep(10);
+  assert(S.redo&&S.phase!=='done','Redo starts the same line again ('+S.phase+')');
+  await play();
+  assert(S.log.map(x=>x.san).join(' ')==='e4 e5 Nf3 d6 d4','the opponent repeated 1...e5 and 2...d6');
+  assert(S.scored.length===0,'positions of the old line aren’t rated again');
+  assert(O.stats(O.SID()).lines===lines+1||w.Settings.get('omode')==='rated','the redo is a line played');
+  /* Redo from here at 2...: the opponent picks the other reply */
+  O.browse(3); await sleep(10);
+  assert(/Redo from here/.test($('o-status').querySelector('[data-redo]').textContent),'label follows the move you look at');
+  $('o-status').querySelector('[data-redo]').click();
+  for(let t=0;t<60&&S.log.length<4;t++) await sleep(30);
+  assert(S.log.slice(0,3).map(x=>x.san).join(' ')==='e4 e5 Nf3'&&S.log[3]&&S.log[3].san==='Nc6','['+S.log.map(x=>x.san).join(' ')+'] Redo from here: played out to 2.Nf3, then 2...Nc6 instead of 2...d6');
+  await play();
+  assert(S.log.map(x=>x.san).join(' ')==='e4 e5 Nf3 Nc6 Bb5 a6 Ba4','the main line plays out after that');
+}
+
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));
 process.exit(H.failures?1:0);
 })().catch(e=>{ console.error('Test run crashed:',e); process.exit(1) });
