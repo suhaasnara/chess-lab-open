@@ -56,8 +56,13 @@ window.PGN=(()=>{
       if(t===')'){ const s=stack.pop(); if(s){ g=new Chess(s.fen); before=s.before; broken=s.broken; lastKey=s.lastKey } pre=''; continue }
       const mk=(t.match(/[!?]+$/)||[''])[0];
       const san=t.replace(/^\d+\.+/,'').replace(/^\.+/,'').replace(/[!?]+$/,'').replace(/^0-0-0/,'O-O-O').replace(/^0-0/,'O-O');
-      if(!san||/^\d+$/.test(san)||san==='e.p.'||broken) continue;
-      if(san==='--'||san==='Z0'){ broken=true; continue }
+      if(!san||(/^\d+$/.test(san)&&san!=='0000')||san==='e.p.') continue;
+      /* a move of a line that already broke: a variation after it is an alternative to a move that was never placed,
+         so it is skipped too (it used to start from the last real move's position: wrong side to move, or wrong moves) */
+      if(broken){ before=null; continue }
+      /* a null move (--, Z0, or 0000 as converted files write it) ends its line; a variation right after it is an
+         alternative to the null move, from this position */
+      if(san==='--'||san==='Z0'||san==='0000'){ before=g.fen(); lastKey=null; broken=true; continue }
       const fb=g.fen(); const r=g.move(san,{sloppy:true});
       if(!r){ bad++; broken=true; continue }
       const uci=r.from+r.to+(r.promotion||'');

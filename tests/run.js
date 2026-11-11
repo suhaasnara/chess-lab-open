@@ -1469,6 +1469,55 @@ section('t53: Redo line / Redo from here in the opening trainer');
   assert(S.log.map(x=>x.san).join(' ')==='e4 e5 Nf3 Nc6 Bb5 a6 Ba4','the main line plays out after that');
 }
 
+section('t54: a hint is a miss in the repertoire record, once per position (the private site’s v89 fix)');
+{
+  const {w}=await makePage({analyse:async()=>[{uci:'b1c3',cp:0.3,mate:null}]});
+  const $=id=>w.document.getElementById(id), O=w.OpeningsTab, S=O.state;
+  w.Settings.set('omode','rated');
+  $('o-pgnbox').value='[Event "Hint"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bb5 *'; $('o-repname').value='Hint rep'; $('o-repside').value='white'; $('o-repsave').click(); await sleep(150);
+  const rec=()=>{ const r=(O.stats(S.op.id).rep||{})[w.posId(w.normKey(S.g.fen()))]; return r?r.n+'/'+r.w:'0/0' };
+  O.newLine(); await sleep(50);
+  assert(S.op.rep&&S.g.history().length===0,'the repertoire is open at move 1');
+  await O.hint(); assert(rec()==='1/1','first Hint press: recorded as a miss ('+rec()+')');
+  await O.hint(); assert(rec()==='1/1','second press (the move shown): not recorded again ('+rec()+')');
+  await O.userMove('d2','d4'); await sleep(80); assert(rec()==='1/1','a wrong move after the hint: not recorded again ('+rec()+')');
+  const fen0=S.g.fen();
+  await O.userMove('e2','e4'); await sleep(60);
+  { const r=(O.stats(S.op.id).rep||{})[w.posId(w.normKey(fen0))]; assert(r&&r.n===1&&r.w===1,'the right move then: still one miss, not a miss and a find ('+(r&&r.n+'/'+r.w)+')') }
+  /* without a hint: a wrong move then the right one is one miss; found first try is one find */
+  for(let t=0;t<60&&!(S.phase==='await'&&!S.busy&&S.g.turn()==='w');t++) await sleep(30);
+  const fen1=S.g.fen(); await O.userMove('a2','a3'); await sleep(80); await O.userMove('g1','f3'); await sleep(60);
+  { const r=(O.stats(S.op.id).rep||{})[w.posId(w.normKey(fen1))]; assert(r&&r.n===1&&r.w===1,'wrong then right, no hint: one miss ('+(r&&r.n+'/'+r.w)+')') }
+  O.newLine(); await sleep(50); await O.userMove('e2','e4'); await sleep(60);
+  { const r=(O.stats(S.op.id).rep||{})[w.posId(w.normKey(fen0))]; assert(r&&r.n===2&&r.w===1,'next line, found first try: one find added ('+(r&&r.n+'/'+r.w)+')') }
+  /* Training mode records nothing */
+  w.Settings.set('omode','training'); O.newLine(); await sleep(50); await O.hint(); await O.hint();
+  { const r=(O.stats(S.op.id).rep||{})[w.posId(w.normKey(fen0))]; assert(r.n===2&&r.w===1,'Training: a hint records nothing') }
+  w.Settings.set('omode','rated');
+}
+
+section('t55: null moves in imported files ("--", "Z0", "0000") end their line and never reach the repertoire');
+{
+  const {w}=await makePage({analyse:async()=>[{uci:'b1c3',cp:0.3,mate:null}]});
+  const nf3=w.PGN.normKey('rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2');
+  for(const nul of ['--','Z0','0000']){
+    const r=w.PGN.read('[Event "n"]\n1. e4 e5 2. Nf3 '+nul+' 3. Bc4 Nf6 (3... Nc6 '+nul+' 4. d4) *');
+    assert(r.bad===0&&!r.edges.has(nf3),'"'+nul+'": nothing after the null move, and no bad-move count ('+r.bad+' bad)');
+    assert(r.edges.get(w.PGN.normKey('rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2')).join()==='g1f3','"'+nul+'": the moves before it are kept');
+    const r2=w.PGN.read('[Event "m"]\n1. e4 e5 2. Nf3 '+nul+' (2... Nc6 3. Bb5) 3. Bc4 *');
+    assert(r2.bad===0&&(r2.edges.get(nf3)||[]).join()==='b8c6','"'+nul+'": a side line right after the null move is its alternative, from that position');
+  }
+  /* imported: a "--" in a side line; the opponent only ever plays real moves and the line ends cleanly */
+  const $=id=>w.document.getElementById(id), O=w.OpeningsTab, S=O.state;
+  $('o-pgnbox').value='[Event "Null"]\n\n1. e4 e5 (1... c5 -- 2. Nf3) 2. Nf3 Nc6 0000 3. Bb5 *'; $('o-repname').value='Null rep'; $('o-repside').value='white'; $('o-repsave').click(); await sleep(150);
+  const all=[...w.OpeningsTab.repMap(S.op.id).values()].flat();
+  assert(S.op.rep&&all.length===5&&all.every(u=>/^[a-h][1-8][a-h][1-8][qrbn]?$/.test(u)&&u!=='0000'),'every move in the stored map is a real move ('+all.join(' ')+')');
+  for(let k=0;k<6;k++){ O.newLine(); for(let i=0;i<6&&S.phase!=='done';i++){ for(let t=0;t<60&&!(S.phase==='done'||(S.phase==='await'&&!S.busy&&S.g.turn()==='w'));t++) await sleep(25); if(S.phase==='done') break;
+      const h=S.g.history(); const mv=h.length===0?'e2e4':h[h.length-1]==='e5'?'g1f3':h[h.length-1]==='c5'?'g1f3':'f1b5'; await O.userMove(mv.slice(0,2),mv.slice(2,4)) }
+    for(let t=0;t<60&&S.phase!=='done';t++) await sleep(25);
+    assert(S.phase==='done','line '+(k+1)+' ends ('+S.g.history().join(' ')+')') }
+}
+
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));
 process.exit(H.failures?1:0);
 })().catch(e=>{ console.error('Test run crashed:',e); process.exit(1) });

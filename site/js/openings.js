@@ -211,7 +211,7 @@ function newLine(review){
   S.review=review&&review.key?review:null;
   S.lineId++;
   $('o-endbar').hidden=true; $('o-boardbox').classList.remove('end-good','end-warn');
-  S.g=new Chess(startFen()); S.phase='await'; S.busy=false; S.outBook=0; S.log=[]; S.userMoves=0; S.misses=[]; S.scored=[]; S.hintStage=0; S.fens=[S.g.fen()]; S.endMsg=''; S.browse=null; S.oppPicks=[]; S.tb=null; S.finalEv=null; S.orientSet=false;
+  S.g=new Chess(startFen()); S.phase='await'; S.busy=false; S.outBook=0; S.log=[]; S.userMoves=0; S.misses=[]; S.scored=[]; S.hintStage=0; S.repDone=new Set(); S.fens=[S.g.fen()]; S.endMsg=''; S.browse=null; S.oppPicks=[]; S.tb=null; S.finalEv=null; S.orientSet=false;
   S.startRating=stats(SID()).rating;
   if(redo){ for(let i=0;i<redo.upto;i++){ const m=S.g.move(redo.log[i].san); if(!m) break; S.log.push({...redo.log[i]}); S.fens.push(S.g.fen()); if(redo.log[i].who==='me') S.userMoves++ }
     S.tb=new Set(redo.seen); S.redoSeen=redo.seen }
@@ -288,7 +288,9 @@ const practical=TC.practical;
 function recentLines(){ return (Store.get('orecent')||{})[S.op.id]||[] }
 function rememberLine(){ if(!S.op||!S.op.rep||!S.oppPicks.length) return; const all=Store.get('orecent')||{};
   all[S.op.id]=(all[S.op.id]||[]).concat([S.oppPicks.slice(0,40)]).slice(-6); Store.put('orecent',all) }
-function repRecord(fen,ok){ if(training()||(S.redoSeen&&S.redoSeen.has(fen))) return; const s=stats(S.op.id); s.rep=s.rep||{}; const id=posId(normKey(fen)); const st=s.rep[id]||{n:0,w:0}; st.n++; if(!ok) st.w++; s.rep[id]=st; saveStats(S.op.id,s) }
+/* once per position per line, on the first try (the private site's rule): a hint, a wrong move, then the right move
+   count as one miss, not a miss and a find (11 Nov 2026) */
+function repRecord(fen,ok){ if(training()||(S.redoSeen&&S.redoSeen.has(fen))||(S.tb&&S.tb.has(fen))) return; S.repDone=S.repDone||new Set(); if(S.repDone.has(fen)) return; S.repDone.add(fen); const s=stats(S.op.id); s.rep=s.rep||{}; const id=posId(normKey(fen)); const st=s.rep[id]||{n:0,w:0}; st.n++; if(!ok) st.w++; s.rep[id]=st; saveStats(S.op.id,s) }
 function repPick(fen,file){
   const bk=oppBookNow(fen), useBook=!!(bk&&!bk.demo&&bk.total>=20), rs=stats(S.op.id).rep||{};
   let kids=file.slice();
@@ -675,6 +677,7 @@ async function hint(){
   else{ const bk=await Book.moves(fen,'masters'); u=bk&&bk.rows.length?bk.rows.reduce((a,b)=>a.share>=b.share?a:b).uci:null;
     if(!u){ const a=await SharedEngine.analyse(fen,12,1,6000).catch(()=>null); u=a&&a[0]&&a[0].uci } }
   if(!u){ status('warn','No hint here.',''); return }
+  if(S.op.rep) repRecord(fen,false);   /* a hint is a miss in the repertoire's record, so the opponent comes back to it (once per position) */
   if(S.hintStage===0){ S.hintStage=1; board.setHint(u.slice(0,2)); status('warn','Hint: this piece moves.','Hint again (H) shows the move.') }
   else{ board.setHint(u.slice(0,2),u.slice(2,4)); status('warn','Answer: '+sanOf(fen,u),'That move earns no rating now.');
     if(!scoredAt(fen)) S.scored.push({fen,s:0,d:await moveDifficulty(fen),hint:true}) }
@@ -875,5 +878,5 @@ function init(){
   board.set(new Chess(),{orient:'w',locked:true});
 }
 window.OpeningsTab={init,host:h=>{ H=h||null; $('o-newline').firstChild.textContent=H?'Next ':'Next line ' },flip:()=>$('o-flip').click(),openDefault,PRESETS,renderList,endHere,SID,skipList,renderCaptured,customs,saveCustom,deleteCustom,openNew,saveNew,saveCurrent,studyApi,fetchStudy,doImport,syncLevel,soundDemoMoves,get state(){return S},selectOpening,newLine,userMove,parseRepPGN,moveDifficulty,openings,stats,
-  takeBack,canTakeBack,redoLine,canRedo,browse,annAt,repPick,ordered,saveOrder,setArrange,moveItem,renderStats,openStats,openSettings,firstListed};
+  takeBack,canTakeBack,redoLine,canRedo,browse,hint,repMap,annAt,repPick,ordered,saveOrder,setArrange,moveItem,renderStats,openStats,openSettings,firstListed};
 })();
