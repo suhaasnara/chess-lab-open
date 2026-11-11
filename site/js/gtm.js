@@ -189,6 +189,7 @@ function drawGraph(){
    Annotated games (game.notes {ply: {t: text, v: [side lines]}}, game.intro) show each move's note right after it, side lines
    folded. Once the game is over (or "Show the game"), every move can be clicked, and ← → Home End step through it. */
 /* side lines: each move a button (shared/varline.js), played from the position before the move it replaces (fen) */
+let NAV=null;   // the arrow keys through the lines (set up with the keys)
 function noteHtml(n,fen,prefix){
   if(!n) return '';
   const v=(n.v||[]).map(x=>VarLine.wrap(fen,x,prefix)).join('');
@@ -214,6 +215,7 @@ function renderMoves(){
   }
   el.innerHTML=html||'<span class="note">The moves appear as the game goes.</span>';
   el.classList.toggle('vread',!!S.done);
+  if(NAV) NAV.paint();
   const vc=S.vr?VarLine.mark(el,S.vr.path.slice(0,S.vr.at)):null;
   if(vc){ const top=vc.offsetTop; if(top<el.scrollTop||top>el.scrollTop+el.clientHeight-30) el.scrollTop=top-40; return }
   const c=el.querySelector('.gmv.cur');
@@ -294,10 +296,15 @@ function init(){
   $('g-moves').addEventListener('click',e=>{ const vp=VarLine.path(e.target); if(vp){ if(S.done) viewVar(vp,vp.length); return }
     const b=e.target.closest('.gmv'); if(b&&S.done) viewAt(+b.dataset.ply) });
   const done=()=>S.done&&S.game;
-  Keys.on('guess',{ArrowLeft:['Back through the game (after it ends)',()=>{ if(!done()) return false; if(S.vr) viewVar(S.vr.path,S.vr.at-1); else viewAt(S.view-1) }],
-    ArrowRight:['Forward through the game',()=>{ if(!done()) return false; if(S.vr) viewVar(S.vr.path,S.vr.at+1); else viewAt(S.view+1) }],
+  /* ← → along the game or the side line on the board, ↓ ↑ pick the line where lines branch (shared VarLine.nav) */
+  NAV=VarLine.nav({active:done,root:()=>$('g-moves'),main:()=>S.game.moves,
+    cur:()=>S.vr?S.vr.path.slice(0,S.vr.at):S.game.moves.slice(0,S.view==null?S.game.moves.length:S.view),
+    go:p=>viewVar(p,p.length),mainEl:i=>$('g-moves').querySelector(`.gmv[data-ply="${i+1}"]`),
+    left:()=>viewAt(S.view-1),right:()=>viewAt(S.view+1),
+    leftLabel:'Back through the game (after it ends)',rightLabel:'Forward (the picked line where lines branch)'});
+  Keys.on('guess',Object.assign({},NAV.keys,{
     Home:['Start of the game',()=>{ if(!done()) return false; viewAt(0) }], End:['End of the game',()=>{ if(!done()) return false; viewAt(S.game.moves.length) }],
-    h:['Hint',()=>hint()], f:['Flip the board',()=>board.flip()]});
+    h:['Hint',()=>hint()], f:['Flip the board',()=>board.flip()]}));
 }
 /* ---------- Your own games ---------- */
 function ownGames(){ return Store.get('gtm-own')||[] }

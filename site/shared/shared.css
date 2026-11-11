@@ -97,4 +97,5 @@ nav.tabs a.settab svg{flex:none;width:22px;height:22px}
 .vmv{border:0;background:none;font:inherit;font-weight:600;color:var(--ink);padding:1px 3px;margin:0 -1px;border-radius:3px;cursor:pointer}
 .vmv:hover{background:var(--band)}.vmv.cur{background:var(--navy);color:var(--on-navy)}
 .vmv:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+.vpick{outline:2px solid var(--blue);outline-offset:1px;border-radius:3px}   /* ↓ ↑: the move → plays where lines branch */
 .vnote{color:var(--muted);font-style:italic}.vpar,.vdead{color:var(--muted)}

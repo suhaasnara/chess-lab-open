@@ -2,6 +2,7 @@
    One keymap for the whole site. Each tab registers what the standard keys do there; one listener dispatches.
 
      ← →   step through the moves (every notation list)      Home / End   first / last position
+     ↓ ↑   where side lines branch: pick which line → follows (VarLine.nav)
      B     take back                                         R            reset / retry
      H     hint (first press: the piece, second: the move)    F            flip the board
      N     next (line, puzzle, drill, game)                   E            end the line here
@@ -10,11 +11,13 @@
    Keys.on(view, {key: [label, fn]}, note?)   key = 'ArrowLeft', 'ArrowRight', 'Home', 'End', or a lower-case letter.
      fn(e) returning false means "not now" (the key does nothing and the browser keeps it).
    Keys.view = () => the current view's name (default: document.body.dataset.view).
-   Keys never fire while typing in a field, and never with Ctrl / Cmd / Alt (browser shortcuts stay the browser's). */
+   Keys never fire while typing in a field, and never with Ctrl / Cmd / Alt (browser shortcuts stay the browser's).
+   An arrow key a page uses never scrolls the page; after a drop-down changes, focus leaves it, so the arrows are the
+   board's again (a focused drop-down would take them). */
 window.Keys=(()=>{
   const MAPS={}, NOTES={};
-  const ORDER=['ArrowLeft','ArrowRight','Home','End','b','r','h','f','n','e','p'];
-  const NAME={ArrowLeft:'←',ArrowRight:'→',Home:'Home',End:'End'};
+  const ORDER=['ArrowLeft','ArrowRight','ArrowDown','ArrowUp','Home','End','b','r','h','f','n','e','p'];
+  const NAME={ArrowLeft:'←',ArrowRight:'→',ArrowUp:'↑',ArrowDown:'↓',Home:'Home',End:'End'};
   const typing=e=>{ const t=e.target; return !!t&&t.nodeType===1&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName||'')||!!t.isContentEditable) };
   const api={view:()=>document.body&&document.body.dataset.view,
     on(view,map,note){ MAPS[view]=Object.assign(MAPS[view]||{},map); if(note) NOTES[view]=note },
@@ -40,5 +43,7 @@ window.Keys=(()=>{
     const a=(MAPS[api.view()]||{})[k]; if(!a) return;
     if(a[1](e)!==false) e.preventDefault();
   });
+  addEventListener('change',e=>{ const t=e.target;   /* a drop-down keeps focus after a pick and would take the arrow keys */
+    if(t&&t.tagName==='SELECT'&&!t.multiple){ const m=MAPS[api.view()]||{}; if(m.ArrowLeft||m.ArrowRight||m.ArrowUp||m.ArrowDown) setTimeout(()=>{ if(document.activeElement===t) t.blur() },0) } },true);
   return api;
 })();
