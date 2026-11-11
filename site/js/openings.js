@@ -360,6 +360,9 @@ async function opponentMove(){
   S.log.push({san:m.san,uci:m.from+m.to+(m.promotion||''),who:'opp',before:fen}); S.fens.push(S.g.fen());
   S.phase='await'; S.busy=false; S.hintStage=0; S.browse=null;
   draw();
+  /* the file has no move for you after this reply (a side line that stops on the opponent's move): the line ends here,
+     as on the private site, instead of asking for a move nothing can be judged against (11 Nov 2026) */
+  if(S.op.rep&&!repMovesAt(S.g.fen()).length) return endLine(`Your prep stops here, after ${m.san}.`);
   status('','Your move.',note);
   renderSide(); renderBook(); renderEval();
 }

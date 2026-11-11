@@ -1537,6 +1537,21 @@ section('t56: shared/engine.js — a build’s wasm can be looked up first (a co
   } finally { w.Worker=RealWorker; w.URL.createObjectURL=RealCOU }
 }
 
+section('t57: a side line that stops on the opponent’s move ends the line at once (as on the private site)');
+{
+  const {w}=await makePage({analyse:async()=>[{uci:'b1c3',cp:0.3,mate:null}]});
+  const $=id=>w.document.getElementById(id), O=w.OpeningsTab, S=O.state;
+  $('o-pgnbox').value='[Event "Stop"]\n\n1. e4 e5 2. Nf3 Nc6 (2... d6) 3. Bb5 *'; $('o-repname').value='Stop rep'; $('o-repside').value='white'; $('o-repsave').click(); await sleep(150);
+  const rnd=w.Math.random; w.Math.random=()=>0.9999;   /* the opponent takes the last candidate: the side line 2...d6 */
+  try{ O.newLine(); for(let t=0;t<60&&!(S.phase==='await'&&!S.busy&&S.g.turn()==='w');t++) await sleep(25);
+    await O.userMove('e2','e4'); for(let t=0;t<80&&!(S.phase!=='await'||(!S.busy&&S.g.turn()==='w'&&S.g.history().length===2));t++) await sleep(25);
+    await O.userMove('g1','f3'); for(let t=0;t<80&&S.phase!=='done';t++) await sleep(25);
+  } finally { w.Math.random=rnd }
+  assert(S.g.history().join(' ')==='e4 e5 Nf3 d6','the opponent played the side line ('+S.g.history().join(' ')+')');
+  assert(S.phase==='done'&&/Your prep stops here, after d6/.test($('o-status').textContent),'the line ends at once: '+$('o-status').textContent.slice(0,60));
+  assert(!S.misses.length,'nothing counted as a miss');
+}
+
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));
 process.exit(H.failures?1:0);
 })().catch(e=>{ console.error('Test run crashed:',e); process.exit(1) });
