@@ -3,6 +3,7 @@ on:
   push:
     branches: [main, parity-1, positions, one-codebase, shared-screens, improvements, improvements-2, improvements-3, improvements-4, overnight-11nov, overnight-2, friend-pack]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   guard-and-test:
