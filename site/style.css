@@ -251,6 +251,12 @@ body.welcomed[data-view="today"] .hero{display:none}
 .endbar .btn{background:#fff;color:#13284a;border-color:#fff;flex:none}
 .boardbox.end-bad .board{box-shadow:0 0 0 4px var(--bad)}.end-bad .endbar{background:var(--bad)}
 .endbar .endtext{cursor:pointer}
+/* Retry the miss in the bar on the board: phones only (laptops keep it on the end card); the bar's buttons never wrap */
+@media (min-width:861px){#o-endretry{display:none!important}}
+@media (max-width:860px){#o-endbar:has(#o-endretry:not([hidden])){gap:8px;padding:8px 10px;font-size:.9rem}
+  #o-endbar:has(#o-endretry:not([hidden])) .endbtns{flex-wrap:nowrap;gap:4px}#o-endbar:has(#o-endretry:not([hidden])) .btn{padding:6px 8px;white-space:nowrap}}
+@media (max-width:400px){#o-endbar:has(#o-endretry:not([hidden])){flex-wrap:wrap;row-gap:6px;padding:7px 8px}#o-endbar:has(#o-endretry:not([hidden])) #o-endtext{flex:1 1 100%}
+  #o-endbar:has(#o-endretry:not([hidden])) .btn{padding:5px 6px;font-size:.84rem}}
 
 /* first-visit guide */
 .welcome{position:relative;margin-bottom:12px;border-top:3px solid var(--brass)}

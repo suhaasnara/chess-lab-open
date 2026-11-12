@@ -198,9 +198,10 @@ function selectOpening(id){
   let o=openings().find(x=>x.id===id)||firstListed(); if(!o) return;
   Store.put('olast',o.id);
   const as=(Store.get('oas')||{})[o.id]; if(as&&!o.rep&&!o.player&&as!==o.side) o={...o,side:as,asSide:true};
-  S.op=o; $('o-pickname').textContent=o.name; $('o-picklab').textContent=`${o.side==='white'?'White':'Black'} · ${o.rep?'repertoire':o.player?'vs a player':o.custom?'your position':o.any?'any opening':'opening'}`;
+  const lv0=oppLevel(), own0=ownLevel(); S.op=o; const lvMoved=oppLevel()!==lv0||own0!==ownLevel(); if(lvMoved) STAY.clear(); $('o-pickname').textContent=o.name; $('o-picklab').textContent=`${o.side==='white'?'White':'Black'} · ${o.rep?'repertoire':o.player?'vs a player':o.custom?'your position':o.any?'any opening':'opening'}`;
   if(o.rep) Book.moves(START,'b22');   /* club shares for prepared sidelines the elite book leaves out */
   newLine();
+  if(lvMoved) syncLevel();   /* this opening has its own opponent level, or the last one had */
 }
 
 let H=null;   /* Today, when it hosts this trainer: Next goes to the next item in the session */
@@ -210,7 +211,7 @@ function newLine(review){
   const redo=S.redoNext||null; S.redoNext=null; S.redo=redo; if(redo) review=null;
   S.review=review&&review.key?review:null;
   S.lineId++;
-  $('o-endbar').hidden=true; $('o-boardbox').classList.remove('end-good','end-warn');
+  $('o-endbar').hidden=true; $('o-endretry').hidden=true; $('o-boardbox').classList.remove('end-good','end-warn');
   S.g=new Chess(startFen()); S.phase='await'; S.busy=false; S.outBook=0; S.log=[]; S.userMoves=0; S.misses=[]; S.scored=[]; S.hintStage=0; S.repDone=new Set(); S.fens=[S.g.fen()]; S.endMsg=''; S.browse=null; S.oppPicks=[]; S.tb=null; S.finalEv=null; S.orientSet=false;
   S.startRating=stats(SID()).rating;
   if(!S.op.rep) SharedEngine.start();   /* presets, custom positions, Anything as White/Black: off-book moves are checked by Stockfish (a repertoire answers from your file) */
@@ -277,7 +278,16 @@ const after=(fen,u)=>{ const g=new Chess(fen); g.move({from:u.slice(0,2),to:u.sl
    Realistic weights x like the games do; Balanced and Sidelines first flatten it so prepared sidelines come up more.
    A reply that came up more often in your last 6 lines here than its weight says is pushed down; lines you missed before
    come up more. Moves the elite book leaves out take their share in the club 2200+ book. */
-function oppBookNow(fen){ const lv=Settings.get('olevel'); if(lv&&lv!=='masters'){ const b=Book.now(fen,lv); if(b&&b.total>=20){ b.level=lv; return b } }
+/* Opponent level per opening (12 Nov 2026, as the private site's v93 #6): localStorage key olevels = {m:{<opening id>: level}},
+   set with "Only for <opening>" in the trainer settings (then the Opponent slider moves that opening's level); openings
+   without one use the global olevel, unchanged. */
+const levelMap=()=>(Store.get('olevels')||{}).m||{};
+const ownLevel=()=>!!(S.op&&Book.LEVELS[levelMap()[S.op.id]]);
+function oppLevel(){ const own=S.op&&levelMap()[S.op.id], v=Book.LEVELS[own]?own:Settings.get('olevel'); return Book.LEVELS[v]?v:'masters' }
+function setOwnLevel(on,lv){ if(!S.op) return; const m=Object.assign({},levelMap());
+  if(on) m[S.op.id]=Book.LEVELS[lv]?lv:oppLevel(); else delete m[S.op.id];
+  if(Object.keys(m).length) Store.put('olevels',{m}); else Store.del('olevels'); syncLevel() }
+function oppBookNow(fen){ const lv=oppLevel(); if(lv&&lv!=='masters'){ const b=Book.now(fen,lv); if(b&&b.total>=20){ b.level=lv; return b } }
   const m=Book.now(fen,'masters'); if(m) m.level='masters'; return m }
 function replyShare(fen,u,bk){ const row=bk&&bk.rows.find(r=>r.uci.slice(0,4)===u.slice(0,4)); if(row) return row.share;
   if(!bk||bk.level!=='masters') return 0; const cb=Book.now(fen,'b22'); if(!cb||cb.total<20) return 0;
@@ -332,17 +342,17 @@ async function opponentMove(){
   const fen=S.g.fen();
   let uci=null, note='';
   const sc=redoScript();
-  if(sc){ uci=sc; note='Redo: the same reply as last time.'; if(S.op.rep){ await Book.oppMoves(fen); if(lid!==S.lineId) return } }
+  if(sc){ uci=sc; note='Redo: the same reply as last time.'; if(S.op.rep){ await Book.oppMoves(fen,oppLevel()); if(lid!==S.lineId) return } }
   else if(S.op.rep){
     const file=repMovesAt(fen);
     if(!file.length) return endLine('End of your prep in this line.');
-    const bk=await Book.oppMoves(fen); await Book.moves(fen,'b22'); if(lid!==S.lineId) return;
+    const bk=await Book.oppMoves(fen,oppLevel()); await Book.moves(fen,'b22'); if(lid!==S.lineId) return;
     const p=repPick(fen,file); uci=p.uci; note=p.why;
     if(bk&&!bk.demo&&bk.level&&bk.level!=='masters') note=(note?note+' · ':'')+Book.levelLabel(bk.level)+' opponent';
   }else{
     /* against a player: their own moves while their games go, then the book */
     const theirs=notAvoided(S.op.player&&window.PlayersTab?PlayersTab.movesAt(S.op.player,S.op.their,fen).filter(x=>x.me):[],x=>x.uci);
-    const bk=theirs.length?null:await Book.oppMoves(fen); if(lid!==S.lineId) return;
+    const bk=theirs.length?null:await Book.oppMoves(fen,oppLevel()); if(lid!==S.lineId) return;
     if(theirs.length){ const tot=theirs.reduce((a,x)=>a+x.n,0); const x=pickW(theirs,theirs.map(y=>y.n)); uci=x.uci;
       note=`${S.op.name.replace(/^vs /,'')} played ${x.san} in ${x.n} of ${tot} game${tot>1?'s':''} here.` }
     else if(!bk||!bk.rows.length||(!bk.demo&&bk.total<20)){
@@ -525,6 +535,9 @@ function endLine(msg){
   const box=$('o-boardbox'); box.classList.remove('end-good','end-warn'); box.classList.add(S.misses.length?'end-warn':'end-good');
   $('o-endtext').textContent=(S.misses.length?`${msg} ${S.misses.length} miss${S.misses.length>1?'es':''}`:`${msg} ✓ All right`)+(training()?'':` · ${delta>=0?'+':''}${delta}`);
   $('o-endbar').hidden=false;
+  /* phones (12 Nov 2026): Retry the miss one tap away in the bar on the board, beside Next line and Redo, only after a line
+     with a miss; laptops keep it on the end card only (style.css hides it there) */
+  $('o-endretry').hidden=!(canRedo()&&firstMiss());
   draw(); renderSide(); renderBook(); renderEval();
   finalEval(S.op.id,S.lineId);
   if(H) H.changed();
@@ -643,8 +656,8 @@ function renderSide(){
   const facts=$('o-facts');
   facts.innerHTML=`<dt>Opening</dt><dd>${names?esc(names[1])+' <span class="note">('+esc(names[0])+')</span>':'—'}</dd>
     <dt>Side</dt><dd>${side()==='white'?'White':'Black'}</dd>
-    <dt>Opponent</dt><dd>${esc(Book.levelLabel(Settings.get('olevel')))}</dd>
-    <dt>Book</dt><dd>${Book.hasBook(Settings.get('olevel'))?esc(Book.levelLabel(Settings.get('olevel')))+' games (Lichess, CC0)':'Named lines (no game counts)'}</dd>`+
+    <dt>Opponent</dt><dd>${esc(Book.levelLabel(oppLevel()))}${ownLevel()?' <span class="note">(this opening only)</span>':''}</dd>
+    <dt>Book</dt><dd>${Book.hasBook(oppLevel())?esc(Book.levelLabel(oppLevel()))+' games (Lichess, CC0)':'Named lines (no game counts)'}</dd>`+
     (S.op.rep?`<dt>Sidelines</dt><dd>${esc(VARIETY[variety()][0])}</dd>`:'');
   const lk=$('o-lichess');
   lk.href=S.op.startFen?'https://lichess.org/analysis/'+encodeURIComponent(S.g.fen().replace(/ /g,'_')):'https://lichess.org/analysis/pgn/'+encodeURIComponent(S.log.map(e=>e.san).join(' '));
@@ -662,7 +675,7 @@ function browse(k){ if(!S.g||!S.log.length) return; S.browse=(k==null||k>=S.log.
 async function renderBook(){
   const el=$('o-bookrows');
   const show=training()||S.phase==='done';
-  const lv=Settings.get('olevel');
+  const lv=oppLevel();
   $('o-booklabel').textContent=lv==='masters'?'Elite book':'Book: '+Book.levelLabel(lv)+' and Elite';
   if(!S.op){ el.innerHTML='<p class="note">Pick an opening to see the book.</p>'; return }
   if(!show){ el.innerHTML='<p class="note">The book shows here after the line (Rated mode).</p>'; return }
@@ -733,14 +746,14 @@ async function doImport(){
 
 function renderAcct(){
   const el=$('o-acct'); if(!el) return;
-  const lv=Settings.get('olevel');
+  const lv=oppLevel();
   el.textContent=Book.hasBook(lv)
     ?(lv==='masters'?'Games between Lichess players rated 2500+ and 2300+ (Lichess Elite Database).':'Rated rapid and classical Lichess games at this level (Lichess open database).')
     :'This level’s book isn’t loaded, so the opponent uses named lines checked by Stockfish.';
 }
 function syncLevel(){
-  const lv=Settings.get('olevel'); const i=Math.max(0,Book.ORDER.indexOf(Book.LEVELS[lv]?lv:'masters'));
-  $('o-level').value=String(i); $('o-levelname').textContent=Book.levelLabel(Book.ORDER[i]);
+  const lv=oppLevel(); const i=Math.max(0,Book.ORDER.indexOf(Book.LEVELS[lv]?lv:'masters'));
+  $('o-level').value=String(i); $('o-levelname').textContent=Book.levelLabel(Book.ORDER[i])+(ownLevel()?' · this opening':'');
   STAY.clear(); renderSide(); renderBook();
 }
 
@@ -752,7 +765,9 @@ function renderSetModal(){
   const sw=(k,label,hint)=>`<div class="mset"><label class="toggle swrow"><input type="checkbox" data-k="${k}"${D(k)?' checked':''}> <b>${label}</b></label>${hint?`<p class="note">${hint}</p>`:''}</div>`;
   const sel=(k,label,opts,hint)=>`<div class="mset"><label class="field"><b>${label}</b><select data-k="${k}">${opts.map(([v,l])=>`<option value="${esc(v)}"${String(D(k))===String(v)?' selected':''}>${esc(l)}</option>`).join('')}</select></label>${hint?`<p class="note">${hint}</p>`:''}</div>`;
   const len=D('olen');
+  const own=ownLevel(), glob=Book.levelLabel(Book.LEVELS[Settings.get('olevel')]?Settings.get('olevel'):'masters');
   $('o-setbody').innerHTML=
+    (S.op?`<div class="mset"><label class="toggle swrow"><input type="checkbox" data-lvonly${own?' checked':''}> <b>Opponent level only for ${esc(S.op.name)}</b></label><p class="note">${own?`This opening keeps its own level (${esc(Book.levelLabel(oppLevel()))}); the Opponent slider now moves it. Your other openings use ${esc(glob)}.`:`Off: the Opponent slider (${esc(glob)}) applies to every opening without a level of its own. On: this opening keeps the level it has now.`}</p></div>`:'')+
     `<div class="mset"><b>Line length</b>${seg('olen',Object.keys(LENS).map(k=>[k,LEN_NAMES[k]]))}<p class="note">${LEN_NAMES[len]||'Long'}: the line ends after ${LENS[len]||12} of your moves, or earlier if the book or your prep runs out.</p></div>`+
     `<div class="mset"><b>Sidelines in repertoires</b>${seg('ovariety',Object.entries(VARIETY).map(([k,[l]])=>[k,l]))}<p class="note">${esc(VARIETY[variety()][1])}</p></div>`+
     `<div class="mset"><label class="field"><b>Opponent only plays moves played at least <span id="o-minv">${+D('ominshare')||0}%</span> of the time</b>
@@ -815,6 +830,7 @@ function init(){
   $('o-newline').addEventListener('click',()=>H?H.next():newLine());
   $('o-endnext').addEventListener('click',newLine);
   $('o-endredo').addEventListener('click',()=>redoLine());
+  $('o-endretry').addEventListener('click',()=>retryMiss());
   $('o-hint').addEventListener('click',hint);
   $('o-back').addEventListener('click',takeBack);
   $('o-endhere').addEventListener('click',endHere);
@@ -847,7 +863,7 @@ function init(){
   /* settings modal: every control writes its setting at once */
   $('o-setbody').addEventListener('click',e=>{ if(e.target.id==='o-unskip'&&S.op){ Store.del('oskip-'+S.op.id); renderSetModal(); return } const b=e.target.closest('[data-seg]'); if(!b) return; Settings.set(b.dataset.seg,b.dataset.v); renderSetModal() });
   $('o-setbody').addEventListener('input',e=>{ const t=e.target; if(t.type==='range'){ $('o-minv').textContent=t.value+'%' } });
-  $('o-setbody').addEventListener('change',e=>{ const t=e.target, k=t.dataset.k; if(!k) return; Settings.set(k,t.type==='checkbox'?t.checked:t.type==='range'?+t.value:t.value); renderSetModal() });
+  $('o-setbody').addEventListener('change',e=>{ const t=e.target, k=t.dataset.k; if(t.hasAttribute('data-lvonly')){ setOwnLevel(t.checked); renderSetModal(); return } if(!k) return; Settings.set(k,t.type==='checkbox'?t.checked:t.type==='range'?+t.value:t.value); renderSetModal() });
   $('o-setreset').addEventListener('click',()=>{ for(const k of SETTINGS_KEYS) Settings.set(k,Settings.DEF[k]); renderSetModal() });
   for(const id of ['o-setclose','o-statsclose']) $(id).addEventListener('click',()=>{ $(id).closest('.modal').hidden=true });
   for(const id of ['o-setmodal','o-statsmodal','o-importmodal']) $(id).addEventListener('click',e=>{ if(e.target.id===id) $(id).hidden=true });
@@ -861,7 +877,8 @@ function init(){
   /* Opponent level slider: weakest (Lichess 1000) to Elite 2500+; same setting as Settings → Opponent level */
   const lvl=$('o-level');
   lvl.addEventListener('input',()=>{ $('o-levelname').textContent=Book.levelLabel(Book.ORDER[+lvl.value]) });
-  lvl.addEventListener('change',()=>{ Settings.set('olevel',Book.ORDER[+lvl.value]); syncLevel(); if(window.SettingsTab&&SettingsTab.refresh) SettingsTab.refresh() });
+  lvl.addEventListener('change',()=>{ const lv=Book.ORDER[+lvl.value]; if(ownLevel()){ setOwnLevel(true,lv); return }   /* this opening's own level */
+    Settings.set('olevel',lv); syncLevel(); if(window.SettingsTab&&SettingsTab.refresh) SettingsTab.refresh() });
   syncLevel();
   function modeBtns(){ const t=training(); $('o-rated').setAttribute('aria-pressed',String(!t)); $('o-training').setAttribute('aria-pressed',String(t)); if(S.g) draw(); renderSide(); renderEval() }
   modeBtns();
@@ -894,6 +911,6 @@ function init(){
   renderList();
   board.set(new Chess(),{orient:'w',locked:true});
 }
-window.OpeningsTab={init,host:h=>{ H=h||null; $('o-newline').firstChild.textContent=H?'Next ':'Next line ' },flip:()=>$('o-flip').click(),openDefault,PRESETS,renderList,endHere,SID,skipList,renderCaptured,customs,saveCustom,deleteCustom,openNew,saveNew,saveCurrent,studyApi,fetchStudy,doImport,syncLevel,soundDemoMoves,get state(){return S},selectOpening,newLine,userMove,parseRepPGN,moveDifficulty,openings,stats,
+window.OpeningsTab={init,oppLevel,levelMap,setOwnLevel,ownLevel,host:h=>{ H=h||null; $('o-newline').firstChild.textContent=H?'Next ':'Next line ' },flip:()=>$('o-flip').click(),openDefault,PRESETS,renderList,endHere,SID,skipList,renderCaptured,customs,saveCustom,deleteCustom,openNew,saveNew,saveCurrent,studyApi,fetchStudy,doImport,syncLevel,soundDemoMoves,get state(){return S},selectOpening,newLine,userMove,parseRepPGN,moveDifficulty,openings,stats,
   takeBack,canTakeBack,redoLine,canRedo,retryMiss,browse,hint,repMap,annAt,repPick,ordered,saveOrder,setArrange,moveItem,renderStats,openStats,openSettings,firstListed};
 })();

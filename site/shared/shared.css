@@ -99,3 +99,31 @@ nav.tabs a.settab svg{flex:none;width:22px;height:22px}
 .vmv:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
 .vpick{outline:2px solid var(--blue);outline-offset:1px;border-radius:3px}   /* ↓ ↑: the move → plays where lines branch */
 .vnote{color:var(--muted);font-style:italic}.vpar,.vdead{color:var(--muted)}
+/* Blind tactics (shared/blind.js): the settings card, the move list with the task, the move box, the picked square, the
+   peek frame; on phones the toolbar is a bottom bar (Next, Peek, Give up, Flip; 44 px targets). Scoped to .bl. */
+.bl .bl-set{display:flex;flex-direction:column;gap:8px;padding:10px 12px;margin:0 0 6px}
+.bl .bl-row{display:flex;align-items:center;gap:8px;margin:0}.bl .bl-row input[type=range]{flex:1;min-width:0;accent-color:var(--navy)}
+.bl .bl-row .label{white-space:nowrap}
+.bl .bl-moves{padding:12px 14px}
+.bl .bl-line{margin:6px 0 10px;line-height:1.8;font-size:1rem;overflow-wrap:anywhere}
+.bl .bl-no{color:var(--muted);margin-right:3px}.bl .bl-h{color:var(--ink);margin-right:2px}
+.bl .bl-task{display:inline-block;font-family:var(--sans);font-weight:700;color:var(--head);margin:0 6px 0 2px}
+.bl .bl-you{font-weight:700;color:var(--good);margin-right:2px}.bl .bl-opp{color:var(--ink);margin-right:2px}
+.bl .bl-form{display:flex;gap:6px;margin:0}
+.bl .bl-form input{flex:1;min-width:0;border:1px solid var(--line);border-radius:var(--radius);padding:7px 10px;font:inherit;font-size:16px;background:var(--white);color:var(--ink)}
+.bl .bl-form input:focus{border-color:var(--blue);outline:none;box-shadow:0 0 0 3px var(--callout)}
+.bl .bl-how{margin:8px 0 0;font-size:.78rem}
+.bl .sq.bl-sel{box-shadow:inset 0 0 0 3px var(--blue)}
+.bl .board.bl-peek{outline:3px solid var(--brass);outline-offset:2px}
+@media (max-width:860px){
+  .bl .side .bl-moves{order:-2}.bl .side .status{order:-1}   /* one column: the board, then the moves and the box, then the verdict */
+  .bl .bl-bar .btn,.bl .bl-form input,.bl .bl-form .btn{min-height:44px}
+  .bl .bl-set .chip,.bl .filters .chip{min-height:44px}
+}
+@media (max-width:600px){   /* phones: the toolbar is a bar at the bottom of the screen */
+  .bl{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
+  .bl .bl-bar{position:fixed;left:0;right:0;bottom:0;z-index:40;margin:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;
+    padding:8px max(10px,env(safe-area-inset-left,0px)) calc(8px + env(safe-area-inset-bottom,0px));background:var(--white);border-top:1px solid var(--line);box-shadow:0 -2px 10px rgba(0,0,0,.08)}
+  .bl .bl-bar .btn{justify-content:center;padding:6px 4px;white-space:nowrap}
+  .bl .bl-bar kbd{display:none}
+}
