@@ -190,7 +190,7 @@ function renderReport(user,site,rows,total,final){
   const band=r=>r==null?null:r<1200?'under 1200':r>=2200?'2200+':`${Math.floor(r/200)*200}–${Math.floor(r/200)*200+199}`;
   const bands=new Map(); for(const g of all){ const b=band(g.color==='w'?g.br:g.wr); if(!b) continue; const o=bands.get(b)||{n:0,s:0}; o.n++; o.s+=sc(g); bands.set(b,o) }
   const bandRows=[...bands.entries()].sort((a,b)=>(parseInt(a[0])||0)-(parseInt(b[0])||0)||(a[0]<b[0]?-1:1));
-  const yearly=yearlyOf(all,sc,site), ost=Yearly.oppStats(yearly.games);
+  const yearly=yearlyOf(all,sc,site);
   const ph={opening:[],middlegame:[],endgame:[]}; for(const r of rows) if(r.marks.phase) for(const k in ph) ph[k].push(...r.marks.phase[k]);
   const avg=a=>a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length):null;
   const opTable=list=>`<table style="margin-top:6px"><tr><th>Opening</th><th>Games</th><th>Score</th><th>Blunders / mistakes / inaccuracies per game</th></tr>${list.map(([k,o])=>`<tr><td>${esc(k)}</td><td>${o.n}</td><td>${Math.round(100*o.s/o.n)}%</td><td>${(o.blun/o.n).toFixed(1)} / ${(o.mist/o.n).toFixed(1)} / ${(o.inacc/o.n).toFixed(1)}</td></tr>`).join('')||'<tr><td colspan="4" class="note">No games with this colour.</td></tr>'}</table>`;
@@ -208,7 +208,7 @@ function renderReport(user,site,rows,total,final){
     <div class="stat"><b>${(blun/rows.length).toFixed(1)} / ${(mist/rows.length).toFixed(1)} / ${(inacc/rows.length).toFixed(1)}</b><span class="note">per game${Help.q('The same three counts divided by the number of games analyzed.')}</span></div>
     <div class="stat"><b>${conv==null?'—':conv+'%'}</b><span class="note">won from +2 (${convs.length} games)${Help.q('Of the games where you were 2 pawns or more ahead (by the engine), the share you went on to win.')}</span></div>
     <div class="stat"><b>${save==null?'—':save+'%'}</b><span class="note">saved from −2 (${saves.length} games)${Help.q('Of the games where you were 2 pawns or more behind, the share you drew or won.')}</span></div>
-    ${Yearly.tile(ost)}
+    ${Yearly.tile(yearly)}
     <div class="stat"><b>${pun.length?pun.length-toPunish.length+' / '+pun.length:'—'}</b><span class="note">opponents’ mistakes you punished${Help.q("Your opponents' moves that dropped their Win% by 10 points or more (a Lichess mistake), and how many of them you made pay for (your next move kept most of the gain). "+WinPct.HELP)}</span></div>
   </div>
   ${Yearly.section(yearly)}

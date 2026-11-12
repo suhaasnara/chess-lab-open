@@ -167,13 +167,17 @@ body[data-view="guess"] main.inner{max-width:1200px;padding-top:14px}
 @media (max-width:560px){.tvset .setrow{grid-template-columns:minmax(0,1fr)}}
 /* TV.pick: a .field select keeps shared.css's chevron (.field select resets the background on both sites) */
 .field.tvpick select{background:var(--white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%23889' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 10px center/11px 8px;padding-right:30px}
-/* Yearly.section (shared/yearly.js): Year by year on the report cards */
+/* Yearly.section (shared/yearly.js): Year by year on the report cards; pool lines under each year */
 .ytable td{vertical-align:top}
 .ytable th .note{font-weight:400}
-.ydelta{display:inline-block;margin-left:4px;font-size:.78rem;white-space:nowrap}
 .ytable td.yname{white-space:nowrap}
-.yrate{white-space:nowrap;line-height:1.35}
-.yrate+.yrate{margin-top:6px}
-.yrate .note{font-size:.8rem}
-.yrate .ypool{line-height:1.2}
-@media (max-width:640px){.ytable td.yratecell{flex-direction:column;align-items:flex-end}.ytable td.yratecell::before{align-self:flex-start}.yrate{text-align:right}}
+.ytable td.yname .note{font-size:.78rem;white-space:nowrap}
+.ydelta{display:inline-block;margin-left:4px;font-size:.78rem;white-space:nowrap}
+.ymulti tr.yrow td{border-bottom:0;font-weight:600}
+.ymulti tr.yrow td .note{font-weight:400}
+.ymulti tr.ypoolrow td{border-top:0;padding-top:3px;padding-bottom:3px;font-size:.92rem}
+.ymulti tr.ypoolrow td.ypname{padding-left:22px;color:var(--muted);white-space:nowrap}
+.ymulti tr.ypoolrow+tr.yrow td{border-top:1px solid var(--line)}
+.ytable td.ycomb{text-align:center}
+.stat .yperf{margin-top:4px;line-height:1.3}.stat .yperf b{font-size:1.15rem}
+@media (max-width:640px){.ymulti tr.yrow{border-bottom:0;padding-bottom:2px}.ymulti tr.ypoolrow{padding:4px 12px 4px 26px;border-bottom:0}.ymulti tr.ypoolrow td.ypname{padding-left:0}.ymulti tr.ypoolrow td:empty,.ytable td.ycomb{display:none}.ymulti tr.yrow{border-top:1px solid var(--line)}}

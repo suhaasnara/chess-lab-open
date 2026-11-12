@@ -186,7 +186,8 @@ tr:last-child td{border-bottom:0}
 .setrow .note{margin-top:1px}
 
 /* Analyze */
-.repgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:14px}
+.repgrid{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;margin-top:14px}   /* one card per row: the openings table needs the width */
+.repgrid .card{min-width:0;overflow-x:auto}
 .gamerow{display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center;padding:7px 10px;border-bottom:1px solid var(--line);font-size:.9rem}
 .gamerow:last-child{border-bottom:0}
 .prog{height:6px;border-radius:3px;background:var(--callout);overflow:hidden;margin-top:8px}

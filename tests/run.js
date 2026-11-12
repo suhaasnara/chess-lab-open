@@ -1378,15 +1378,19 @@ section('t60: Year by year (shared/yearly.js): FIDE performance, opponents, rati
   /* FIDE Rating Regulations 8.1.1: .99 677, .83 273, .75 193, .66 117, .54 29, .50 0, below .50 the mirror */
   assert(Y.dp(1)===800&&Y.dp(.99)===677&&Y.dp(.83)===273&&Y.dp(.75)===193&&Y.dp(.66)===117&&Y.dp(.54)===29&&Y.dp(.5)===0&&Y.dp(.49)===-7&&Y.dp(.25)===-193&&Y.dp(0)===-800,'dp: FIDE’s table');
   assert(Y.DP.length===51&&Y.DP.every((v,i)=>!i||v<Y.DP[i-1]),'dp table: 51 entries, falling');
-  const o=Y.oppStats([{opp:2000,score:1},{opp:1800,score:0.5},{opp:2200,score:0},{opp:0,score:1}]);
-  assert(o.oppN===3&&o.oppAvg===2000&&o.oppMed===2000&&o.perf===2000,'oppStats: unrated opponents left out; 1.5 of 3 vs 2000 average = 2000 ('+JSON.stringify(o)+')');
+  const o=Y.oppStats([{opp:2000,score:1},{opp:1800,score:0.5},{opp:2200,score:0},{opp:1900,score:1},{opp:2100,score:0},{opp:0,score:1}]);
+  assert(o.oppN===5&&o.oppAvg===2000&&o.oppMed===2000&&o.perf===2000,'oppStats: unrated opponents left out; 2.5 of 5 vs 2000 average = 2000 ('+JSON.stringify(o)+')');
   assert(Y.oppStats([{opp:1500,score:1},{opp:1600,score:1},{opp:2400,score:0.5},{opp:1700,score:1}]).oppMed===1650,'median of an even count: the middle two averaged');
   const g=(date,score,opp,before,after,pool='Chess.com rapid')=>({date,score,opp,before,after,pool});
   const S=Y.summarize([g('2025-03-01',1,1500,1490,1500),g('2025-03-02',0,1520,1500,1492),g('2025-04-01',1,1480,1492,1500),g('2025-05-01',0.5,1510,1500,1500),g('2025-06-01',1,1490,1500,1508),
     g('2026-01-01',1,1600,1508,1520),g('2026-01-02',1,1610,1520,1531),g('2026-02-01',0,1590,1531,1520),g('2026-03-01',1,1620,1520,1532),g('2026-04-01',1,1600,1532,1544),g('2026-04-02',0,1300,1544,1530)]);
-  assert(Object.keys(S.byYear).join()==='2025,2026'&&S.byYear['2026'].games===6&&S.byYear['2026'].oppMed===1600,'summarize: per year');
-  const r=S.ratingByYear['2026'][0];
-  assert(r.start===1508&&r.end===1530&&r.gained===12+11+12+12&&r.lost===11+14,'rating flow: start, end, gained and lost from each game ('+JSON.stringify(r)+')');
+  assert(Object.keys(S.byYear).join()==='2025,2026'&&S.byYear['2026'].games===6&&S.byYear['2026'].oppMed===undefined,'summarize: per year (no opponents figure across pools)');
+  const M=Y.summarize([g('2026-01-01',1,1500,0,0,'A'),g('2026-01-02',1,1500,0,0,'A'),g('2026-01-03',1,1500,0,0,'A'),g('2026-01-04',1,1500,0,0,'A'),g('2026-01-05',1,1500,0,0,'A'),
+    g('2026-01-01',0,2500,0,0,'B'),g('2026-01-02',0,2500,0,0,'B'),g('2026-01-03',0,2500,0,0,'B'),g('2026-01-04',0,2500,0,0,'B'),g('2026-01-05',0,2500,0,0,'B')]);
+  assert(M.pools.length===2&&M.pools.find(p=>p.pool==='A').perf===2300&&M.pools.find(p=>p.pool==='B').perf===1700,'two pools: each its own performance (A 2300, B 1700), never one mixed figure');
+  assert(Y.oppStats([{opp:1500,score:1},{opp:1500,score:1}]).perf===null,'no performance from under 5 rated games');
+  const r=S.poolsByYear['2026'][0];
+  assert(r.perf!=null&&r.oppMed===1600&&r.start===1508&&r.end===1530&&r.gained===12+11+12+12&&r.lost===11+14,'rating flow: start, end, gained and lost from each game ('+JSON.stringify(r)+')');
   const html=Y.section(S,{now:new Date('2026-11-12')});
   assert(/Year by year/.test(html)&&/2026 <span class="note">so far/.test(html)&&!/Won from \+2/.test(html),'section: the current year marked "so far"; no conversion columns without evals');
   assert(Y.section({byYear:{'2026':S.byYear['2026']}})==='','one year: no section');
@@ -1628,8 +1632,9 @@ section('t59: a Chess Lab pack — Store.importPack merges by id, keeps your res
     drills:[dA,dB],bc:[bcA,bcB],
     report:{since:null,overall:{games:120},views:{'online|all':{overall:{games:120,wins:60,draws:10,losses:50,score:54.2,convN:30,convWon:21,convDrawn:3,conversion:70,saveN:25,saveHeld:6,saveRate:24},
       bySpeed:{'Chess.com blitz':{games:80,wins:40,draws:6,losses:34,score:53.8,convN:20,convWon:14,convDrawn:2,conversion:70,saveN:17,saveHeld:4,saveRate:23.5},'Chess.com rapid':{games:40,wins:20,draws:4,losses:16,score:55,convN:10,convWon:7,convDrawn:1,conversion:70,saveN:8,saveHeld:2,saveRate:25}},
-      byYear:{'2025':{games:20,wins:9,draws:2,losses:9,score:50,convN:5,convWon:3,convDrawn:1,conversion:60,saveN:4,saveHeld:1,saveRate:25,oppN:20,oppAvg:1500,oppMed:1490,perf:1500},'2026':{games:100,wins:51,draws:8,losses:41,score:55,convN:25,convWon:18,convDrawn:2,conversion:72,saveN:21,saveHeld:5,saveRate:23.8,oppN:100,oppAvg:1580,oppMed:1600,perf:1616}},
-      ratingByYear:{'2025':[{pool:'Chess.com blitz',games:20,start:1480,end:1530,gained:120,lost:70}],'2026':[{pool:'Chess.com blitz',games:80,start:1530,end:1610,gained:400,lost:320},{pool:'Chess.com rapid',games:20,start:1550,end:1540,gained:60,lost:70}]},
+      byYear:{'2025':{games:20,wins:9,draws:2,losses:9,score:50,convN:5,convWon:3,convDrawn:1,conversion:60,saveN:4,saveHeld:1,saveRate:25},'2026':{games:100,wins:51,draws:8,losses:41,score:55,convN:25,convWon:18,convDrawn:2,conversion:72,saveN:21,saveHeld:5,saveRate:23.8}},
+      poolsByYear:{'2025':[{pool:'Chess.com blitz',games:20,score:50,oppN:20,oppAvg:1500,oppMed:1490,perf:1500,start:1480,end:1530,gained:120,lost:70}],'2026':[{pool:'Chess.com blitz',games:80,score:55,oppN:80,oppAvg:1580,oppMed:1600,perf:1616,start:1530,end:1610,gained:400,lost:320},{pool:'Chess.com rapid',games:20,score:55,oppN:20,oppAvg:1900,oppMed:1910,perf:1935,start:1550,end:1540,gained:60,lost:70}]},
+      pools:[{pool:'Chess.com blitz',games:100,score:54,oppN:100,oppAvg:1564,oppMed:1580,perf:1592},{pool:'Chess.com rapid',games:20,score:55,oppN:20,oppAvg:1900,oppMed:1910,perf:1935}],
       byQuarter:{'2026 Q2':{games:50,wins:25,draws:5,losses:20,score:55,convN:12,convWon:8,convDrawn:1,conversion:66.7,saveN:10,saveHeld:3,saveRate:30},'2026 Q3':{games:50,wins:26,draws:3,losses:21,score:55,convN:13,convWon:10,convDrawn:1,conversion:76.9,saveN:11,saveHeld:2,saveRate:18.2}},
       byBand:{'Under 1800':{games:70,wins:45,draws:5,losses:20,score:67.9,convN:20,convWon:16,convDrawn:1,conversion:80,saveN:10,saveHeld:4,saveRate:40}},
       openings:[{family:'Italian Game',side:'white',games:30,wins:16,draws:2,losses:12,score:56.7,convN:8,convWon:6,convDrawn:0,conversion:75,saveN:5,saveHeld:1,saveRate:20,ev12:0.31,line:['e4','e5','Nf3','Nc6','Bc4']}]}}},
@@ -1677,12 +1682,16 @@ section('t59: a Chess Lab pack — Store.importPack merges by id, keeps your res
   assert(/From 120 online games/.test(rc.textContent)&&/70%/.test(rc.textContent),'lead and tiles from the pack (120 games, 70% conversion)');
   const hs=[...rc.querySelectorAll('h3')].map(h=>h.textContent);
   assert(['By opponent rating','By opening','By game type','Year by year','By quarter'].every(t=>hs.includes(t)),'tables: opponent rating, opening, game type, year by year, quarter ('+hs.join(', ')+')');
-  { const yt=rc.querySelector('.ytable'), rows=[...yt.querySelectorAll('tbody tr')];
-    assert(rows.length===2&&/1580 · 1600/.test(rows[1].textContent)&&/1616/.test(rows[1].textContent),'Year by year: opponents average · median and performance');
-    assert(/▲ 116/.test(rows[1].textContent)&&rows[1].querySelector('.ydelta.tgood'),'Year by year: the change in performance from the year before (▲ 116, green)');
-    assert(/Chess\.com blitz\s*1530 → 1610\s*\+400 \/ −320/.test(rows[1].textContent)&&/Chess\.com rapid/.test(rows[1].textContent),'Year by year: rating start → end and gained / lost, per pool');
-    assert(/2026 so far against 2025: a performance of 1616 \(\+116\)/.test(rc.querySelector('.yearbox').textContent)||/2026 against 2025: a performance of 1616 \(\+116\)/.test(rc.querySelector('.yearbox').textContent),'Year by year: the summary line');
-    assert(!/Performance rating/.test(rc.querySelector('.stats').textContent),'no performance tile when the pack’s overall has none (older packs)'); }
+  { const yt=rc.querySelector('.ytable'), prs=[...yt.querySelectorAll('tbody tr.ypoolrow')];
+    assert(yt.classList.contains('ymulti')&&yt.querySelectorAll('tbody tr.yrow').length===2&&prs.length===3,'Year by year: a row per year and a line per rating pool under it');
+    const blitz26=prs[1], rapid26=prs[2];
+    assert(/Chess\.com blitz/.test(blitz26.textContent)&&/1580 · 1600/.test(blitz26.textContent)&&/1616/.test(blitz26.textContent),'pool line: opponents average · median and performance in that pool');
+    assert(/▲ 116/.test(blitz26.textContent)&&blitz26.querySelector('.ydelta.tgood'),'pool line: performance against the same pool’s previous year (▲ 116)');
+    assert(/1530 → 1610\s*\+400 \/ −320/.test(blitz26.textContent),'pool line: rating start → end, gained / lost');
+    assert(/1935/.test(rapid26.textContent)&&!rapid26.querySelector('.ydelta'),'a pool new this year: no change shown (nothing to compare with)');
+    assert(/against 2025: a score of 55% \(\+5 points\)/.test(rc.querySelector('.yearbox').textContent)&&/Chess\.com blitz: performance 1616 \(\+116\)/.test(rc.querySelector('.yearbox').textContent),'the summary line: score overall, performance per pool');
+    const st=rc.querySelector('.stats').textContent;
+    assert(/Performance rating, by pool/.test(st)&&/1592/.test(st)&&/1935/.test(st),'the tile gives each pool’s performance, never one mixed figure'); }
   assert(!rc.querySelector('[data-prv]'),'online games only: no Over the board / Combined switch, no period switch');
   assert(/\+0\.31/.test(rc.textContent),'eval after move 12 from White’s side (+0.31 as White)');
   const drill=rc.querySelector('[data-pdrill]'); assert(drill,'"Drill this" on the opening row');
