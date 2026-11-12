@@ -167,3 +167,10 @@ body[data-view="guess"] main.inner{max-width:1200px;padding-top:14px}
 @media (max-width:560px){.tvset .setrow{grid-template-columns:minmax(0,1fr)}}
 /* TV.pick: a .field select keeps shared.css's chevron (.field select resets the background on both sites) */
 .field.tvpick select{background:var(--white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%23889' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 10px center/11px 8px;padding-right:30px}
+/* Yearly.section (shared/yearly.js): Year by year on the report cards */
+.ytable td{vertical-align:top}
+.ytable th .note{font-weight:400}
+.ydelta{display:inline-block;margin-left:4px;font-size:.78rem;white-space:nowrap}
+.yrate{white-space:nowrap;line-height:1.4}
+.yrate .note{font-size:.8rem}
+@media (max-width:640px){.ytable td.yratecell{flex-direction:column;align-items:flex-end}.ytable td.yratecell::before{align-self:flex-start}}

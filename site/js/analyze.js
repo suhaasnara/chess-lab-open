@@ -27,7 +27,8 @@ async function fetchLichess(user,blitz){
     const black=j.players.black.user?j.players.black.user.name:'Anonymous';
     const color=white.toLowerCase()===user.toLowerCase()?'w':'b';
     return {site:'lichess',id:j.id,date:new Date(j.createdAt).toISOString().slice(0,10),
-      white,black,wr:j.players.white.rating,br:j.players.black.rating,color,
+      white,black,wr:j.players.white.rating,br:j.players.black.rating,color,ts:j.createdAt,
+      wd:j.players.white.ratingDiff,bd:j.players.black.ratingDiff,
       result:j.winner?(j.winner==='white'?'1-0':'0-1'):'1/2-1/2',
       moves:(j.moves||'').split(' ').filter(Boolean),
       analysis:j.analysis||null,speed:j.speed,
@@ -54,7 +55,7 @@ async function fetchChesscom(user,blitz){
         const m=g.move(san,{sloppy:true}); if(!m) break; moves.push(m.san) }
       if(moves.length<10) continue;
       games.push({site:'chesscom',id:j.url,date:new Date(j.end_time*1000).toISOString().slice(0,10),
-        white:j.white.username,black:j.black.username,wr:j.white.rating,br:j.black.rating,color,
+        white:j.white.username,black:j.black.username,wr:j.white.rating,br:j.black.rating,color,ts:j.end_time*1000,
         result:j.white.result==='win'?'1-0':j.black.result==='win'?'0-1':'1/2-1/2',
         moves,analysis:null,speed:j.time_class,url:j.url});
       if(games.length>=CAP_CHESSCOM) break;
@@ -189,6 +190,7 @@ function renderReport(user,site,rows,total,final){
   const band=r=>r==null?null:r<1200?'under 1200':r>=2200?'2200+':`${Math.floor(r/200)*200}–${Math.floor(r/200)*200+199}`;
   const bands=new Map(); for(const g of all){ const b=band(g.color==='w'?g.br:g.wr); if(!b) continue; const o=bands.get(b)||{n:0,s:0}; o.n++; o.s+=sc(g); bands.set(b,o) }
   const bandRows=[...bands.entries()].sort((a,b)=>(parseInt(a[0])||0)-(parseInt(b[0])||0)||(a[0]<b[0]?-1:1));
+  const yearly=yearlyOf(all,sc,site), ost=Yearly.oppStats(yearly.games);
   const ph={opening:[],middlegame:[],endgame:[]}; for(const r of rows) if(r.marks.phase) for(const k in ph) ph[k].push(...r.marks.phase[k]);
   const avg=a=>a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length):null;
   const opTable=list=>`<table style="margin-top:6px"><tr><th>Opening</th><th>Games</th><th>Score</th><th>Blunders / mistakes / inaccuracies per game</th></tr>${list.map(([k,o])=>`<tr><td>${esc(k)}</td><td>${o.n}</td><td>${Math.round(100*o.s/o.n)}%</td><td>${(o.blun/o.n).toFixed(1)} / ${(o.mist/o.n).toFixed(1)} / ${(o.inacc/o.n).toFixed(1)}</td></tr>`).join('')||'<tr><td colspan="4" class="note">No games with this colour.</td></tr>'}</table>`;
@@ -206,8 +208,10 @@ function renderReport(user,site,rows,total,final){
     <div class="stat"><b>${(blun/rows.length).toFixed(1)} / ${(mist/rows.length).toFixed(1)} / ${(inacc/rows.length).toFixed(1)}</b><span class="note">per game${Help.q('The same three counts divided by the number of games analyzed.')}</span></div>
     <div class="stat"><b>${conv==null?'—':conv+'%'}</b><span class="note">won from +2 (${convs.length} games)${Help.q('Of the games where you were 2 pawns or more ahead (by the engine), the share you went on to win.')}</span></div>
     <div class="stat"><b>${save==null?'—':save+'%'}</b><span class="note">saved from −2 (${saves.length} games)${Help.q('Of the games where you were 2 pawns or more behind, the share you drew or won.')}</span></div>
+    ${Yearly.tile(ost)}
     <div class="stat"><b>${pun.length?pun.length-toPunish.length+' / '+pun.length:'—'}</b><span class="note">opponents’ mistakes you punished${Help.q("Your opponents' moves that dropped their Win% by 10 points or more (a Lichess mistake), and how many of them you made pay for (your next move kept most of the gain). "+WinPct.HELP)}</span></div>
   </div>
+  ${Yearly.section(yearly)}
   <div class="repgrid">
     <div class="card"><span class="label">Results by colour and by opponent rating${Help.q('Every game fetched counts here, analyzed or not: results need no engine. Score = your points as a share of the games.')}</span>
       <p class="note">From all ${all.length} fetched games.</p>
@@ -253,6 +257,19 @@ function renderReport(user,site,rows,total,final){
     sd.textContent='Saved — see the Drills tab.';
     if(window.DrillsTab) DrillsTab.refresh();
   });
+}
+/* Year by year (shared/yearly.js) from every fetched game: no engine needed. Ratings per pool (site + speed):
+   Lichess gives the rating going in and the change; Chess.com gives the rating after the game, so the one going in is
+   the previous game's in that pool. */
+function yearlyOf(all,sc,site){
+  const SITE={lichess:'Lichess',chesscom:'Chess.com'}[site]||site, last=new Map();
+  const games=[...all].sort((a,b)=>(a.ts||0)-(b.ts||0)).map(g=>{
+    const w=g.color==='w', own=w?g.wr:g.br, pool=`${SITE} ${g.speed}`; let before=null, after=null;
+    if(g.site==='lichess'){ const d=w?g.wd:g.bd; if(own>0&&d!=null){ before=own; after=own+d } }
+    else if(own>0){ after=own; before=last.has(pool)?last.get(pool):null; last.set(pool,own) }
+    return {date:g.date,order:g.ts||0,score:sc(g),opp:(w?g.br:g.wr)||0,pool,before,after};
+  });
+  return {games,...Yearly.summarize(games)};
 }
 function uciOf(fen,san){ const g=new Chess(fen); const m=g.move(san,{sloppy:true}); return m?m.from+m.to+(m.promotion||''):null }
 
