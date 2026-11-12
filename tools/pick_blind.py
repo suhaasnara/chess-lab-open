@@ -29,6 +29,7 @@ TARGET = 210
 SPARE = 1.35                     # candidates per band, for drops
 LONG_SHARE, LONG_FROM = 0.45, 1800
 BATCH = 300
+SAMPLES = []
 NOT_MOTIF = {'long', 'veryLong', 'short', 'oneMove', 'middlegame', 'endgame', 'advantage', 'crushing', 'mate',
              'master', 'masterVsMaster', 'superGM', 'opening'}
 
@@ -42,11 +43,15 @@ def quality(rating, dev, plays, pop):
 
 
 def ply_hint(url):
-    """GameUrl 'https://lichess.org/abcdEFGH/black#48' -> ('abcdEFGH', 48)"""
+    """GameUrl -> (game id, ply). Seen forms: 'https://lichess.org/abcdEFGH/black#48', 'https://lichess.org/abcdEFGH#48',
+    and with a path segment before the id ('.../game/abcdEFGH#48'): the id is the first 8-character segment."""
+    import re
     try:
-        base, _, ply = url.partition('#')
-        gid = base.rstrip('/').split('lichess.org/')[1].split('/')[0][:8]
-        return gid, int(ply or 0)
+        base, _, frag = url.partition('#')
+        path = base.split('lichess.org/', 1)[1]
+        gid = next(seg[:8] for seg in path.split('/') if re.fullmatch(r'[A-Za-z0-9]{8}([A-Za-z0-9]{4})?', seg))
+        m = re.match(r'\d+', frag)
+        return gid, int(m.group()) if m else 0
     except Exception:
         return None, 0
 
@@ -63,6 +68,8 @@ def pick(rows, rng):
         band = rating // 100 * 100
         if band not in BANDS or not quality(rating, dev, plays, pop):
             continue
+        if len(SAMPLES) < 3:
+            SAMPLES.append(row.get('GameUrl', ''))
         gid, ply = ply_hint(row.get('GameUrl', ''))
         if not gid or ply < HIDDEN + 1:
             continue
@@ -222,6 +229,7 @@ def main(src, out_path, report_path=None):
     with opener(src) as f:
         cands = pick(csv.DictReader(f), rng)
     allc = [c for v in cands.values() for c in v]
+    print('GameUrl samples:', SAMPLES)
     print(f'candidates: {len(allc)} in {len(cands)} bands, {len(set(c["gid"] for c in allc))} games; e.g. {[(c["pid"], c["gid"]) for c in allc[:3]]}')
     games = fetch_games([c['gid'] for v in cands.values() for c in v])
     out, report = finish(cands, games)
