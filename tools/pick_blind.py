@@ -104,7 +104,10 @@ def fetch_games(ids, log=print):
                                                   'User-Agent': 'chess-lab-open/pick_blind (github.com/suhaasnara/chess-lab-open)'})
             try:
                 with urllib.request.urlopen(req, timeout=120) as r:
-                    for line in r.read().decode().splitlines():
+                    body = r.read().decode()
+                    if i == 0:
+                        log(f'  first answer: HTTP {r.status}, {len(body)} bytes: {body[:200]!r}')
+                    for line in body.splitlines():
                         if line.strip():
                             g = json.loads(line)
                             games[g['id']] = {'moves': (g.get('moves') or '').split(), 'initialFen': g.get('initialFen')}
@@ -218,7 +221,8 @@ def main(src, out_path, report_path=None):
               .stream_reader(open(p, 'rb')), encoding='utf-8')) if src.endswith('.zst') else open
     with opener(src) as f:
         cands = pick(csv.DictReader(f), rng)
-    print(f'candidates: {sum(len(v) for v in cands.values())} in {len(cands)} bands')
+    allc = [c for v in cands.values() for c in v]
+    print(f'candidates: {len(allc)} in {len(cands)} bands, {len(set(c["gid"] for c in allc))} games; e.g. {[(c["pid"], c["gid"]) for c in allc[:3]]}')
     games = fetch_games([c['gid'] for v in cands.values() for c in v])
     out, report = finish(cands, games)
     json.dump(out, open(out_path, 'w'), separators=(',', ':'))
