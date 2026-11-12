@@ -78,7 +78,8 @@ window.Yearly=(()=>{
     perf:'FIDE’s performance rating: your opponents’ average rating plus the rating difference FIDE’s table gives for your score (+0 at 50%, +193 at 75%, +800 at 100%), inside one pool, from 5 or more games where the opponent’s rating is known.',
     rating:'Your rating at the start and the end of the year in this pool, and the points you gained and lost game by game (Chess.com gives the rating after each game, Lichess the rating before it and the change). Over the board on the private site: US Chess’s own record, event by event.',
     us:'From US Chess’s own record of your rated events: the regular rating going into the year’s first event and coming out of its last, and the points won and lost event by event.'};
-  const poolName=r=>r.official?`Over the board · US Chess${q(HELP.us)}`:esc(r.pool);
+  const label=r=>r.pool==='OTB classical'?'Over the board':r.pool;
+  const poolName=r=>r.official?`Over the board · US Chess${q(HELP.us)}`:esc(label(r));
 
   function section(R,opts={}){
     const Y=Object.entries((R&&R.byYear)||{}).filter(([,s])=>s.games>=(opts.minYear||5)); if(Y.length<2) return '';
@@ -123,13 +124,13 @@ window.Yearly=(()=>{
       if(r.perf!=null) bits.push(`performance ${r.perf}${p&&p.perf!=null?` (${signed(r.perf-p.perf)})`:''}`);
       if(r.oppAvg!=null) bits.push(`opponents averaging ${r.oppAvg}${p&&p.oppAvg!=null?` (${signed(r.oppAvg-p.oppAvg)})`:''}`);
       if(r.start!=null) bits.push(`rating ${r.start} → ${r.end} (+${r.gained}, −${r.lost})`);
-      if(bits.length) t+=` ${esc(r.official?'Over the board (US Chess)':r.pool)}: ${bits.join(', ')}.`;
+      if(bits.length) t+=` ${r.official?'Over the board (US Chess)':label(r)}: ${bits.join(', ')}.`;
     }
     return esc(t);
   }
   /* one tile: each pool's performance (never one figure across pools) */
   const tile=R=>{ const P=((R&&R.pools)||[]).filter(r=>r.perf!=null).slice(0,4); if(!P.length) return '';
-    if(P.length===1){ const o=P[0]; return `<div class="stat"><b class="mono">${o.perf}</b><span class="note">Performance rating${R.pools.length>1?` · ${esc(o.pool)}`:''} · opponents ${o.oppAvg} average, ${o.oppMed} median (${o.oppN} rated)${q(HELP.perf)}</span></div>` }
-    return `<div class="stat"><span class="note">Performance rating, by pool${q(HELP.perf)}</span>${P.map(o=>`<div class="yperf"><b class="mono">${o.perf}</b> <span class="note">${esc(o.pool)} · opp. ${o.oppAvg} avg, ${o.oppMed} median</span></div>`).join('')}</div>` };
+    if(P.length===1){ const o=P[0]; return `<div class="stat"><b class="mono">${o.perf}</b><span class="note">Performance rating${R.pools.length>1?` · ${esc(label(o))}`:''} · opponents ${o.oppAvg} average, ${o.oppMed} median (${o.oppN} rated)${q(HELP.perf)}</span></div>` }
+    return `<div class="stat"><span class="note">Performance rating, by pool${q(HELP.perf)}</span>${P.map(o=>`<div class="yperf" title="Opponents ${o.oppAvg} average, ${o.oppMed} median (${o.oppN} rated)"><b class="mono">${o.perf}</b> <span class="note">${esc(label(o))}</span></div>`).join('')}</div>` };
   return {DP,dp,oppStats,ratingFlow,poolRows,summarize,section,tile,highlights};
 })();

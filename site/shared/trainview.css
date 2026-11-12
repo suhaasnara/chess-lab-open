@@ -179,5 +179,5 @@ body[data-view="guess"] main.inner{max-width:1200px;padding-top:14px}
 .ymulti tr.ypoolrow td.ypname{padding-left:22px;color:var(--muted);white-space:nowrap}
 .ymulti tr.ypoolrow+tr.yrow td{border-top:1px solid var(--line)}
 .ytable td.ycomb{text-align:center}
-.stat .yperf{margin-top:4px;line-height:1.3}.stat .yperf b{font-size:1.15rem}
+.stat .yperf{margin-top:2px;line-height:1.35;white-space:nowrap}.stat .yperf b{font-size:1.15rem}
 @media (max-width:640px){.ymulti tr.yrow{border-bottom:0;padding-bottom:2px}.ymulti tr.ypoolrow{padding:4px 12px 4px 26px;border-bottom:0}.ymulti tr.ypoolrow td.ypname{padding-left:0}.ymulti tr.ypoolrow td:empty,.ytable td.ycomb{display:none}.ymulti tr.yrow{border-top:1px solid var(--line)}}
