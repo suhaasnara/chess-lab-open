@@ -69,7 +69,7 @@ window.Yearly=(()=>{
     const d=Math.round(cur-prev); if(Math.abs(d)<min) return `<span class="note ydelta">±0${unit}</span>`;
     return `<span class="note ydelta ${tone?d>0?'tgood':'tbad':''}">${d>0?'▲':'▼'} ${Math.abs(d)}${unit}</span>`;
   };
-  const ratingCell=rows=>rows&&rows.length?rows.map(r=>`<div class="yrate"><span class="note">${esc(r.pool)}${r.official?q('From US Chess’s own record of your rated events: the regular rating going into the year’s first event and coming out of its last, and the points won and lost event by event.'):''}</span> <b class="mono">${r.start} → ${r.end}</b> <span class="note">+${r.gained} / −${r.lost}</span></div>`).join(''):'<span class="note">—</span>';
+  const ratingCell=rows=>rows&&rows.length?rows.map(r=>`<div class="yrate"><div class="note ypool">${esc(r.pool)}${r.official?q('From US Chess’s own record of your rated events: the regular rating going into the year’s first event and coming out of its last, and the points won and lost event by event.'):''}</div><b class="mono">${r.start} → ${r.end}</b> <span class="note">+${r.gained} / −${r.lost}</span></div>`).join(''):'<span class="note">—</span>';
 
   function section(R,opts={}){
     const Y=Object.entries((R&&R.byYear)||{}).filter(([,s])=>s.games>=(opts.minYear||5)); if(Y.length<2) return '';
@@ -77,10 +77,10 @@ window.Yearly=(()=>{
     const name=y=>y===thisYear?`${y} <span class="note">so far</span>`:y;
     const hasConv=Y.some(([,s])=>s.convN!=null), hasRate=Y.some(([y])=>RB[y]&&RB[y].length);
     const rows=Y.map(([y,s],i)=>{ const p=i?Y[i-1][1]:null; return `<tr>
-      <td>${name(y)}</td>
+      <td class="yname">${name(y)}</td>
       <td class="num" data-l="Games">${s.games}<div class="note">${s.wins} / ${s.draws} / ${s.losses}</div></td>
       <td class="num" data-l="Score">${pct(s.score)} ${p?delta(s.score,p.score,{unit:'%'}):''}</td>
-      <td class="num" data-l="Opponents: average · median">${s.oppAvg==null?'—':`<span class="mono">${s.oppAvg} · ${s.oppMed}</span> ${p?delta(s.oppAvg,p.oppAvg,{tone:false}):''}`}</td>
+      <td class="num" data-l="Opponents (avg · median)">${s.oppAvg==null?'—':`<span class="mono">${s.oppAvg} · ${s.oppMed}</span> ${p?delta(s.oppAvg,p.oppAvg,{tone:false}):''}`}</td>
       <td class="num" data-l="Performance">${s.perf==null?'—':`<b class="mono">${s.perf}</b> ${p?delta(s.perf,p.perf):''}`}</td>
       ${hasRate?`<td class="num yratecell" data-l="Rating">${ratingCell(RB[y])}</td>`:''}
       ${hasConv?`<td class="num" data-l="Won from +2">${s.convN?`${pct(s.conversion)} <span class="note">of ${s.convN}</span> ${p&&p.convN>=5&&s.convN>=5?delta(s.conversion,p.conversion,{unit:'%'}):''}`:'—'}</td>
@@ -100,7 +100,7 @@ window.Yearly=(()=>{
     const parts=[];
     if(a.perf!=null&&b.perf!=null) parts.push(`a performance of ${a.perf} (${signed(a.perf-b.perf)})`);
     if(a.oppAvg!=null&&b.oppAvg!=null) parts.push(`against opponents averaging ${a.oppAvg} (${signed(a.oppAvg-b.oppAvg)})`);
-    if(a.score!=null&&b.score!=null) parts.push(`a ${Math.round(a.score)}% score (${signed(Math.round(a.score-b.score))} points)`);
+    if(a.score!=null&&b.score!=null) parts.push(`a score of ${Math.round(a.score)}% (${signed(Math.round(a.score-b.score))} points)`);
     let t=`${y1}${so} against ${y0}: ${parts.join(', ')}.`;
     const conv=a.convN>=5&&b.convN>=5&&a.conversion!=null&&b.conversion!=null&&Math.abs(a.conversion-b.conversion)>=5?`You converted ${pct(a.conversion)} of your +2 games (${pct(b.conversion)} in ${y0})`:'';
     const save=a.saveN>=5&&b.saveN>=5&&a.saveRate!=null&&b.saveRate!=null&&Math.abs(a.saveRate-b.saveRate)>=5?`held ${pct(a.saveRate)} from −2 (${pct(b.saveRate)})`:'';
