@@ -166,7 +166,9 @@ window.BlindTactics=(()=>{
       renderHead(); renderLine(); renderList();
       say('','Picture the position after the hidden moves.',' The board stays where it is while you solve.');
       q('peek').disabled=q('giveup').disabled=false;
-      if(window.matchMedia&&matchMedia('(hover:hover) and (pointer:fine)').matches) q('in').focus({preventScroll:true});   /* the box has focus on laptops (phones: no keyboard popping up) */
+      if(window.matchMedia&&matchMedia('(hover:hover) and (pointer:fine)').matches){   /* the box has focus on laptops (phones: no keyboard popping up) */
+        const f=()=>{ if(S.cur===z&&!S.scored&&!root.closest('[hidden]')) q('in').focus({preventScroll:true}) };
+        f(); if(document.readyState!=='complete') addEventListener('load',()=>setTimeout(f,0),{once:true}) }   /* Firefox moves focus at the end of loading */
       q('in').value='';
     }
     function renderHead(){ const z=S.cur; if(!z) return; const done=S.scored||S.solved||S.gaveUp||!!prog()[z.id];
