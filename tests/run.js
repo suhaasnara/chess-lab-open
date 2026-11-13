@@ -1954,9 +1954,11 @@ section('t60: Blind tactics — the stored set replays, filters, first-try scori
   assert(started===0,'no engine started anywhere on the way');
 }
 
-section('t61: Blind tactics Auto — +1 hidden ply after 3 clean solves, −1 after 2 misses, from the next puzzle only');
+section('t63: Blind tactics Auto — +1 hidden ply after 3 clean solves, −1 after 2 misses, from the next puzzle only');
 {
-  w.location.hash='#blind'; await sleep(60);
+  const {w}=await makePage(); const $=id=>w.document.getElementById(id);
+  w.location.hash='#progress'; await sleep(20);
+  w.location.hash='#blind'; await sleep(400);
   const T=w.BlindTab.api, S=T.state, $b=k=>$('bl-root').querySelector(`[data-b="${k}"]`);
   $('bl-root').querySelector('[data-k="status"][data-v="all"]').click(); await sleep(10);
   T.next(); await sleep(10);
@@ -1977,8 +1979,9 @@ section('t61: Blind tactics Auto — +1 hidden ply after 3 clean solves, −1 af
   assert(S.cfg.plies===p0&&$b('autonote').hidden,'Auto off: misses leave the setting alone');
 }
 
-section('t62: Weakest themes on Tactics — from first tries only, a tap filters, again clears');
+section('t64: Weakest themes on Tactics — from first tries only, a tap filters, again clears');
 {
+  const {w}=await makePage(); const $=id=>w.document.getElementById(id);
   const pz=JSON.parse(fs.readFileSync(path.join(H.SITE,'data/tactics.json'),'utf8'));
   const lib=Array.isArray(pz)?pz:(pz.puzzles||pz.items||[]);
   const by={}; for(const z of lib) if(z.motif) (by[z.motif]=by[z.motif]||[]).push(z.id);
@@ -1987,7 +1990,7 @@ section('t62: Weakest themes on Tactics — from first tries only, a tap filters
   const prog={}; const mark=(m,n,ok)=>by[m].slice(0,n).forEach((id,i)=>prog[id]={ok:i<ok,t:1});
   mark(ms[0],8,1); mark(ms[1],6,5); mark(ms[2],3,0);   /* 1/8 weak; 5/6 strong; 0/3 too few tries */
   w.Store.put('tactics-progress',prog);
-  w.location.hash='#tactics'; await sleep(200);
+  w.location.hash='#tactics'; await sleep(1200);
   const row=()=>$('t-rate').querySelector('.tweak');
   assert(row()&&row().querySelectorAll('[data-wk]').length===1&&row().querySelector('[data-wk]').dataset.wk===ms[0]&&/1\/8/.test(row().textContent),'only the theme under the overall rate with 4+ tries is listed, with its count');
   row().querySelector('[data-wk]').click(); await sleep(20);

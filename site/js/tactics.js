@@ -170,6 +170,7 @@ function init(){
   $('t-hint').addEventListener('click',hint);
   $('t-flip').addEventListener('click',()=>board.flip());
   Keys.on('tactics',{n:['Next puzzle',()=>next()],h:['Hint',()=>hint()],f:['Flip the board',()=>board.flip()]});
+  addEventListener('hashchange',()=>{ if(location.hash==='#tactics'&&LIB) renderHeader() });   /* the rating and Weak row after an import on Progress */
 }
 window.TacticsTab={init,get state(){return S},load,next,userMove,hint,filtered,host:h=>{ H=h||null },flip:()=>board.flip(),get lib(){return LIB}};
 })();
