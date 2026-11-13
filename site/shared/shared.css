@@ -18,13 +18,15 @@ select{-webkit-appearance:none;appearance:none;background:var(--white) url("data
 select:hover{border-color:var(--muted)}
 select:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
 select[multiple]{background-image:none;padding-right:10px}
-/* The mobile reader (shared/reader.js): board pinned at the top, notes underneath, a fixed bottom bar.
-   --rb = the board's share of the screen (35-65, drag handle, remembered). Phones only: the Read button hides elsewhere. */
+/* The reader (shared/reader.js): board pinned at the top, the moves and notes flowing as text underneath, a fixed
+   bottom bar. --rb = the board's share of the screen (35-65, drag handle, remembered). Phones and upright iPads only:
+   the Read button hides elsewhere. Main line bold in the text colour, side lines in --side (purple), notes as paragraphs. */
 .btn.rd-open,.rd-open{display:none}
-@media (orientation:portrait) and (max-width:599.98px),(orientation:landscape) and (max-height:499.98px){.btn.rd-open,.rd-open{display:inline-flex}}
+@media (orientation:portrait) and (max-width:1099.98px),(orientation:landscape) and (max-height:499.98px){.btn.rd-open,.rd-open{display:inline-flex;align-items:center;justify-content:center}}
 html.reader-open,html.reader-open body{overflow:hidden}
 .reader{position:fixed;inset:0;z-index:90;background:var(--band);color:var(--ink);display:grid;
-  grid-template-rows:auto calc(var(--rb,50) * 1vh - 44px) 18px minmax(0,1fr) calc(60px + env(safe-area-inset-bottom,0px));grid-template-columns:100%;
+  grid-template-rows:auto calc(var(--rb,50) * 1vh - 44px) 18px minmax(0,1fr) calc(60px + env(safe-area-inset-bottom,0px));
+  grid-template-rows:auto calc(var(--rb,50) * 1dvh - 44px) 18px minmax(0,1fr) calc(60px + env(safe-area-inset-bottom,0px));grid-template-columns:100%;
   padding-top:env(safe-area-inset-top,0px)}
 .rd-top{display:flex;align-items:center;gap:8px;padding:4px 12px;min-height:44px}
 .rd-title{flex:1;font:700 16px/1.2 var(--serif);color:var(--head);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -33,20 +35,25 @@ html.reader-open,html.reader-open body{overflow:hidden}
 .rd-board{width:auto;height:100%;max-width:100%;aspect-ratio:1}
 .rd-handle{display:grid;place-items:center;cursor:row-resize;touch-action:none}
 .rd-handle span{width:44px;height:5px;border-radius:3px;background:var(--line)}
-.rd-notes{overflow-y:auto;padding:6px 12px 24px;-webkit-overflow-scrolling:touch;scroll-behavior:auto}
-.rd-item{border-bottom:1px solid var(--line)}
-.rd-row{display:flex;gap:8px;align-items:baseline;width:100%;min-height:44px;padding:8px 6px;background:none;border:0;text-align:left;font:600 16px/1.3 var(--sans);color:var(--ink);cursor:pointer}
-.rd-row.cur{background:var(--callout);border-radius:var(--radius);color:var(--head)}
-.rd-mk{color:var(--muted);font-weight:400}
-.rd-note{padding:4px 8px 12px;font-size:16px;line-height:1.5;white-space:pre-line}
-.rd-vars{margin:0 6px 8px}.rd-vars summary{min-height:36px;display:flex;align-items:center;color:var(--muted);cursor:pointer}
-.rd-var{display:block;width:100%;min-height:44px;margin:2px 0;padding:6px 10px;text-align:left;background:var(--white);border:1px solid var(--line);border-radius:var(--radius);font:500 15px/1.3 var(--sans);color:var(--ink)}
-.rd-varhead{font-size:13px;color:var(--muted);padding:4px 6px}
-.rd-done{margin:12px 0;padding:12px;background:var(--white);border-radius:var(--radius)}
+.rd-notes{overflow-y:auto;padding:4px 14px 40vh;-webkit-overflow-scrolling:touch;scroll-behavior:auto;overscroll-behavior:contain}
+.rd-flow{max-width:44rem;margin:0 auto;font:400 16.5px/1.75 var(--sans);color:var(--ink)}
+.rd-p{margin:0 0 10px}
+.rd-note{margin:0 0 10px;line-height:1.55;color:var(--ink)}
+.rd-flow .vmv{font-weight:500;color:var(--side);padding:3px 3px;margin:0 -1px;line-height:1.5}
+.rd-flow .vmv.rd-mm{font-weight:700;color:var(--ink)}
+.rd-flow .vmv.cur{background:var(--navy);color:var(--on-navy)}
+.rd-flow .vline.rd-sl{display:inline;margin:0;font-size:inherit;line-height:inherit;color:var(--side)}
+.rd-flow .rd-sl .vnote{color:var(--side);opacity:.9}
+.rd-flow .rd-sl .vtext,.rd-flow .rd-sl .vdead{color:var(--side)}
+.rd-flow .rd-sl .vpar{color:var(--side);opacity:.7}
+.rd-done{margin:12px auto;max-width:44rem;padding:12px;background:var(--white);border-radius:var(--radius)}
 .rd-bar{display:flex;align-items:center;gap:8px;padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px));background:var(--white);border-top:1px solid var(--line)}
 .rd-bar .btn{min-height:44px;min-width:44px}
-.rd-prev{margin-right:auto}.rd-next{margin-left:auto;min-width:96px}
-.rd-pos{font-size:13px}
+.rd-prev,.rd-next{min-width:64px;font-size:22px;line-height:1}
+.rd-prev{margin-right:auto}.rd-next{margin-left:auto}
+.rd-main{color:var(--side);border-color:var(--side)}
+.rd-pos{font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.reader.rd-inside .rd-pos{color:var(--side)}
 @media (orientation:landscape) and (max-height:499.98px){
   .reader{grid-template-columns:calc(var(--rb,50) * 1vw) 18px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) calc(56px + env(safe-area-inset-bottom,0px));
     padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
@@ -99,3 +106,10 @@ nav.tabs a.settab svg{flex:none;width:22px;height:22px}
 .vmv:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
 .vpick{outline:2px solid var(--blue);outline-offset:1px;border-radius:3px}   /* ↓ ↑: the move → plays where lines branch */
 .vnote{color:var(--muted);font-style:italic}.vpar,.vdead{color:var(--muted)}
+/* ‹ › step buttons beside a page's main button (v95: Calculation, the opening trainer on phones): 44 px on touch */
+.btn.navbtn{min-width:44px;font-size:1.3rem;line-height:1;padding:6px 10px 4px;justify-content:center}
+.btn.navbtn kbd{display:none}
+.navgrp{display:inline-flex;gap:6px;align-items:stretch;flex:none;margin-left:auto}
+@media (pointer:coarse){.navgrp>.btn{min-height:44px}}
+@media (hover:hover) and (pointer:fine) and (min-width:861px){.navgrp>.navbtn{display:none}}   /* a mouse and keyboard: ← → do it */
+@media (pointer:coarse){.boardtools>a.btn{display:inline-flex;align-items:center;justify-content:center}}

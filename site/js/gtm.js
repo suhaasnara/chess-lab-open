@@ -315,8 +315,8 @@ function openAdd(){ $('g-addmodal').hidden=false; $('g-adderr').textContent=''; 
 /* A PGN (one or more games) -> Guess-the-move games: the main line's moves; each move's comment, side lines (as text),
    move marks ($1, !, ?, ⩲ ...) and Lichess arrows ([%cal]/[%csl]); a comment before the first move is the intro. */
 /* the mobile reader (shared/reader.js): the game with its notes and side lines, once it is being read */
-function readerLines(g){ const c=new Chess(g.fen||undefined); return g.moves.map((san,i)=>{ const n=(g.notes&&g.notes[i])||{}, before=c.fen(); c.move(san,{sloppy:true});
-  return {san,note:n.t,marks:n.mk,shapes:n.sh,vars:(n.v||[]).map(t=>Reader.textLine(before,t)).filter(v=>v.length)} }) }
+function readerLines(g){ return g.moves.map((san,i)=>{ const n=(g.notes&&g.notes[i])||{};   // side lines as written (the reader shows them inline)
+  return {san,note:n.t,marks:n.mk,shapes:n.sh,vtext:n.v||[]} }) }
 function readSlot(){ const slot=$('g-readslot'); if(!slot) return; slot.innerHTML=''; if(!S.game||!(S.done||S.read)) return;
   slot.appendChild(Reader.button(()=>Reader.open({title:`${S.game.white} – ${S.game.black}`,chapter:S.game.event||'',fen:S.game.fen||undefined,orient:board.orient,lines:readerLines(S.game),at:S.view==null?S.game.moves.length:S.view}))) }
 function parseGames(text){

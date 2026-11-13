@@ -656,7 +656,22 @@ function tools(){
   const n=S.log?S.log.length:0, at=browsing()?S.browse:n;
   $('o-prev').disabled=!S.g||at<=0; $('o-next').disabled=!browsing();
   $('o-browsenote').hidden=!browsing(); if(browsing()) $('o-browsenote').textContent=`Viewing move ${S.browse} of ${n} · → or End to come back`;
+  $('o-tools').classList.toggle('done',S.phase==='done'); pinFollow();
 }
+/* Phones and upright iPads (as on the private site): the board stays pinned under the tab bar while the moves and your
+   PGN's notes scroll underneath. One row under the board: Hint, Take back, ⋯ (End line, Flip, type a move), then ‹ main ›.
+   The current move is brought into view when the position changes (not on every redraw). */
+const PINQ=window.matchMedia?matchMedia('(orientation:portrait) and (max-width:860px)'):null;
+const pinned=()=>!!(PINQ&&PINQ.matches);
+function applyPin(){ const ot=document.querySelector('#openings .otrain'); if(!ot) return; ot.classList.toggle('pin',pinned());
+  const nv=document.querySelector('nav.tabs'); if(nv&&nv.offsetHeight) ot.style.setProperty('--navh',nv.offsetHeight+'px') }
+let pinAt='';
+function pinFollow(){ if(!pinned()||!S.g) return; const k=(S.lineId||0)+'|'+S.log.length+'|'+S.browse; if(k===pinAt) return; pinAt=k;
+  requestAnimationFrame(()=>{ const sec=$('openings'); if(!sec||sec.hidden||!S.log.length) return;
+    const nc=$('o-notecard'), t=(!nc.hidden&&(nc.querySelector('.ctext.cur')||nc.querySelector('.cm.cur')))||$('o-movelist').querySelector('.omv.cur')||[...$('o-movelist').querySelectorAll('.omv')].pop();
+    const bw=document.querySelector('#openings .otrain>.boardwrap'); if(!t||!bw||!t.offsetParent) return;
+    const top=bw.getBoundingClientRect().bottom, r=t.getBoundingClientRect();
+    if(r.top<top+4) scrollBy({top:r.top-top-12}); else if(r.bottom>innerHeight-8) scrollBy({top:Math.min(r.top-top-12,r.bottom-innerHeight+56)}) }) }
 /* step through the line on the board (view only; the board takes moves again at the end) */
 function browse(k){ if(!S.g||!S.log.length) return; S.browse=(k==null||k>=S.log.length)?null:Math.max(0,k); draw(); renderSide(); renderEval(); refreshRedo() }
 async function renderBook(){
@@ -795,6 +810,9 @@ function openStats(){ setPop(false); renderStats(); $('o-statsmodal').hidden=fal
 
 /* ---------- Wiring ---------- */
 function init(){
+  applyPin(); if(PINQ&&PINQ.addEventListener) PINQ.addEventListener('change',applyPin); addEventListener('hashchange',()=>setTimeout(applyPin,0));
+  $('o-more').addEventListener('click',()=>{ const t=$('o-tools'), on=!t.classList.contains('more'); t.classList.toggle('more',on); $('o-more').setAttribute('aria-expanded',String(on)) });
+  $('o-tools').addEventListener('click',e=>{ if(e.target.closest('button')&&!e.target.closest('#o-more')) { $('o-tools').classList.remove('more'); $('o-more').setAttribute('aria-expanded','false') } });
   board=makeBoard($('o-board'),{onMove:userMove});
   $('o-pick').addEventListener('click',()=>setPop($('o-pop').hidden));
   document.addEventListener('pointerdown',e=>{ if(!$('o-pop').hidden&&!e.target.closest('.opick')&&!e.target.closest('.modal')) setPop(false) });

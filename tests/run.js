@@ -1248,22 +1248,34 @@ section('t45: mobile reader — next/prev, side lines, chapter end, sizes; Read 
   let nextCh=0;
   const lines=[{san:'e4',note:'Best by test',shapes:'Ge2e4'},{san:'e5',vars:[[{san:'c5',note:'The Sicilian'},{san:'Nf3'}]]},{san:'Nf3'}];
   R.open({title:'Test',lines,at:0,chapter:'Ch 1',nextChapter:()=>nextCh++});
-  assert($('.reader')&&$('.rd-prev').disabled&&/0 \/ 3/.test($('.rd-pos').textContent),'opens at the start; Previous disabled at the first move');
-  R.next(); assert(/Best by test/.test($('.rd-notes').textContent)&&$('.rd-row.cur').textContent.includes('e4')&&$('.reader .board svg.shapes'),'Next: the move, its note, its arrows');
-  assert($('.rd-bar').lastElementChild.classList.contains('rd-next')&&$('.rd-bar').firstElementChild.classList.contains('rd-prev'),'Previous far left, Next far right');
-  R.next(); assert($('.rd-vars')&&/1 side line/.test($('.rd-vars').textContent),'side lines are collapsed under their move');
-  R.next(); R.next(); assert(/Side line after/.test($('.rd-notes').textContent)&&R.state.li===1&&R.state.at===1,'Next at the end of the line goes to the next line (the side line)');
-  assert(!$('.rd-main').hidden,'Back to main line is offered'); R.next(); R.next();
-  assert(/Chapter complete/.test($('.rd-notes').textContent)&&$('#rd-nextch'),'end of the last line: Chapter complete → Next chapter (no automatic jump)');
-  $('#rd-nextch').click(); assert(nextCh===1&&!$('.reader'),'Next chapter is called');
-  R.open({title:'T2',lines,at:1}); $('.rd-var')&&null; w.document.querySelectorAll('.rd-row')[2].click(); w.document.querySelector('.rd-var').click();
-  assert(R.state.li===1&&/c5/.test($('.rd-row.cur').textContent),'tapping a side line plays it'); $('.rd-main').click(); assert(R.state.li===0,'and Main line comes back');
+  assert($('.reader')&&$('.rd-prev').disabled&&/Start/.test($('.rd-pos').textContent),'opens at the start; ‹ disabled there');
+  /* v95: the moves flow as text: main line moves (bold), notes as paragraphs, side lines inline */
+  const mm=[...w.document.querySelectorAll('.rd-flow .rd-mm')].map(b=>b.textContent);
+  assert(mm.join(' ')==='1.e4 1…e5 2.Nf3'&&!$('.rd-row'),'main line as text, numbered after a note or a side line: '+mm.join(' '));
+  assert($('.rd-flow .rd-note')&&/Best by test/.test($('.rd-flow .rd-note').textContent),'the note is a paragraph between the moves');
+  const sl=$('.rd-flow .rd-sl'); assert(sl&&/1…c5/.test(sl.textContent)&&/The Sicilian/.test(sl.textContent)&&sl.querySelectorAll('.vmv').length===2,'the side line sits inline (its own moves and note): '+(sl&&sl.textContent));
+  R.next(); assert($('.rd-flow .vmv.cur').textContent==='1.e4'&&$('.reader .board svg.shapes'),'›: the move is highlighted, its arrows drawn');
+  assert($('.rd-bar').lastElementChild.classList.contains('rd-next')&&$('.rd-bar').firstElementChild.classList.contains('rd-prev'),'‹ far left, › far right');
+  R.next(); R.next(); assert(R.state.path.join(' ')==='e4 e5 Nf3','› follows the main line');
+  R.next(); assert(/Chapter complete/.test($('.rd-done').textContent)&&!$('.rd-done').hidden&&$('.rd-nextch'),'end of the main line: Chapter complete → Next chapter (no automatic jump)');
+  $('.rd-nextch').click(); assert(nextCh===1&&!$('.reader'),'Next chapter is called');
+  R.open({title:'T2',lines,at:1}); sl&&null; w.document.querySelector('.rd-sl .vmv').click();
+  assert(R.state.path.join(' ')==='e4 c5'&&!$('.rd-main').hidden&&/Side line/.test($('.rd-pos').textContent),'tapping a side line move shows it, "↩ Main line" appears');
+  R.next(); assert(R.state.path.join(' ')==='e4 c5 Nf3','› steps along the side line');
+  R.next(); assert(R.state.path.join(' ')==='e4 e5'&&$('.rd-main').hidden,'at its end › goes back to the main line where you left it');
+  w.document.querySelector('.rd-sl .vmv').click(); R.prev(); assert(R.state.path.join(' ')==='e4','‹ from its first move returns to the branch');
+  w.document.querySelector('.rd-sl .vmv').click(); $('.rd-main').click(); assert(R.state.path.join(' ')==='e4 e5','↩ Main line comes back');
+  R.close(); R.open({title:'T2b',lines,at:1}); R.pick(1); assert(w.document.querySelector('.rd-flow .vpick')&&/c5/.test(w.document.querySelector('.rd-flow .vpick').textContent),'↓ picks the side line where lines branch');
+  R.next(); assert(R.state.path.join(' ')==='e4 c5','and › then follows it');
+  R.close(); R.open({title:'T2c',lines:[{san:'e4'},{san:'e5',vtext:['1...c5 the Sicilian is sharper: 2.Nf3 d6']},{san:'Nf3'}],at:0});
+  const tl=$('.rd-flow .rd-sl'); assert(tl&&/the Sicilian is sharper/.test(tl.textContent)&&tl.querySelectorAll('.vmv').length===3,'a side line written as text keeps the book\'s words, its moves clickable');
+  R.close();
   const v=R.textLine('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1','1...c5 {the Sicilian} 2.Nf3 d6!? 3.Qxx9 e5');
   assert(v.map(x=>x.san).join(' ')==='c5 Nf3 d6'&&v[0].note==='the Sicilian'&&v[2].marks==='!?','text side lines become moves (notes kept, stops at an illegal move)');
   w.localStorage.setItem('reader-board','60'); R.close(); R.open({title:'T3',lines}); assert($('.reader').style.getPropertyValue('--rb')==='60','the board size is remembered on this device');
-  const kev=new w.KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true,cancelable:true}); w.dispatchEvent(kev); assert(R.state.at===1,'→ steps on a desktop keyboard');
+  const kev=new w.KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true,cancelable:true}); w.dispatchEvent(kev); assert(R.state.path.length===1,'→ steps on a desktop keyboard');
   R.close(); assert(!$('.reader')&&!w.document.documentElement.classList.contains('reader-open'),'closes cleanly');
-  assert(typeof R.isPhone==='function'&&/max-width:599\.98px/.test(R.MQ)&&/max-height:499\.98px/.test(R.MQ),'phone breakpoints: < 600 px portrait, < 500 px tall landscape (iPads keep desktop)');
+  assert(typeof R.isPhone==='function'&&/max-width:1099\.98px/.test(R.MQ)&&/max-height:499\.98px/.test(R.MQ),'breakpoints: portrait under 1100 px (phones, upright iPads), landscape under 500 px tall (landscape iPads keep desktop)');
 }
 
 section('t46: Analyze — blitz option, results by colour and rating band (all games), accuracy by phase, White/Black openings');

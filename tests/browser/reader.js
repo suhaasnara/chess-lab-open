@@ -14,7 +14,9 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const PHONES=[['iphone15-portrait',{viewport:{width:393,height:852},isMobile:true,hasTouch:true,deviceScaleFactor:2}],
   ['iphone15-landscape',{viewport:{width:852,height:393},isMobile:true,hasTouch:true,deviceScaleFactor:2}],
   ['iphoneSE',{viewport:{width:375,height:667},isMobile:true,hasTouch:true,deviceScaleFactor:2}]];
-const TABLETS=[['ipad-mini',{viewport:{width:744,height:1133},isMobile:true,hasTouch:true}],['ipad',{viewport:{width:820,height:1180},isMobile:true,hasTouch:true}]];
+/* upright iPads get the reader too (Nov 2026); landscape iPads keep the desktop layout */
+PHONES.push(['ipad-portrait',{viewport:{width:820,height:1180},isMobile:true,hasTouch:true}]);
+const TABLETS=[['ipad-landscape',{viewport:{width:1180,height:820},isMobile:true,hasTouch:true}],['ipad-mini-landscape',{viewport:{width:1133,height:744},isMobile:true,hasTouch:true}]];
 /* Firefox has no isMobile: emulate by viewport only */
 const ctxOpts=o=>BROWSER==='firefox'?{viewport:o.viewport,hasTouch:o.hasTouch}:o;
 (async()=>{
@@ -29,14 +31,22 @@ const ctxOpts=o=>BROWSER==='firefox'?{viewport:o.viewport,hasTouch:o.hasTouch}:o
   for(const [dev,o] of PHONES){
     const ctx=await br.newContext(ctxOpts(o)); const p=await ctx.newPage(); const errs=[]; p.on('pageerror',e=>errs.push(String(e)));
     for(const [name,prep] of places){
-      const sel=await prep(p); const btn=await p.$(sel); const vis=btn&&await btn.isVisible();
+      const sel=await prep(p);
+      if(name==='openings'&&await p.evaluate(()=>document.querySelector('#openings .otrain').classList.contains('pin'))){
+        /* upright phones and iPads: the board stays pinned while the moves and notes scroll under it (no Read button needed) */
+        const pin=await p.evaluate(async()=>{ scrollTo(0,500); await new Promise(r=>setTimeout(r,150)); const b=document.getElementById('o-board').getBoundingClientRect(), nav=document.querySelector('nav.tabs').getBoundingClientRect();
+          const nx=document.getElementById('o-newline').getBoundingClientRect(), pv=document.getElementById('o-prev').getBoundingClientRect(), fw=document.getElementById('o-next').getBoundingClientRect();
+          const r={stuck:b.top>=nav.bottom-1&&b.top<nav.bottom+40,onScreen:b.bottom<=innerHeight,row:pv.right<=nx.left&&nx.right<=fw.left&&Math.abs(pv.top-nx.top)<4&&fw.right<=innerWidth,hscroll:document.documentElement.scrollWidth>innerWidth+1}; scrollTo(0,0); return r });
+        ok(`${dev} openings: board pinned while the notes scroll, ‹ main › in one row, no sideways scroll`,pin.stuck&&pin.onScreen&&pin.row&&!pin.hscroll,JSON.stringify(pin));
+        await p.screenshot({path:path.join(OUT,`${dev}-openings-pinned.png`)}); continue }
+      const btn=await p.$(sel); const vis=btn&&await btn.isVisible();
       ok(`${dev} ${name}: Read button on a phone`,vis);
       if(!vis) continue;
       await btn.click(); await sleep(400); await p.click('.rd-next').catch(()=>{}); await sleep(200); await p.click('.rd-next').catch(()=>{}); await sleep(300);
-      const m=await p.evaluate(()=>{ const r=document.querySelector('.reader'), b=r.querySelector('.rd-board').getBoundingClientRect(), bar=r.querySelector('.rd-bar').getBoundingClientRect(), n=r.querySelector('.rd-next').getBoundingClientRect(), pv=r.querySelector('.rd-prev').getBoundingClientRect(), cur=r.querySelector('.rd-row.cur'), notes=r.querySelector('.rd-notes').getBoundingClientRect();
+      const m=await p.evaluate(()=>{ const r=document.querySelector('.reader'), b=r.querySelector('.rd-board').getBoundingClientRect(), bar=r.querySelector('.rd-bar').getBoundingClientRect(), n=r.querySelector('.rd-next').getBoundingClientRect(), pv=r.querySelector('.rd-prev').getBoundingClientRect(), cur=r.querySelector('.rd-flow .vmv.cur'), notes=r.querySelector('.rd-notes').getBoundingClientRect();
         return {board:b.width>100&&b.height>100,barBottom:Math.round(bar.bottom)<=innerHeight+1,next:n.left>pv.left&&n.height>=44&&pv.height>=44,curTop:cur?Math.round(cur.getBoundingClientRect().top-notes.top):null,hscroll:document.documentElement.scrollWidth>innerWidth+1} });
-      ok(`${dev} ${name}: board shown, bar at the bottom, Prev left / Next right, 44 px`,m.board&&m.barBottom&&m.next,JSON.stringify(m));
-      ok(`${dev} ${name}: the current move is at the top of the notes`,m.curTop!=null&&m.curTop<60,'offset '+m.curTop);
+      ok(`${dev} ${name}: board shown, bar at the bottom, ‹ left / › right, 44 px`,m.board&&m.barBottom&&m.next,JSON.stringify(m));
+      ok(`${dev} ${name}: the current move is in view in the text`,m.curTop!=null&&m.curTop>=-2&&m.curTop<300,'offset '+m.curTop);
       ok(`${dev} ${name}: no sideways scroll`,!m.hscroll);
       await p.screenshot({path:path.join(OUT,`${dev}-${name}.png`)});
       await p.click('.rd-close'); await sleep(200);

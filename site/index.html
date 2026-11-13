@@ -141,9 +141,10 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
         <button class="btn sm" id="o-hint">Hint <kbd>H</kbd></button>
         <button class="btn sm" id="o-endhere" title="End the line where you are (E). In Rated, only the moves you played are scored." disabled>End line <kbd>E</kbd></button>
         <button class="btn sm" id="o-back" title="Take back your last move and the reply (B). In Rated, that position isn't rated again." disabled>Take back <kbd>B</kbd></button>
-        <button class="btn sm" id="o-prev" aria-label="Previous move" title="Previous move (←)" disabled>&#9664;</button><button class="btn sm" id="o-next" aria-label="Next move" title="Next move (→)" disabled>&#9654;</button>
+        <button class="btn sm icon navbtn" id="o-prev" aria-label="Previous move" title="Previous move (←)" disabled>&#8249;</button><button class="btn sm icon navbtn" id="o-next" aria-label="Next move" title="Next move (→)" disabled>&#8250;</button>
         <button class="btn sm" id="o-flip">Flip <kbd>F</kbd></button>
         <button class="btn sm icon" id="o-type" type="button" aria-pressed="false" aria-controls="o-moveform" title="Type moves instead of dragging" aria-label="Type a move">&#9000;</button>
+        <button class="btn sm icon pinonly" id="o-more" type="button" aria-expanded="false" aria-label="More board tools" title="More: End line, Flip, type a move">&#8943;</button>
       </div>
       <form class="moveform" id="o-moveform" hidden>
         <div class="moverow"><input id="o-movein" placeholder="Type a move (Nf3, e4, O-O)" aria-label="Type a move"><button class="btn">Play</button></div>
@@ -281,13 +282,11 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
         <button class="btn sm primary" id="cc-submit">Submit <kbd>↵</kbd></button>
         <button class="btn sm" id="cc-undo">Undo <kbd>B</kbd></button>
         <button class="btn sm" id="cc-reset">Reset <kbd>R</kbd></button>
-        <button class="btn sm" id="cc-prev" aria-label="Back through the solution">&#8592;</button>
-        <button class="btn sm" id="cc-fwd" aria-label="Forward through the solution">&#8594;</button>
-        <span class="evalchip" id="cc-step"></span>
-        <span id="cc-readslot"></span>
-        <button class="btn sm" id="cc-next">Next <kbd>N</kbd></button>
         <button class="btn sm" id="cc-flip">Flip <kbd>F</kbd></button>
         <a class="btn sm" id="cc-lichess" target="_blank" rel="noopener">Lichess &#8599;</a>
+        <span id="cc-readslot"></span>
+        <span class="evalchip" id="cc-step"></span>
+        <span class="navgrp"><button class="btn sm icon navbtn" id="cc-prev" aria-label="Back through the solution (←)" title="Back through the solution (←)">&#8249;</button><button class="btn sm" id="cc-next">Next <kbd>N</kbd></button><button class="btn sm icon navbtn" id="cc-fwd" aria-label="Forward through the solution (→)" title="Forward through the solution (→)">&#8250;</button></span>
       </div>
     </div>
     <div class="side">
