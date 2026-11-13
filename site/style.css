@@ -369,7 +369,7 @@ body.welcomed[data-view="today"] .hero{display:none}
   body.print-sheet,body.print-sheet main.inner{background:#fff;color:#000;padding:0}
 }
 /* Watch */
-.wawrap{max-width:900px;margin:0 auto}.waadd summary{cursor:pointer}
+.wawrap{max-width:1100px;margin:0}.waadd summary{cursor:pointer}
 #wa-search{border:1px solid var(--line);border-radius:var(--radius);padding:8px 11px;background:var(--white);width:100%}
 #wa-topic{border:1px solid var(--line);border-radius:var(--radius);padding:5px 8px;background:var(--white)}
 .walist{display:flex;flex-direction:column;gap:8px}

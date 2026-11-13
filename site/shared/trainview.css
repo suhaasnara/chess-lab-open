@@ -6,13 +6,13 @@
 /* Page spacing and board sizes (v82): one copy for both sites, Chess Lab's values (the page width and its side padding,
    the space above and below a page, a card, a board's default width and Settings -> Board size). A page's own layout
    (.tv, .tv3, .tvplay below, the opening trainer) still sizes its board from these. */
-.inner{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.inner{max-width:1500px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 main.inner{padding-block:24px 56px}
 .card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px}
 .boardwrap{width:100%;max-width:min(580px,100%)}
 body[data-size="small"] .boardwrap{max-width:min(420px,100%)}
 body[data-size="large"] .boardwrap{max-width:min(760px,100%)}
-.tv,.grid.tv{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:24px;align-items:start}
+.tv,.grid.tv{display:grid;grid-template-columns:minmax(0,344px) minmax(0,1fr);gap:24px;align-items:start}
 .tv .panel{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,370px);gap:20px;align-items:start}
 .tv .side{display:flex;flex-direction:column;gap:12px;min-width:0}
 .tv .boardwrap{width:100%;--bmax:max(320px,calc(100vh - 150px));max-width:min(100%,720px,max(300px,calc(100vh - 170px)),var(--bfit,9999px));justify-self:center}
@@ -117,7 +117,7 @@ body[data-view="progress"] main.inner{padding-top:14px}
 
 /* Play: the board | status, New game, moves, the setup as segmented rows, your games. Chess Lab's .pgrid / #bf-mod values. */
 .seg.mini{padding:2px;gap:2px}.seg.mini button{flex:0 0 auto;padding:4px 9px;font-size:.8rem}
-.tvplay{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,340px);gap:22px;align-items:start}
+.tvplay{display:grid;grid-template-columns:minmax(0,min(calc(100% - 362px),calc(100vh - 150px),720px)) minmax(0,340px);gap:22px;align-items:start;justify-content:start}   /* board then panel from the page's left edge (12 Nov 2026) */
 .tvplay>.boardwrap{min-width:0;width:100%;justify-self:center;max-width:min(100%,calc(100vh - 150px),720px,var(--bfit,9999px))}
 .tvplay>.side{display:flex;flex-direction:column;gap:12px;min-width:0}
 .tvplay .prow{display:grid;grid-template-columns:76px minmax(0,1fr);gap:8px;align-items:center;margin-top:8px}
@@ -183,3 +183,28 @@ body[data-view="guess"] main.inner{max-width:1200px;padding-top:14px}
 .ytable td.ycomb{text-align:center}
 .stat .yperf{margin-top:2px;line-height:1.35;white-space:nowrap}.stat .yperf b{font-size:1.15rem}
 @media (max-width:640px){.ymulti tr.yrow{border-bottom:0;padding-bottom:2px}.ymulti tr.ypoolrow{padding:4px 12px 4px 26px;border-bottom:0}.ymulti tr.ypoolrow td.ypname{padding-left:0}.ymulti tr.ypoolrow td:empty,.ytable td.ycomb{display:none}.ymulti tr.yrow{border-top:1px solid var(--line)}}
+
+/* One page frame (12 Nov 2026): the tab row, every page and the footer share the same left and right edges. Pages used
+   to be 1180, 1200, 1440 or 1500 px wide depending on the tab, so the content jumped against the tab row from tab to tab.
+   (html body[data-view] beats each site's per-tab main.inner widths.) */
+html body[data-view] main.inner{max-width:1500px}
+/* Phones (12 Nov 2026): a row of board buttons fills the width evenly (no lone button on a second line), stat tiles
+   two to a row, the Settings preview as wide as the cards under it. */
+@media (max-width:640px){
+  .boardtools>.btn{flex:1 1 auto;justify-content:center;text-align:center}
+  :where(.actions,.controls) .boardtools>.btn{flex:0 0 auto}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .tvset .setpreview{max-width:none}.tvset .setpreview .board{max-width:240px;margin-inline:auto}
+}
+/* Numbers line up in columns (tabular figures), and on touch screens every control is comfortably tappable:
+   buttons 44 px tall (WCAG 2.5.5 / Apple's 44 pt), filter chips and the "?" at least 24 px with space between them
+   (WCAG 2.2's 2.5.8 minimum). 12 Nov 2026. */
+table,.stat b,.mono,.num,.chip,.evalchip,.trate b{font-variant-numeric:tabular-nums}
+th.num{text-align:right}
+@media (pointer:coarse){
+  .btn{min-height:44px}
+  .btn.sm,.btn.small{min-height:40px}
+  .chip{min-height:32px}
+  .tv .chips,.chips{row-gap:6px}
+  .qhelp{width:24px;height:24px}
+}
