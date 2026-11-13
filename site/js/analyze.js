@@ -169,17 +169,19 @@ function renderFiles(){
   const box=$('a-files'); if(!box) return;
   const SYS=Object.entries(Perf.LABEL);
   box.hidden=!FILES.length;
-  box.innerHTML=FILES.length?`<table class="atable afiles"><thead><tr><th>File</th><th class="num">Games</th><th>Ratings are${Help.q('Which rating system the ratings in this file are on. It decides the performance-rating formula (US Chess’s for US Chess, FIDE’s method otherwise) and keeps pools apart: a US Chess 1800 and a Lichess 1800 are never mixed. Guessed from the file: Lichess or Chess.com by the Site tag, FIDE when the file has FIDE ids, other over-the-board games are assumed to be US Chess. Change it if the guess is wrong.')}</th><th><span class="vh">Remove</span></th></tr></thead><tbody>${FILES.map((f,i)=>{
+  box.innerHTML=FILES.length?`<div class="afiles" role="list"><div class="afhead" aria-hidden="true"><span>File</span><span class="num">Games</span><span>Ratings are${Help.q('Which rating system the ratings in this file are on. It decides the performance-rating formula (US Chess’s for US Chess, FIDE’s method otherwise) and keeps pools apart: a US Chess 1800 and a Lichess 1800 are never mixed. Guessed from the file: Lichess or Chess.com by the Site tag, FIDE when the file has FIDE ids, other over-the-board games are assumed to be US Chess. Change it if the guess is wrong.')}</span><span></span></div>${FILES.map((f,i)=>{
       const sk=(LASTSKIP&&LASTSKIP[f.name])||null, out=sk?Object.entries(sk).filter(([k])=>k!=='notYou').reduce((a,[,v])=>a+v,0):0;
-      return `<tr><td class="afname" title="${esc(f.name)}">${esc(f.name)}${out?`<div class="note">${out} left out: ${esc(skipText(sk))}</div>`:''}</td><td class="num">${f.parsed.games.length}</td>
-        <td><select data-fsys="${i}" aria-label="Rating system of ${esc(f.name)}"><option value="auto"${f.sys==='auto'?' selected':''}>${esc(Perf.LABEL[f.det.sys])}${f.det.assumed?' (assumed)':''} · guessed</option>${SYS.map(([v,l])=>`<option value="${v}"${f.sys===v?' selected':''}>${esc(l)}</option>`).join('')}</select></td>
-        <td class="num"><button type="button" class="btn sm" data-frm="${i}" aria-label="Remove ${esc(f.name)}">✕</button></td></tr>` }).join('')}</tbody></table>`:'';
+      return `<div class="afile" role="listitem"><span class="afname" title="${esc(f.name)}">${esc(f.name)}${out?`<span class="note"> · ${out} left out: ${esc(skipText(sk))}</span>`:''}</span><span class="num afn">${f.parsed.games.length}<span class="note"> games</span></span>
+        <select data-fsys="${i}" aria-label="Rating system of ${esc(f.name)}"><option value="auto"${f.sys==='auto'?' selected':''}>${esc(Perf.LABEL[f.det.sys])} (guessed)</option>${SYS.map(([v,l])=>`<option value="${v}"${f.sys===v?' selected':''}>${esc(l)}</option>`).join('')}</select>
+        <button type="button" class="btn sm" data-frm="${i}" aria-label="Remove ${esc(f.name)}">✕</button></div>` }).join('')}</div>`:'';
   /* who you are: every name in the files, most games first; tick more than one when your name differs between files */
   const M=merged(), names=PgnFile.players({games:M.games}), saved=[].concat(Store.get('pgn-me')||[]), cur=meList();
   const ticked=new Set(cur.length?cur.filter(n=>names.some(([x])=>x===n)):saved.filter(n=>names.some(([x])=>x===n)));
   if(!ticked.size&&names.length) ticked.add(names[0][0]);
   $('a-pgnwho').hidden=!FILES.length;
-  $('a-pgnnames').innerHTML=names.slice(0,16).map(([n,c])=>`<label class="chip achk"><input type="checkbox" value="${esc(n)}"${ticked.has(n)?' checked':''}> ${esc(n)} <span class="note">${c}</span></label>`).join('');
+  const main=names.filter(([n,c],i)=>i<2||c>=2||ticked.has(n)).slice(0,12), rest=names.filter(x=>!main.includes(x)).slice(0,40);
+  const chip=([n,c])=>`<label class="chip achk"><input type="checkbox" value="${esc(n)}"${ticked.has(n)?' checked':''}> ${esc(n)} <span class="note">${c}</span></label>`;
+  $('a-pgnnames').innerHTML=main.map(chip).join('')+(rest.length?`<details class="amore"><summary class="note">${rest.length} more name${rest.length===1?'':'s'} with one game</summary><div class="chips">${rest.map(chip).join('')}</div></details>`:'');
   syncSelect(names,ticked);
   updateEstimate();
 }
@@ -196,9 +198,14 @@ const BENCH_FENS=['r1bq1rk1/pp2bppp/2n1pn2/2pp4/3P4/2PBPN2/PP1N1PPP/R2QK2R w KQ 
   'r2q1rk1/1b2bppp/p1nppn2/1p6/3NP3/1BN1B3/PPP1QPPP/R4RK1 w - - 0 12',
   '2rq1rk1/pp1bppbp/3p1np1/4n3/3NP3/1BN1BP2/PPPQ2PP/2KR3R w - - 5 13'];
 let BENCH=null, benching=null;
+/* real games against the three benchmark positions (Chromium, 14 Nov 2026, 49 and 15 club games): at depth 11 a game's
+   positions take about 0.3× a benchmark position (openings, endgames and the hash carried from move to move are
+   quick); at depth 16 about 1.1× */
+const CAL={standard:0.3,deep:1.1};
 function bench(){
   if(BENCH||benching) return benching;
   benching=(async()=>{ const out={};
+    await SharedEngine.analyse('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',8,1,60000).catch(()=>null);   /* warm-up: download and start the engine, untimed */
     for(const m of ['standard','deep']){ let t=0;
       for(const f of BENCH_FENS){ const fen=f.replace(/ 0 (\d+)$/,` ${m==='deep'?1:0} $1`); const t0=performance.now(); await SharedEngine.analyse(fen,DEPTH[m],1,40000).catch(()=>null); t+=performance.now()-t0 }
       out[m]=t/BENCH_FENS.length/1000 }
@@ -224,9 +231,9 @@ function updateEstimate(){
   for(const m of ['standard','deep']){ const t=$('a-est-'+m); if(!t) continue;
     const P=pliesToAnalyse(m);
     if(!P){ t.textContent=''; continue }
-    if(!P.online&&!P.games){ t.textContent=P.ready?'nothing to analyse: every game has evals':''; continue }
+    if(!P.online&&!P.games){ t.textContent=P.ready?'nothing to do: every game already has evals':''; continue }
     if(!BENCH){ if(benching||FILES.length) t.textContent='measuring this device…'; else t.innerHTML='<button type="button" class="linkbtn" data-bench>estimate the time</button>'; continue }
-    t.textContent=`≈ ${fmtDur(P.plies*BENCH[m]*1.15)}${P.online?' for 25 games without stored evals':` for ${P.games} game${P.games===1?'':'s'}`}` }
+    t.textContent=`≈ ${fmtDur(P.plies*BENCH[m]*CAL[m])}${P.online?' for 25 games without stored evals':` for ${P.games} game${P.games===1?'':'s'}`}` }
   /* the engine is measured only once there are games to analyse (or when asked): it downloads the engine */
   if(!BENCH&&!benching&&$('a-site').value==='pgn'&&FILES.length&&pliesToAnalyse('standard').games) bench();
 }

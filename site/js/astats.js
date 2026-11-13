@@ -77,7 +77,7 @@ window.AStats=(()=>{
     const P=perfs(gs), shown=P.filter(r=>r.perf!=null);
     if(!shown.length){ const n=P.reduce((a,r)=>a+r.oppN,0); return `<span class="note" title="A performance rating needs ${Perf.MIN} or more rated games in one rating pool.">${n?`— <small>(${n} rated)</small>`:'—'}</span>` }
     const one=P.length===1;
-    return shown.map(r=>`<span class="aperf" title="${esc(Perf.help(r,{why:whyOf(r,files)}))}"><b class="mono">${r.perf}</b>${one?'':` <small class="note">${esc(poolName(r.pool))}</small>`}</span>`).join('');
+    return `<span class="aperfs">${shown.map(r=>`<span class="aperf" title="${esc(Perf.help(r,{why:whyOf(r,files)}))}"><b class="mono">${r.perf}</b>${one?'':` <small class="note">${esc(poolName(r.pool))}</small>`}</span>`).join('')}</span>`;
   }
   function oppCell(gs){ const r=gs.map(opp).filter(x=>x>0).sort((a,b)=>a-b); if(!r.length) return '—';
     const n=r.length, avg=Math.round(r.reduce((a,b)=>a+b,0)/n), med=Math.round(n%2?r[(n-1)/2]:(r[n/2-1]+r[n/2])/2);
@@ -102,7 +102,7 @@ window.AStats=(()=>{
   }
   function bandChart(B){
     if(B.rows.length<2) return '';
-    const n=B.rows.length, bw=Math.max(18,Math.min(44,560/n)), gap=4, H=150, L=34, W=L+n*(bw+gap)+4;
+    const n=B.rows.length, bw=Math.max(18,Math.min(72,600/n)), gap=4, H=150, L=42, W=L+n*(bw+gap)+4;
     const y=v=>8+H-H*v;
     const bars=B.rows.map((r,i)=>{ const [w,d,l]=wdlOf(r.gs), N=r.gs.length, x=L+i*(bw+gap);
       const fw=w/N, fd=d/N, fl=l/N; let top=y(1);
@@ -156,7 +156,7 @@ window.AStats=(()=>{
     for(const r of rows){ const m=(r.game.date||'').slice(0,7); if(by.has(m)) for(const k in r.marks.phase) by.get(m).a.push(...r.marks.phase[k]) }
     const pts=months.map(m=>{ const o=by.get(m); return {m,s:o.g.length>=3?100*o.g.reduce((a,g)=>a+sc(g),0)/o.g.length:null,n:o.g.length,a:o.a.length>=30?o.a.reduce((a,b)=>a+b,0)/o.a.length:null} });
     if(pts.filter(p=>p.s!=null).length<3) return '';
-    const W=640, H=170, L=36, R=8, T=10, x=i=>L+(W-L-R)*(months.length===1?0.5:i/(months.length-1)), y=v=>T+H-H*v/100;
+    const W=640, H=170, L=42, R=8, T=10, x=i=>L+(W-L-R)*(months.length===1?0.5:i/(months.length-1)), y=v=>T+H-H*v/100;
     const line=(k,c,lab)=>{ const P=pts.map((p,i)=>p[k]==null?null:[x(i),y(p[k]),p]); let d='', on=false;
       for(const p of P){ if(!p){ on=false; continue } d+=(on?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1); on=true }
       return `<path class="${c}" d="${d}" fill="none"/>`+P.filter(Boolean).map(([px,py,p])=>`<circle class="${c}" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="4"><title>${p.m}: ${lab} ${Math.round(p[k])}%${k==='s'?` (${p.n} games)`:''}</title></circle>`).join('') };
@@ -164,7 +164,7 @@ window.AStats=(()=>{
     const step=Math.ceil(months.length/8), xl=months.map((m,i)=>i%step?'':`<text class="cn" x="${x(i)}" y="${T+H+18}" text-anchor="middle">${m.slice(2).replace('-','/')}</text>`).join('');
     const hasA=pts.some(p=>p.a!=null);
     return `<div class="card wide"><span class="label">Over time${q('Your score (points as a share of games, months with 3+ games) and your average accuracy (months with 30+ analyzed moves of yours), month by month. Both are percentages, so they share one axis.')}</span>
-      <figure class="achart"><svg viewBox="0 0 ${W} ${H+28}" role="img" aria-label="Score${hasA?' and accuracy':''} by month">${grid}${xl}${line('s','ls','score')}${hasA?line('a','la','accuracy'):''}</svg>
+      <figure class="achart atime"><svg viewBox="0 0 ${W} ${H+28}" role="img" aria-label="Score${hasA?' and accuracy':''} by month">${grid}${xl}${line('s','ls','score')}${hasA?line('a','la','accuracy'):''}</svg>
       <figcaption class="alegend"><span><i class="ls"></i>Score</span>${hasA?'<span><i class="la"></i>Accuracy</span>':''}</figcaption></figure></div>`;
   }
 
@@ -202,8 +202,9 @@ window.AStats=(()=>{
       <div class="stat"><b class="sm">${pun.length?pun.length-toPunish.length+' / '+pun.length:'—'}</b><span class="note">opponents’ mistakes you punished${q("Your opponents' moves that dropped their Win% by 10 points or more (a Lichess mistake), and how many of them you made pay for (your next move kept most of the gain). "+WinPct.HELP)}</span></div>
     </div>`;
     /* ---- results ---- */
+    const opcol=F.col!=='all'?F.col:OPCOL, bandcol=F.col!=='all'?'all':BANDCOL;   /* a colour filter decides both */
     const colRows=['w','b'].map(c=>[c,all.filter(g=>g.color===c)]).filter(([,gs])=>gs.length);
-    const bandGs=BANDCOL==='all'?all:all.filter(g=>g.color===BANDCOL), B=bandsOf(bandGs), unrated=bandGs.filter(g=>!(opp(g)>0)).length;
+    const bandGs=bandcol==='all'?all:all.filter(g=>g.color===bandcol), B=bandsOf(bandGs), unrated=bandGs.filter(g=>!(opp(g)>0)).length;
     const speeds=[...new Set(all.map(g=>g.speed))];
     const mixNote=mixed?`<p class="note awarn">These games span ${syss.length>1?`several rating systems (${syss.map(s=>Perf.LABEL[s]).join(', ')})`:'several rating pools'}: a rating band mixes scales, and each pool gets its own performance figure. Pick one under Rating system${speeds.length>1?' or Time control':''} to compare like with like.</p>`:'';
     const results=`<div class="card wide"><span class="label">Results${q('Every game counts here, analyzed or not: results need no engine. Score = your points as a share of the games.')}</span>
@@ -211,7 +212,7 @@ window.AStats=(()=>{
       <div class="tablewrap"><table class="rtable atable ares">${RES_HEAD('You had')}<tbody>${colRows.map(([c,gs])=>resRow(c==='w'?'White':'Black',gs,files)).join('')}</tbody></table></div>
       ${speeds.length>1?`<h4 class="ah4">By time control</h4><div class="tablewrap"><table class="rtable atable ares">${RES_HEAD('Time control')}<tbody>${speeds.map(s=>resRow(SPEED[s]||s,all.filter(g=>g.speed===s),files)).join('')}</tbody></table></div>`:''}
       <h4 class="ah4">By opponent rating</h4>
-      <div class="seg mseg" role="group" aria-label="Colour">${[['all','Both colours'],['w','As White'],['b','As Black']].map(([v,l])=>`<button type="button" data-bandcol="${v}" aria-pressed="${BANDCOL===v}">${l}</button>`).join('')}</div>
+      ${F.col==='all'?`<div class="seg mseg" role="group" aria-label="Colour">${[['all','Both colours'],['w','As White'],['b','As Black']].map(([v,l])=>`<button type="button" data-bandcol="${v}" aria-pressed="${BANDCOL===v}">${l}</button>`).join('')}</div>`:''}
       ${mixNote}
       ${B.rows.length?bandChart(B)+`<div class="tablewrap"><table class="rtable atable ares">${RES_HEAD('Opponent rated')}<tbody>${B.rows.map(r=>resRow(`${r.lo}–${r.hi}`,r.gs,files)).join('')}</tbody></table></div>`:'<p class="note">No rated opponents in these games.</p>'}
       ${unrated?`<p class="note">${unrated} game${unrated===1?'':'s'} against unrated opponents ${unrated===1?'is':'are'} not in any band.</p>`:''}</div>`;
@@ -226,8 +227,8 @@ window.AStats=(()=>{
         return `<tr class="aoprow"><td class="arname"><button type="button" class="linkbtn" data-opgames="${esc(key)}" aria-expanded="${open}">${esc(k)}</button>${wdlBar(w,d,l,k)}</td><td class="num" data-l="Games">${gs.length}<div class="note">${w} / ${d} / ${l}</div></td><td class="num" data-l="Score">${pct(s,gs.length)}%</td><td class="num" data-l="Opponents avg · median">${oppCell(gs)}</td><td class="num" data-l="Performance">${perfCell(gs,files)}</td><td class="num" data-l="B / M / I per game">${bmi(gs)}</td></tr>`+
           (open?`<tr class="agames"><td colspan="6">${gs.slice().sort((a,b)=>(b.ts||0)-(a.ts||0)).map(gameLine).join('')}</td></tr>`:'') }).join('')}</tbody></table></div>` };
     const openings=`<div class="card wide"><span class="label">Your openings${q('Your 10 most played openings with each colour (named by the last named position in the first 20 moves), with results from every game and your errors from the analyzed ones. Tap an opening for its games.')}</span>
-      <div class="seg mseg" role="group" aria-label="Colour">${[['w','As White'],['b','As Black']].map(([v,l])=>`<button type="button" data-optab="${v}" aria-pressed="${OPCOL===v}">${l}</button>`).join('')}</div>
-      <div data-oppane="w"${OPCOL==='w'?'':' hidden'}>${opTable('w')}</div><div data-oppane="b"${OPCOL==='b'?'':' hidden'}>${opTable('b')}</div></div>`;
+      ${F.col==='all'?`<div class="seg mseg" role="group" aria-label="Colour">${[['w','As White'],['b','As Black']].map(([v,l])=>`<button type="button" data-optab="${v}" aria-pressed="${opcol===v}">${l}</button>`).join('')}</div>`:`<p class="note">As ${F.col==='w'?'White':'Black'} (the colour filter).</p>`}
+      <div data-oppane="w"${opcol==='w'?'':' hidden'}>${opTable('w')}</div><div data-oppane="b"${opcol==='b'?'':' hidden'}>${opTable('b')}</div></div>`;
     /* ---- leaving book ---- */
     let book='';
     if(!Book.hasStatic){
@@ -240,7 +241,7 @@ window.AStats=(()=>{
       const top=[...byOp.entries()].sort((a,b)=>b[1].length-a[1].length).slice(0,10);
       book=`<div class="card"><span class="label">Leaving the book${q(`The book is the Lichess Elite Database (games between 2500+ and 2300+ players): a move counts as book when it was played there ${BOOKMIN}+ times in that position. The game leaves the book at the first move that isn’t — by you or by your opponent.`)}</span>
         ${lb.length?`<p class="note">You left the book first in <b>${pct(mine.length,lb.length)}%</b> of ${lb.length} games${mine.length?`, on average at move <b>${(mine.reduce((a,[,x])=>a+x.move,0)/mine.length).toFixed(1)}</b>`:''}.</p>
-        <div class="tablewrap"><table class="rtable atable"><thead><tr><th>Opening</th><th class="num">Games</th><th class="num">You left first</th><th class="num">At move<div class="note">when you did</div></th></tr></thead><tbody>${top.map(([k,xs])=>{ const m=xs.filter(x=>x.me);
+        <div class="tablewrap"><table class="atable abook"><thead><tr><th>Opening</th><th class="num">Games</th><th class="num">You left first</th><th class="num">At move<div class="note">when you did</div></th></tr></thead><tbody>${top.map(([k,xs])=>{ const m=xs.filter(x=>x.me);
           return `<tr><td>${esc(k)}</td><td class="num" data-l="Games">${xs.length}</td><td class="num" data-l="You left first"><span class="${pct(m.length,xs.length)>=60?'tbad':pct(m.length,xs.length)<=35?'tgood':''}">${pct(m.length,xs.length)}%</span></td><td class="num" data-l="At move">${m.length?(m.reduce((a,x)=>a+x.move,0)/m.length).toFixed(1):'—'}</td></tr>` }).join('')}</tbody></table></div>`:'<p class="note">No games here leave the book within 12 moves.</p>'}</div>`;
     }
     /* ---- move quality ---- */
@@ -248,10 +249,10 @@ window.AStats=(()=>{
     const qp=(o,k)=>o.n?(100*o.c[k]/o.n).toFixed(1)+'%':'—';
     const quality_=rows.length?`<div class="card"><span class="label">Move quality${q('Each of your moves by the Win% it lost (Lichess’s Win%, from your side): Best under 1 point (the engine’s move or one as good; the move itself isn’t compared), Excellent 1–2.5, Good 2.5–5, Inaccuracy 5–10, Mistake 10–15, Blunder 15+ (the site’s thresholds, the same as the tiles above). Book: your moves while the game was still in the Elite book. Missed wins: moves from +2 or better to under +1.')}</span>
       <p class="note">${Q.n} of your moves in ${rows.length} analyzed games${modes.length?` (${modes.map(m=>MODE[m]).join(', ')})`:''}.</p>
-      <div class="tablewrap"><table class="rtable atable aq"><thead><tr><th>Move</th><th class="num">All</th><th class="num">As White</th><th class="num">As Black</th></tr></thead><tbody>${QC.filter(([k])=>k!=='book'||Q.c.book).map(([k,l])=>`<tr class="q-${k}"><td><i class="qdot q${k}"></i>${l}</td><td class="num" data-l="All">${qp(Q,k)} <span class="note">${Q.c[k]}</span></td><td class="num" data-l="As White">${qp(Qw,k)}</td><td class="num" data-l="As Black">${qp(Qb,k)}</td></tr>`).join('')}
+      <div class="tablewrap"><table class="atable aq"><thead><tr><th>Move</th><th class="num">All</th><th class="num">As White</th><th class="num">As Black</th></tr></thead><tbody>${QC.filter(([k])=>k!=='book'||Q.c.book).map(([k,l])=>`<tr class="q-${k}"><td><i class="qdot q${k}"></i>${l}</td><td class="num" data-l="All">${qp(Q,k)} <span class="note">${Q.c[k]}</span></td><td class="num" data-l="As White">${qp(Qw,k)}</td><td class="num" data-l="As Black">${qp(Qb,k)}</td></tr>`).join('')}
         <tr><td>Missed win</td><td class="num" data-l="All">${Q.missed}</td><td class="num" data-l="As White">${Qw.missed}</td><td class="num" data-l="As Black">${Qb.missed}</td></tr></tbody></table></div>
       <h4 class="ah4">By phase</h4>
-      <div class="tablewrap"><table class="rtable atable aq"><thead><tr><th>Phase</th><th class="num">Accuracy</th><th class="num">Best / Exc.</th><th class="num">Good</th><th class="num">Inacc.</th><th class="num">Mist.</th><th class="num">Blun.</th></tr></thead><tbody>${['opening','middlegame','endgame'].map(p=>{ const o=Q.byPh[p], n=o.n||0, f=k=>n?Math.round(100*(o[k]||0)/n)+'%':'—';
+      <div class="tablewrap"><table class="atable aq"><thead><tr><th>Phase</th><th class="num">Accuracy</th><th class="num">Best / Exc.</th><th class="num">Good</th><th class="num">Inacc.</th><th class="num">Mist.</th><th class="num">Blun.</th></tr></thead><tbody>${['opening','middlegame','endgame'].map(p=>{ const o=Q.byPh[p], n=o.n||0, f=k=>n?Math.round(100*(o[k]||0)/n)+'%':'—';
         return `<tr><td>${p[0].toUpperCase()+p.slice(1)} <span class="note">${n}</span></td><td class="num" data-l="Accuracy">${avg(ph[p])==null?'—':avg(ph[p])+'%'}</td><td class="num" data-l="Best / Excellent">${n?Math.round(100*((o.best||0)+(o.excellent||0)+(o.book||0))/n)+'%':'—'}</td><td class="num" data-l="Good">${f('good')}</td><td class="num" data-l="Inaccuracy">${f('inacc')}</td><td class="num" data-l="Mistake">${f('mist')}</td><td class="num" data-l="Blunder">${f('blun')}</td></tr>` }).join('')}</tbody></table></div>
       <p class="note">Accuracy is Lichess’s per-move accuracy averaged per phase (book moves count in Best).${q('Phases as Lichess divides a game: the middlegame starts when 10 or fewer major and minor pieces are left or a back rank is sparse; the endgame when 6 or fewer are left.')}</p></div>`
       :`<div class="card"><span class="label">Move quality and accuracy</span><p class="note">${final?'No analyzed games match these filters.':'Appears as soon as the first game is analyzed.'}</p></div>`;

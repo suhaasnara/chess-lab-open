@@ -2004,6 +2004,175 @@ section('t64: Weakest themes on Tactics — from first tries only, a tap filters
   w.Store.put('tactics-progress',{});
 }
 
+
+/* ---------- Analyze my games v2 (14 Nov 2026) ---------- */
+/* ten over-the-board games of "Doe, Jane" (1800) worked out by hand: 5 W, 2 D, 3 L = 6/10; opponents 1500…2300 */
+const OTB10=(()=>{ const opps=[1500,1650,1700,1750,1800,1850,1900,1950,2000,2300], res=[1,1,1,.5,1,0,.5,1,0,0];
+  const L=['1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6','1. d4 d5 2. c4 e6 3. Nc3 Nf6 4. Bg5 Be7','1. c4 e5 2. Nc3 Nf6 3. g3 d5 4. cxd5 Nxd5'];
+  let pgn=''; opps.forEach((o,i)=>{ const meW=i%2===0, r=res[i]===0.5?'1/2-1/2':(res[i]===1)===meW?'1-0':'0-1';
+    pgn+=`[Event "Club"]\n[Site "Denver"]\n[Date "2026.0${1+i%6}.1${i}"]\n[Round "${i+1}"]\n[White "${meW?'Doe, Jane':'Opp '+i}"]\n[Black "${meW?'Opp '+i:'Doe, Jane'}"]\n[Result "${r}"]\n[WhiteElo "${meW?1800:o}"]\n[BlackElo "${meW?o:1800}"]\n[TimeControl "G/90;d5"]\n\n${L[i%3]} ${r}\n\n` });
+  return {pgn,opps,res} })();
+
+section('t65: performance rating by rating system (shared/perf.js): US Chess linear, FIDE dp, 400-point rule, unrated, pools');
+{
+  const {w}=await makePage(); const P=w.Perf;
+  const G=OTB10.opps.map((o,i)=>({opp:o,own:1800,score:OTB10.res[i]}));
+  const us=P.calc(G,'uschess'), fi=P.calc(G,'fide');
+  assert(us.oppN===10&&us.oppAvg===1840&&us.oppMed===1825,'opponents: 1840 average, 1825 median (worked out by hand)');
+  assert(us.method==='uschess'&&us.perf===1920,'US Chess formula: (10600 + 3650 + 4950) / 10 = 1920 ('+us.perf+')');
+  assert(fi.method==='fide'&&fi.perf===1912,'FIDE: 1840 + dp(0.60) = 1840 + 72 = 1912 ('+fi.perf+')');
+  assert(us.exp===1.3&&us.expN===10,'score vs expected: 6 − 4.68 = +1.3 ('+us.exp+')');
+  assert(P.calc(G,'lichess').method==='fide'&&P.calc(G,'chesscom').method==='fide'&&P.calc(G,'unspecified').method==='fide','Lichess, Chess.com and unspecified ratings use the FIDE method');
+  const five=[1700,1800,1900,2000,2100].map(o=>({opp:o,own:1900}));
+  assert(P.calc(five.map(g=>({...g,score:1})),'uschess').perf===2500&&P.calc(five.map(g=>({...g,score:0})),'uschess').perf===1300,'US Chess perfect / zero score: highest + 400 = 2500, lowest − 400 = 1300');
+  assert(P.calc(five.map(g=>({...g,score:1})),'fide').perf===2700&&P.calc(five.map(g=>({...g,score:0})),'fide').perf===1100,'FIDE 100% / 0%: average ± 800');
+  assert(P.calc(five.map((g,i)=>({...g,score:i<2?1:i<3?0.5:0})),'fide').perf===1900,'FIDE at 50%: the average, 1900');
+  assert(P.dp(0.79)===230&&P.dp(0.5)===0&&P.dp(1)===800&&P.dp(0.25)===-193,'dp table: 79% → 230, 50% → 0, 100% → 800, 25% → −193');
+  /* the 400-point rule */
+  const base=[{opp:2200,own:2100,score:0},{opp:2000,own:2100,score:.5},{opp:1900,own:2100,score:1},{opp:2050,own:2100,score:.5},{opp:2100,own:2100,score:0}];
+  const b0=P.calc(base,'uschess'), b1=P.calc(base.concat({opp:1500,own:2100,score:1}),'uschess');
+  assert(b0.perf===1970&&b1.capped===1&&b1.raw===1958&&b1.perf===1992,`a win over a 1500 (600 below) counts as a win over a 1700: (1800+2000+2300+2050+1700)/5 = 1970 → (… + 2100)/6 = 1992; without the rule it would DROP to 1958 (${b0.perf} → ${b1.perf} / ${b1.raw})`);
+  const hi=base.map(g=>({...g,score:1})).slice(0,3).concat({opp:2050,own:2100,score:1},{opp:2100,own:2100,score:.5});
+  const h0=P.calc(hi,'uschess'), h1=P.calc(hi.concat({opp:1500,own:2100,score:1}),'uschess');
+  assert(h1.perf<h0.perf&&h1.raw<h1.perf,`performing above your rating (${h0.perf}), such a win still pulls the average down, but less than without the rule (${h1.perf} vs ${h1.raw})`);
+  for(const sys of ['uschess','fide']){ let ok=true;
+    for(const o of [1000,1300,1600,1700]){ const a=P.calc(base,sys), b=P.calc(base.concat({opp:o,own:2100,score:1}),sys); if(a.perf<=2100&&b.perf<a.perf) ok=false }
+    assert(ok,`${sys}: with the rule, a win over a much weaker opponent never lowers a performance at or below your rating`) }
+  assert(P.calc([{opp:1500,score:1},...base.slice(0,4)],'uschess').capped===0,'no own rating in that game: not capped');
+  const un=P.calc(base.concat({opp:0,score:1},{opp:null,score:0},{opp:4200,own:2100,score:1}),'uschess');
+  assert(un.unrated===2&&un.flagged===1&&un.oppN===5,'unrated opponents left out and counted; a 4200 “US Chess” rating flagged, not used');
+  assert(P.calc(base.slice(0,4),'uschess').perf===null,'under 5 rated games: no performance figure');
+  assert(/US Chess’s formula/.test(P.help(us,{why:'assumed'}))&&/assumed/.test(P.help(us,{why:'assumed'}))&&/400-point rule/.test(P.help(us)),'the ? text says which formula, why, and the 400-point rule');
+  /* pools never blended: Lichess rapid and US Chess games give two figures */
+  const A=w.AStats, mk=(sys,speed,o,s)=>({sys,site:sys==='lichess'?'lichess':'pgn',speed,color:'w',wr:1900,br:o,result:s===1?'1-0':s===0?'0-1':'1/2-1/2'});
+  const mixed=[...[1800,1850,1900,1950,2000].map(o=>mk('uschess','classical',o,1)),...[1700,1800,1900,2000,2100].map(o=>mk('lichess','rapid',o,0.5))];
+  const pp=A.perfs(mixed);
+  assert(pp.length===2&&pp.find(r=>r.pool==='uschess|classical').perf===2400&&pp.find(r=>r.pool==='lichess|rapid').perf===1900,'two pools, two figures: US Chess 5/5 = highest 2000 + 400 = 2400; Lichess 50% = 1900');
+}
+
+
+section('t66: Analyze — several PGN files: merged, a game in two files counted once, names per file, rating system per file');
+{
+  const {w}=await makePage({analyse:async()=>[{uci:'e2e4',cp:0.2,mate:null}]}); await sleep(50); const $=id=>w.document.getElementById(id), A=w.AnalyzeTab;
+  const lichess=`[Event "Rated rapid game"]\n[Site "https://lichess.org/abcdEFGH"]\n[Date "2026.03.01"]\n[White "jdoe"]\n[Black "Someone"]\n[Result "1-0"]\n[WhiteElo "1950"]\n[BlackElo "1900"]\n[TimeControl "600+5"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 1-0\n\n`;
+  const dup=OTB10.pgn.split('\n\n[Event')[0]+'\n\n';   /* the first OTB game again, in a second file */
+  A.clearFiles(); A.addFiles([[OTB10.pgn,'club.pgn'],[lichess+dup,'study-2.pgn']]);
+  assert(A.files.length===2&&$('a-files').querySelectorAll('.afile').length===2,'two files listed');
+  assert(A.files[0].det.sys==='uschess'&&A.files[0].det.assumed&&A.files[1].det.sys==='lichess','rating system guessed per file: over the board → US Chess (assumed); a file half from lichess.org → Lichess');
+  assert(w.PgnFile.detect(w.PgnFile.parse(lichess)).sys==='lichess','a Lichess export → Lichess ratings');
+  const names=[...$('a-pgnnames').querySelectorAll('input')].map(i=>i.value);
+  assert(names[0]==='Doe, Jane'&&names.includes('jdoe'),'every name in both files is offered ('+names.slice(0,3).join(', ')+')');
+  $('a-pgnnames').querySelector('input[value="jdoe"]').checked=true; $('a-pgnnames').dispatchEvent(new w.Event('change',{bubbles:true}));
+  $('a-site').value='pgn'; $('a-site').dispatchEvent(new w.Event('change'));
+  $('a-go').click(); await sleep(400); while(A.running) await sleep(50);
+  const note=$('a-note').textContent;
+  assert(/11 of your games in 2 files/.test(note)&&/1 game found in two files counted once/.test(note),'11 games: the duplicate counted once ('+note.slice(0,120)+')');
+  const sel=$('a-files').querySelector('[data-fsys="0"]'); sel.value='fide'; sel.dispatchEvent(new w.Event('change',{bubbles:true})); await sleep(30);
+  assert(w.Store.get('pgn-sys')['club.pgn']==='fide','a chosen rating system is remembered for that file');
+  const pc=[...$('a-report').querySelectorAll('.aperf')].map(e=>e.title).join(' ');
+  assert(/FIDE’s method/.test(pc)&&/FIDE ratings \(chosen by you\)/.test(pc),'the report follows it: FIDE’s method, chosen by you');
+  $('a-files').querySelector('[data-frm="1"]').click(); await sleep(10);
+  assert(A.files.length===1&&!$('a-pgnnames').querySelector('input[value="jdoe"]'),'a file can be removed before (re)analysis');
+  /* a Lichess study link */
+  const {w:w2}=await makePage({fetch:async u=>/lichess\.org\/api\/study\/AbCdEfGh\.pgn/.test(u)?{ok:true,status:200,text:async()=>'[StudyName "My OTB"]\n'+OTB10.pgn,json:async()=>({})}:null}); await sleep(50);
+  w2.document.getElementById('a-study').value='https://lichess.org/study/AbCdEfGh'; w2.document.getElementById('a-studygo').click(); await sleep(100);
+  assert(w2.AnalyzeTab.files.length===1&&/My OTB/.test(w2.AnalyzeTab.files[0].name),'a Lichess study link adds the study as a file');
+}
+
+section('t67: Analyze — Standard / Deep: depth used, evals kept per mode, Deep replaces Standard, estimates from a measured device');
+{
+  const depths=[]; const {w}=await makePage({analyse:async(fen,depth)=>{ depths.push(depth); return [{uci:'e2e4',cp:0.2,mate:null}] }}); await sleep(50);
+  const A=w.AnalyzeTab, $=id=>w.document.getElementById(id);
+  const game={id:'fTEST1',moves:'e4 e5 Nf3 Nc6 Bb5 a6 Ba4 Nf6'.split(' ')};
+  w.Store.del('pgn-evals'); depths.length=0;
+  await A.evalsFor(game,{games:9,cache:true,mode:'standard'});
+  assert(depths.length===8&&depths.every(d=>d===11)&&Array.isArray(w.Store.get('pgn-evals').fTEST1)&&game.evsrc==='standard','Standard: depth 11, kept as before (a list)');
+  depths.length=0; await A.evalsFor(game,{games:9,cache:true,mode:'standard'});
+  assert(depths.length===0,'Standard again: nothing redone');
+  await A.evalsFor(game,{games:9,cache:true,mode:'deep'});
+  assert(depths.length===8&&depths.every(d=>d===16)&&w.Store.get('pgn-evals').fTEST1.m==='deep'&&game.evsrc==='deep','Deep: depth 16, and it replaces the Standard evals');
+  depths.length=0; await A.evalsFor(game,{games:9,cache:true,mode:'standard'});
+  assert(depths.length===0&&game.evsrc==='deep','a Standard run reuses Deep evals');
+  /* estimates */
+  A.clearFiles(); A.addFiles([[OTB10.pgn,'club.pgn']]); $('a-site').value='pgn'; $('a-site').dispatchEvent(new w.Event('change'));
+  await sleep(50); await A.bench(); await sleep(20);
+  assert(/^≈ \d+ s for 10 games$/.test($('a-est-standard').textContent)&&/^≈ .* for 10 games$/.test($('a-est-deep').textContent),'both options show a time for the 10 games ('+$('a-est-standard').textContent+' / '+$('a-est-deep').textContent+')');
+  const deepR=$('a-est').querySelector('input[value="deep"]'); deepR.checked=true; deepR.dispatchEvent(new w.Event('change'));
+  assert(w.Store.get('a-mode')==='deep','the choice is remembered');
+  depths.length=0; w.Store.del('pgn-evals'); $('a-go').click(); await sleep(300); while(A.running) await sleep(50);
+  assert(depths.length>0&&depths.every(d=>d===16)&&/Deep analysis/.test($('a-report').textContent),'a Deep run uses depth 16 and the report says Deep analysis');
+}
+
+section('t68: Analyze — Save drills near the top; saved sets: remove one set, only its drills and their results go');
+{
+  const {w}=await makePage({analyse:async(fen)=>{ /* White's 4th move loses 4 pawns (Black to move, +4 for Black) */ return [{uci:'e2e4',cp:/ b .* 4$/.test(fen)?4:0.2,mate:null}] }}); await sleep(50);
+  const A=w.AnalyzeTab, $=id=>w.document.getElementById(id);
+  w.Store.put('adrills',[{id:'a00000001',fen:'x',played:'a3',playedUci:'a2a3',site:'pgn',date:'2026-01-01',opp:'Old',color:'w'},
+    {id:'a00000002',fen:'y',played:'h3',playedUci:'h2h3',site:'lichess',date:'2026-01-01',opp:'Old',color:'w'},{id:'a00000003',fen:'z',played:'g3',playedUci:'g2g3',site:'pgn',pack:1,color:'w'}]);
+  w.Store.put('adrills-progress',{a00000001:{tries:1,ok:true},a00000002:{tries:2},a00000003:{tries:1}});
+  w.Store.put('tactics-progress',{t1:{ok:true}}); w.Store.put('blind-progress',{bt1:{n:1}});
+  const before=k=>JSON.stringify(w.Store.get(k));
+  const tp=before('tactics-progress'), bp=before('blind-progress');
+  A.clearFiles(); A.addFiles([[OTB10.pgn,'club.pgn']]); $('a-site').value='pgn'; $('a-site').dispatchEvent(new w.Event('change'));
+  w.Store.del('pgn-evals'); $('a-go').click(); await sleep(300); while(A.running) await sleep(50);
+  const rep=$('a-report'), card=rep.querySelector('.asave');
+  assert(card&&rep.innerHTML.indexOf('class="card asave"')<rep.innerHTML.indexOf('<span class="label">Results'),'Save drills sits above the results');
+  const sets0=A.drillSets();
+  assert(sets0.length===2&&sets0.every(s=>s.old)&&!sets0.some(s=>/pack/i.test(s.label)),'older drills are grouped by source (OTB, Lichess); a pack’s drills are not offered');
+  $('a-savedrills').click(); await sleep(400);
+  const D1=w.Store.get('adrills'), set=w.Store.get('adrill-sets');
+  const mine=D1.filter(d=>d.b&&d.b.includes(set[0].id));
+  assert(set.length===1&&mine.length>0&&/club\.pgn/.test(set[0].label),'a save makes one set holding its drills ('+mine.length+')');
+  /* results on the new drills, then remove the set */
+  const P=w.Store.get('adrills-progress'); P[mine[0].id]={tries:1,ok:true}; w.Store.put('adrills-progress',P);
+  rep.querySelector(`[data-setrm="${set[0].id}"]`).click(); await sleep(10);
+  rep.querySelector(`[data-setyes="${set[0].id}"]`).click(); await sleep(10);
+  const D2=w.Store.get('adrills'), P2=w.Store.get('adrills-progress');
+  assert(D2.length===3&&!D2.some(d=>d.b),'the set’s drills are gone; the three older ones stay');
+  assert(!P2[mine[0].id]&&JSON.stringify(P2)===JSON.stringify({a00000001:{tries:1,ok:true},a00000002:{tries:2},a00000003:{tries:1}}),'its results are gone; every other result is byte-identical');
+  assert(before('tactics-progress')===tp&&before('blind-progress')===bp,'tactics and blind progress untouched');
+  assert(A.removeSet('old:otb')===1&&w.Store.get('adrills').map(d=>d.id).join()==='a00000002,a00000003','removing the older OTB group takes only that drill (the pack’s stays)');
+}
+
+section('t69: Analyze — filters, results with opponents and performance, colour × band, charts, openings, move quality, leaving the book');
+{
+  const {w}=await makePage({analyse:async(fen)=>[{uci:'e2e4',cp:/ b .* 4$/.test(fen)?1.2:0.2,mate:null}]}); await sleep(50);
+  const A=w.AnalyzeTab, S=w.AStats, $=id=>w.document.getElementById(id);
+  A.clearFiles(); A.addFiles([[OTB10.pgn,'club.pgn']]); $('a-site').value='pgn'; $('a-site').dispatchEvent(new w.Event('change'));
+  w.Store.del('pgn-evals'); S.reset(); $('a-go').click(); await sleep(300); while(A.running) await sleep(50);
+  const rep=$('a-report'), cells=tr=>[...tr.cells].map(td=>(td.firstChild&&td.firstChild.textContent||'').trim());
+  const colRows=[...rep.querySelectorAll('table.ares')][0].tBodies[0].rows;
+  const both=[...colRows].map(cells);
+  /* as White (games 0,2,4,6,8: 1500 W, 1700 W, 1800 W, 1900 D, 2000 L) */
+  assert(both[0][0]==='White'&&both[0][1]==='5'&&both[0][2]==='70%','White: 5 games, 3.5/5 = 70%');
+  assert(/1780/.test(colRows[0].cells[3].textContent)&&/1800/.test(colRows[0].cells[3].textContent),'White: opponents 1780 average, 1800 median');
+  assert(colRows[0].cells[4].textContent.trim()==='1940','White: US Chess performance (1900 + 2100 + 2200 + 1900 + 1600) / 5 = 1940 ('+colRows[0].cells[4].textContent.trim()+')');
+  assert(rep.querySelector('.awdl')&&rep.querySelector('.achart svg rect.cw'),'W/D/L bars and the rating-band chart are drawn');
+  /* filters: Black only */
+  rep.querySelector('[data-afc="b"]').click(); await sleep(20);
+  assert(/\b5\b of 10 games/.test(rep.querySelector('.afcount').textContent),'Colour filter: 5 of 10 games');
+  /* opponent rating range */
+  const mn=rep.querySelector('[data-af="rmin"]'); mn.value='1900'; mn.dispatchEvent(new w.Event('change',{bubbles:true})); await sleep(20);
+  assert(/\b2\b of 10 games/.test(rep.querySelector('.afcount').textContent),'and opponents rated 1900+: 2 of 10 (the 1950 and the 2300, both as Black)');
+  rep.querySelector('[data-afreset]').click(); await sleep(20);
+  assert(/\b10\b of 10 games/.test(rep.querySelector('.afcount').textContent),'Reset filters: all 10');
+  /* colour × band */
+  rep.querySelector('[data-bandcol="w"]').click(); await sleep(20);
+  const bandTbl=[...rep.querySelectorAll('table.ares')].pop();
+  assert([...bandTbl.tBodies[0].rows].reduce((a,tr)=>a+(+cells(tr)[1]),0)===5,'By opponent rating as White: the bands hold the 5 White games');
+  /* openings: tap one for its games */
+  const op=rep.querySelector('[data-opgames]'); op.click(); await sleep(20);
+  assert(rep.querySelector('tr.agames .agline'),'an opening opens its games');
+  /* move quality matches the tiles */
+  const qtxt=rep.querySelector('.aq').textContent;
+  assert(/Blunder/.test(qtxt)&&/Missed win/.test(qtxt)&&/As White/.test(qtxt),'move quality: classes by colour, missed wins');
+  assert(S.classOf(0.5)==='best'&&S.classOf(2)==='excellent'&&S.classOf(4)==='good'&&S.classOf(7)==='inacc'&&S.classOf(12)==='mist'&&S.classOf(20)==='blun','class thresholds in Win% points: 1 / 2.5 / 5 / 10 / 15');
+  /* leaving the book (the test book knows 1.e4 e5 2.Nf3 Nc6 and 1.c4 e5 2.Nc3 Nf6) */
+  const lb=S.leftBook({moves:'e4 e5 Nf3 Nc6 Bb5'.split(' '),color:'w'});
+  assert(lb&&lb.ply===4&&lb.me===true&&lb.move===3,'leaving the book: 3.Bb5 is the first move outside the book, yours, at move 3');
+  assert(/Leaving the book/.test(rep.textContent)&&/You left the book first in/.test(rep.textContent),'Leaving the book card');
+}
+
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));
 process.exit(H.failures?1:0);
 })().catch(e=>{ console.error('Test run crashed:',e); process.exit(1) });
