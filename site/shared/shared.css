@@ -49,7 +49,7 @@ html.reader-open,html.reader-open body{overflow:hidden}
 .rd-done{margin:12px auto;max-width:44rem;padding:12px;background:var(--white);border-radius:var(--radius)}
 .rd-bar{display:flex;align-items:center;gap:8px;padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px));background:var(--white);border-top:1px solid var(--line)}
 .rd-bar .btn{min-height:44px;min-width:44px}
-.rd-prev,.rd-next{min-width:64px;font-size:22px;line-height:1}
+.rd-bar .rd-prev,.rd-bar .rd-next{min-width:64px;font-size:1.6rem;line-height:1;padding:4px 10px 6px}.rd-bar .btn.sm{min-height:44px}   /* 13 Nov: scoped so .btn's size no longer wins (they were 14 px glyphs, Flip 40 px) */
 .rd-prev{margin-right:auto}.rd-next{margin-left:auto}
 .rd-main{color:var(--side);border-color:var(--side);white-space:nowrap}
 .rd-pos{font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -118,12 +118,12 @@ nav.tabs a.settab svg{flex:none;width:22px;height:22px}
 .vpick{outline:2px solid var(--blue);outline-offset:1px;border-radius:3px}   /* ↓ ↑: the move → plays where lines branch */
 .vnote{color:var(--muted);font-style:italic}.vpar,.vdead{color:var(--muted)}
 /* ‹ › step buttons beside a page's main button (v95: Calculation, the opening trainer on phones): 44 px on touch */
-.btn.navbtn{min-width:44px;font-size:1.3rem;line-height:1;padding:6px 10px 4px;justify-content:center}
+.btn.navbtn{min-width:44px;font-size:1.6rem;line-height:1;padding:4px 10px 6px;justify-content:center}   /* 13 Nov: 1.6rem, the ‹ › glyphs read small at 1.3rem */
 .btn.navbtn kbd{display:none}
 .navgrp{display:inline-flex;gap:6px;align-items:stretch;flex:none;margin-left:auto}
 @media (pointer:coarse){.navgrp>.btn{min-height:44px}}
 @media (hover:hover) and (pointer:fine) and (min-width:861px){.navgrp>.navbtn{display:none}}   /* a mouse and keyboard: ← → do it */
-@media (pointer:coarse){.boardtools>a.btn{display:inline-flex;align-items:center;justify-content:center}}
+@media (pointer:coarse){.boardtools>a.btn,.controls>a.btn{display:inline-flex;align-items:center;justify-content:center}}   /* 13 Nov: + .controls (Calculation's "Lichess ↗" sat above its row's text line) */
 /* Blind tactics (shared/blind.js): the settings card, the move list with the task, the move box, the picked square, the
    peek frame; on phones the toolbar is a bottom bar (Next, Peek, Give up, Flip; 44 px targets). Scoped to .bl. */
 .bl .bl-set{display:flex;flex-direction:column;gap:8px;padding:10px 12px;margin:0 0 6px}

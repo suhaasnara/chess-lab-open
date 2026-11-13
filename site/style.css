@@ -435,6 +435,7 @@ td.num,th.num{text-align:right;white-space:nowrap}
 #openings .otrain.pin #o-tools{flex-wrap:nowrap;gap:5px;margin-top:6px}
 #openings .otrain.pin #o-tools kbd{display:none}
 #openings .otrain.pin #o-tools>.btn{flex:0 0 auto}
+#openings .otrain.pin #o-tools>.btn{min-height:44px;min-width:44px;align-items:center;justify-content:center}   /* 13 Nov: every button in the row 44 px (Hint and ⋯ were 40, ⋯ 34 wide) */
 #openings .otrain.pin #o-more{display:inline-flex!important}
 #openings .otrain.pin #o-endhere,#openings .otrain.pin #o-flip,#openings .otrain.pin #o-type{display:none}
 #openings .otrain.pin #o-tools.more{flex-wrap:wrap}

@@ -74,7 +74,11 @@ window.Nav=(function(){
   function mvUpdate(){ mvRaf=0; if(!mvBtn) return; const el=mainEl(); let show=false, up=true;
     if(el&&!(el.closest&&el.closest('[hidden]'))){ const r=el.getBoundingClientRect(), top=navH(), seen=Math.max(0,Math.min(r.bottom,innerHeight)-Math.max(r.top,top));
       show=r.height>0&&seen<Math.min(r.height,innerHeight-top)*0.35; up=r.bottom<top+r.height/2 }
-    mvBtn.hidden=!show; if(show){ mvBtn.textContent=(up?'↑':'↓')+' Board'; mvBtn.style.top=Math.round((nav?Math.max(0,nav.getBoundingClientRect().bottom):0)+8)+'px' } }
+    mvBtn.hidden=!show; if(show){ mvBtn.textContent=(up?'↑':'↓')+' Board';
+      /* 13 Nov: ↑ sits under the tab bar, ↓ at the bottom of the screen (under the tab bar it covered a card's top-right button,
+         e.g. Open's welcome card's Close) */
+      if(up){ mvBtn.style.top=Math.round((nav?Math.max(0,nav.getBoundingClientRect().bottom):0)+8)+'px'; mvBtn.style.bottom='' }
+      else { mvBtn.style.top='auto'; mvBtn.style.bottom='calc(14px + env(safe-area-inset-bottom,0px))' } } }
   function mvWatch(){ if(mvBtn) return; mvBtn=document.createElement('button'); mvBtn.type='button'; mvBtn.id='mv-btn'; mvBtn.className='mvbtn'; mvBtn.hidden=true;
     mvBtn.title='Back to the main view (M)'; mvBtn.setAttribute('aria-label','Back to the board (M)'); mvBtn.addEventListener('click',()=>snap()); document.body.appendChild(mvBtn);
     const q=()=>{ if(!mvRaf) mvRaf=requestAnimationFrame(mvUpdate) }; addEventListener('scroll',q,{passive:true}); addEventListener('resize',q); addEventListener('hashchange',()=>setTimeout(q,60)) }
