@@ -51,14 +51,22 @@ accounts, no uploads: progress lives in localStorage with JSON export/import.
   Vančura, Saavedra, queen against pawn and rook, minor pieces, rook against pawns) played against perfect defence. Every move
   is graded by the Lichess tablebase (best, still winning, or the result thrown away), from stored
   lines first and the live tablebase API after; Stockfish only when neither answers. Spaced review.
-- **Analyze my games** — type a Lichess or Chess.com username; your recent
-  rapid + classical games are fetched from the public API in your browser.
-  Lichess games reuse Lichess's stored server analysis where present; Chess.com
-  has no stored evals, so its window is capped at the last 25 rapid games and
-  Stockfish (WebAssembly) analyzes them in the browser. You get a report card
-  (score, blunders, conversion from +2, saves from −2, how often you punished
-  your opponents' mistakes, openings) and can save drills. There's a
-  "Try it with CoachSuhaas" demo button.
+- **Analyze my games** — type a Lichess or Chess.com username (your recent
+  rapid + classical games are fetched from the public API in your browser), or
+  bring your own PGN files: several at once (Lichess studies stop at 64 chapters),
+  dropped on the page or as a Lichess study link, each with its rating system
+  (US Chess, FIDE, Lichess, Chess.com). Lichess games reuse Lichess's stored server
+  analysis where present; the rest is analyzed by Stockfish (WebAssembly) in your
+  browser, **Standard** (depth 11) or **Deep** (depth 16, more accurate, slower), with
+  a time estimate measured on your device. You get a report card with filters
+  (colour, time control, period, opponent rating, rating system, file): results by
+  colour, time control and opponent rating with your opponents' average and median,
+  your performance rating (US Chess's formula for US Chess ratings, FIDE's method
+  otherwise, the 400-point rule) and your score against expectation, charts, your
+  openings, when you leave the book, move quality by colour and phase, accuracy
+  over time, conversion from +2 and saves from −2. Save the costliest positions as
+  drills; each save is a set you can remove again. There's a "Try it with
+  CoachSuhaas" demo button.
 - **Drills** — two kinds: **Your mistakes** (find the move you should have played)
   and **Punish the mistake** (your opponent erred and you let it go; find the move
   that makes them pay). Judged by Stockfish (within 0.1 winning chances of the
