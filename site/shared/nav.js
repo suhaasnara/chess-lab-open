@@ -51,8 +51,12 @@ window.Nav=(function(){
     /* the tab you are on, tapped again: back to its main view */
     const again=e=>{ const a=e.target.closest('a[data-view]'); if(!a||a.getAttribute('aria-current')!=='page'||e.ctrlKey||e.metaKey||e.shiftKey) return; e.preventDefault(); close(); snap() };
     nav.addEventListener('click',again); menu.addEventListener('click',again,true);
+    const row=nav.querySelector('.inner'); row.addEventListener('scroll',edges,{passive:true}); addEventListener('resize',edges); edges();
     mvWatch();
   }
+  /* a row that scrolls sideways (narrow phones) fades at the edge where more tabs are hidden (13 Nov 2026) */
+  function edges(){ const row=nav&&nav.querySelector('.inner'); if(!row) return; const m=row.scrollWidth-row.clientWidth;
+    row.classList.toggle('fl',m>1&&row.scrollLeft>1); row.classList.toggle('fr',m>1&&row.scrollLeft<m-1) }
   /* ---------- Main view (13 Nov 2026) ----------
      Each page's "main view" is its board with what sits beside and under it, aligned just under the tab bar (or the top of
      the page when all of it fits from there). Nav.snap() scrolls there. Ways in: tap the tab you are on again, press M, or
@@ -91,6 +95,7 @@ window.Nav=(function(){
     /* narrow screens: the row scrolls sideways; keep the current tab in view without moving the page */
     const row=nav.querySelector('.inner'), cur=[...nav.querySelectorAll('.inner > a[aria-current="page"]')].find(a=>a.offsetParent)||(btn&&btn.classList.contains('cur')?btn:null);
     if(row&&cur&&row.scrollWidth>row.clientWidth){ const l=cur.offsetLeft-row.offsetLeft; if(l<row.scrollLeft||l+cur.offsetWidth>row.scrollLeft+row.clientWidth) row.scrollLeft=Math.max(0,l-24) }
+    edges();
   }
   return {mount,set,close,snap,mainEl};
 })();
