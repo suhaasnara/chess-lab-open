@@ -7,8 +7,8 @@
 
      Yearly.DP, Yearly.dp(p)      FIDE's table of score fraction -> rating difference (Rating Regulations 8.1.1);
                                   the private kit's lib/report.py has the same table: keep the two the same
-     Yearly.oppStats(games)       {oppN, oppAvg, oppMed, perf} over games [{opp, score}] with a rated opponent
-                                  (perf only from 5+ rated games)
+     Yearly.oppStats(games, sys)  Perf.calc (shared/perf.js) over games [{opp, score, own?}]: the pool's own rating
+                                  system's formula, the 400-point rule, unrated left out (perf only from 5+ rated games)
      Yearly.summarize(games)      {byYear, poolsByYear, pools} for pages that hold the games (Analyze my games):
                                   games [{date 'YYYY-MM-DD', order, score 0/0.5/1, opp, pool, before, after}]
      Yearly.section(R, opts)      HTML for a report view (byYear, poolsByYear) or '' with fewer than two years
@@ -22,7 +22,11 @@ window.Yearly=(()=>{
   const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const q=t=>window.Help?Help.q(t):'';
 
-  function oppStats(gs){
+  /* the performance rating follows the pool's rating system (shared/perf.js; 14 Nov 2026): US Chess's formula for US
+     Chess / over-the-board pools, FIDE's method otherwise, the 400-point rule, unrated left out. Without Perf loaded:
+     the FIDE method as before. games [{opp, score, own?, prov?}] */
+  function oppStats(gs,sys){
+    if(window.Perf) return Perf.calc(gs,sys);
     const rated=gs.filter(g=>g.opp>0);
     if(!rated.length) return {oppN:0,oppAvg:null,oppMed:null,perf:null};
     const r=rated.map(g=>g.opp).sort((a,b)=>a-b), n=r.length;
@@ -51,7 +55,7 @@ window.Yearly=(()=>{
   const byKey=(xs,k)=>{ const m=new Map(); for(const x of xs){ const v=k(x); if(!m.has(v)) m.set(v,[]); m.get(v).push(x) } return m };
   function poolRows(gs,min=5){
     return [...byKey(gs,g=>g.pool)].filter(([,xs])=>xs.length>=min).map(([pool,xs])=>({pool,games:xs.length,
-      score:Math.round(1000*xs.reduce((a,g)=>a+g.score,0)/xs.length)/10,...oppStats(xs)})).sort((a,b)=>b.games-a.games);
+      score:Math.round(1000*xs.reduce((a,g)=>a+g.score,0)/xs.length)/10,...oppStats(xs,xs[0].sys||pool)})).sort((a,b)=>b.games-a.games);
   }
   function summarize(games,min=5){
     games=games.filter(g=>/^\d{4}/.test(g.date||'')).sort((a,b)=>(a.date<b.date?-1:a.date>b.date?1:(a.order||0)-(b.order||0)));
@@ -76,9 +80,12 @@ window.Yearly=(()=>{
   };
   const HELP={
     opp:'The average and the median rating of your opponents in this pool (the median is the middle one: one very low or very high opponent can’t move it). Ratings are only compared inside one pool: over the board, Chess.com blitz, Lichess rapid and so on are different scales.',
-    perf:'FIDE’s performance rating: your opponents’ average rating plus the rating difference FIDE’s table gives for your score (+0 at 50%, +193 at 75%, +800 at 100%), inside one pool, from 5 or more games where the opponent’s rating is known.',
+    perf:'Performance rating, inside one pool, by that pool’s rating system: US Chess’s formula for US Chess ratings (opponent +400 for a win, −400 for a loss, averaged), FIDE’s method (opponents’ average plus FIDE’s table: +193 at 75%, +800 at 100%) for FIDE, Lichess and Chess.com ratings. An opponent more than 400 below you counts as 400 below (FIDE’s 400-point rule), unrated opponents are left out, and it needs 5 or more rated games.',
     rating:'Your rating at the start and the end of the year in this pool, and the points you gained and lost game by game (Chess.com gives the rating after each game, Lichess the rating before it and the change). Over the board on the private site: US Chess’s own record, event by event. Ratings typed into a PGN file (over the board) give the start and end only, as the net change: added up game by game, a single typo would count twice.',
     us:'From US Chess’s own record of your rated events: the regular rating going into the year’s first event and coming out of its last, and the points won and lost event by event.'};
+  /* a pool's own ? text when the report carries how its performance was worked out (Perf), else the general one */
+  const ph=r=>r&&r.method&&window.Perf?Perf.help(r):HELP.perf;
+  const pt=r=>r&&r.method&&window.Perf?` title="${esc(Perf.help(r))}"`:'';
   const label=r=>r.pool==='OTB classical'?'Over the board':String(r.pool).replace(/^OTB /,'Over the board, ');
   const poolName=r=>r.official?`OTB · US Chess${q(HELP.us)}`:esc(label(r));
 
@@ -90,7 +97,7 @@ window.Yearly=(()=>{
     const single=Y.every(([y])=>(PB[y]||[]).length<=1)&&new Set(Y.flatMap(([y])=>(PB[y]||[]).map(r=>r.pool))).size<=1;
     const prevPool=(i,pool)=>{ for(let j=i-1;j>=0;j--){ const r=(PB[Y[j][0]]||[]).find(x=>x.pool===pool); if(r) return r } return null };
     const oppCell=(r,p)=>r.oppAvg==null?'—':`<span class="mono">${r.oppAvg} · ${r.oppMed}</span> ${p?delta(r.oppAvg,p.oppAvg,{tone:false}):''}`;
-    const perfCell=(r,p)=>r.perf==null?'—':`<b class="mono">${r.perf}</b> ${p?delta(r.perf,p.perf):''}`;
+    const perfCell=(r,p)=>r.perf==null?'—':`<b class="mono"${pt(r)}>${r.perf}</b> ${p?delta(r.perf,p.perf):''}`;
     const rateCell=r=>r.start==null?'<span class="note">—</span>':`<b class="mono">${r.start} → ${r.end}</b> <span class="note ygl">${r.gained==null?`net ${signed(r.end-r.start)}`:`+${r.gained} / −${r.lost}`}</span>`;
     const convCells=(s,p)=>hasConv?`<td class="num" data-l="Won from +2">${s.convN?`${pct(s.conversion)} <span class="note">of ${s.convN}</span> ${p&&p.convN>=5&&s.convN>=5?delta(s.conversion,p.conversion,{unit:'%'}):''}`:'—'}</td>
       <td class="num" data-l="Held from −2">${s.saveN?`${pct(s.saveRate)} <span class="note">of ${s.saveN}</span> ${p&&p.saveN>=5&&s.saveN>=5?delta(s.saveRate,p.saveRate,{unit:'%'}):''}`:'—'}</td>`:'';
@@ -131,7 +138,7 @@ window.Yearly=(()=>{
   }
   /* one tile: each pool's performance (never one figure across pools) */
   const tile=R=>{ const P=((R&&R.pools)||[]).filter(r=>r.perf!=null).slice(0,4); if(!P.length) return '';
-    if(P.length===1){ const o=P[0]; return `<div class="stat"><b class="mono">${o.perf}</b><span class="note">Performance rating${R.pools.length>1?` · ${esc(label(o))}`:''} · opponents ${o.oppAvg} average, ${o.oppMed} median (${o.oppN} rated)${q(HELP.perf)}</span></div>` }
-    return `<div class="stat"><span class="note">Performance rating, by pool${q(HELP.perf)}</span>${P.map(o=>`<div class="yperf" title="Opponents ${o.oppAvg} average, ${o.oppMed} median (${o.oppN} rated)"><b class="mono">${o.perf}</b> <span class="note">${esc(label(o))}</span></div>`).join('')}</div>` };
+    if(P.length===1){ const o=P[0]; return `<div class="stat"><b class="mono">${o.perf}</b><span class="note">Performance rating${R.pools.length>1?` · ${esc(label(o))}`:''} · opponents ${o.oppAvg} average, ${o.oppMed} median (${o.oppN} rated)${q(ph(o))}</span></div>` }
+    return `<div class="stat"><span class="note">Performance rating, by pool${q(HELP.perf)}</span>${P.map(o=>`<div class="yperf" title="Opponents ${o.oppAvg} average, ${o.oppMed} median (${o.oppN} rated). ${esc(ph(o))}"><b class="mono">${o.perf}</b> <span class="note">${esc(label(o))}</span></div>`).join('')}</div>` };
   return {DP,dp,oppStats,ratingFlow,poolRows,summarize,section,tile,highlights};
 })();

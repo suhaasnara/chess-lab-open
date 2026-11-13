@@ -6,8 +6,8 @@ const {JSDOM}=require('jsdom');
 const fs=require('fs'), path=require('path');
 const SITE=path.join(__dirname,'..','site');
 
-const SCRIPTS=['vendor/chess.js','shared/board.js','shared/shapes.js','shared/pgn.js','shared/engine.js','shared/trainer-core.js','shared/net.js','shared/endgame-core.js','shared/keys.js','shared/puzzles.js','shared/help.js','shared/winpct.js','shared/yearly.js','shared/reader.js','shared/varline.js','shared/controls.js','shared/nav.js','shared/trainview.js','shared/blind.js','shared/router.js','shared/site.js','js/config.js','js/shared.js','js/book.js','js/openings.js','js/tactics.js','js/blind.js','js/calc.js','js/endgames.js',
-  'js/pgnfile.js','js/analyze.js','js/drills.js','js/play.js','js/gtm.js','js/players.js','js/watch.js','js/today.js','js/blundercheck.js','js/packreport.js','js/progress.js','js/settingspage.js','js/router.js'];
+const SCRIPTS=['vendor/chess.js','shared/board.js','shared/shapes.js','shared/pgn.js','shared/engine.js','shared/trainer-core.js','shared/net.js','shared/endgame-core.js','shared/keys.js','shared/puzzles.js','shared/help.js','shared/winpct.js','shared/perf.js','shared/yearly.js','shared/reader.js','shared/varline.js','shared/controls.js','shared/nav.js','shared/trainview.js','shared/blind.js','shared/router.js','shared/site.js','js/config.js','js/shared.js','js/book.js','js/openings.js','js/tactics.js','js/blind.js','js/calc.js','js/endgames.js',
+  'js/pgnfile.js','js/astats.js','js/analyze.js','js/drills.js','js/play.js','js/gtm.js','js/players.js','js/watch.js','js/today.js','js/blundercheck.js','js/packreport.js','js/progress.js','js/settingspage.js','js/router.js'];
 
 /* A small book standing in for the static books (data/masters.json, data/club/*.json), keyed by 'board side'. */
 const EXPLORER={

@@ -1289,9 +1289,11 @@ section('t46: Analyze — blitz option, results by colour and rating band (all g
   w.document.getElementById('a-blitz').checked=true; await w.AnalyzeTab.run('lichess','Me'); await sleep(200);
   assert(/perfType=blitz,rapid,classical/.test(asked),'Include blitz asks Lichess for blitz too');
   const rep=w.document.getElementById('a-report').textContent;
-  assert(/From all 3 fetched games/.test(rep)&&/White\s*1\s*100%/.test(rep)&&/Black\s*2\s*50%/.test(rep),'results by colour use every fetched game');
-  assert(/1400–1599\s*1\s*100%/.test(rep)&&/1600–1799\s*1\s*100%/.test(rep)&&/2200\+\s*1\s*0%/.test(rep),'results by opponent rating band');
-  assert(/Accuracy by phase/.test(rep)&&/From the \d+ analyzed games/.test(rep),'accuracy by phase, from the analyzed games (sample stated)');
+  const resRows=[...w.document.querySelectorAll('#a-report table.ares tbody tr')].map(tr=>[...tr.cells].map(td=>(td.firstChild&&td.firstChild.textContent||'').trim()));
+  const has=(a,b,c)=>resRows.some(r=>r[0]===a&&r[1]===b&&r[2]===c);
+  assert(/From all 3 fetched games/.test(rep)&&has('White','1','100%')&&has('Black','2','50%'),'results by colour use every fetched game');
+  assert(has('1400–1599','1','100%')&&has('1600–1799','1','100%')&&has('2200–2399','1','0%'),'results by opponent rating band (200-point bands)');
+  assert(/Move quality/.test(rep)&&/By phase/.test(rep)&&/of your moves in \d+ analyzed games/.test(rep),'accuracy and move quality by phase, from the analyzed games (sample stated)');
   const pa=w.AnalyzeTab.phaseAccuracy({color:'w',moves:mv.split(' ')},[30,25,35,30,35,30,35,30,40,30,35,30].map(x=>x/100));
   assert(pa.opening.length===6&&pa.opening.every(a=>a>90),'steady moves score high in the opening ('+pa.opening.map(Math.round).join(',')+')');
   assert(w.AnalyzeTab.phaseOf(new w.Chess('4k3/8/8/8/8/8/8/R2QK2R w - - 0 1'))==='endgame'&&w.AnalyzeTab.phaseOf(new w.Chess())==='opening','phase rule: 6 or fewer major/minor pieces = endgame');
