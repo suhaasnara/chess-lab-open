@@ -1,0 +1,43 @@
+name: Build blind set
+# Downloads the Lichess puzzle database (CC0), picks the Blind tactics set with tools/pick_blind.py (fetching each
+# puzzle's source game from the Lichess export API, also CC0) and pushes site/data/blind.json to a review branch
+# blind-data/<run id>. main is never touched: copy the file over after checking it.
+# Run it by pushing any commit to a branch blind-build/<anything> (a workflow_dispatch needs this file on main first),
+# or from the Actions tab once it is on main.
+on:
+  workflow_dispatch:
+  push:
+    branches: ['blind-build/**']
+
+permissions:
+  contents: write
+
+jobs:
+  blind:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install zstandard==0.23.0 chess==1.11.2
+      - run: python3 tools/pick_blind.py --selftest
+      - name: Download the Lichess puzzle database (https://database.lichess.org/#puzzles, CC0)
+        run: curl -sSfL -o puzzles.csv.zst https://database.lichess.org/lichess_db_puzzle.csv.zst && ls -la puzzles.csv.zst
+      - name: Pick the puzzles and fetch their games
+        run: python3 tools/pick_blind.py puzzles.csv.zst site/data/blind.json --report blind-report.json && ls -la site/data/blind.json
+      - name: Summary
+        run: |
+          echo '### Blind set' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat blind-report.json >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+      - name: Push the review branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "blind-data/${{ github.run_id }}"
+          mkdir -p tools/reports && cp blind-report.json tools/reports/blind-report.json
+          git add site/data/blind.json tools/reports/blind-report.json
+          git commit -m "Blind tactics set from the Lichess puzzle database and its games (for review)"
+          git push origin "blind-data/${{ github.run_id }}"

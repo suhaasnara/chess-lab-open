@@ -26,7 +26,9 @@ accounts, no uploads: progress lives in localStorage with JSON export/import.
   again); step through the line with ← →; **Arrange** the list; **Start lines here** for a repertoire;
   **Sidelines in repertoires** (Realistic / Balanced / Sidelines first) decides how often your prepared sidelines
   come up; the ⚙ holds the trainer settings (line length, the opponent's minimum share, trappy lines, eval bar,
-  Stockfish info after a line, depth); **Statistics** lists every opening you've trained with its average
+  Stockfish info after a line, depth, and **Opponent level only for this opening**: that opening keeps its own level
+  and the slider moves it); after a line with a miss, **Retry the miss** (Y) plays it again from your first miss (on a
+  phone it is in the bar on the board, next to Next line and Redo); **Statistics** lists every opening you've trained with its average
   end-of-line eval.
   **No PGN? No problem:** *Anything as White* and *Anything as Black* (top of the list) start from move 1 and
   the opponent plays real replies from the book at your level, with your moves judged as in the presets.
@@ -35,6 +37,12 @@ accounts, no uploads: progress lives in localStorage with JSON export/import.
   any time. **Save this position** in the trainer turns the moves on the board into a new position of your own.
 - **Tactics** — 11,260 CC0 puzzles from the Lichess puzzle database (rated 1200–2900,
   33 motifs, filter by motif and rating), with a puzzle rating (Elo against each puzzle's Lichess rating, first attempt only).
+- **Blind tactics** (Extra) — after listudy's blind tactics, with a rating range: the board shows the position 2 to
+  16 plies before a Lichess puzzle, the hidden moves are listed under it, and you solve without the board moving (type
+  the move, SAN or squares, or tap its two squares). 3,990 puzzles rated 1000–2899, 210 per 100 points, with plenty of
+  3+ move solutions from 1800 up, so a high rating range makes the tactic hard and not just the visualization. **Peek**
+  (P) shows the real position for 2 s (the puzzle then counts as assisted), **Give up** (G) plays everything on the
+  board. Its own Blind rating (first try only) and reviews of misses; no engine needed.
 - **Calculation** — see the whole line before you play it: on 1,092 hard, long
   Lichess puzzles (rated 2200–2800, 4 to 13 moves for you) you enter your moves and
   the replies you expect, against a clock, then submit. Scored by how far your line follows the solution; a
@@ -95,6 +103,7 @@ accounts, no uploads: progress lives in localStorage with JSON export/import.
 | Opening book, elite level (`site/data/masters.json`) | [Lichess Elite Database](https://database.nikonoel.fr/) (Lichess games, 2500+ vs 2300+), built by `tools/build_masters.py` | CC0 |
 | Opening books, club levels 1000–2200+ (`site/data/club/*.json`) | [Lichess open database](https://database.lichess.org/), rated rapid + classical games by the players' average rating, built by `tools/build_club.py` | CC0 |
 | Endgame positions and their graded trees (`site/data/endgames.json`) | Positions set up by hand (`tools/endgame_positions.json`); results and best moves from the [Lichess tablebase API](https://tablebase.lichess.ovh) (Syzygy tables), built by `tools/build_endgames.py` (workflow *Build endgame set*) | facts from a free public API |
+| Blind tactics (`site/data/blind.json`) | [Lichess puzzle database](https://database.lichess.org/#puzzles) and each puzzle's own game from the Lichess game export API (the 16 moves before it), picked by `tools/pick_blind.py` (workflow *Build blind set*) | CC0 |
 | Calculation exercises (`site/data/calc.json`) | [Lichess puzzle database](https://database.lichess.org/#puzzles), picked by `tools/pick_calc.py` (workflow *Build calculation set*) | CC0 |
 | Opening names + offline demo book | [lichess-org/chess-openings](https://github.com/lichess-org/chess-openings) | CC0 |
 | Puzzles | [Lichess puzzle database](https://database.lichess.org/#puzzles) (rebuild with `tools/pick_puzzles.py`) | CC0 |

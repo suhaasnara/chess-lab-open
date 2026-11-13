@@ -69,8 +69,8 @@ window.Book=(()=>{
     const out=fromRows(rows); out.source=lv==='masters'?'elite':'club'; cache.set(k,out); return out;
   }
   /* The opponent's book: the chosen club band where it has 20+ games, else the elite book. */
-  async function oppMoves(fen){
-    const lv=Settings.get('olevel');
+  async function oppMoves(fen,level){   /* level: the opening's own level (Openings' per-opening setting), else the global one */
+    const lv=level||Settings.get('olevel');
     if(lv&&lv!=='masters'&&LEVELS[lv]){
       const b=await moves(fen,lv);
       if(b&&!b.demo&&b.total>=20){ b.level=lv; return b }

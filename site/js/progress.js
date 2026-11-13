@@ -41,6 +41,7 @@ function activity(el){
   for(const v of Object.values(Store.get('tactics-progress')||{})) if(v.t) ts.push(v.t);
   for(const v of Object.values(Store.get('adrills-progress')||{})) if(v.t) ts.push(v.t);
   for(const v of Object.values(Store.get('calc-progress')||{})) if(v.t) ts.push(v.t);
+  for(const v of Object.values(Store.get('blind-progress')||{})) if(v.t) ts.push(v.t);
   for(const v of Object.values(Store.get('endgame-progress')||{})) if(v.t) ts.push(v.t);
   for(const o of OpeningsTab.openings()) for(const h of OpeningsTab.stats(o.id).history) ts.push(h.t);
   for(const g of Store.get('play-games')||[]) ts.push(g.t);
@@ -84,6 +85,7 @@ function render(){
     <div class="stat"><b>${withStats.reduce((a,x)=>a+x.st.lines,0)}</b><span class="note">opening lines trained</span></div>
     <div class="stat"><b>${tac.n>=TAC_MIN?tac.r:'–'}</b><span class="note">puzzle rating (${tac.n>=TAC_MIN?Help.n(tac.n,'rated puzzle'):`after ${TAC_MIN} rated puzzles; ${tac.n} so far`})${Help.q('Elo against each puzzle’s Lichess rating, first try only. It shows once you have solved or missed '+TAC_MIN+' puzzles, so one lucky puzzle can’t set it.')}</span></div>
     <div class="stat"><b>${tsolved}</b><span class="note">${tsolved===1?'puzzle':'puzzles'} solved</span></div>
+    ${(()=>{ const b=BlindTactics.stats(Store.get('blind-progress'),Store.get('blind-rating')); return `<div class="stat"><b>${b.rating==null?'–':b.rating}</b><span class="note">Blind rating · ${b.solved} solved${b.avgPlies?` · ${b.avgPlies} hidden plies on average`:''}${Help.q('Blind tactics (Extra): Elo against each puzzle’s Lichess rating, first try only; a peek counts as a miss. The average is over the puzzles you solved, at the number of hidden plies you had set.')}</span></div>` })()}
     <div class="stat"><b>${Object.values(dp).filter(x=>x.ok).length} / ${dr.length}</b><span class="note">game drills solved</span></div>
     <div class="stat"><b>${eg.solved} / ${eg.total||'–'}</b><span class="note">endgames solved</span></div>`;
   { const lines=withStats.reduce((a,x)=>a+x.st.lines,0), ds=Object.values(dp).filter(x=>x.ok).length;

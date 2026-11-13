@@ -12,7 +12,7 @@ section('t1: page loads, routes, board renders');
   const {w}=await makePage();
   { const d=w.document, main=[...d.querySelectorAll('nav.tabs .inner > a:not(.settab)')].map(a=>a.dataset.view), ex=[...d.querySelectorAll('#x-menu a:not(.xset):not(.ph-x)')].map(a=>a.dataset.view);
     assert(main.join()==='today,openings,drills,tactics,analyze,progress','main row: Today, Openings, Drills, Tactics, Analyze, Progress');
-    assert(ex.length===7&&['guess','calc','endgames','watch','play','players','blundercheck'].every(v=>ex.includes(v)),'Extra holds the other seven (Blunder check since the pack import)');
+    assert(ex.length===8&&['blind','guess','calc','endgames','watch','play','players','blundercheck'].every(v=>ex.includes(v)),'Extra holds the other eight (Blunder check since the pack import, Blind tactics since 12 Nov 2026)');
     assert(d.querySelector('nav.tabs a.settab[href="#settings"]'),'Settings at the right');
     assert(d.querySelector('nav.tabs .inner > a.ph-x[data-view="analyze"]')&&d.querySelector('#x-menu a.ph-x[data-view="analyze"]'),'Analyze moves into Extra on phones');
     const xb=d.getElementById('x-btn'), xm=d.getElementById('x-menu'); assert(xm.hidden,'Extra menu starts closed');
@@ -1791,6 +1791,166 @@ section('t59: a Chess Lab pack — Store.importPack merges by id, keeps your res
   w.location.hash='#blundercheck'; await sleep(60);
   assert(/needs a Chess Lab pack/.test($('bc-list').textContent),'Blunder check without a pack explains where positions come from');
   assert([...w.document.querySelectorAll('#welcome li')].some(li=>/Got a pack from a friend\?/.test(li.textContent)),'the welcome card mentions packs');
+}
+
+section('t61: Opponent level per opening (olevels): "Only for <opening>", the slider moves its level, others keep the global one');
+{
+  const {w}=await makePage();
+  const $=id=>w.document.getElementById(id), O=w.OpeningsTab;
+  w.Settings.set('olevel','b16'); O.syncLevel();
+  const ops=O.openings().filter(o=>!o.rep&&!o.any&&!o.custom), A=ops[0], B=ops[1];
+  O.selectOpening(A.id); await sleep(60);
+  assert(O.oppLevel()==='b16'&&!O.ownLevel()&&w.Store.get('olevels')===null,'no entry: the global level ('+O.oppLevel()+')');
+  O.openSettings(); await sleep(10);
+  const cb=$('o-setbody').querySelector('[data-lvonly]');
+  assert(cb&&!cb.checked&&$('o-setbody').textContent.includes('Opponent level only for '+A.name),'the trainer settings offer "Opponent level only for '+A.name+'"');
+  cb.checked=true; cb.dispatchEvent(new w.Event('change',{bubbles:true})); await sleep(10);
+  assert(JSON.stringify(w.Store.get('olevels'))===JSON.stringify({m:{[A.id]:'b16'}}),'on: olevels {m:{<opening id>: level}} in localStorage');
+  $('o-setmodal').hidden=true;
+  const lvl=$('o-level'); lvl.value=String(w.Book.ORDER.indexOf('b20')); lvl.dispatchEvent(new w.Event('change'));
+  assert(w.Store.get('olevels').m[A.id]==='b20'&&w.Settings.get('olevel')==='b16','the Opponent slider now moves this opening’s level; the global level stays b16');
+  assert(/this opening/.test($('o-levelname').textContent),'the slider says so ('+$('o-levelname').textContent+')');
+  O.selectOpening(B.id); await sleep(60);
+  assert(O.oppLevel()==='b16'&&lvl.value===String(w.Book.ORDER.indexOf('b16'))&&!/this opening/.test($('o-levelname').textContent),'another opening: the global level, and the slider shows it');
+  let asked=null; const om=w.Book.oppMoves; w.Book.oppMoves=(f,l)=>{ asked=l; return om(f,l) };
+  O.selectOpening(A.id); await sleep(150);
+  assert(O.oppLevel()==='b20'&&lvl.value===String(w.Book.ORDER.indexOf('b20')),'back to '+A.name+': its own level');
+  if(A.side==='black') assert(asked==='b20','the opponent’s book is asked at the opening’s level');
+  O.openSettings(); await sleep(10);
+  const cb2=$('o-setbody').querySelector('[data-lvonly]'); assert(cb2.checked,'the switch shows on for it');
+  cb2.checked=false; cb2.dispatchEvent(new w.Event('change',{bubbles:true})); await sleep(10); $('o-setmodal').hidden=true;
+  assert(w.Store.get('olevels')===null&&O.oppLevel()==='b16','off: the entry goes (the key too when empty), back to the global level');
+  w.Book.oppMoves=om;
+  w.Store.put('olevels',{m:{[A.id]:'nonsense'}});
+  assert(O.oppLevel()==='b16'||O.state.op.id!==A.id,'an unknown level in storage falls back to the global one');
+}
+
+section('t62: Retry the miss in the bar on the board (phones), only after a line with a miss');
+{
+  const {w}=await makePage({analyse:async()=>[{uci:'b1c3',cp:0.3,mate:null}]});
+  const $=id=>w.document.getElementById(id), O=w.OpeningsTab, S=O.state;
+  w.Settings.set('omode','rated');
+  $('o-pgnbox').value='[Event "Retry"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 *'; $('o-repname').value='Retry rep'; $('o-repside').value='white'; $('o-repsave').click(); await sleep(150);
+  const myTurn=()=>S.phase==='await'&&!S.busy&&S.g.turn()==='w';
+  const waitMine=async()=>{ for(let t=0;t<80&&!(S.phase==='done'||myTurn());t++) await sleep(25) };
+  const FILE={0:'e2e4',2:'g1f3',4:'f1b5',6:'b5a4'};
+  async function play(missAt){ for(let n=0;n<8&&S.phase!=='done';n++){ await waitMine(); if(S.phase==='done') break; const ply=S.g.history().length;
+      if(ply===missAt){ await O.userMove('a2','a3'); for(let t=0;t<40&&S.busy;t++) await sleep(25) }
+      const u=FILE[ply]; await O.userMove(u.slice(0,2),u.slice(2,4)) }
+    for(let t=0;t<80&&S.phase!=='done';t++) await sleep(25) }
+  O.newLine(); await play(-1);
+  assert(S.phase==='done'&&!$('o-endbar').hidden&&$('o-endretry').hidden,'a line without a miss: Next line and Redo in the bar, no Retry');
+  O.newLine(); await sleep(20);
+  assert($('o-endretry').hidden,'hidden again once a new line starts');
+  await play(2);
+  assert(S.phase==='done'&&!$('o-endretry').hidden,'a line with a miss: Retry the miss in the bar, beside Next line and Redo');
+  const css=fs.readFileSync(path.join(H.SITE,'style.css'),'utf8');
+  assert(/@media \(min-width:861px\)\{#o-endretry\{display:none!important\}\}/.test(css),'laptops: not in the bar (the end card keeps it)');
+  $('o-endretry').click(); for(let t=0;t<60&&!(myTurn()&&S.log.length===2);t++) await sleep(25);
+  assert(S.log.length===2&&myTurn()&&$('o-endbar').hidden,'the button retries from the miss, as Y does');
+}
+
+section('t60: Blind tactics — the stored set replays, filters, first-try scoring, Peek, Give up, keys, no engine, Progress');
+{
+  let started=0;
+  const {w}=await makePage(); w.SharedEngine.start=()=>{ started++ };
+  const Chess=w.Chess;
+  const lib=JSON.parse(fs.readFileSync(path.join(H.SITE,'data/blind.json'),'utf8'));
+  let bad=[];
+  for(const z of lib){ const g=new Chess(z.fen); if(!(z.hidden.length===16&&/^bt-[A-Za-z0-9]{5}$/.test(z.id))){ bad.push(z.id+' shape'); continue }
+    for(const s of z.hidden) if(!g.move(s)){ bad.push(z.id+' hidden '+s); break }
+    for(const u of z.sol) if(!g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||undefined})){ bad.push(z.id+' sol '+u); break } }
+  assert(lib.length>=3500&&!bad.length,`every stored puzzle replays: start FEN + 16 hidden plies, then a legal solution (${lib.length} puzzles${bad.length?'; bad: '+bad.slice(0,3).join(', '):''})`);
+  assert(new Set(lib.map(z=>z.id)).size===lib.length&&lib.every(z=>z.rating>=1000&&z.rating<2900),'ids unique, ratings 1000–2899');
+  const bands={}; for(const z of lib){ const b=Math.floor(z.rating/100)*100; (bands[b]=bands[b]||[]).push(z) }
+  const thin=Object.keys(bands).filter(b=>bands[b].length<150), longs=Object.keys(bands).filter(b=>b>=1800).map(b=>[b,bands[b].filter(z=>Math.ceil(z.sol.length/2)>=3).length/bands[b].length]);
+  assert(Object.keys(bands).length===19&&!thin.length,'19 bands of 100 points, 150+ puzzles each'+(thin.length?' (thin: '+thin.join(',')+')':''));
+  assert(longs.every(([,f])=>f>=0.3),'from 1800 up, every band has a fair share of 3+ move solutions ('+longs.map(([b,f])=>b+':'+Math.round(f*100)+'%').join(' ')+')');
+  assert(!JSON.stringify(lib).match(/suhaas|narayanan|coachsuhaas/i),'no names of his in the set');
+
+  const $=id=>w.document.getElementById(id);
+  w.location.hash='#blind'; await sleep(400);
+  const T=w.BlindTab.api, S=T.state;
+  assert(T.lib&&T.lib.length===lib.length&&S.cur,'the set loads on first use and a puzzle opens ('+(T.lib&&T.lib.length)+')');
+  assert(started===0,'the tab starts no Stockfish');
+  assert(S.cfg.plies===4,'default: 4 hidden plies');
+  const pieces=()=>[...w.document.querySelectorAll('#blind .board .sq')].map(q=>{ const p=q.querySelector('.pc'); return q.dataset.sq+(p?p.className:'') }).join();
+  const startOf=(z,n)=>{ const g=new Chess(z.fen); for(let i=0;i<16-n;i++) g.move(z.hidden[i]); return g };
+  assert(new w.Chess(startOf(S.cur,4).fen()).fen()===S.shown.fen(),'the board shows the position 4 plies before the puzzle');
+  const line=$('bl-root').querySelector('[data-b="line"]').textContent;
+  assert(S.cur.hidden.slice(12).every(s=>line.includes(s))&&/to play and win/.test(line),'the hidden moves are listed in SAN, then "… to play and win"');
+
+  /* filters: the slider and the solution length */
+  const rng=$('bl-root').querySelectorAll('.rng input');
+  rng[0].value=2000; rng[0].dispatchEvent(new w.Event('input')); rng[0].dispatchEvent(new w.Event('change'));
+  rng[1].value=2300; rng[1].dispatchEvent(new w.Event('input')); rng[1].dispatchEvent(new w.Event('change'));
+  $('bl-root').querySelector('[data-k="len"][data-v="3"]').click(); await sleep(20);
+  const f=T.filtered();
+  assert(f.length>50&&f.every(z=>z.rating>=2000&&z.rating<=2300&&Math.ceil(z.sol.length/2)>=3),'rating 2000–2300 and 3+ moves: '+f.length+' puzzles, all in range');
+  const sv=w.Settings.get('blind');
+  assert(sv&&sv.lo===2000&&sv.hi===2300&&sv.len==='3','saved in the settings field "blind"');
+  const pl=$('bl-root').querySelector('[data-b="plies"]'); pl.value=8; pl.dispatchEvent(new w.Event('change')); await sleep(10);
+  assert(w.Settings.get('blind').plies===8,'hidden plies setting saved');
+
+  /* a miss, then the right moves: only the first try counts */
+  T.next(); await sleep(10);
+  const z1=S.cur, before=pieces();
+  assert(new w.Chess(startOf(z1,8).fen()).fen()===S.shown.fen(),'with 8 hidden plies the board starts 8 plies back');
+  const real=new w.Chess(S.real.fen()), wrong=real.moves({verbose:true}).find(m=>m.from+m.to!==z1.sol[0].slice(0,4)&&!(()=>{ const t=new w.Chess(real.fen()); t.move(m); return t.in_checkmate() })());
+  T.submit(wrong.san); await sleep(10);
+  let p=w.Store.get('blind-progress');
+  assert(p[z1.id]&&p[z1.id].ok===false&&p[z1.id].n===1,'a wrong move is a miss on the first try');
+  assert((w.Store.get('blind-rating')||{}).n===1,'it is rated once');
+  assert(T.submit('Zz9')===false&&w.Store.get('blind-progress')[z1.id].n===1,'text that isn’t a legal move is not counted');
+  for(let i=0;i<z1.sol.length;i+=2){ const u=z1.sol[i]; T.submit(u); await sleep(420) }
+  p=w.Store.get('blind-progress');
+  assert(S.solved&&p[z1.id].ok===false&&(w.Store.get('blind-rating')||{}).n===1,'solving after a miss: still a miss, not rated again');
+  /* a clean solve by SAN and by clicking squares */
+  T.next(); await sleep(10);
+  const z2=S.cur; const b0=pieces(); const sq=[];
+  { const g=new w.Chess(S.real.fen()); const m=g.move({from:z2.sol[0].slice(0,2),to:z2.sol[0].slice(2,4),promotion:z2.sol[0][4]||undefined});
+    $('bl-root').querySelector('[data-b="in"]').value=m.san; $('bl-root').querySelector('[data-b="form"]').dispatchEvent(new w.Event('submit',{cancelable:true})); }
+  await sleep(10);
+  assert(pieces()===b0,'the board doesn’t move while you solve');
+  await sleep(420);
+  for(let i=2;i<z2.sol.length;i+=2){ const u=z2.sol[i]; T.clickSquare(u.slice(0,2)); T.clickSquare(u.slice(2,4)); await sleep(420) }
+  p=w.Store.get('blind-progress');
+  assert(S.solved&&p[z2.id].ok===true&&p[z2.id].h===8&&p[z2.id].okN===1,'typed SAN + clicked squares solve it, first try: ok, with the hidden plies kept');
+  assert((w.Store.get('blind-rating')||{}).n===2&&(w.Store.get('blind-rating').hist||[]).length===2,'the Blind rating has its own history');
+  assert(/Lichess/.test($('bl-root').querySelector('.ohead').textContent)&&!/shown when solved/.test($('bl-root').querySelector('.ohead').textContent),'themes and the Lichess link show once solved');
+  /* Peek: the real position for 2 s, then back; the puzzle is assisted */
+  T.next(); await sleep(10);
+  const z3=S.cur, b3=pieces();
+  assert(/shown when solved/.test($('bl-root').querySelector('.ohead').textContent),'themes hidden until solved');
+  w.dispatchEvent(new w.KeyboardEvent('keydown',{key:'p',bubbles:true})); await sleep(20);
+  assert(pieces()!==b3&&new w.Chess(S.real.fen()).fen()===S.real.fen(),'P peeks: the board shows the real position');
+  p=w.Store.get('blind-progress');
+  assert(p[z3.id]&&p[z3.id].a===1&&p[z3.id].ok===false,'Peek marks the puzzle assisted (a miss for the rating)');
+  await sleep(2100);
+  assert(pieces()===b3,'after 2 s the board is back where it was');
+  /* keys don't fire while typing; G gives up and plays everything on the board */
+  const inp=$('bl-root').querySelector('[data-b="in"]'); inp.focus();
+  inp.dispatchEvent(new w.KeyboardEvent('keydown',{key:'g',bubbles:true})); await sleep(10);
+  assert(!S.gaveUp,'G does nothing while typing in the box');
+  inp.blur(); w.dispatchEvent(new w.KeyboardEvent('keydown',{key:'g',bubbles:true})); await sleep(20);
+  assert(S.gaveUp&&S.review&&S.review.length===8+z3.sol.length+1,'G gives up: the hidden moves and the solution play on the board');
+  await sleep(650*(S.review.length)+100);
+  const end=new w.Chess(S.puzzleFen); for(const u of z3.sol) end.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||undefined});
+  const now=new w.Chess(S.review[S.ri].fen);
+  assert(S.ri===S.review.length-1&&now.fen()===end.fen(),'… ending on the final position');
+  w.dispatchEvent(new w.KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true})); await sleep(10);
+  assert(S.ri===S.review.length-2,'← steps back through it');
+  w.dispatchEvent(new w.KeyboardEvent('keydown',{key:'n',bubbles:true})); await sleep(10);
+  assert(S.cur.id!==z3.id&&!S.gaveUp,'N: the next puzzle');
+  /* review: a puzzle missed earlier is due the next day; Missed filter */
+  $('bl-root').querySelector('[data-k="status"][data-v="missed"]').click(); await sleep(10);
+  assert(T.filtered().length>=1&&T.filtered().every(z=>!w.Store.get('blind-progress')[z.id].ok),'Missed lists the misses');
+  /* Progress tile; export */
+  w.location.hash='#progress'; await sleep(60);
+  assert(/Blind rating/.test($('p-stats').textContent)&&/1 solved/.test($('p-stats').textContent)&&/8 hidden plies on average/.test($('p-stats').textContent),'Progress tile: Blind rating, solved, average hidden plies');
+  const ex=w.Store.exportAll();
+  assert(ex['blind-progress']&&ex['blind-rating'],'both keys are in the progress export');
+  assert(started===0,'no engine started anywhere on the way');
 }
 
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));
