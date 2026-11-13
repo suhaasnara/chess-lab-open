@@ -10,7 +10,7 @@ const CAP_CHESSCOM=25, CAP_LICHESS=60, ENGINE_DEPTH=11, MAX_ENGINE_GAMES=25;
 const MATE=9900;
 let running=false;
 
-function note(t){ $('a-note').textContent=t }
+function note(t,busy){ const n=$('a-note'); n.textContent=t; n.classList.toggle('busy',!!busy) }   /* busy: a spinner, so a long step never looks frozen */
 function prog(frac,show=true){ const p=$('a-prog'); p.hidden=!show; p.querySelector('i').style.width=Math.round(frac*100)+'%' }
 
 /* ---------- Fetching ---------- */
@@ -146,12 +146,13 @@ async function run(site,user,blitz){
     let games, budget, fileNote='';
     if(site==='pgn'){
       if(!FILE.parsed) throw new Error('Choose your PGN file first.');
-      const r=PgnFile.toGames(FILE.parsed,user); games=r.games.slice().reverse();   // newest first: recent results appear first
+      note(`Checking the moves of ${FILE.parsed.games.length} games in ${FILE.name}…`,true); prog(0);
+      const r=await PgnFile.toGamesAsync(FILE.parsed,user,(d,n)=>{ prog(d/n); note(`Checking the moves: ${d} of ${n} games in ${FILE.name}…`,true) }); games=r.games.slice().reverse();   // newest first: recent results appear first
       const sk=r.skipped, skip=[sk.fen&&`${sk.fen} from a set position`,sk.bullet&&`${sk.bullet} bullet`,sk.unfinished&&`${sk.unfinished} unfinished or very short`,sk.illegal&&`${sk.illegal} with an illegal move`].filter(Boolean);
       fileNote=`${games.length} of your games in ${FILE.name}${skip.length?` (left out: ${skip.join(', ')})`:''}.`;
       budget={games:Infinity,cache:true};
     } else {
-      note('Fetching games…');
+      note('Fetching games…',true);
       games=site==='lichess'?await fetchLichess(user,blitz):await fetchChesscom(user,blitz);
       budget={games:MAX_ENGINE_GAMES};
     }
@@ -160,18 +161,21 @@ async function run(site,user,blitz){
     const needEngine=games.filter(g=>!g.analysis&&!(budget.cache&&evCache.get(g.id))), nEng=Math.min(needEngine.length,budget.games);
     const engPlies=needEngine.slice(0,nEng).reduce((a,g)=>a+g.moves.length,0);
     note(site==='pgn'?`${fileNote} ${games.length-needEngine.length} already have evals${nEng?`; Stockfish is analyzing the other ${nEng} in your browser (depth ${ENGINE_DEPTH}). You can stop any time: what is done is kept, and running it again carries on.`:'.'}`
-      :`${games.length} games.${nEng?` ${nEng} without stored evals — analyzing with Stockfish in your browser (depth ${ENGINE_DEPTH}), this takes a while…`:''}`);
+      :`${games.length} games.${nEng?` ${nEng} without stored evals — analyzing with Stockfish in your browser (depth ${ENGINE_DEPTH}), this takes a while…`:''}`,true);
     stopReq=false; if($('a-stop')) $('a-stop').hidden=!nEng;
-    const rows=[], t0=Date.now(); let doneP=0;
+    const rows=[], t0=Date.now(); let doneP=0, drawn=0, tick=Date.now();
     for(let i=0;i<games.length&&!stopReq;i++){
       const game=games[i], eng=!game.analysis&&needEngine.includes(game);
       const evs=await evalsFor(game,budget,f=>prog((i+f)/games.length));
       prog((i+1)/games.length);
       if(eng&&evs){ doneP+=game.moves.length; const left=engPlies-doneP, sec=doneP?(Date.now()-t0)/1000*left/doneP:0;
-        if(site==='pgn'&&left>0) note(`${fileNote} Analyzing… about ${sec<90?Math.max(1,Math.round(sec/10)*10)+' seconds':Math.round(sec/60)+' minutes'} left. You can stop any time and carry on later.`) }
-      if(!evs||evs.length<6) continue;
-      rows.push({game,marks:Object.assign(markGame(game,evs),{phase:phaseAccuracy(game,evs)})});
-      renderReport(user,site,rows,games.length,false);
+        if(left>0) note(`${site==='pgn'?fileNote+' ':''}Stockfish: game ${i+1} of ${games.length}, about ${sec<90?Math.max(1,Math.round(sec/10)*10)+' seconds':Math.round(sec/60)+' minutes'} left. You can stop any time and carry on later.`,true) }
+      else if(Date.now()-tick>250){ note(`${site==='pgn'?fileNote+' ':''}Reading game ${i+1} of ${games.length}…`,true) }
+      if(evs&&evs.length>=6) rows.push({game,marks:Object.assign(markGame(game,evs),{phase:phaseAccuracy(game,evs)})});
+      /* redraw the report at most every 1.5 s (it used to redraw after every game: a 200-game file froze the page), and hand
+         the browser a moment between games so the progress bar moves and Stop works */
+      if(rows.length&&(Date.now()-drawn>1500||rows.length===1)){ renderReport(user,site,rows,games.length,false); drawn=Date.now() }
+      if(Date.now()-tick>40){ await new Promise(r=>setTimeout(r,0)); tick=Date.now() }
     }
     renderReport(user,site,rows,games.length,true);
     note(stopReq?`Stopped: ${rows.length} of ${games.length} games analyzed so far. Press Analyze again to carry on (nothing is redone).`:site==='pgn'?`${fileNote} Done.`:'Done.');
@@ -193,9 +197,17 @@ function phaseAccuracy(game,evs){
     if(mover!==game.color) continue;
     const drop=Math.max(0,winPct(before,mover)-winPct(cur,mover)); out[phase].push(Math.max(0,Math.min(100,103.1668*Math.exp(-0.04354*drop)-3.1669))) }
   return out }
-let LAST=null, FILE={};
-function renderReport(user,site,rows,total,final){
-  if(!rows.length){ $('a-report').innerHTML='<p class="empty">No analyzable games yet…</p>'; return }
+let LAST=null, FILE={}, AYEAR='all', LASTR=null;
+/* By year (13 Nov 2026): when the games span two years or more, a row of year chips over the report shows the whole
+   report for one year (results, mistakes, openings, drills to make); Year by year below compares the years side by side. */
+function renderReport(user,site,rows0,total,final){
+  LASTR=[user,site,rows0,total,final];
+  const allG=(LAST&&LAST.games)||rows0.map(r=>r.game), yrOf=g=>(g.date||'').slice(0,4);
+  const years=[...new Set(allG.map(yrOf).filter(Boolean))].sort();
+  if(AYEAR!=='all'&&!years.includes(AYEAR)) AYEAR='all';
+  const inY=g=>AYEAR==='all'||yrOf(g)===AYEAR, rows=rows0.filter(r=>inY(r.game));
+  const yearChips=years.length>1?`<div class="chips ayears" role="group" aria-label="Year"><span class="note">Show</span>${[['all','All years'],...years.map(y=>[y,y])].map(([v,l])=>`<button type="button" class="chip" data-ayear="${v}" aria-pressed="${AYEAR===v}">${l}${v==='all'?'':` · ${allG.filter(g=>yrOf(g)===v).length}`}</button>`).join('')}</div>`:'';
+  if(!rows.length){ $('a-report').innerHTML=yearChips+'<p class="empty">'+(AYEAR==='all'?'No analyzable games yet…':`None of your ${AYEAR} games has been analyzed yet: Stockfish works from your newest games back. Press Analyze to carry on, or pick All years for results by year.`)+'</p>'; return }
   const W=rows.filter(r=>r.marks.score===1).length, D=rows.filter(r=>r.marks.score===0.5).length, L=rows.length-W-D;
   const blun=rows.reduce((a,r)=>a+r.marks.blun,0), mist=rows.reduce((a,r)=>a+r.marks.mist,0), inacc=rows.reduce((a,r)=>a+r.marks.inacc,0);
   const convs=rows.filter(r=>r.marks.conv!=null), saves=rows.filter(r=>r.marks.save!=null);
@@ -209,12 +221,12 @@ function renderReport(user,site,rows,total,final){
   const opBy=c=>{ const m=new Map(); for(const r of rows.filter(r=>r.game.color===c)){ const nm=Book.nameOf(r.marks.fens.slice(0,21)); const key=nm?nm[1].split(':')[0]:'Other';
       const o=m.get(key)||{n:0,s:0,blun:0,mist:0,inacc:0}; o.n++; o.s+=r.marks.score; o.blun+=r.marks.blun; o.mist+=r.marks.mist; o.inacc+=r.marks.inacc; m.set(key,o) } return [...m.entries()].sort((a,b)=>b[1].n-a[1].n).slice(0,10) };
   /* no engine needed: from every game fetched */
-  const all=(LAST&&LAST.games)||rows.map(r=>r.game), sc=g=>g.result==='1/2-1/2'?0.5:(g.result==='1-0')===(g.color==='w')?1:0;
+  const all=allG.filter(inY), sc=g=>g.result==='1/2-1/2'?0.5:(g.result==='1-0')===(g.color==='w')?1:0;
   const byCol=['w','b'].map(c=>{ const gs=all.filter(g=>g.color===c); return [c,gs.length,gs.reduce((a,g)=>a+sc(g),0)] });
   const band=r=>r==null?null:r<1200?'under 1200':r>=2200?'2200+':`${Math.floor(r/200)*200}–${Math.floor(r/200)*200+199}`;
   const bands=new Map(); for(const g of all){ const b=band(g.color==='w'?g.br:g.wr); if(!b) continue; const o=bands.get(b)||{n:0,s:0}; o.n++; o.s+=sc(g); bands.set(b,o) }
   const bandRows=[...bands.entries()].sort((a,b)=>(parseInt(a[0])||0)-(parseInt(b[0])||0)||(a[0]<b[0]?-1:1));
-  const yearly=yearlyOf(all,sc);
+  const yearly=yearlyOf(allG,sc);
   const ph={opening:[],middlegame:[],endgame:[]}; for(const r of rows) if(r.marks.phase) for(const k in ph) ph[k].push(...r.marks.phase[k]);
   const avg=a=>a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length):null;
   const opTable=list=>`<table class="atable"><tr><th>Opening</th><th>Games</th><th>Score</th><th>B / M / I per game${Help.q('Your blunders / mistakes / inaccuracies in that opening’s games, divided by its games.')}</th></tr>${list.map(([k,o])=>`<tr><td>${esc(k)}</td><td>${o.n}</td><td>${Math.round(100*o.s/o.n)}%</td><td>${(o.blun/o.n).toFixed(1)} / ${(o.mist/o.n).toFixed(1)} / ${(o.inacc/o.n).toFixed(1)}</td></tr>`).join('')||'<tr><td colspan="4" class="note">No games with this colour.</td></tr>'}</table>`;
@@ -223,7 +235,8 @@ function renderReport(user,site,rows,total,final){
   const toPunish=pun.filter(p=>p.verdict!=='punished').sort((a,b)=>b.drop-a.drop);
   const SITE={lichess:'Lichess',chesscom:'Chess.com',pgn:'Your PGN file'}[site]||site, got=site==='pgn'?'in the file':'fetched';
   $('a-report').innerHTML=`
-  <div class="rhead"><h2>Report card: ${esc(user)}</h2><span class="note">${esc(SITE)} · ${all.length} games ${got}${final?'':' · analyzing…'}</span></div>
+  <div class="rhead"><h2>Report card: ${esc(user)}${AYEAR!=='all'?` · ${AYEAR}`:''}</h2><span class="note">${esc(SITE)} · ${all.length} games ${got}${final?'':' · analyzing…'}</span></div>
+  ${yearChips}
   <p class="lead note">Your results, mistakes and the positions worth drilling, from your own recent games.</p>
   <div class="stats">
     <div class="stat"><b class="sm">${W}–${D}–${L}</b><span class="note">wins / draws / losses in ${rows.length} analyzed game${rows.length===1?'':'s'}${final?'':' of '+total+'…'}${Help.q('Results of the games analyzed here, from your side.')}</span></div>
@@ -314,6 +327,7 @@ function init(){
   if($('a-pgnfile')) $('a-pgnfile').addEventListener('change',async e=>{
     const f=e.target.files&&e.target.files[0]; if(!f) return;
     try{
+      note(`Reading ${f.name}…`,true); await new Promise(r=>setTimeout(r,30));
       const text=await f.text(); const P=PgnFile.parse(text); const names=PgnFile.players(P);
       if(!P.games.length||!names.length) throw new Error('No games found in that file. Is it a PGN?');
       FILE={parsed:P,name:f.name};
@@ -327,7 +341,8 @@ function init(){
   if($('a-pgnname')) $('a-pgnname').addEventListener('change',e=>Store.put('pgn-me',e.target.value));
   $('a-demo').addEventListener('click',()=>{ $('a-site').value='chesscom'; $('a-user').value='CoachSuhaas'; run('chesscom','CoachSuhaas') });
   $('a-user').addEventListener('keydown',e=>{ if(e.key==='Enter') $('a-go').click() });
-  $('a-report').addEventListener('click',e=>{ const b=e.target.closest('[data-optab]'); if(!b) return; const c=b.dataset.optab;
+  $('a-report').addEventListener('click',e=>{ const y=e.target.closest('[data-ayear]'); if(y){ AYEAR=y.dataset.ayear; if(LASTR) renderReport(...LASTR); return }
+    const b=e.target.closest('[data-optab]'); if(!b) return; const c=b.dataset.optab;
     $('a-report').querySelectorAll('[data-optab]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); $('a-report').querySelectorAll('[data-oppane]').forEach(x=>{ x.hidden=x.dataset.oppane!==c }) });
 }
 window.AnalyzeTab={init,phaseAccuracy,phaseOf,run,markGame,fetchLichess,fetchChesscom,evalsFor,yearlyOf,setFile(text,name){ FILE={parsed:PgnFile.parse(text),name:name||'file.pgn'} },stop(){ stopReq=true },get running(){return running}};

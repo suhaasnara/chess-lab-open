@@ -1854,6 +1854,7 @@ section('t60: Blind tactics — the stored set replays, filters, first-try scori
 {
   let started=0;
   const {w}=await makePage(); w.SharedEngine.start=()=>{ started++ };
+  w.location.hash='#progress';   /* off Today first: its engine timer (3 s) would fire while the set below is checked on a slow machine */
   const Chess=w.Chess;
   const lib=JSON.parse(fs.readFileSync(path.join(H.SITE,'data/blind.json'),'utf8'));
   let bad=[];

@@ -78,9 +78,8 @@ window.Reader=(()=>{
   const onMain=()=>pre(R.path,R.mainLine);
   const kids=()=>VarLine.kids(R.flow,R.path,R.mainLine);
   /* keep the current move in view inside the text (never the page) */
-  function show(el,top){ const box=R.notes, q=box.getBoundingClientRect(), r=el.getBoundingClientRect();
-    if(top) box.scrollTop+=r.top-q.top-12;
-    else if(r.top<q.top+8||r.bottom>q.bottom-56) box.scrollTop+=r.top-q.top-Math.min(72,q.height/4) }
+  function show(el,top){ const box=R.notes, q=box.getBoundingClientRect(), r=el.getBoundingClientRect();   /* a tapped move, or one past the bottom, goes to the top (VarLine.follow) */
+    if(top||VarLine.clicked()||r.top<q.top+8||r.bottom>q.bottom-56) box.scrollTop+=r.top-q.top-12 }
   function render(scroll=true){
     const {g,last}=gameAt(R.path), k=R.path.length;
     Board.draw(R.board,g,{orient:R.orient,last,role:'gridcell'}); if(window.BoardFX) BoardFX.after(R.board,last,{silent:true});

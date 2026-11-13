@@ -259,16 +259,7 @@ body.welcomed[data-view="today"] .hero{display:none}
 .gmoves .ok{color:var(--good)}.gmoves .inacc{color:var(--warn)}.gmoves .miss{color:var(--bad)}
 .ccfilters .chips+.chips{margin-top:6px}
 
-/* Openings: end-of-line banner on the board */
-.boardbox{position:relative}
-.boardbox.end-good .board{box-shadow:0 0 0 4px var(--good)}
-.boardbox.end-warn .board{box-shadow:0 0 0 4px var(--warn)}
-.endbar{position:absolute;left:8px;right:8px;bottom:8px;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:10px;
-  padding:10px 12px;border-radius:var(--radius);color:#fff;font-weight:600;font-size:1rem;box-shadow:0 4px 14px rgba(19,40,74,.35)}
-.end-good .endbar{background:var(--good)}.end-warn .endbar{background:var(--warn)}
-.endbar .btn{background:#fff;color:#13284a;border-color:#fff;flex:none}
-.boardbox.end-bad .board{box-shadow:0 0 0 4px var(--bad)}.end-bad .endbar{background:var(--bad)}
-.endbar .endtext{cursor:pointer}
+/* the result banner on a board (endBanner): shared/shared.css since 13 Nov 2026 */
 /* Retry the miss in the bar on the board: phones only (laptops keep it on the end card); the bar's buttons never wrap */
 @media (min-width:861px){#o-endretry{display:none!important}}
 @media (max-width:860px){#o-endbar:has(#o-endretry:not([hidden])){gap:8px;padding:8px 10px;font-size:.9rem}
@@ -455,3 +446,10 @@ td.num,th.num{text-align:right;white-space:nowrap}
 #openings .otrain.pin #o-endnext,#openings .otrain.pin #o-readslot{display:none}
 #openings .otrain.pin .cnotes{max-height:none;overflow:visible}
 #openings .otrain.pin #o-moveform{max-width:var(--pinb);margin:6px auto 0}
+
+/* Analyze my games: a spinner beside a long step's message, so it never looks frozen; year chips over the report (13 Nov 2026) */
+#a-note.busy{display:inline-flex;align-items:center;gap:8px}
+#a-note.busy::before{content:"";flex:none;width:14px;height:14px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--blue);animation:aspin .8s linear infinite}
+@keyframes aspin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){#a-note.busy::before{animation-duration:2.4s}}
+#a-report .ayears{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:4px 0 14px}#a-report .ayears .note{margin-right:4px}

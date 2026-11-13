@@ -601,7 +601,7 @@ function renderNotes(){
     :notes?'':'<p class="note">No notes on these moves.</p>';
   el.innerHTML=head+`<div class="cflow">${out.join('')||'<span class="note">Starting position</span>'}</div>`;
   const c=el.querySelector('.cm.cur'); if(c){ const nt=c.parentElement.nextElementSibling, tg=nt&&nt.classList.contains('ctext')?nt:c;
-    const r=tg.getBoundingClientRect(), R=el.getBoundingClientRect(); if(r.bottom>R.bottom||r.top<R.top) el.scrollTop+=r.top-R.top-30 }
+    const r=tg.getBoundingClientRect(), R=el.getBoundingClientRect(); if(window.VarLine&&VarLine.clicked()) el.scrollTop+=c.getBoundingClientRect().top-R.top-8; else if(r.bottom>R.bottom||r.top<R.top) el.scrollTop+=r.top-R.top-30 }   /* a tapped move at the top */
 }
 
 /* ---------- Side panel ---------- */

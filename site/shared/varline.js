@@ -135,10 +135,25 @@ window.VarLine=(()=>{
       const i=side.findIndex(x=>x.el.closest('.vline')===box&&all.indexOf(x.el)>pos&&depth(x.el)===d);
       if(i>0) side.unshift(side.splice(i,1)[0]) }
     return out.concat(side) }
+  /* Where the current move goes in its text box (13 Nov 2026, asked for: "when a move in a variation is clicked I want it at
+     the top of the box, so I can read its whole note and the moves after it; the moves before it are already read"):
+     follow(el, box?) puts a clicked move (a tap in the last second) at the top of its scrolling box, and a move stepped to
+     with the keys there too once it runs past the bottom (or above the top); otherwise the box stays still. With no
+     scrolling box (a phone, where the text flows down the page under a pinned board) the page scrolls instead, the move
+     going just under the tab bar and any pinned board. clicked() tells a page whether the last move came from a tap. */
+  let lastTap=0;
+  if(typeof document!=='undefined') document.addEventListener('pointerdown',e=>{ const t=e.target; if(t&&t.closest&&t.closest('.vmv,[data-vp],[data-ply],[data-ci],.gmmv,.gmv,.mv,.cm,.rd-mm')) lastTap=Date.now() },true);
+  const clicked=()=>Date.now()-lastTap<1200;
+  function scrollBox(el){ for(let b=el&&el.parentElement;b&&b!==document.body;b=b.parentElement){ const cs=getComputedStyle(b);
+      if(/(auto|scroll)/.test(cs.overflowY)&&b.scrollHeight>b.clientHeight+2) return b } return null }
+  function covered(){ let y=0; const nv=document.querySelector('nav.tabs'); if(nv){ const r=nv.getBoundingClientRect(); if(r.bottom>0&&r.top<=1) y=r.bottom }
+    for(const e of document.querySelectorAll('.boardwrap,.rd-boardbox,.boardbox')){ if(!e.offsetParent) continue; const cs=getComputedStyle(e); if(cs.position!=='sticky'&&cs.position!=='fixed') continue;
+      const r=e.getBoundingClientRect(); if(r.top<=y+2&&r.bottom>y) y=r.bottom } return y }
+  function follow(el,box,pad){ if(!el) return; pad=pad==null?8:pad; box=box&&box.scrollHeight>box.clientHeight+2?box:scrollBox(el); const r=el.getBoundingClientRect(), tap=clicked();
+    if(box){ const q=box.getBoundingClientRect(); if(tap||r.bottom>q.bottom-8||r.top<q.top) box.scrollTop+=r.top-q.top-pad; return }
+    const top=covered(); if(tap||r.bottom>innerHeight-8||r.top<top) window.scrollBy(0,r.top-top-pad) }
   /* scroll the box the element is in (never the page) so the element shows */
-  function show(el){ for(let b=el&&el.parentElement;b&&b!==document.body;b=b.parentElement){ const cs=getComputedStyle(b);
-      if(/(auto|scroll)/.test(cs.overflowY)&&b.scrollHeight>b.clientHeight){ const r=el.getBoundingClientRect(), q=b.getBoundingClientRect();
-        if(r.top<q.top) b.scrollTop+=r.top-q.top-8; else if(r.bottom>q.bottom) b.scrollTop+=r.bottom-q.bottom+8; return } } }
+  function show(el){ const b=scrollBox(el); if(b) follow(el,b) }
   function nav(o){
     let at=null, sel=0, cyc=false;   // the pick: which of the moves after position `at` → plays
     const node=()=>{ if(o.active&&!o.active()) return null; const c=o.cur(); return c?c.slice():null };
@@ -161,5 +176,5 @@ window.VarLine=(()=>{
       ArrowRight:[o.rightLabel||'Forward a move (the picked line where lines branch)',right],
       ArrowDown:['Where lines branch: pick the next line',()=>{ if(o.active&&!o.active()) return false; pick(1) }],
       ArrowUp:['Where lines branch: pick the line before',()=>{ if(o.active&&!o.active()) return false; pick(-1) }]}} }
-  return {html,wrap,prose,path,mark,kids,nav};
+  return {html,wrap,prose,path,mark,kids,nav,follow,clicked};
 })();

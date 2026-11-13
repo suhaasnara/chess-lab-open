@@ -217,12 +217,12 @@ function renderMoves(){
   el.classList.toggle('vread',!!S.done);
   if(NAV) NAV.paint();
   const vc=S.vr?VarLine.mark(el,S.vr.path.slice(0,S.vr.at)):null;
-  if(vc){ const top=vc.offsetTop; if(top<el.scrollTop||top>el.scrollTop+el.clientHeight-30) el.scrollTop=top-40; return }
+  if(vc){ VarLine.follow(vc,el); return }   /* a tapped side-line move goes to the top of the panel (shared VarLine.follow) */
   const c=el.querySelector('.gmv.cur');
   if(c&&S.done){   // keep the current move (and its note) in view inside the panel, without scrolling the page
     const n=c.nextElementSibling&&c.nextElementSibling.classList.contains('gnote')?c.nextElementSibling:c;
     const top=c.offsetTop, bot=n.offsetTop+n.offsetHeight;   // .gmoves is position:relative, so offsets are inside the panel
-    if(top<el.scrollTop) el.scrollTop=top-6; else if(bot>el.scrollTop+el.clientHeight) el.scrollTop=Math.min(top-6,bot-el.clientHeight+6) }
+    if(VarLine.clicked()||top<el.scrollTop||bot>el.scrollTop+el.clientHeight) el.scrollTop=top-6 }   /* a tapped move, or one past the bottom: at the top, its note under it */
   else el.scrollTop=el.scrollHeight;
 }
 /* reading a finished game: show the position after `ply` plies */

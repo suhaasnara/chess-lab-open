@@ -4,6 +4,7 @@
    PgnFile.parse(text)        -> {games:[{h (headers), sans (main line), evals (pawns, White's side, per ply, or null)}], skipped}
                                  side lines and comments are skipped; [%eval 0.31] / [%eval #-3] in the main line are kept
    PgnFile.players(parsed)    -> [[name, games]] most frequent first (who "you" are is the name in nearly every game)
+   PgnFile.toGamesAsync(parsed, me, onProgress) -> the same, a few games at a time (the page stays responsive)
    PgnFile.toGames(parsed, me) -> Analyze's game records for the games "me" played (White or Black), oldest first:
                                  {site:'pgn'|'lichess'|'chesscom', id, date, ts, white, black, wr, br, wd, bd, color, result,
                                   moves, analysis, speed, url}; games from a set position (FEN), bullet, unfinished or with an
@@ -53,9 +54,17 @@ window.PgnFile=(()=>{
     const d=(h.Date||h.UTCDate||'').replace(/\?\?/g,'01');
     return /^\d{4}\.\d\d\.\d\d$/.test(d)&&!/^\?/.test(h.Date||'')?d.replace(/\./g,'-'):'';
   }
-  function toGames(P,me){
+  /* toGamesAsync: the same, handing the browser back every few games so a big file never freezes the page
+     (13 Nov 2026: a 208-game file locked Chrome while every move was checked), with onProgress(done, total) */
+  async function toGamesAsync(P,me,onProgress){
+    const all=P.games, out={games:[],skipped:{notYou:0,fen:0,bullet:0,unfinished:0,illegal:0}};
+    for(let i=0;i<all.length;i+=3){ const r=toGames({games:all.slice(i,i+3)},me,i);
+      out.games.push(...r.games); for(const k in r.skipped) out.skipped[k]+=r.skipped[k];
+      onProgress&&onProgress(Math.min(all.length,i+3),all.length); await new Promise(res=>setTimeout(res,0)) }
+    out.games.sort((a,b)=>a.ts-b.ts); return out }
+  function toGames(P,me,base=0){
     const who=norm(me).toLowerCase(), out=[]; const skipped={notYou:0,fen:0,bullet:0,unfinished:0,illegal:0};
-    P.games.forEach((x,i)=>{
+    P.games.forEach((x,j)=>{ const i=base+j;
       const h=x.h, w=norm(h.White).toLowerCase(), b=norm(h.Black).toLowerCase();
       if(w!==who&&b!==who){ skipped.notYou++; return }
       if(h.FEN||h.SetUp==='1'){ skipped.fen++; return }
@@ -78,5 +87,5 @@ window.PgnFile=(()=>{
     out.sort((a,b)=>a.ts-b.ts);
     return {games:out,skipped};
   }
-  return {parse,players,toGames,speedOf};
+  return {parse,players,toGames,toGamesAsync,speedOf};
 })();
