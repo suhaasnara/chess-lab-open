@@ -80,7 +80,7 @@ window.Yearly=(()=>{
     rating:'Your rating at the start and the end of the year in this pool, and the points you gained and lost game by game (Chess.com gives the rating after each game, Lichess the rating before it and the change). Over the board on the private site: US Chess’s own record, event by event. Ratings typed into a PGN file (over the board) give the start and end only, as the net change: added up game by game, a single typo would count twice.',
     us:'From US Chess’s own record of your rated events: the regular rating going into the year’s first event and coming out of its last, and the points won and lost event by event.'};
   const label=r=>r.pool==='OTB classical'?'Over the board':String(r.pool).replace(/^OTB /,'Over the board, ');
-  const poolName=r=>r.official?`Over the board · US Chess${q(HELP.us)}`:esc(label(r));
+  const poolName=r=>r.official?`OTB · US Chess${q(HELP.us)}`:esc(label(r));
 
   function section(R,opts={}){
     const Y=Object.entries((R&&R.byYear)||{}).filter(([,s])=>s.games>=(opts.minYear||5)); if(Y.length<2) return '';
@@ -108,7 +108,7 @@ window.Yearly=(()=>{
       <div class="tablewrap"><table class="rtable ytable${single?'':' ymulti'}"><thead><tr><th>Year</th><th class="num">Games<div class="note">W / D / L</div></th><th class="num">Score</th>
       <th class="num">Opponents${q(HELP.opp)}<div class="note">average · median</div></th>
       <th class="num">Performance${q(HELP.perf)}</th>
-      <th class="num">Rating${q(HELP.rating)}<div class="note">start → end · gained / lost</div></th>
+      <th class="num">Rating${q(HELP.rating)}<div class="note">start → end<br>gained / lost</div></th>
       ${hasConv?`<th class="num">Won from +2</th><th class="num">Held from −2</th>`:''}</tr></thead>
       <tbody>${rows}</tbody></table></div>
       <p class="note">▲ ▼ the change from the year before (green better, red worse; the opponents’ rating is neither); opponents, performance and rating against the same pool’s previous year. Years and pools with ${opts.minYear||5} or more games.</p></div>`;
