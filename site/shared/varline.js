@@ -9,6 +9,8 @@
    VarLine.path(el)                 the SAN path of a clicked move button (or null): the host plays it from its start.
    VarLine.mark(root, path)         marks the button whose path is `path` (array of SAN) as current; returns it.
    VarLine.wrap(fen, text, prefix)  html() inside <div class="vline">( … )</div>, the block the hosts put under a move.
+   VarLine.prose(text, before, after)  a note written in prose with moves in it: the moves become buttons, the rest stays
+                                    plain text. before/after = {fen, prefix} around the move the note is on.
    VarLine.kids(root, path, main)   the moves that can follow `path` (array of SAN), Lichess order: the main line's move first
                                     (when path is on `main`), then the line you are in, then the other side lines that branch
                                     there. [{path, el}] (el = the side line's button, null for the main line's move).
@@ -47,22 +49,22 @@ window.VarLine=(()=>{
     const root={fen:start.fen(),path:(prefix||[]).slice()}; root.chain=[root];
     let cur=line([root]), stack=[], num=null;
     const put=(t,cls)=>{ out.push(cls?`<span class="${cls}">${esc(t)}</span>`:esc(t)) };
-    const clean=w=>{ const w2=w.replace(/[,;:.]+$/,''), mk=(w2.match(/[!?]+$/)||[''])[0], core=w2.slice(0,w2.length-mk.length).replace(/^0-0-0/,'O-O-O').replace(/^0-0/,'O-O'); return {mk,core,ok:SAN.test(core)} };
+    const clean=w=>{ const w2=w.replace(/[,;:.]+$/,''), tail=w.slice(w2.length), mk=(w2.match(/[!?]+$/)||[''])[0], core=w2.slice(0,w2.length-mk.length).replace(/^0-0-0/,'O-O-O').replace(/^0-0/,'O-O'); return {mk,core,tail,ok:SAN.test(core)} };
     const play=(fen,core)=>{ try{ const g=new Chess(fen); const m=g.move(core,{sloppy:true}); return m?{g,m}:null }catch(e){ return null } };
-    const tryMove=(word,n,black,next)=>{
-      const {mk,core,ok}=clean(word); if(!ok) return false;
+    const tryMove=(word,n,black,next,shown)=>{   // shown: the token as written, number included (kept when it isn't played)
+      const {mk,core,tail,ok}=clean(word); if(!ok) return false;
       if(n!=null){   // the latest point of the line with move n to play where it is legal (and the move after it too, when one follows)
         const c=cur.all.filter(x=>{ const p=x.fen.split(' '); return +p[5]===n&&(p[1]==='b')===!!black }).reverse();
         const legal=c.filter(x=>play(x.fen,core)), pick=legal.find(x=>{ if(!next) return true; const r=play(x.fen,core); return !!play(r.g.fen(),next) })||legal[0];
-        if(!pick&&!revive(n,black,core)){ cur.need=true; put(word,'vdead vill'); return true }   // no point of the line fits it: not played
-        if(!pick){ cur.need=false; return tryMove(word,null,null) }
+        if(!pick&&!revive(n,black,core)){ cur.need=true; put(shown||word,'vdead vill'); return true }   // no point of the line fits it: not played
+        if(!pick){ cur.need=false; return tryMove(word,null,null,null,shown) }
         if(pick!==cur.stops[cur.stops.length-1]){ cur.stops=pick.chain.slice(); cur.g=new Chess(pick.fen); cur.path=pick.path.slice(); cur.fresh=true }
         cur.need=false }
-      if(cur.need){ cur.skip={i:out.length,core,mk,at:cur.stops.length}; put(word,'vdead'); return true }
+      if(cur.need){ cur.skip={i:out.length,core,mk,tail,at:cur.stops.length}; put(shown||word,'vdead'); return true }
       const before=cur.g.fen(), p=before.split(' '), white=p[1]==='w', mv=+p[5]||1;
       let m=null; try{ m=cur.g.move(core,{sloppy:true}) }catch(e){ m=null }
-      if(!m){ cur.need=true; put(word,'vdead vill'); return true }
-      out.push(push(m,white,mv,mk)); return true };
+      if(!m){ cur.need=true; put(shown||word,'vdead vill'); return true }
+      out.push(push(m,white,mv,mk)+esc(tail)); return true };   // the word's own punctuation stays ("13.Re1, the main line")
     function push(m,white,mv,mk){ cur.path.push(m.san); const st={fen:cur.g.fen(),path:cur.path.slice()}; cur.stops.push(st); st.chain=cur.stops.slice(); cur.all.push(st);
       const label=(white?mv+'.':cur.fresh?mv+'…':'')+m.san+mk; cur.fresh=false; cur.skip=null;
       return `<button type="button" class="vmv" data-vp="${esc(cur.path.join(' '))}">${esc(label)}</button>` }
@@ -71,13 +73,14 @@ window.VarLine=(()=>{
     function revive(n,black,core){ const k=cur.skip; if(!k||k.at!==cur.stops.length) return false;
       const before=cur.g.fen(), r=play(before,k.core); if(!r) return false; const p=r.g.fen().split(' ');
       if(+p[5]!==n||(p[1]==='b')!==!!black||!play(r.g.fen(),core)) return false;
-      const b=before.split(' '); cur.g=r.g; out[k.i]=push(r.m,b[1]==='w',+b[5]||1,k.mk); cur.fresh=true; return true }
+      const b=before.split(' '); cur.g=r.g; out[k.i]=push(r.m,b[1]==='w',+b[5]||1,k.mk)+esc(k.tail||''); cur.fresh=true; return true }
     /* "a)", "b)" … label a book's options; they are not brackets */
     const src=String(text||'').replace(/(^|\s)([a-z])\)(?=\s|$)/g,'$1$2');
     const toks=src.match(TOK)||[];
     const nextMove=i=>{ for(let k=i+1;k<toks.length;k++){ const t=toks[k]; if(NUM.test(t)||/^(\.{2,3}|…)$/.test(t)) continue;
         const mm=NUMMOVE.exec(t), c=clean(mm?mm[3]:t); return c.ok?c.core:null } return null };
     toks.forEach((t,i)=>{
+      if(num&&(t==='('||t===')'||t[0]==='{')){ put(num.t); num=null }   // a number before a bracket or a note is text ("Moscow 1937)")
       if(t[0]===''){ put(t.slice(1)+')','vnote'); cur.fresh=true; return }
       if(t[0]==='{'){ const c=t.slice(1,-1).trim(); if(c) put(c,'vnote'); cur.fresh=true; num=null; return }
       if(t==='('){ stack.push(cur); out.push('<span class="vpar">(</span>');
@@ -87,8 +90,8 @@ window.VarLine=(()=>{
       if(m){ if(num) put(num.t); num={n:+m[1],black:!!m[2]&&m[2]!=='.',t}; return }
       if(num&&/^(\.{2,3}|…)$/.test(t)){ num.black=true; num.t+=' '+t; return }
       m=NUMMOVE.exec(t);
-      if(m&&tryMove(m[3],+m[1],m[2]!=='.',nextMove(i))){ num=null; return }
-      if(num){ const n=num; num=null; if(tryMove(t,n.n,n.black,nextMove(i))) return; put(n.t) }
+      if(m&&tryMove(m[3],+m[1],m[2]!=='.',nextMove(i),t)){ num=null; return }
+      if(num){ const n=num; num=null; if(tryMove(t,n.n,n.black,nextMove(i),n.t+' '+t)) return; put(n.t) }
       if(tryMove(t,null,null)) return;
       if(SIGN.test(t.replace(/[,;:.]+$/,''))){ put(t,'vnote'); return }
       put(t,'vtext'); cur.need=true; cur.fresh=true;   // prose: the line goes on only at a numbered move
@@ -97,6 +100,18 @@ window.VarLine=(()=>{
     while(stack.length){ out.push('<span class="vpar">)</span>'); stack.pop() }
     return out.join(' ');
   }
+  /* A note in prose ("11...Bd6?! 12.f4 Ne4 13.Nxe4 favours White", "If 12.f4 there would have followed c5 13.e3"): the moves
+     become buttons as in a side line, the prose stays ordinary text (no brackets, no muted words). The note sits on a move:
+     before = {fen, prefix} the position before that move, after = the position after it; the first numbered move in the
+     text decides which one the moves start from (an alternative to the move, or what follows it). */
+  function prose(text,before,after){
+    const t=String(text||''); if(!t.trim()) return '';
+    let root=before; const m=t.match(/(?:^|[\s(])(\d+)(\.{3}|…|\.)\s?(?=[KQRBNa-hO0])/);
+    if(m&&after&&after.fen){ const n=+m[1], blk=m[2]!=='.', fit=f=>{ const p=f.split(' '); return +p[5]===n&&(p[1]==='b')===blk };
+      if(!fit(before.fen)&&fit(after.fen)) root=after }
+    let h=html(root.fen,t,root.prefix);
+    h=h.replace(/<span class="(?:vdead(?: vill)?|vtext|vnote)">([^<]*)<\/span>/g,'$1').replace(/<span class="vpar">\(<\/span> ?/g,'(').replace(/ ?<span class="vpar">\)<\/span>/g,')');
+    return h.replace(/ ([,.;:!?])(?=\s|$)/g,'$1') }
   const wrap=(fen,text,prefix)=>`<div class="vline"><span class="vpar">(</span>${html(fen,text,prefix)}<span class="vpar">)</span></div>`;
   function path(el){ const b=el&&el.closest&&el.closest('.vmv[data-vp]'); return b?b.dataset.vp.split(' ').filter(Boolean):null }
   function mark(root,p){ if(!root) return null; const k=p&&p.length?p.join(' '):null; let hit=null;
@@ -146,5 +161,5 @@ window.VarLine=(()=>{
       ArrowRight:[o.rightLabel||'Forward a move (the picked line where lines branch)',right],
       ArrowDown:['Where lines branch: pick the next line',()=>{ if(o.active&&!o.active()) return false; pick(1) }],
       ArrowUp:['Where lines branch: pick the line before',()=>{ if(o.active&&!o.active()) return false; pick(-1) }]}} }
-  return {html,wrap,path,mark,kids,nav};
+  return {html,wrap,prose,path,mark,kids,nav};
 })();

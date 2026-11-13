@@ -54,16 +54,18 @@ window.Reader=(()=>{
   function flow(o,main,fens){
     const out=[], P=[]; let fresh=true;
     const para=()=>{ if(P.length){ out.push(`<p class="rd-p">${P.join(' ')}</p>`); P.length=0 } };
-    const notes=t=>{ const s=String(t||'').trim(); if(!s) return; para(); s.split(/\n{2,}/).forEach(x=>{ x=x.trim(); if(x) out.push(`<p class="rd-note">${esc(x)}</p>`) }); fresh=true };
+    /* the notes' own moves are buttons too (VarLine.prose: from the position the note is about) */
+    const notes=(t,i)=>{ const s=String(t||'').trim(); if(!s) return; para(); const b={fen:fens[i==null?0:i],prefix:main.slice(0,i==null?0:i)}, a=i==null?null:{fen:fens[i+1],prefix:main.slice(0,i+1)};
+      s.split(/\n{2,}/).forEach(x=>{ x=x.trim(); if(x) out.push(`<p class="rd-note">${i===-1?esc(x):VarLine.prose(x,b,a)}</p>`) }); fresh=true };
     const side=(fen,prefix,texts)=>{ for(const t of texts){ if(!t||!String(t).trim()) continue; P.push(`<span class="vline rd-sl"><span class="vpar">(</span>${VarLine.html(fen,t,prefix)}<span class="vpar">)</span></span>`); fresh=true } };
     const texts=(fen,m)=>[...(m.vtext||[]),...(m.vars||[]).map(v=>toText(fen,v))];
     if(o.lead){ notes(o.lead.note); side(fens[0],[],texts(fens[0],o.lead)) }
     main.forEach((san,i)=>{ const m=o.lines[i]||{}, p=fens[i].split(' '), white=p[1]==='w', n=+p[5]||1;
       const lab=(white?n+'.':fresh?n+'…':'')+san+(m.marks||'');
       P.push(`<button type="button" class="vmv rd-mm" data-vp="${esc(main.slice(0,i+1).join(' '))}">${esc(lab)}</button>`); fresh=false;
-      notes(m.note);
+      notes(m.note,i);
       side(fens[i],main.slice(0,i),texts(fens[i],m)) });
-    para(); notes(o.after);
+    para(); notes(o.after,-1);
     if(!main.length&&!out.length) out.push('<p class="note">No moves.</p>');
     return out.join('') }
   function gameAt(path){ const g=new Chess(R.fen); let last=null; for(const s of path){ let r=null; try{ r=g.move(s,{sloppy:true}) }catch(e){} if(!r) break; last={from:r.from,to:r.to} } return {g,last} }

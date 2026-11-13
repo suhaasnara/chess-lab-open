@@ -190,17 +190,17 @@ function drawGraph(){
    folded. Once the game is over (or "Show the game"), every move can be clicked, and ← → Home End step through it. */
 /* side lines: each move a button (shared/varline.js), played from the position before the move it replaces (fen) */
 let NAV=null;   // the arrow keys through the lines (set up with the keys)
-function noteHtml(n,fen,prefix){
+function noteHtml(n,fen,prefix,after){
   if(!n) return '';
   const v=(n.v||[]).map(x=>VarLine.wrap(fen,x,prefix)).join('');
-  return `<div class="gnote">${n.t?`<p>${esc(n.t)}</p>`:''}${v}</div>`;
+  return `<div class="gnote">${n.t?`<p>${VarLine.prose(n.t,{fen,prefix},after||null)}</p>`:''}${v}</div>`;   // moves written in the note are buttons too
 }
 function renderMoves(){
   const el=$('g-moves'); if(!el) return;
   const g=S.game; if(!g){ el.innerHTML=''; return }
   const byPly={}; for(const r of S.rows) byPly[r.ply]=r;
   const notes=g.notes||{}, upto=S.done?g.moves.length:S.ply, cur=S.vr?-2:S.view==null?upto-1:S.view-1;
-  const vg=new Chess(g.fen||undefined), vfen=[]; for(let i=0;i<upto;i++){ vfen.push(vg.fen()); vg.move(g.moves[i],{sloppy:true}) }
+  const vg=new Chess(g.fen||undefined), vfen=[]; for(let i=0;i<upto;i++){ vfen.push(vg.fen()); vg.move(g.moves[i],{sloppy:true}) } vfen.push(vg.fen());
   let html=g.intro?`<div class="gnote gintro"><p>${esc(g.intro)}</p></div>`:'';
   for(let i=0;i<upto;i++){
     if(i%2===0||notes[i-1]) html+=`<span class="note">${Math.floor(i/2)+1}${i%2?'…':'.'}</span> `;
@@ -211,7 +211,7 @@ function renderMoves(){
     const tag=S.done?'button':'b';
     const mk=notes[i]&&notes[i].mk?markHtml(notes[i].mk):'';
     html+=`<${tag} class="gmv ${cls}${i===cur&&S.done?' cur':''}" data-ply="${i+1}"${S.done?' type="button"':''} title="${r&&r.guess!==g.moves[i]?'you: '+esc(r.guess):''}">${esc(g.moves[i])}${mk}</${tag}>${mark} `;
-    if(notes[i]&&(notes[i].t||(notes[i].v||[]).length)) html+=noteHtml(notes[i],vfen[i],g.moves.slice(0,i));
+    if(notes[i]&&(notes[i].t||(notes[i].v||[]).length)) html+=noteHtml(notes[i],vfen[i],g.moves.slice(0,i),vfen[i+1]?{fen:vfen[i+1],prefix:g.moves.slice(0,i+1)}:null);
   }
   el.innerHTML=html||'<span class="note">The moves appear as the game goes.</span>';
   el.classList.toggle('vread',!!S.done);
