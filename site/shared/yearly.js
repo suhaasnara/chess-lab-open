@@ -101,7 +101,7 @@ window.Yearly=(()=>{
           <td class="num" data-l="Opponents (avg · median)">${r.pool?oppCell(r,pr):'—'}</td><td class="num" data-l="Performance">${r.pool?perfCell(r,pr):'—'}</td>
           <td class="num" data-l="Rating">${r.pool?rateCell(r):'—'}</td>${convCells(s,p)}</tr>` }
       return `<tr class="yrow"><td class="yname">${name(y)}</td><td class="num" data-l="Games">${s.games}<div class="note">${s.wins} / ${s.draws} / ${s.losses}</div></td>
-        <td class="num" data-l="Score">${pct(s.score)} ${p?delta(s.score,p.score,{unit:'%'}):''}</td><td class="ycomb" colspan="3"><span class="note">all pools · by pool below</span></td>${convCells(s,p)}</tr>`+
+        <td class="num" data-l="Score">${pct(s.score)} ${p?delta(s.score,p.score,{unit:'%'}):''}</td><td class="ycomb" colspan="3"></td>${convCells(s,p)}</tr>`+
         pools.map(r=>{ const pr=prevPool(i,r.pool); return `<tr class="ypoolrow"><td class="ypname">${poolName(r)}</td><td class="num" data-l="Games">${r.games}</td><td class="num" data-l="Score">${pct(r.score)}</td>
           <td class="num" data-l="Opponents (avg · median)">${oppCell(r,pr)}</td><td class="num" data-l="Performance">${perfCell(r,pr)}</td><td class="num" data-l="Rating">${rateCell(r)}</td>${hasConv?'<td></td><td></td>':''}</tr>` }).join('') }).join('');
     return `<div class="yearbox"><h3>Year by year</h3><p class="note">${highlights(Y,PB,thisYear)}</p>

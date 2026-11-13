@@ -217,7 +217,7 @@ function renderReport(user,site,rows,total,final){
   const yearly=yearlyOf(all,sc);
   const ph={opening:[],middlegame:[],endgame:[]}; for(const r of rows) if(r.marks.phase) for(const k in ph) ph[k].push(...r.marks.phase[k]);
   const avg=a=>a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length):null;
-  const opTable=list=>`<table style="margin-top:6px"><tr><th>Opening</th><th>Games</th><th>Score</th><th>Blunders / mistakes / inaccuracies per game</th></tr>${list.map(([k,o])=>`<tr><td>${esc(k)}</td><td>${o.n}</td><td>${Math.round(100*o.s/o.n)}%</td><td>${(o.blun/o.n).toFixed(1)} / ${(o.mist/o.n).toFixed(1)} / ${(o.inacc/o.n).toFixed(1)}</td></tr>`).join('')||'<tr><td colspan="4" class="note">No games with this colour.</td></tr>'}</table>`;
+  const opTable=list=>`<table class="atable"><tr><th>Opening</th><th>Games</th><th>Score</th><th>B / M / I per game${Help.q('Your blunders / mistakes / inaccuracies in that opening’s games, divided by its games.')}</th></tr>${list.map(([k,o])=>`<tr><td>${esc(k)}</td><td>${o.n}</td><td>${Math.round(100*o.s/o.n)}%</td><td>${(o.blun/o.n).toFixed(1)} / ${(o.mist/o.n).toFixed(1)} / ${(o.inacc/o.n).toFixed(1)}</td></tr>`).join('')||'<tr><td colspan="4" class="note">No games with this colour.</td></tr>'}</table>`;
   const mistakes=rows.flatMap(r=>r.marks.drops.map(d=>({...d,game:r.game}))).sort((a,b)=>b.drop-a.drop);
   const pun=rows.flatMap(r=>r.marks.punish.map(d=>({...d,game:r.game})));
   const toPunish=pun.filter(p=>p.verdict!=='punished').sort((a,b)=>b.drop-a.drop);
@@ -226,31 +226,29 @@ function renderReport(user,site,rows,total,final){
   <div class="rhead"><h2>Report card: ${esc(user)}</h2><span class="note">${esc(SITE)} · ${all.length} games ${got}${final?'':' · analyzing…'}</span></div>
   <p class="lead note">Your results, mistakes and the positions worth drilling, from your own recent games.</p>
   <div class="stats">
-    <div class="stat"><b>${rows.length}</b><span class="note">games analyzed${final?'':' of '+total+'…'}</span></div>
-    <div class="stat"><b>${W}–${D}–${L}</b><span class="note">your wins / draws / losses${Help.q('Results of the games analyzed here, from your side.')}</span></div>
-    <div class="stat"><b>${blun} / ${mist} / ${inacc}</b><span class="note">your blunders / mistakes / inaccuracies${Help.q('Each of your moves is judged by how much it dropped your Win%. '+WinPct.HELP)}</span></div>
-    <div class="stat"><b>${(blun/rows.length).toFixed(1)} / ${(mist/rows.length).toFixed(1)} / ${(inacc/rows.length).toFixed(1)}</b><span class="note">per game${Help.q('The same three counts divided by the number of games analyzed.')}</span></div>
+    <div class="stat"><b class="sm">${W}–${D}–${L}</b><span class="note">wins / draws / losses in ${rows.length} analyzed game${rows.length===1?'':'s'}${final?'':' of '+total+'…'}${Help.q('Results of the games analyzed here, from your side.')}</span></div>
+    <div class="stat"><b class="sm">${blun} / ${mist} / ${inacc}</b><span class="note">your blunders / mistakes / inaccuracies, ${(blun/rows.length).toFixed(1)} / ${(mist/rows.length).toFixed(1)} / ${(inacc/rows.length).toFixed(1)} per game${Help.q('Each of your moves is judged by how much it dropped your Win%. '+WinPct.HELP)}</span></div>
     <div class="stat"><b>${conv==null?'—':conv+'%'}</b><span class="note">won from +2 (${convs.length} games)${Help.q('Of the games where you were 2 pawns or more ahead (by the engine), the share you went on to win.')}</span></div>
     <div class="stat"><b>${save==null?'—':save+'%'}</b><span class="note">saved from −2 (${saves.length} games)${Help.q('Of the games where you were 2 pawns or more behind, the share you drew or won.')}</span></div>
     ${Yearly.tile(yearly)}
-    <div class="stat"><b>${pun.length?pun.length-toPunish.length+' / '+pun.length:'—'}</b><span class="note">opponents’ mistakes you punished${Help.q("Your opponents' moves that dropped their Win% by 10 points or more (a Lichess mistake), and how many of them you made pay for (your next move kept most of the gain). "+WinPct.HELP)}</span></div>
+    <div class="stat"><b class="sm">${pun.length?pun.length-toPunish.length+' / '+pun.length:'—'}</b><span class="note">opponents’ mistakes you punished${Help.q("Your opponents' moves that dropped their Win% by 10 points or more (a Lichess mistake), and how many of them you made pay for (your next move kept most of the gain). "+WinPct.HELP)}</span></div>
   </div>
   ${Yearly.section(yearly)}
   <div class="repgrid">
     <div class="card"><span class="label">Results by colour and by opponent rating${Help.q('Every game fetched counts here, analyzed or not: results need no engine. Score = your points as a share of the games.')}</span>
       <p class="note">From all ${all.length} ${site==="pgn"?"games in the file":"fetched games"}.</p>
-      <table style="margin-top:6px"><tr><th>You had</th><th>Games</th><th>Score</th></tr>${byCol.map(([c,n,s])=>`<tr><td>${c==='w'?'White':'Black'}</td><td>${n}</td><td>${n?Math.round(100*s/n)+'%':'—'}</td></tr>`).join('')}</table>
-      <table style="margin-top:10px"><tr><th>Opponent rated</th><th>Games</th><th>Score</th></tr>${bandRows.map(([b,o])=>`<tr><td>${esc(b)}</td><td>${o.n}</td><td>${Math.round(100*o.s/o.n)}%</td></tr>`).join('')}</table></div>
+      <table class="atable"><tr><th>You had</th><th>Games</th><th>Score</th></tr>${byCol.map(([c,n,s])=>`<tr><td>${c==='w'?'White':'Black'}</td><td>${n}</td><td>${n?Math.round(100*s/n)+'%':'—'}</td></tr>`).join('')}</table>
+      <table class="atable"><tr><th>Opponent rated</th><th>Games</th><th>Score</th></tr>${bandRows.map(([b,o])=>`<tr><td>${esc(b)}</td><td>${o.n}</td><td>${Math.round(100*o.s/o.n)}%</td></tr>`).join('')}</table></div>
     <div class="card"><span class="label">Accuracy by phase${Help.q('Lichess’s accuracy for each of your moves (100 = no Win% lost), averaged per phase. Phases as Lichess divides a game: the middlegame starts when 10 or fewer major and minor pieces are left or a back rank is sparse; the endgame when 6 or fewer are left.')}</span>
       <p class="note">From the ${rows.length} analyzed games (engine evals needed).</p>
-      <table style="margin-top:6px"><tr><th>Phase</th><th>Your moves</th><th>Accuracy</th></tr>${['opening','middlegame','endgame'].map(k=>`<tr><td>${k[0].toUpperCase()+k.slice(1)}</td><td>${ph[k].length}</td><td>${avg(ph[k])==null?'—':avg(ph[k])+'%'}</td></tr>`).join('')}</table></div>
-    <div class="card"><span class="label">Openings in these games</span>
+      <table class="atable"><tr><th>Phase</th><th>Your moves</th><th>Accuracy</th></tr>${['opening','middlegame','endgame'].map(k=>`<tr><td>${k[0].toUpperCase()+k.slice(1)}</td><td>${ph[k].length}</td><td>${avg(ph[k])==null?'—':avg(ph[k])+'%'}</td></tr>`).join('')}</table></div>
+    <div class="card wide"><span class="label">Openings in these games</span>
       <div class="seg mseg" role="group" style="margin-top:6px"><button type="button" data-optab="w" aria-pressed="true">As White</button><button type="button" data-optab="b" aria-pressed="false">As Black</button></div>
       <div data-oppane="w">${opTable(opBy('w'))}</div><div data-oppane="b" hidden>${opTable(opBy('b'))}</div></div>
     <div class="card" hidden><span class="label">Openings (all)</span>
-      <table style="margin-top:6px"><tr><th>Opening</th><th>Games</th><th>Score${Help.q('Your points as a share of the games: a win is 1, a draw ½.')}</th><th>Blunders / mistakes / inaccuracies per game${Help.q("Your own errors in that opening's games, divided by its games.")}</th></tr>
+      <table class="atable"><tr><th>Opening</th><th>Games</th><th>Score${Help.q('Your points as a share of the games: a win is 1, a draw ½.')}</th><th>Blunders / mistakes / inaccuracies per game${Help.q("Your own errors in that opening's games, divided by its games.")}</th></tr>
       ${opRows.map(([k,o])=>`<tr><td>${esc(k)}</td><td>${o.n}</td><td>${Math.round(100*o.s/o.n)}%</td><td>${(o.blun/o.n).toFixed(1)} / ${(o.mist/o.n).toFixed(1)} / ${(o.inacc/o.n).toFixed(1)}</td></tr>`).join('')}</table></div>
-    <div class="card"><span class="label">Your costliest moments (${mistakes.length})${Help.q('Your moves that dropped your Win% the most: before the move → after it, from your side. '+WinPct.HELP)}</span>
+    <div class="card wide"><span class="label">Your costliest moments (${mistakes.length})${Help.q('Your moves that dropped your Win% the most: before the move → after it, from your side. '+WinPct.HELP)}</span>
       <div style="margin-top:6px">${mistakes.slice(0,10).map(m=>`<div class="gamerow"><span class="src">${esc(m.game.date)}</span>
         <span>${esc(m.san)} <span class="note">vs ${esc(m.game.color==='w'?m.game.black:m.game.white)}</span></span>
         <span class="pill ${m.drop>=0.3?'bad':'warn'}" title="Win%, from your side">${WinPct.change(m.before,m.drop,m.game.color)}</span>

@@ -9,7 +9,7 @@
 /* "?" help beside a stat (shared/help.js) */
 .qhelp{display:inline-grid;place-items:center;width:18px;height:18px;margin-left:4px;padding:0;border:1px solid var(--line);border-radius:50%;background:var(--white);color:var(--muted);font:600 11px/1 var(--sans);cursor:help;vertical-align:middle}
 .qhelp:hover,.qhelp:focus-visible{color:var(--head);border-color:var(--muted)}
-.qpop{display:block;margin:4px 0;padding:6px 8px;max-width:320px;background:var(--callout);color:var(--ink);border-radius:var(--radius);font-size:13px;line-height:1.35;font-weight:400;text-align:left;white-space:normal}
+.qpop{position:fixed;z-index:1000;display:block;margin:0;padding:8px 10px;max-width:320px;background:var(--callout);color:var(--ink);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 6px 20px rgba(0,0,0,.18);font:400 13px/1.4 var(--sans);letter-spacing:0;text-transform:none;text-align:left;white-space:normal}
 /* "needs internet" card (shared/net.js) */
 .needs-net p{margin:4px 0}
 /* Dropdowns that match the site (native behaviour kept, so phones still get their own picker). Site rules after this win. */

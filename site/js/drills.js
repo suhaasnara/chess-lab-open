@@ -4,10 +4,13 @@
 'use strict';
 (function(){
 let board=null, endbar=null, H=null;   /* H: Today, when it hosts this panel (its next item; told after each result) */
-const S={cur:null,g:null,done:false,busy:false,kind:'all',state:'all',q:''};
+const S={cur:null,g:null,done:false,busy:false,kind:'all',state:'all',plat:'all',q:''};
 const KINDS=[['all','All'],['mine','Your mistakes'],['punish','Punish']];
 const STATES=[['all','Any'],['new','Not tried'],['missed','Missed'],['solved','Solved']];
-const SITE={lichess:'Lichess',chesscom:'Chess.com','chess.com':'Chess.com',pgn:'Your PGN'};
+const SITE={lichess:'Lichess',chesscom:'Chess.com','chess.com':'Chess.com',pgn:'Over the board',otb:'Over the board'};
+/* where a drill's game was played: Lichess, Chess.com, or over the board (a PGN file you analyzed, or a pack's OTB games) */
+const platOf=d=>d.site==='lichess'?'lichess':d.site==='chesscom'||d.site==='chess.com'?'chesscom':'otb';
+const PLATS=[['all','All'],['otb','OTB'],['lichess','Lichess'],['chesscom','Chess.com']];   // OTB, as the private site's Source row says it
 /* an eval in pawns from White's side, as everywhere: +1.6 / −0.8 */
 const fmtW=v=>v==null||isNaN(v)?'—':Math.abs(v)>=50?(v>0?'+M':'−M'):(v>0?'+':v<0?'−':'')+Math.abs(v).toFixed(1);
 const isPunish=d=>d.kind==='punish';
@@ -19,6 +22,7 @@ function saveResult(id,ok){ const p=prog(); const e=p[id]||{tries:0}; e.tries++;
 
 function shown(){ const p=prog(), q=S.q.trim().toLowerCase();
   return drills().filter(d=>{ if(S.kind!=='all'&&(S.kind==='punish')!==isPunish(d)) return false;
+    if(S.plat!=='all'&&platOf(d)!==S.plat) return false;
     const st=p[d.id]; if(S.state==='new'&&st) return false; if(S.state==='missed'&&!(st&&!st.ok)) return false; if(S.state==='solved'&&!(st&&st.ok)) return false;
     return !q||String(d.opp||'').toLowerCase().includes(q) }) }
 function renderL(){
@@ -26,6 +30,10 @@ function renderL(){
   const n=v=>all.filter(d=>v==='all'||(v==='punish')===isPunish(d)).length;
   $('d-kinds').innerHTML=TV.chips('Type','kind',KINDS.map(([v,l])=>[v,`${l} ${n(v)}`]),S.kind);
   $('d-states').innerHTML=TV.chips('Status','state',STATES,S.state);
+  /* Source: only the places these drills come from (no row when they all come from one) */
+  const pc=v=>all.filter(d=>platOf(d)===v).length, here=PLATS.filter(([v])=>v==='all'||pc(v));
+  if(here.length<=2&&S.plat!=='all') S.plat='all';
+  $('d-plats').innerHTML=here.length>2?TV.chips('Source','plat',here.map(([v,l])=>[v,`${l} ${v==='all'?all.length:pc(v)}`]),S.plat):'';
   $('d-searchwrap').hidden=all.length<8;
   $('d-listlabel').textContent=all.length?`${list.length} of ${all.length} positions`:'';
   el.innerHTML=list.map(d=>{ const st=p[d.id];

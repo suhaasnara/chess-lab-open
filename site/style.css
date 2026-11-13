@@ -186,9 +186,26 @@ tr:last-child td{border-bottom:0}
 .setrow .note{margin-top:1px}
 
 /* Analyze */
-.repgrid{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;margin-top:14px}   /* one card per row: the openings table needs the width */
-.repgrid .card{min-width:0;overflow-x:auto}
+.repgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px;align-items:start}   /* two small cards side by side; openings and costliest moments full width */
+.repgrid .card{min-width:0;overflow-x:auto;margin:0}
+.repgrid .card.wide{grid-column:1/-1}
+.repgrid .card>.note{margin:4px 0 10px}
+@media (max-width:860px){.repgrid{grid-template-columns:minmax(0,1fr)}}
+/* Analyze's report tables: names left, figures right, the same column widths in every table of a card */
+.atable{table-layout:fixed;margin-top:8px}
+.atable+.atable{margin-top:14px}
+.atable th:first-child,.atable td:first-child{width:48%}
+.atable th:not(:first-child),.atable td:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
+.repgrid .card.wide .atable th:first-child,.repgrid .card.wide .atable td:first-child{width:40%}
+.stat b.sm{font-size:1.6rem}
+@media (max-width:560px){.atable{table-layout:auto}.atable th:first-child,.atable td:first-child{width:auto}.atable th,.atable td{padding:8px 8px}}
+.repgrid .mseg{margin-top:8px}
 .gamerow{display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center;padding:7px 10px;border-bottom:1px solid var(--line);font-size:.9rem}
+/* Analyze's costliest moments: date | move vs opponent | Win% | game link, in columns */
+#a-report .gamerow{grid-template-columns:7.5em minmax(0,1fr) 9.5em 8em;gap:12px;padding:8px 10px}
+#a-report .gamerow>:last-child{text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#a-report .gamerow .pill{justify-self:start}
+@media (max-width:560px){#a-report .gamerow{grid-template-columns:6.5em minmax(0,1fr) auto}#a-report .gamerow>:last-child{grid-column:2/-1;text-align:left}}
 .gamerow:last-child{border-bottom:0}
 .prog{height:6px;border-radius:3px;background:var(--callout);overflow:hidden;margin-top:8px}
 .prog i{display:block;height:100%;background:var(--blue-bg);transition:width .3s}

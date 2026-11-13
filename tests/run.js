@@ -153,7 +153,7 @@ section('t6: analyze — mocked Lichess games give a report and drills');
   await w2.AnalyzeTab.run('lichess','TestUser');
   await sleep(300);
   const rep=w2.document.getElementById('a-report').textContent;
-  assert(rep.includes('games analyzed'),'a report card renders');
+  assert(rep.includes('analyzed game'),'a report card renders');
   assert(/blunders/.test(rep),'the report counts blunders');
   const marks=w2.AnalyzeTab.markGame(
     {color:'w',result:'0-1',moves:g2.moves.split(' '),analysis:g2.analysis},
