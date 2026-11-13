@@ -1260,7 +1260,7 @@ section('t45: mobile reader — next/prev, side lines, chapter end, sizes; Read 
   R.next(); assert(/Chapter complete/.test($('.rd-done').textContent)&&!$('.rd-done').hidden&&$('.rd-nextch'),'end of the main line: Chapter complete → Next chapter (no automatic jump)');
   $('.rd-nextch').click(); assert(nextCh===1&&!$('.reader'),'Next chapter is called');
   R.open({title:'T2',lines,at:1}); sl&&null; w.document.querySelector('.rd-sl .vmv').click();
-  assert(R.state.path.join(' ')==='e4 c5'&&!$('.rd-main').hidden&&/Side line/.test($('.rd-pos').textContent),'tapping a side line move shows it, "↩ Main line" appears');
+  assert(R.state.path.join(' ')==='e4 c5'&&!$('.rd-main').hidden&&/Side line/.test($('.rd-pos').getAttribute('aria-label'))&&$('.reader').classList.contains('rd-inside'),'tapping a side line move shows it, "↩ Main line" appears');
   R.next(); assert(R.state.path.join(' ')==='e4 c5 Nf3','› steps along the side line');
   R.next(); assert(R.state.path.join(' ')==='e4 e5'&&$('.rd-main').hidden,'at its end › goes back to the main line where you left it');
   w.document.querySelector('.rd-sl .vmv').click(); R.prev(); assert(R.state.path.join(' ')==='e4','‹ from its first move returns to the branch');

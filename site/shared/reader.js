@@ -85,7 +85,7 @@ window.Reader=(()=>{
     R.el.classList.toggle('rd-inside',!om);
     R.prev.disabled=k===0; R.mainBtn.hidden=om;
     const s=k?(()=>{ const p=gameAt(R.path.slice(0,-1)).g.fen().split(' '); return (p[1]==='w'?p[5]+'.':p[5]+'…')+R.path[k-1] })():'Start';
-    R.pos.textContent=om?s:'Side line · '+s;
+    R.pos.textContent=s; R.pos.title=om?'Main line':'Side line'; R.pos.setAttribute('aria-label',(om?'Main line, ':'Side line, ')+s);
     R.done.hidden=!(om&&k===R.mainLine.length&&R.end);
     if(!R.done.hidden&&scroll){ const q=R.notes.getBoundingClientRect(), r=R.done.getBoundingClientRect(); if(r.bottom>q.bottom) R.notes.scrollTop+=Math.min(r.bottom-q.bottom+8,cur?cur.getBoundingClientRect().top-q.top-8:1e9) }
   }

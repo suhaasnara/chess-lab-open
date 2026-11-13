@@ -51,7 +51,7 @@ html.reader-open,html.reader-open body{overflow:hidden}
 .rd-bar .btn{min-height:44px;min-width:44px}
 .rd-prev,.rd-next{min-width:64px;font-size:22px;line-height:1}
 .rd-prev{margin-right:auto}.rd-next{margin-left:auto}
-.rd-main{color:var(--side);border-color:var(--side)}
+.rd-main{color:var(--side);border-color:var(--side);white-space:nowrap}
 .rd-pos{font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .reader.rd-inside .rd-pos{color:var(--side)}
 @media (orientation:landscape) and (max-height:499.98px){
