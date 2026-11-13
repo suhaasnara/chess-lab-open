@@ -82,9 +82,9 @@ const WATCH=()=>{ const W=window.Worker; window.__workers=0; window.Worker=funct
   await playLine(2); await until(pg,()=>OpeningsTab.state.phase==='done',8000);
   for(const [w,h] of [[375,667],[320,568]]){ await pg.setViewportSize({width:w,height:h}); await sleep(200);
     const m=await pg.evaluate(()=>{ const bs=[...document.querySelectorAll('#o-endbar .endbtns .btn')].filter(b=>b.offsetParent); const r=document.getElementById('o-endretry');
-      return {n:bs.length,retry:!!r.offsetParent,rows:new Set(bs.map(b=>Math.round(b.getBoundingClientRect().top))).size,wrapped:bs.some(b=>b.getBoundingClientRect().height>40),
+      return {pin:document.querySelector('#openings .otrain').classList.contains('pin'),n:bs.length,retry:!!r.offsetParent,rows:new Set(bs.map(b=>Math.round(b.getBoundingClientRect().top))).size,wrapped:bs.some(b=>b.getBoundingClientRect().height>40),
         inside:bs.every(b=>b.getBoundingClientRect().right<=document.getElementById('o-endbar').getBoundingClientRect().right+0.5),dims:bs.map(b=>Math.round(b.getBoundingClientRect().width)).join('+')+' in '+Math.round(document.getElementById('o-endbar').getBoundingClientRect().width),side:document.documentElement.scrollWidth>innerWidth+1} });
-    ok(m.retry&&m.n===3&&m.rows===1&&!m.wrapped&&m.inside&&!m.side,`iPhone SE ${w} px: Next line, Redo, Retry the miss on one line in the bar (${JSON.stringify(m)})`) }
+    ok(m.retry&&m.n===(m.pin?2:3)&&m.rows===1&&!m.wrapped&&m.inside&&!m.side,`iPhone SE ${w} px: Redo and Retry the miss on one line in the bar, Next line beside them or (pinned board) in the row under it (${JSON.stringify(m)})`) }
   await pg.locator('#o-boardbox').screenshot({path:path.join(OUT,'openings-endbar-retry-se.png')});
   await pg.setViewportSize({width:1280,height:860}); await sleep(200);
   ok(await pg.evaluate(()=>!document.getElementById('o-endretry').offsetParent&&!!document.querySelector('#o-status .endretry, #o-status [data-retry]')),'laptop: not in the bar; the end card keeps Retry the miss');
