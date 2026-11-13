@@ -91,7 +91,7 @@ window.Yearly=(()=>{
     const prevPool=(i,pool)=>{ for(let j=i-1;j>=0;j--){ const r=(PB[Y[j][0]]||[]).find(x=>x.pool===pool); if(r) return r } return null };
     const oppCell=(r,p)=>r.oppAvg==null?'—':`<span class="mono">${r.oppAvg} · ${r.oppMed}</span> ${p?delta(r.oppAvg,p.oppAvg,{tone:false}):''}`;
     const perfCell=(r,p)=>r.perf==null?'—':`<b class="mono">${r.perf}</b> ${p?delta(r.perf,p.perf):''}`;
-    const rateCell=r=>r.start==null?'<span class="note">—</span>':`<b class="mono">${r.start} → ${r.end}</b> <span class="note">${r.gained==null?`net ${signed(r.end-r.start)}`:`+${r.gained} / −${r.lost}`}</span>`;
+    const rateCell=r=>r.start==null?'<span class="note">—</span>':`<b class="mono">${r.start} → ${r.end}</b> <span class="note ygl">${r.gained==null?`net ${signed(r.end-r.start)}`:`+${r.gained} / −${r.lost}`}</span>`;
     const convCells=(s,p)=>hasConv?`<td class="num" data-l="Won from +2">${s.convN?`${pct(s.conversion)} <span class="note">of ${s.convN}</span> ${p&&p.convN>=5&&s.convN>=5?delta(s.conversion,p.conversion,{unit:'%'}):''}`:'—'}</td>
       <td class="num" data-l="Held from −2">${s.saveN?`${pct(s.saveRate)} <span class="note">of ${s.saveN}</span> ${p&&p.saveN>=5&&s.saveN>=5?delta(s.saveRate,p.saveRate,{unit:'%'}):''}`:'—'}</td>`:'';
     const rows=Y.map(([y,s],i)=>{ const p=i?Y[i-1][1]:null, pools=PB[y]||[];
