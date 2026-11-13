@@ -436,6 +436,12 @@ td.num,th.num{text-align:right;white-space:nowrap}
 #openings .otrain.pin #o-tools kbd{display:none}
 #openings .otrain.pin #o-tools>.btn{flex:0 0 auto}
 #openings .otrain.pin #o-tools>.btn{min-height:44px;min-width:44px;align-items:center;justify-content:center}   /* 13 Nov: every button in the row 44 px (Hint and ⋯ were 40, ⋯ 34 wide) */
+/* 13 Nov: with ⋯ open its tools take a row of their own under the main row (› used to drop to the second row on narrow
+   phones); up to 389 px tighter gaps and no minimum width on the main button; under 360 px Take back moves under ⋯, so
+   Hint ⋯ ‹ Restart › fit 320 px (the page scrolled sideways) */
+#openings .otrain.pin #o-tools.more::after{content:"";order:19;flex-basis:100%;height:0}
+@media (max-width:389px){#openings .otrain.pin #o-tools{gap:4px}#openings .otrain.pin #o-newline{min-width:0;padding-inline:9px}}
+@media (max-width:359px){#openings .otrain.pin #o-tools:not(.more)>#o-back{display:none}#openings .otrain.pin #o-tools.more>#o-back{order:20}}
 #openings .otrain.pin #o-more{display:inline-flex!important}
 #openings .otrain.pin #o-endhere,#openings .otrain.pin #o-flip,#openings .otrain.pin #o-type{display:none}
 #openings .otrain.pin #o-tools.more{flex-wrap:wrap}
