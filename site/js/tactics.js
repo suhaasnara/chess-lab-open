@@ -22,9 +22,16 @@ function saveResult(id,ok){
 function renderHeader(){
   const rt=rating(), solved=Object.values(prog()).filter(x=>x.ok).length;
   $('t-rate').innerHTML=TV.rate('Puzzle rating',rt.n?rt.r:'–',rt.n?`${Help.n(rt.n,'rated puzzle')} · ${solved} solved`:'first try at each puzzle counts');
+  $('t-rate').insertAdjacentHTML('beforeend',weakRow());
   if(S.cur) facts();
 }
 
+/* Weakest themes (13 Nov 2026, shared Puzzles.weak): the three themes where your first try fails most often; a tap shows only
+   that theme (again to clear). From the stored results only. */
+function weakRow(){ const p=prog(), items=[]; for(const z of LIB){ const r=p[z.id]; if(r&&z.motif) items.push({motif:z.motif,ok:!!r.ok}) }
+  return Puzzles.weakRow(Puzzles.weak(items),S.motifs.length===1?S.motifs[0]:null,themeName) }
+document.addEventListener('click',e=>{ const b=e.target.closest('#t-rate [data-wk]'); if(!b) return; const m=b.dataset.wk;
+  S.motifs=S.motifs.length===1&&S.motifs[0]===m?[]:[m]; if(CTL) CTL.motifs.set(S.motifs); renderHeader(); renderL() });
 /* Rating: Near my rating (±150, the default once 10 puzzles are rated, as in Chess Lab), Any, or the slider's range */
 const bandNow=()=>S.band||(rating().n>=10?'near':'all');
 function filtered(){
@@ -55,7 +62,7 @@ function renderFilters(){
   if(!CTL){ const cnt={}; for(const z of LIB) for(const t of new Set([z.motif,...(z.themes||[])])) if(t&&!['middlegame','endgame','opening','short','long','veryLong','oneMove','advantage','crushing','master','masterVsMaster','superGM'].includes(t)) cnt[t]=(cnt[t]||0)+1;
     const opts=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]).slice(0,30).map(m=>[m,themeName(m)]).sort((a,b)=>a[1].localeCompare(b[1]));
     const rs=LIB.map(z=>z.rating).filter(Boolean), lo=Math.floor(Math.min(...rs)/100)*100, hi=Math.ceil(Math.max(...rs)/100)*100;
-    CTL={motifs:Controls.multi($('t-motifs'),{label:'Themes',options:opts,selected:S.motifs,none:'Any theme',onChange:v=>{ S.motifs=v; renderL() }}),
+    CTL={motifs:Controls.multi($('t-motifs'),{label:'Themes',options:opts,selected:S.motifs,none:'Any theme',onChange:v=>{ S.motifs=v; renderL(); renderHeader() }}),
       ops:(()=>{ const oc={}; for(const z of LIB) if(z.op) oc[z.op]=(oc[z.op]||0)+1; const n=Object.values(oc).reduce((a,b)=>a+b,0);
         const o=Object.keys(oc).filter(k=>oc[k]>=10).map(k=>[k,opName(k)+' ('+oc[k]+')']).sort((a,b)=>a[1].localeCompare(b[1]));
         if(!o.length){ $('t-ops').hidden=true; return null }

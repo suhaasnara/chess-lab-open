@@ -133,6 +133,8 @@ nav.tabs a.settab svg{flex:none;width:22px;height:22px}
 .bl .bl-set{display:flex;flex-direction:column;gap:8px;padding:10px 12px;margin:0 0 6px}
 .bl .bl-row{display:flex;align-items:center;gap:8px;margin:0}.bl .bl-row input[type=range]{flex:1;min-width:0;accent-color:var(--navy)}
 .bl .bl-row .label{white-space:nowrap}
+.bl .bl-auto{align-items:flex-start;font-size:.85rem;line-height:1.35;cursor:pointer}.bl .bl-auto input{margin:2px 0 0;flex:none;width:18px;height:18px;accent-color:var(--navy)}
+.bl .bl-autonote{margin:-2px 0 0 26px;font-size:.78rem}
 .bl .bl-moves{padding:12px 14px}
 .bl .bl-line{margin:6px 0 10px;line-height:1.8;font-size:1rem;overflow-wrap:anywhere}
 .bl .bl-no{color:var(--muted);margin-right:3px}.bl .bl-h{color:var(--ink);margin-right:2px}

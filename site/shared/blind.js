@@ -28,7 +28,8 @@ window.BlindTactics=(()=>{
   const themeName=t=>{ if(!t) return ''; if(t==='attackingF2F7') return 'Attacking f2/f7'; const w=String(t).replace(/([a-z])([A-Z0-9])/g,'$1 $2').replace(/([0-9])([A-Za-z])/g,'$1 $2').toLowerCase(); return w[0].toUpperCase()+w.slice(1) };
   const NOT_THEME=['middlegame','endgame','opening','advantage','crushing','mate','short','long','veryLong','oneMove','master','masterVsMaster','superGM'];
   const DAY=864e5, REVIEW=[3,7,21], R0=1500, MINR=1000, MAXR=2900, PEEK_MS=2000;
-  const DEF={lo:null,hi:null,plies:4,len:'any',status:'todo'};
+  const DEF={lo:null,hi:null,plies:4,len:'any',status:'todo',auto:false,run:0};
+  const AUTO_UP=3, AUTO_DOWN=2;   /* Auto (13 Nov 2026): one more hidden ply after 3 clean solves in a row, one fewer after 2 misses in a row */
   const you=z=>Math.ceil(z.sol.length/2);   /* your moves in the solution */
   const due=r=>!!r&&(r.ok?Date.now()-r.t>=REVIEW[Math.min(REVIEW.length-1,Math.max(1,r.okN||1)-1)]*DAY:r.t<new Date().setHours(0,0,0,0));
   const daily=list=>{ const seed=new Date().toISOString().slice(0,10);
@@ -59,6 +60,8 @@ window.BlindTactics=(()=>{
       <div class="card bl-set" data-b="set">
         <div class="bl-range" data-b="range"></div>
         <label class="bl-row"><span class="label">Hidden moves</span> <input type="range" min="2" max="16" step="1" data-b="plies" aria-label="Hidden plies"> <b class="mono" data-b="pliesv"></b></label>
+        <label class="bl-row bl-auto"><input type="checkbox" data-b="auto"> <span>Auto: one more after 3 clean solves in a row, one fewer after 2 misses</span></label>
+        <p class="note bl-autonote" data-b="autonote" hidden></p>
         <div data-b="lenrow"></div>
       </div>
       <div class="filters" data-b="chips" style="margin:0"></div>
@@ -103,14 +106,26 @@ window.BlindTactics=(()=>{
       if(S.scored||!S.cur) return; S.scored=true;
       const p=prog(), id=S.cur.id, before=p[id], rec=Object.assign({n:0,ok:false,okN:0,t:0},before||{});
       rec.n++; rec.ok=ok; rec.okN=ok?(rec.okN||0)+1:0; rec.t=Date.now();
-      if(ok) rec.h=S.cfg.plies; if(S.assisted) rec.a=1; else delete rec.a;
+      if(ok) rec.h=hp(); if(S.assisted) rec.a=1; else delete rec.a;
       p[id]=rec; st.put('blind-progress',p);
       if(!before&&S.cur.rating){   /* first try at each puzzle counts */
         const rt=rating(), K=rt.n<30?32:16, E=1/(1+Math.pow(10,(S.cur.rating-rt.r)/400));
         rt.r=Math.round(rt.r+K*((ok?1:0)-E)); rt.n++; rt.hist=rt.hist.concat([{t:Date.now(),r:rt.r}]).slice(-500);
         st.put('blind-rating',rt) }
+      if(S.cfg.auto) autoStep(ok&&!S.assisted);
       renderRate(); site.onResult&&site.onResult();
     }
+    /* Auto: the setting moves for the next puzzle, never the one on the board */
+    function autoStep(clean){
+      let run=S.cfg.run||0; run=clean?(run>0?run+1:1):(run<0?run-1:-1);
+      const was=S.cfg.plies;
+      if(run>=AUTO_UP){ if(S.cfg.plies<16) S.cfg.plies++; run=0 }
+      else if(run<=-AUTO_DOWN){ if(S.cfg.plies>2) S.cfg.plies--; run=0 }
+      S.cfg.run=run; S.autoMsg=S.cfg.plies!==was?`Auto: ${S.cfg.plies} hidden plies from the next puzzle (${S.cfg.plies>was?'up':'down'} from ${was}).`:'';
+      saveCfg(); renderSet();
+    }
+    function autoNote(){ const el=q('autonote'); if(!S.cfg.auto){ el.hidden=true; return } el.hidden=false; const r=S.cfg.run||0;
+      el.textContent=S.autoMsg||(r>0?`${Help.n(AUTO_UP-r,'more clean solve')} in a row for ${Math.min(16,S.cfg.plies+1)} plies.`:r<0?`One more miss and it drops to ${Math.max(2,S.cfg.plies-1)}.`:`${AUTO_UP} clean solves in a row add a ply; ${AUTO_DOWN} misses take one off.`) }
     const summary=()=>Object.assign(stats(prog(),rating()),{assisted:Object.values(prog()).filter(x=>x.a).length});
     function renderRate(){ const s=summary();
       q('rate').innerHTML=TV.rate('Blind rating',s.rated?s.rating:'–',s.rated?`${Help.n(s.rated,'rated puzzle')} · ${s.solved} solved${s.avgPlies?` · ${s.avgPlies} hidden plies on average`:''}`:'first try at each puzzle counts') }
@@ -122,11 +137,13 @@ window.BlindTactics=(()=>{
       if(!RANGE) RANGE=Controls.range(q('range'),{label:'Rating range',min:MINR,max:MAXR,step:100,lo:S.cfg.lo==null?MINR:S.cfg.lo,hi:S.cfg.hi==null?MAXR:S.cfg.hi,
         onChange:(a,b)=>{ S.cfg.lo=a<=MINR?null:a; S.cfg.hi=b>=MAXR?null:b; saveCfg(); renderList() }});
       const pl=q('plies'); pl.value=S.cfg.plies; q('pliesv').textContent=S.cfg.plies+' plies';
+      q('auto').checked=!!S.cfg.auto; autoNote();
       q('lenrow').innerHTML=TV.chips('Length','len',[['any','Any'],['2','2+ moves'],['3','3+ moves']],S.cfg.len);
       q('chips').innerHTML=TV.chips('Status','status',[['todo','To do'],['missed','Missed'],['solved','Solved'],['all','Any']],S.cfg.status);
     }
     q('plies').addEventListener('input',e=>{ q('pliesv').textContent=e.target.value+' plies' });
     q('plies').addEventListener('change',e=>{ S.cfg.plies=Math.max(2,Math.min(16,+e.target.value||4)); saveCfg(); if(S.cur&&!S.scored&&!S.log.length) load(S.cur); else renderLine() });
+    q('auto').addEventListener('change',e=>{ S.cfg.auto=e.target.checked; S.cfg.run=0; S.autoMsg=''; saveCfg(); autoNote() });
     TV.onChip(root,(k,v)=>{ if(k==='len'||k==='status'){ S.cfg[k]=v; saveCfg(); renderSet(); renderList() } });
     function filtered(){
       const p=prog(), c=S.cfg, n=c.len==='any'?0:+c.len;
@@ -155,9 +172,11 @@ window.BlindTactics=(()=>{
 
     /* ---------- one puzzle ---------- */
     const side=()=>S.me==='w'?'White':S.me==='b'?'Black':'';
+    const hp=()=>S.cur?S.cur.hidden.length-S.hiddenFrom:S.cfg.plies;   /* the hidden plies of the puzzle on the board (Auto may change the setting for the next one) */
     function startFen(z){ const g=new Chess(z.fen), k=Math.max(0,z.hidden.length-S.cfg.plies); for(let i=0;i<k;i++) g.move(z.hidden[i]); return g }
     function load(z){
       clearTimeout(S.peekT); clearInterval(S.playT); endbar.hide();
+      S.autoMsg=''; if(S.cfg.auto) autoNote();
       S.gen++; S.cur=z; S.step=0; S.solved=S.scored=S.failed=S.assisted=S.gaveUp=false; S.sel=null; S.log=[]; S.review=null;
       S.shown=startFen(z); S.real=new Chess(S.shown.fen()); S.hiddenFrom=Math.max(0,z.hidden.length-S.cfg.plies);
       for(let i=S.hiddenFrom;i<z.hidden.length;i++) S.real.move(z.hidden[i]);
@@ -175,7 +194,7 @@ window.BlindTactics=(()=>{
       const th=(z.themes||[]).filter(t=>!NOT_THEME.includes(t)).map(themeName).join(', ')||themeName(z.motif);
       q('head').innerHTML=TV.head({kicker:'Blind tactics · Lichess puzzle',right:rating().n?String(rating().r):'',
         title:esc(Puzzles.title(z.id,themeName(z.motif),done,Puzzles.num(S.lib,z.id))),
-        chips:[`<span class="mono">${z.rating}</span>`,`${side()} to move`,Help.n(S.cfg.plies,'hidden ply','hidden plies'),Help.n(you(z),'move')+' for you',
+        chips:[`<span class="mono">${z.rating}</span>`,`${side()} to move`,Help.n(hp(),'hidden ply','hidden plies'),Help.n(you(z),'move')+' for you',
           `Themes: ${esc(Puzzles.theme(th,done))}`,done?`<a href="https://lichess.org/training/${esc(z.id.slice(3))}" target="_blank" rel="noopener">Lichess ↗</a>`:'']}) }
     /* the move list: the hidden moves (numbered from the shown position), the task, then your moves and the replies as text */
     function renderLine(){
@@ -219,7 +238,7 @@ window.BlindTactics=(()=>{
     function submit(txt){
       if(!S.cur||S.solved||S.gaveUp) return false;
       const mv=parse(S.real,txt);
-      if(!mv){ if(String(txt||'').trim()) say('warn',`“${String(txt).trim()}” isn’t a legal move in the real position.`,' Not counted. Check the hidden moves: the board is '+Help.n(S.cfg.plies,'ply','plies')+' behind.'); return false }
+      if(!mv){ if(String(txt||'').trim()) say('warn',`“${String(txt).trim()}” isn’t a legal move in the real position.`,' Not counted. Check the hidden moves: the board is '+Help.n(hp(),'ply','plies')+' behind.'); return false }
       const ok=attempt(mv); if(ok) q('in').value=''; return ok;
     }
     q('form').addEventListener('submit',e=>{ e.preventDefault(); submit(q('in').value) });
