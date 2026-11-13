@@ -19,7 +19,7 @@ window.Puzzles=(()=>{
     for(const x of items||[]){ if(!x||!x.motif) continue; const o=by[x.motif]||(by[x.motif]={m:x.motif,n:0,ok:0}); o.n++; N++; if(x.ok){ o.ok++; OK++ } }
     const avg=N?OK/N:0; return Object.values(by).filter(o=>o.n>=4&&o.ok/o.n<avg).sort((a,b)=>a.ok/a.n-b.ok/b.n||b.n-a.n).slice(0,3) };
   const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  const weakRow=(list,cur,name)=>!list||!list.length?'':`<div class="chips tweak" role="group" aria-label="Weakest themes"><span class="flabel">Weakest</span>${list.map(o=>
+  const weakRow=(list,cur,name)=>!list||!list.length?'':`<div class="chips tweak" role="group" aria-label="Weakest themes"><span class="flabel">Weak</span>${list.map(o=>
     `<button type="button" class="chip" data-wk="${esc(o.m)}" aria-pressed="${cur===o.m}" title="First try right in ${o.ok} of ${o.n}. Tap to show only this theme (again to clear)">${esc(name(o.m))} <span class="mono">${o.ok}/${o.n}</span></button>`).join('')}</div>`;
   return {show,title,theme,num,weak,weakRow};
 })();

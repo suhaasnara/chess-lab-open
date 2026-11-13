@@ -1954,6 +1954,51 @@ section('t60: Blind tactics — the stored set replays, filters, first-try scori
   assert(started===0,'no engine started anywhere on the way');
 }
 
+section('t61: Blind tactics Auto — +1 hidden ply after 3 clean solves, −1 after 2 misses, from the next puzzle only');
+{
+  w.location.hash='#blind'; await sleep(60);
+  const T=w.BlindTab.api, S=T.state, $b=k=>$('bl-root').querySelector(`[data-b="${k}"]`);
+  $('bl-root').querySelector('[data-k="status"][data-v="all"]').click(); await sleep(10);
+  T.next(); await sleep(10);
+  const box=$b('auto'); assert(box&&!box.checked,'Auto is off by default');
+  box.checked=true; box.dispatchEvent(new w.Event('change')); await sleep(10);
+  assert(w.Settings.get('blind').auto===true&&w.Settings.get('blind').run===0,'Auto saved in the settings field "blind"');
+  const p0=S.cfg.plies;
+  for(let k=0;k<3;k++){ T.next(); await sleep(10); const z=S.cur; const shown=z.hidden.length-S.hiddenFrom;
+    for(let i=0;i<z.sol.length;i+=2){ T.submit(z.sol[i]); await sleep(420) }
+    assert(S.solved&&z.hidden.length-S.hiddenFrom===shown,`clean solve ${k+1}: the puzzle on the board keeps its ${shown} hidden plies`) }
+  assert(S.cfg.plies===Math.min(16,p0+1)&&/from the next puzzle/.test($b('autonote').textContent),'three clean solves: one more ply, said under the slider');
+  T.next(); await sleep(10);
+  assert(S.cur.hidden.length-S.hiddenFrom===S.cfg.plies,'the next puzzle has the new count');
+  T.giveUp(); await sleep(20); T.next(); await sleep(10); T.giveUp(); await sleep(20);
+  assert(S.cfg.plies===p0&&w.Settings.get('blind').plies===p0,'two misses in a row: one ply fewer');
+  box.checked=false; box.dispatchEvent(new w.Event('change')); await sleep(10);
+  T.next(); await sleep(10); T.giveUp(); await sleep(20); T.next(); await sleep(10); T.giveUp(); await sleep(20);
+  assert(S.cfg.plies===p0&&$b('autonote').hidden,'Auto off: misses leave the setting alone');
+}
+
+section('t62: Weakest themes on Tactics — from first tries only, a tap filters, again clears');
+{
+  const pz=JSON.parse(fs.readFileSync(path.join(H.SITE,'data/tactics.json'),'utf8'));
+  const lib=Array.isArray(pz)?pz:(pz.puzzles||pz.items||[]);
+  const by={}; for(const z of lib) if(z.motif) (by[z.motif]=by[z.motif]||[]).push(z.id);
+  const ms=Object.keys(by).filter(m=>by[m].length>=10).slice(0,3);
+  assert(ms.length===3,'three themes with 10+ puzzles in the library');
+  const prog={}; const mark=(m,n,ok)=>by[m].slice(0,n).forEach((id,i)=>prog[id]={ok:i<ok,t:1});
+  mark(ms[0],8,1); mark(ms[1],6,5); mark(ms[2],3,0);   /* 1/8 weak; 5/6 strong; 0/3 too few tries */
+  w.Store.put('tactics-progress',prog);
+  w.location.hash='#tactics'; await sleep(200);
+  const row=()=>$('t-rate').querySelector('.tweak');
+  assert(row()&&row().querySelectorAll('[data-wk]').length===1&&row().querySelector('[data-wk]').dataset.wk===ms[0]&&/1\/8/.test(row().textContent),'only the theme under the overall rate with 4+ tries is listed, with its count');
+  row().querySelector('[data-wk]').click(); await sleep(20);
+  assert(row().querySelector('[data-wk]').getAttribute('aria-pressed')==='true','the chip shows it is on');
+  const want=lib.filter(z=>(z.motif===ms[0]||(z.themes||[]).includes(ms[0]))&&!prog[z.id]).length;
+  assert(parseInt($('t-listlabel').textContent.replace(/,/g,''),10)===want,`the list is that theme, unsolved (${want})`);
+  row().querySelector('[data-wk]').click(); await sleep(20);
+  assert(row().querySelector('[data-wk]').getAttribute('aria-pressed')==='false','a second tap clears it');
+  w.Store.put('tactics-progress',{});
+}
+
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));
 process.exit(H.failures?1:0);
 })().catch(e=>{ console.error('Test run crashed:',e); process.exit(1) });
