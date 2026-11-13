@@ -13,6 +13,7 @@
        at      start this many moves into the main line (0 = before the first move)
        chapter label, nextChapter() -> called from the "Chapter complete" card (omit when there is none)
      Reader.textLine(fen, text) -> moves from a side line written as text (kept for callers; stops at an illegal move)
+     Reader.text(o) -> {html, main, fens}: the flowing text alone (same o), for a page that keeps its own board beside it
      Reader.isPhone()  where the reader is offered; Reader.button(onClick) -> a "Read" button shown only there
      Reader.close()
 
@@ -68,6 +69,11 @@ window.Reader=(()=>{
     para(); notes(o.after,-1);
     if(!main.length&&!out.length) out.push('<p class="note">No moves.</p>');
     return out.join('') }
+  /* the flowing text on its own, for a page that shows it beside its own board (the private site's endgame courses):
+     Reader.text(o) -> {html, main (SAN), fens (before each move, then the last)}; same o as open() */
+  function text(o){ const fen=o.fen||START, g=new Chess(fen), main=[], fens=[g.fen()];
+    for(const m of o.lines||[]){ let r=null; try{ r=g.move(m.san,{sloppy:true}) }catch(e){} if(!r) break; main.push(r.san); fens.push(g.fen()) }
+    return {html:flow(Object.assign({},o,{lines:o.lines||[]}),main,fens),main,fens} }
   function gameAt(path){ const g=new Chess(R.fen); let last=null; for(const s of path){ let r=null; try{ r=g.move(s,{sloppy:true}) }catch(e){} if(!r) break; last={from:r.from,to:r.to} } return {g,last} }
   const onMain=()=>pre(R.path,R.mainLine);
   const kids=()=>VarLine.kids(R.flow,R.path,R.mainLine);
@@ -152,5 +158,5 @@ window.Reader=(()=>{
       const m=g.move(san,{sloppy:true}); if(!m) break; out.push({san:m.san,marks:mk}) }
     return out }
   function button(onClick,label='Read'){ const b=document.createElement('button'); b.type='button'; b.className='btn sm rd-open'; b.textContent=label+' ▸'; b.title='Read the moves and notes with the board pinned at the top'; b.onclick=onClick; return b }
-  return {open,close,next,prev,pick,isPhone,button,textLine,toText,get state(){ return R },MQ};
+  return {open,close,next,prev,pick,isPhone,button,textLine,toText,text,get state(){ return R },MQ};
 })();
