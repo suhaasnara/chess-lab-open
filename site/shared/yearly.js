@@ -40,8 +40,9 @@ window.Yearly=(()=>{
       for(const [y,rs] of by){
         const d=rs.map(g=>g.after-g.before);
         if(rs.length<min||!d.some(x=>x)) continue;
+        const net=rs.some(g=>g.net);   // ratings typed into a PGN: start and end only (game-by-game sums would add up typos)
         (out[y]=out[y]||[]).push({pool,games:rs.length,start:rs[0].before,end:rs[rs.length-1].after,
-          gained:d.filter(x=>x>0).reduce((a,b)=>a+b,0),lost:-d.filter(x=>x<0).reduce((a,b)=>a+b,0)});
+          gained:net?null:d.filter(x=>x>0).reduce((a,b)=>a+b,0),lost:net?null:-d.filter(x=>x<0).reduce((a,b)=>a+b,0)});
       }
     }
     for(const y in out) out[y].sort((a,b)=>b.games-a.games);
@@ -76,9 +77,9 @@ window.Yearly=(()=>{
   const HELP={
     opp:'The average and the median rating of your opponents in this pool (the median is the middle one: one very low or very high opponent can’t move it). Ratings are only compared inside one pool: over the board, Chess.com blitz, Lichess rapid and so on are different scales.',
     perf:'FIDE’s performance rating: your opponents’ average rating plus the rating difference FIDE’s table gives for your score (+0 at 50%, +193 at 75%, +800 at 100%), inside one pool, from 5 or more games where the opponent’s rating is known.',
-    rating:'Your rating at the start and the end of the year in this pool, and the points you gained and lost game by game (Chess.com gives the rating after each game, Lichess the rating before it and the change). Over the board on the private site: US Chess’s own record, event by event.',
+    rating:'Your rating at the start and the end of the year in this pool, and the points you gained and lost game by game (Chess.com gives the rating after each game, Lichess the rating before it and the change). Over the board on the private site: US Chess’s own record, event by event. Ratings typed into a PGN file (over the board) give the start and end only, as the net change: added up game by game, a single typo would count twice.',
     us:'From US Chess’s own record of your rated events: the regular rating going into the year’s first event and coming out of its last, and the points won and lost event by event.'};
-  const label=r=>r.pool==='OTB classical'?'Over the board':r.pool;
+  const label=r=>r.pool==='OTB classical'?'Over the board':String(r.pool).replace(/^OTB /,'Over the board, ');
   const poolName=r=>r.official?`Over the board · US Chess${q(HELP.us)}`:esc(label(r));
 
   function section(R,opts={}){
@@ -90,7 +91,7 @@ window.Yearly=(()=>{
     const prevPool=(i,pool)=>{ for(let j=i-1;j>=0;j--){ const r=(PB[Y[j][0]]||[]).find(x=>x.pool===pool); if(r) return r } return null };
     const oppCell=(r,p)=>r.oppAvg==null?'—':`<span class="mono">${r.oppAvg} · ${r.oppMed}</span> ${p?delta(r.oppAvg,p.oppAvg,{tone:false}):''}`;
     const perfCell=(r,p)=>r.perf==null?'—':`<b class="mono">${r.perf}</b> ${p?delta(r.perf,p.perf):''}`;
-    const rateCell=r=>r.start==null?'<span class="note">—</span>':`<b class="mono">${r.start} → ${r.end}</b> <span class="note">+${r.gained} / −${r.lost}</span>`;
+    const rateCell=r=>r.start==null?'<span class="note">—</span>':`<b class="mono">${r.start} → ${r.end}</b> <span class="note">${r.gained==null?`net ${signed(r.end-r.start)}`:`+${r.gained} / −${r.lost}`}</span>`;
     const convCells=(s,p)=>hasConv?`<td class="num" data-l="Won from +2">${s.convN?`${pct(s.conversion)} <span class="note">of ${s.convN}</span> ${p&&p.convN>=5&&s.convN>=5?delta(s.conversion,p.conversion,{unit:'%'}):''}`:'—'}</td>
       <td class="num" data-l="Held from −2">${s.saveN?`${pct(s.saveRate)} <span class="note">of ${s.saveN}</span> ${p&&p.saveN>=5&&s.saveN>=5?delta(s.saveRate,p.saveRate,{unit:'%'}):''}`:'—'}</td>`:'';
     const rows=Y.map(([y,s],i)=>{ const p=i?Y[i-1][1]:null, pools=PB[y]||[];
@@ -123,7 +124,7 @@ window.Yearly=(()=>{
       const p=prev.get(r.pool), bits=[];
       if(r.perf!=null) bits.push(`performance ${r.perf}${p&&p.perf!=null?` (${signed(r.perf-p.perf)})`:''}`);
       if(r.oppAvg!=null) bits.push(`opponents averaging ${r.oppAvg}${p&&p.oppAvg!=null?` (${signed(r.oppAvg-p.oppAvg)})`:''}`);
-      if(r.start!=null) bits.push(`rating ${r.start} → ${r.end} (+${r.gained}, −${r.lost})`);
+      if(r.start!=null) bits.push(`rating ${r.start} → ${r.end} (${r.gained==null?`net ${signed(r.end-r.start)}`:`+${r.gained}, −${r.lost}`})`);
       if(bits.length) t+=` ${r.official?'Over the board (US Chess)':label(r)}: ${bits.join(', ')}.`;
     }
     return esc(t);

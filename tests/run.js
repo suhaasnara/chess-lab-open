@@ -1396,6 +1396,40 @@ section('t60: Year by year (shared/yearly.js): FIDE performance, opponents, rati
   assert(Y.section({byYear:{'2026':S.byYear['2026']}})==='','one year: no section');
 }
 
+section('t61: your own PGN file in Analyze my games (js/pgnfile.js): parse, who you are, report with Year by year, evals kept');
+{
+  const {w}=await makePage(); await sleep(100); const F=w.PgnFile;
+  const L=['1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6','1. d4 d5 2. c4 e6 3. Nc3 Nf6 4. Bg5 Be7','1. c4 e5 2. Nc3 Nf6 3. g3 d5 4. cxd5 Nxd5'];
+  let pgn='', elo=1800;
+  for(let i=0;i<12;i++){ const y=i<6?2025:2026, me=i%2?'Black':'White', opp=me==='White'?'Black':'White', res=i%3===0?(me==='White'?'0-1':'1-0'):(me==='White'?'1-0':'0-1');
+    pgn+=`[Event "Club Open"]\n[Site "Denver"]\n[Date "${y}.0${1+i%6}.15"]\n[Round "${1+i%3}"]\n[${me} "Doe, Jane"]\n[${opp} "Opponent ${i}"]\n[Result "${res}"]\n[${me}Elo "${elo}"]\n[${opp}Elo "${1700+10*i}"]\n[TimeControl "G/90;d5"]\n\n`;
+    pgn+=(i===0?'1. e4 {[%eval 0.3]} e5 {[%eval 0.25]} (1... c5 2. Nf3 {a side line}) 2. Nf3 {[%eval 0.3]} Nc6 {[%eval 0.3]} 3. Bb5 {[%eval 0.3]} a6 {[%eval 0.3]} 4. Ba4 {[%eval 0.3]} Nf6 {[%eval 0.3]}':L[i%3])+` ${res}\n\n`;
+    elo+=i%3===0?-8:12 }
+  pgn+='[Event "Blitz"]\n[White "Doe, Jane"]\n[Black "X"]\n[Result "1-0"]\n[TimeControl "60+0"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bc4 Nf6 1-0\n\n';
+  pgn+='[Event "Study"]\n[White "Doe, Jane"]\n[Black "Y"]\n[Result "1-0"]\n[FEN "8/8/8/8/8/4k3/8/4K2R w - - 0 1"]\n[SetUp "1"]\n\n1. Rh3+ Kd4 2. Kd2 Kc4 3. Kc2 Kd4 1-0\n\n';
+  pgn+='[Event "Unfinished"]\n[White "Someone"]\n[Black "Doe, Jane"]\n[Result "*"]\n\n1. e4 e5 2. Nf3 *\n';
+  const P=F.parse(pgn);
+  assert(P.games.length===15&&P.games[0].sans.length===8&&P.games[0].evals[0]===0.3,'parse: 15 games, the main line only (side line skipped), [%eval] kept per move');
+  assert(F.players(P)[0][0]==='Doe, Jane'&&F.players(P)[0][1]===15,'players: you are the name in every game');
+  const G=F.toGames(P,'Doe, Jane');
+  assert(G.games.length===12&&G.skipped.bullet===1&&G.skipped.fen===1&&G.skipped.unfinished===1,'toGames: 12 games; bullet, a set position and an unfinished game left out ('+JSON.stringify(G.skipped)+')');
+  assert(G.games.every(g=>g.site==='pgn'&&g.speed==='classical'&&!g.url)&&G.games.find(g=>g.analysis),'over the board, classical from G/90;d5; the game with evals in the file keeps them');
+  assert(F.speedOf({TimeControl:'G/25;d5'})==='rapid'&&F.speedOf({TimeControl:'5400+30'})==='classical'&&F.speedOf({TimeControl:'180+2'})==='blitz','time controls: US Chess G/25 rapid, 90+30 classical, 3+2 blitz');
+  w.AnalyzeTab.setFile(pgn,'jane.pgn');
+  w.Store.del('pgn-evals');
+  await w.AnalyzeTab.run('pgn','Doe, Jane'); await sleep(150);
+  const rep=w.document.getElementById('a-report'), txt=rep.textContent;
+  assert(/Report card: Doe, Jane/.test(txt)&&/Your PGN file · 12 games in the file/.test(txt),'the report: whose, from the file');
+  assert(/Year by year/.test(txt)&&/Over the board/.test(txt),'Year by year, the pool named Over the board');
+  const Y=w.AnalyzeTab.yearlyOf(w.PgnFile.toGames(P,'Doe, Jane').games,g=>g.result==='1/2-1/2'?0.5:(g.result==='1-0')===(g.color==='w')?1:0);
+  const r25=Y.poolsByYear['2025'][0], r26=Y.poolsByYear['2026'][0];
+  assert(r25.pool==='OTB classical'&&r25.start===1800&&r25.end===1832&&r26.start===1832,'rating over the board: the rating going in, so a year ends where the next game starts (1800 → 1832)');
+  assert(r25.gained===null&&/net \+32/.test(txt),'typed-in ratings: the net change only, no game-by-game sums');
+  const n=Object.keys(w.Store.get('pgn-evals')||{}).length;
+  assert(n===11,'Stockfish’s evals kept for the 11 games without evals in the file ('+n+')');
+  assert(/Done\./.test(w.document.getElementById('a-note').textContent),'done');
+}
+
 section('t51: Win% wording (shared/winpct.js): Lichess’s Win% on screen, the grading unchanged');
 {
   const {w}=await makePage(); await sleep(100); const W=w.WinPct;

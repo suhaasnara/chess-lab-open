@@ -7,7 +7,7 @@ let board=null, endbar=null, H=null;   /* H: Today, when it hosts this panel (it
 const S={cur:null,g:null,done:false,busy:false,kind:'all',state:'all',q:''};
 const KINDS=[['all','All'],['mine','Your mistakes'],['punish','Punish']];
 const STATES=[['all','Any'],['new','Not tried'],['missed','Missed'],['solved','Solved']];
-const SITE={lichess:'Lichess',chesscom:'Chess.com','chess.com':'Chess.com'};
+const SITE={lichess:'Lichess',chesscom:'Chess.com','chess.com':'Chess.com',pgn:'Your PGN'};
 /* an eval in pawns from White's side, as everywhere: +1.6 / −0.8 */
 const fmtW=v=>v==null||isNaN(v)?'—':Math.abs(v)>=50?(v>0?'+M':'−M'):(v>0?'+':v<0?'−':'')+Math.abs(v).toFixed(1);
 const isPunish=d=>d.kind==='punish';
@@ -54,7 +54,7 @@ function load(d){
     extra:`<div class="seg mini" role="group" aria-label="Training mode"><button type="button" aria-pressed="true">Find the move</button><button type="button" id="d-playout" aria-pressed="false" title="${goal==='win'?'Continue against Stockfish from this position. You were winning before the slip: convert it.':'Continue against Stockfish from this position. Hold it: a draw or better counts.'}">Play it out: ${goal==='win'?'win it':'hold it'}</button></div>`});
   $('d-playout').addEventListener('click',playOut);
   $('d-facts').innerHTML=`<dt>Date</dt><dd>${esc(d.date)}</dd><dt>Opponent</dt><dd>${esc(d.opp)}</dd>
-    <dt>You played</dt><dd>${esc(d.played)}</dd><dt>Play it out</dt><dd>${playGoal(d)==='win'?'win from here':'don’t lose from here'}${Help.q('The goal comes from the eval before your slip: from +1.5 or better for you it is a win to convert; otherwise hold the position.')}</dd><dt>Game</dt><dd><a href="${esc(d.url)}" target="_blank" rel="noopener">open ↗</a></dd>`;
+    <dt>You played</dt><dd>${esc(d.played)}</dd><dt>Play it out</dt><dd>${playGoal(d)==='win'?'win from here':'don’t lose from here'}${Help.q('The goal comes from the eval before your slip: from +1.5 or better for you it is a win to convert; otherwise hold the position.')}</dd>${d.url?`<dt>Game</dt><dd><a href="${esc(d.url)}" target="_blank" rel="noopener">open ↗</a></dd>`:''}`;
   $('d-lichess').href='https://lichess.org/analysis/'+encodeURIComponent(d.fen.replace(/ /g,'_'));
   renderL();
 }

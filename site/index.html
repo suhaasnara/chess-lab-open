@@ -345,21 +345,29 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
 <section id="analyze" hidden>
   <div class="card">
     <h2>Analyze my games</h2>
-    <p class="note">Fetches your recent rapid and classical games straight from the Lichess or Chess.com public API
+    <p class="note" data-src="online">Fetches your recent rapid and classical games straight from the Lichess or Chess.com public API
        &mdash; in your browser; nothing is uploaded anywhere. Lichess games reuse Lichess&rsquo;s own server analysis where
        it exists; Chess.com has no stored evals, so the last <span id="a-capnote">25</span> games are analyzed with
        Stockfish in your browser instead (slower).</p>
+    <p class="note" data-src="pgn" hidden>Your own PGN file &mdash; over-the-board games from a tournament database, ChessBase, a Lichess study export
+       or anything else. It is read in this browser and never uploaded. The report (results, opponents, performance and
+       rating by year) is ready at once; Stockfish then analyzes every game without evals in your browser, which takes a
+       while for a big file (games that already carry evals, like a Lichess study after its computer analysis, need none).
+       You can stop and carry on later: finished games are kept.</p>
     <div class="row2" style="max-width:640px">
-      <label class="field">Site
-        <select id="a-site"><option value="lichess">Lichess</option><option value="chesscom">Chess.com</option></select>
+      <label class="field">Source
+        <select id="a-site"><option value="lichess">Lichess</option><option value="chesscom">Chess.com</option><option value="pgn">My PGN file (over the board)</option></select>
       </label>
-      <label class="field">Username <input type="text" id="a-user" placeholder="your username"></label>
-      <label class="toggle" style="align-self:end"><input type="checkbox" id="a-blitz"> Include blitz</label>
+      <label class="field" data-src="online">Username <input type="text" id="a-user" placeholder="your username"></label>
+      <label class="toggle" style="align-self:end" data-src="online"><input type="checkbox" id="a-blitz"> Include blitz</label>
+      <label class="field" data-src="pgn" hidden>PGN file <input type="file" id="a-pgnfile" accept=".pgn,.txt,application/x-chess-pgn,text/plain"></label>
+      <label class="field" id="a-pgnwho" hidden>Which player is you? <select id="a-pgnname"></select></label>
     </div>
-    <p class="note">Blitz adds many games; Lichess rarely has stored evals for them, so at most 25 games are analyzed by Stockfish in your browser (the bar shows progress). Results by colour and by rating use every game fetched.</p>
+    <p class="note" data-src="online">Blitz adds many games; Lichess rarely has stored evals for them, so at most 25 games are analyzed by Stockfish in your browser (the bar shows progress). Results by colour and by rating use every game fetched.</p>
     <div class="btns" style="margin-top:12px">
       <button class="btn primary" id="a-go">Fetch &amp; analyze</button>
-      <button class="btn" id="a-demo">Try it with CoachSuhaas</button>
+      <button class="btn" id="a-stop" hidden>Stop</button>
+      <button class="btn" id="a-demo" data-src="online">Try it with CoachSuhaas</button>
       <span class="note" id="a-note"></span>
     </div>
     <div class="prog" id="a-prog" hidden><i style="width:0%"></i></div>
@@ -648,6 +656,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
 <script src="js/tactics.js?v=__V__"></script>
 <script src="js/calc.js?v=__V__"></script>
 <script src="js/endgames.js?v=__V__"></script>
+<script src="js/pgnfile.js?v=__V__"></script>
 <script src="js/analyze.js?v=__V__"></script>
 <script src="js/drills.js?v=__V__"></script>
 <script src="js/play.js?v=__V__"></script>
