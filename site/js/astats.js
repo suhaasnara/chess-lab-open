@@ -139,6 +139,14 @@ window.AStats=(()=>{
      the Elite book. Missed win: a move from +2 or better (pawns, your side) to under +1. */
   const QC=[['book','Book'],['best','Best'],['excellent','Excellent'],['good','Good'],['inacc','Inaccuracy'],['mist','Mistake'],['blun','Blunder']];
   const classOf=x=>x<1?'best':x<2.5?'excellent':x<5?'good':x<10?'inacc':x<15?'mist':'blun';
+  /* One rule for the headline and the Move quality table (14 Nov 2026, audit item 10): a move made while the game is
+     still in the book is Book, never an inaccuracy. The headline used the run's own count, which had no book rule, so
+     the same report said 6 inaccuracies at the top and 5 in the table. */
+  let TALLY=new Map(), TALLYBOOK=null;   /* per row, redone when the book arrives (the first renders come before it) */
+  function tally(r){ const bk=!!Book.hasStatic&&Book.hasBook('masters'); if(bk!==TALLYBOOK){ TALLY=new Map(); TALLYBOOK=bk }
+    let o=TALLY.get(r.marks); if(o) return o; o={blun:0,mist:0,inacc:0};
+    const lb=leftBook(r.game); for(const m of r.marks.moves||[]){ if(lb&&m.ply<lb.ply) continue; const k=classOf(m.winLost); if(o[k]!=null) o[k]++ }
+    TALLY.set(r.marks,o); return o }
   function quality(rows,pick=()=>true){
     const c=Object.fromEntries(QC.map(([k])=>[k,0])); let missed=0, n=0;
     const byPh={opening:{},middlegame:{},endgame:{}};
@@ -182,7 +190,7 @@ window.AStats=(()=>{
     const bar=filterBar(allGames,all.length,files);
     if(!all.length){ last={mistakes:[],toPunish:[],rows:[]}; return head+bar+'<p class="empty">No games match these filters.</p>' }
     const W=rows.filter(r=>r.marks.score===1).length, D=rows.filter(r=>r.marks.score===0.5).length, L=rows.length-W-D;
-    const blun=rows.reduce((a,r)=>a+r.marks.blun,0), mist=rows.reduce((a,r)=>a+r.marks.mist,0), inacc=rows.reduce((a,r)=>a+r.marks.inacc,0);
+    const blun=rows.reduce((a,r)=>a+tally(r).blun,0), mist=rows.reduce((a,r)=>a+tally(r).mist,0), inacc=rows.reduce((a,r)=>a+tally(r).inacc,0);
     const convs=rows.filter(r=>r.marks.conv!=null), saves=rows.filter(r=>r.marks.save!=null);
     const conv=convs.length?Math.round(100*convs.filter(r=>r.marks.conv).length/convs.length):null;
     const save=saves.length?Math.round(100*saves.filter(r=>r.marks.save).length/saves.length):null;
@@ -225,7 +233,7 @@ window.AStats=(()=>{
     const opsOf=c=>{ const m=new Map(); for(const g of all.filter(g=>g.color===c)){ const k=openingOf(g); if(!m.has(k)) m.set(k,[]); m.get(k).push(g) } return [...m.entries()].sort((a,b)=>b[1].length-a[1].length).slice(0,10) };
     const rowOf=new Map(rows.map(r=>[r.game.id,r]));
     const bmi=gs=>{ const rs=gs.map(g=>rowOf.get(g.id)).filter(Boolean); if(!rs.length) return '—'; const n=rs.length;
-      return `${(rs.reduce((a,r)=>a+r.marks.blun,0)/n).toFixed(1)} / ${(rs.reduce((a,r)=>a+r.marks.mist,0)/n).toFixed(1)} / ${(rs.reduce((a,r)=>a+r.marks.inacc,0)/n).toFixed(1)}` };
+      return `${(rs.reduce((a,r)=>a+tally(r).blun,0)/n).toFixed(1)} / ${(rs.reduce((a,r)=>a+tally(r).mist,0)/n).toFixed(1)} / ${(rs.reduce((a,r)=>a+tally(r).inacc,0)/n).toFixed(1)}` };
     const gameLine=g=>`<div class="agline"><span class="note">${esc(g.date||'')}</span><span><a href="${esc(AGames.href(g.id,null,'analyze'))}" title="Open the game">vs ${esc(oppName(g))}</a>${opp(g)>0?` <span class="note">${opp(g)}</span>`:''}</span><span class="pill ${sc(g)===1?'good':sc(g)===0?'bad':'none'}">${sc(g)===1?'Won':sc(g)===0?'Lost':'Drawn'}</span>${links(g)}</div>`;
     const opTable=c=>{ const L=opsOf(c); if(!L.length) return '<p class="note">No games with this colour.</p>';
       return `<div class="tablewrap"><table class="rtable atable aops"><thead><tr><th>Opening</th><th class="num">Games<div class="note">W / D / L</div></th><th class="num">Score</th><th class="num">Opponents<div class="note">avg · median</div></th><th class="num">Performance</th><th class="num">B / M / I${q('Your blunders / mistakes / inaccuracies per analyzed game in that opening.')}<div class="note">per game</div></th></tr></thead><tbody>${L.map(([k,gs])=>{ const [w,d,l]=wdlOf(gs), s=gs.reduce((a,g)=>a+sc(g),0), key=c+':'+k, open=OPEN===key;

@@ -429,7 +429,10 @@ async function userMove(from,to,promo){
       if(lid!==S.lineId) return;
       S.busy=false; tools();
       board.flash([from,to],'bad');
-      status('bad',`${m.san} isn’t in your repertoire.`,`Try again, or use Hint (H)${file.length?` — your file gives ${file.length>1?file.length+' moves':sanOf(fen,file[0])} here`:''}.`);
+      /* Rated: the file's move stays behind Hint (14 Nov 2026, as on the private site: "try again" and the answer in one
+         line made the retry pointless). Training names it, as before. */
+      status('bad',`${m.san} isn’t in your repertoire.`,training()?`Try again, or use Hint (H)${file.length?` — your file gives ${file.length>1?file.length+' moves':sanOf(fen,file[0])} here`:''}.`
+        :`Try again${file.length>1?` (your file has ${file.length} moves here)`:''}, or use Hint (H) to see ${file.length>1?'one':'the move'}.`);
       return;
     }
   }else{
@@ -657,7 +660,7 @@ function renderSide(){
   facts.innerHTML=`<dt>Opening</dt><dd>${names?esc(names[1])+' <span class="note">('+esc(names[0])+')</span>':'—'}</dd>
     <dt>Side</dt><dd>${side()==='white'?'White':'Black'}</dd>
     <dt>Opponent</dt><dd>${esc(Book.levelLabel(oppLevel()))}${ownLevel()?' <span class="note">(this opening only)</span>':''}</dd>
-    <dt>Book</dt><dd>${Book.hasBook(oppLevel())?esc(Book.levelLabel(oppLevel()))+' games (Lichess, CC0)':'Named lines (no game counts)'}</dd>`+
+    <dt>Book</dt><dd>${Book.hasBook(oppLevel())?esc(Book.levelLabel(oppLevel()))+' games (Lichess, CC0)':Book.state(oppLevel())==='pending'?'Loads when you start a line':'Named lines (no game counts)'}</dd>`+
     (S.op.rep?`<dt>Sidelines</dt><dd>${esc(VARIETY[variety()][0])}</dd>`:'');
   const lk=$('o-lichess');
   lk.href=S.op.startFen?'https://lichess.org/analysis/'+encodeURIComponent(S.g.fen().replace(/ /g,'_')):'https://lichess.org/analysis/pgn/'+encodeURIComponent(S.log.map(e=>e.san).join(' '));
@@ -764,7 +767,8 @@ function renderAcct(){
   const lv=oppLevel();
   el.textContent=Book.hasBook(lv)
     ?(lv==='masters'?'Games between Lichess players rated 2500+ and 2300+ (Lichess Elite Database).':'Rated rapid and classical Lichess games at this level (Lichess open database).')
-    :'This level’s book isn’t loaded, so the opponent uses named lines checked by Stockfish.';
+    :Book.state(lv)==='pending'?'This level’s book of games loads when you start a line.'
+    :'This level’s book didn’t load, so the opponent uses named lines checked by Stockfish.';
 }
 function syncLevel(){
   const lv=oppLevel(); const i=Math.max(0,Book.ORDER.indexOf(Book.LEVELS[lv]?lv:'masters'));

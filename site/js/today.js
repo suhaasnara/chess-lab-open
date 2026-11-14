@@ -180,6 +180,7 @@ function welcome(show){
   const el=$('welcome'); if(!el) return;
   let seen=false; try{ seen=localStorage.getItem('clo-welcome')==='seen'||hasProgress() }catch(e){}
   el.hidden=show===true?false:seen;
+  const more=$('welcome-more'); if(more) more.open=show===true;   /* asked for ("How Chess Lab Open works"): the whole list; a first visit: three lines and two buttons */
   /* returning visitors get Chess Lab's board page (no big header on Today); the guide brings it back */
   document.body.classList.toggle('welcomed',el.hidden);
 }
@@ -207,6 +208,9 @@ function init(){
   welcome();
   $('welcome-x').addEventListener('click',dismiss); $('welcome-ok').addEventListener('click',dismiss);
   $('welcome-go').addEventListener('click',dismiss);
+  /* Just try a puzzle: today's first puzzle on the board (the Tactics tab if the session has none yet) */
+  $('welcome-try').addEventListener('click',()=>{ dismiss(); const it=items().find(x=>x.kind==='puzzle'&&!x.done)||items().find(x=>x.kind==='puzzle');
+    if(it){ play(it); const bd=document.querySelector('#td-grid > :not([hidden]) .board'); if(innerWidth<860&&bd&&bd.scrollIntoView) bd.scrollIntoView({behavior:'smooth',block:'start'}) } else location.hash='#tactics' });
   $('td-help').addEventListener('click',()=>{ welcome(true); setTimeout(()=>{ const e=$('welcome'); if(e.scrollIntoView) e.scrollIntoView({block:'start'}) },30) });
   /* the hero's link and the footer's (the hero hides for returning visitors): the guide on Today */
   for(const id of ['help-open','help-foot']){ const b=$(id); if(b) b.addEventListener('click',()=>{ location.hash='#today'; welcome(true); setTimeout(()=>{ const e=$('welcome'); if(e.scrollIntoView) e.scrollIntoView({block:'start'}) },30) }) }

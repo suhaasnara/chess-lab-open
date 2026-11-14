@@ -523,9 +523,28 @@ section('t18: result banner on every board');
 
 section('t19: first-visit guide and link preview');
 {
+  { const {w:w9}=await makePage(); await sleep(400);
+    w9.document.getElementById('welcome-try').click(); await sleep(150);
+    assert(w9.document.getElementById('welcome').hidden&&/^puzzle/.test(String(w9.TodayTab.sel))&&w9.document.body.dataset.view==='today','Just try a puzzle: the card closes and today’s first puzzle is on the board');
+    /* one starting rating (audit item 6): Tactics and Today both start a new visitor at 1500, near-rating picks from the first puzzle */
+    const T=w9.TacticsTab, lib=T.lib||[];
+    const tp=w9.TodayTab.items().filter(x=>x.kind==='puzzle').map(x=>x.obj.rating);
+    assert(!w9.Store.get('tac-rating')&&tp.length===5&&tp.every(x=>Math.abs(x-1500)<=150),'a new visitor: Today’s five puzzles are near 1500 ('+tp.join(', ')+')');
+    const z=lib.find(x=>x.rating>=1450&&x.rating<=1550); T.saveResult(z.id,true);
+    const r=w9.Store.get('tac-rating'); assert(r.n===1&&r.r>1500&&r.r<1540,'the first solved 1500 puzzle moves the rating from 1500 (to '+r.r+'), not to 2002');
+    w9.location.hash='#tactics'; await sleep(80);
+    const near=T.filtered?T.filtered():null;
+    assert(/Near my rating/.test(w9.document.querySelector('#t-chiprows [aria-pressed="true"]').textContent),'Tactics opens on Near my rating from the first puzzle');
+    if(near) assert(near.length>20&&near.every(x=>!x.rating||Math.abs(x.rating-r.r)<=150),'and every puzzle offered is within 150 of it ('+near.length+')') }
+
   const {w}=await makePage(); await sleep(100);
   const el=w.document.getElementById('welcome');
   assert(!el.hidden,'a first visit shows the guide on Today');
+  /* 14 Nov 2026 (audit item 7): three lines and two buttons; the list sits behind "How it works" */
+  { const d=w.document, more=d.getElementById('welcome-more');
+    assert(more&&!more.open&&more.querySelectorAll('li').length>=6&&!el.querySelector(':scope > ul'),'the long list is folded away behind "How it works"');
+    assert(d.getElementById('welcome-go').getAttribute('href')==='#analyze'&&/Just try a puzzle/.test(d.getElementById('welcome-try').textContent)&&el.querySelector('.welcomelead').textContent.length<200,'the card: a short lead, Analyze my games, Just try a puzzle');
+    d.getElementById('td-help').click(); assert(more.open,'"How Chess Lab Open works" opens the whole list') ; more.open=false }
   w.document.getElementById('welcome-ok').click();
   assert(el.hidden&&w.localStorage.getItem('clo-welcome')==='seen','Got it hides it and remembers');
   w.document.getElementById('help-open').click(); await sleep(60);
@@ -2045,6 +2064,7 @@ section('t64: Weakest themes on Tactics — from first tries only, a tap filters
   w.location.hash='#tactics'; await sleep(1200);
   const row=()=>$('t-rate').querySelector('.tweak');
   assert(row()&&row().querySelectorAll('[data-wk]').length===1&&row().querySelector('[data-wk]').dataset.wk===ms[0]&&/1\/8/.test(row().textContent),'only the theme under the overall rate with 4+ tries is listed, with its count');
+  w.TacticsTab.state.band='all';   /* any rating: this test is about the theme filter (Near my rating is the default from the first puzzle since 14 Nov 2026) */
   row().querySelector('[data-wk]').click(); await sleep(20);
   assert(row().querySelector('[data-wk]').getAttribute('aria-pressed')==='true','the chip shows it is on');
   const want=lib.filter(z=>(z.motif===ms[0]||(z.themes||[]).includes(ms[0]))&&!prog[z.id]).length;

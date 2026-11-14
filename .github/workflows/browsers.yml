@@ -18,7 +18,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: [firefox, chromium]
+        browser: [firefox, chromium, webkit]   # webkit (Safari's engine, every iPhone browser) since 14 Nov 2026
+    # WebKit reports without failing the workflow until its first findings are fixed (audit item 9)
+    continue-on-error: ${{ matrix.browser == 'webkit' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

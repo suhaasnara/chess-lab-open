@@ -179,3 +179,13 @@ nav.tabs a.settab svg{flex:none;width:22px;height:22px}
 .mvbtn:hover{border-color:var(--blue);color:var(--blue)}.mvbtn[hidden]{display:none}
 @media (pointer:coarse){.mvbtn{min-height:44px}}
 @media print{.mvbtn{display:none!important}}
+
+/* Phones (14 Nov 2026, audit quick wins Q3 and Q9): no keyboard, so no key caps on buttons; and the small targets
+   reach 40 px: the Rated / Training and Find the move / Play it out switches, and the ? bubbles (their tap area grows
+   around them, the bubble itself stays its size). */
+@media (hover:none) and (pointer:coarse) and (max-width:700px){
+  .btn kbd{display:none}
+  .seg.mini button{min-height:40px;padding:8px 12px}
+  .qhelp{position:relative}
+  .qhelp::after{content:"";position:absolute;inset:-9px}
+}

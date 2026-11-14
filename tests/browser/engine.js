@@ -1,7 +1,7 @@
 /* Chess Lab Open — the engine downloads only where it is used (11 Nov 2026). Real browser, a new visitor.
      node tests/browser/engine.js <firefox|chromium>      (CHROME=<path> uses a local Chrome for chromium)
    1. Drilling an imported repertoire with the eval bar off never starts Stockfish: no worker, no .wasm served.
-   2. Today, where you land: leaving it within 3 s doesn't start it; staying does.
+   2. Today, where you land: reading the page never starts it; the first touch of a board does.
    3. A preset starts it; Play starts it at once; the first check of the visit answers correctly. */
 'use strict';
 const http=require('http'), fs=require('fs'), path=require('path');
@@ -51,10 +51,10 @@ const QUIET=()=>{ try{ if(!sessionStorage.getItem('q')){ sessionStorage.setItem(
     await ctx.close() }
   console.log('== 2. Today, where you land');
   { const {ctx,pg}=await page('');
-    await sleep(1000); await pg.evaluate(()=>{ location.hash='#progress' }); await sleep(4500);
-    ok(await pg.evaluate(()=>window.__workers)===0,'left Today after 1 s: not started');
-    await pg.evaluate(()=>{ location.hash='#today' });
-    ok(await until(pg,()=>window.__workers>0,6000),'stayed on Today: started after about 3 s');
+    await sleep(6000);
+    ok(await pg.evaluate(()=>window.__workers)===0,'6 s on Today without a touch: not started');
+    await pg.evaluate(()=>{ const b=[...document.querySelectorAll('#today .board')].find(x=>x.offsetParent); b.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true})) });
+    ok(await until(pg,()=>window.__workers>0,6000),'the first touch of Today’s board starts it');
     await ctx.close() }
   { const {ctx,pg}=await page('#play');
     ok(await until(pg,()=>window.__workers>0,3000),'Play starts it at once');

@@ -79,7 +79,8 @@ cburnett instead.)
 ## Fonts
 
 - [Libre Caslon Text](https://fonts.google.com/specimen/Libre+Caslon+Text) and
-  [Source Sans 3](https://fonts.google.com/specimen/Source+Sans+3), served from
-  Google Fonts under the SIL Open Font License.
+  [Source Sans 3](https://fonts.google.com/specimen/Source+Sans+3), under the SIL Open Font
+  License. Since 14 Nov 2026 the site serves its own copies (`site/assets/fonts/`, the Latin
+  subsets from Fontsource, with `OFL.txt`); nothing is fetched from Google Fonts.
   The link-preview image `site/assets/og.jpg` is rendered with the same two fonts (embedding is allowed
   under the OFL) and the site's own board and pieces.
