@@ -73,7 +73,7 @@ accounts, no uploads: progress lives in localStorage with JSON export/import.
   best line counts). **Play it out** continues any drill against Stockfish: convert
   the advantage, or hold the position.
 - **Play** — games against Stockfish from 1400 to full strength, with a blindfold
-  mode (counted peeks) and takebacks (T; counted on the saved game).
+  mode (counted peeks) and takebacks (B; counted on the saved game).
 - **Guess the move** — play through games from the winner's side and guess each
   move (2 points for key moves): master games from the Lichess broadcasts and some of Suhaas's tournament games,
   checked clean at depth 20+. A Moves panel marks your guesses, and an eval graph appears after

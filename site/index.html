@@ -436,7 +436,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
         <div class="boardtools" id="bc-tools">
           <button class="btn sm primary" id="bc-next">Next <kbd>N</kbd></button>
           <button class="btn sm" id="bc-flip">Flip <kbd>F</kbd></button>
-          <button class="btn sm" id="bc-show">Show the threat <kbd>S</kbd></button>
+          <button class="btn sm" id="bc-show">Show the threat <kbd>H</kbd></button>
           <a class="btn sm" id="bc-lichess" target="_blank" rel="noopener" hidden>Lichess &#8599;</a>
         </div>
       </div>
@@ -535,7 +535,9 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
         <span class="gnav" id="g-nav" hidden><button class="btn sm" id="g-prev" aria-label="Previous move">&#9664;</button><button class="btn sm" id="g-next" aria-label="Next move">&#9654;</button></span>
         <button class="btn sm" id="g-show" hidden title="Skip the guessing and read the game">Show the game</button>
         <span id="g-readslot"></span>
-        <button class="btn sm" id="g-restart">Restart game</button>
+        <button class="btn sm" id="g-takeback" title="Take back to your last guess and try another move (B). Your first answer is what counts." disabled>Take back <kbd>B</kbd></button>
+        <button class="btn sm" id="g-restart">Restart game <kbd>R</kbd></button>
+        <button class="btn sm" id="g-nextgame">Next game <kbd>N</kbd></button>
         <button class="btn sm" id="g-flip">Flip <kbd>F</kbd></button>
         <span class="evalchip" id="g-score"></span>
       </div>

@@ -105,7 +105,7 @@ function init(){
   TV.onChip($('bc-filters'),(k,v)=>{ S[k]=v; render() });
   TV.fitBoard('#bc-wrap','#bc-tools');
   $('bc-next').addEventListener('click',next); $('bc-show').addEventListener('click',show); $('bc-flip').addEventListener('click',()=>board.flip());
-  Keys.on('blundercheck',{n:['Next position',()=>next()],s:['Show the threat, then the move',()=>show()],f:['Flip the board',()=>board.flip()]});
+  Keys.on('blundercheck',{n:['Next position',()=>next()],h:['Show the threat, then the move',()=>show()],f:['Flip the board',()=>board.flip()]});
   render();
 }
 window.BlunderCheckTab={init,refresh,open:id=>{ const d=data().find(x=>x.id===id); if(d) open(d) },move,show,next,status,get state(){return S}};

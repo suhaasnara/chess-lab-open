@@ -54,7 +54,7 @@ window.PgnFile=(()=>{
     return v.replace(/[.,]/g,' ').replace(/\s+/g,' ').trim() };
   /* Names in the files that look like the ones ticked as "you" but are written differently (13 Nov 2026): the same
      first and last name without (or with another) middle name, an initial and the last name, a short first name
-     ("Viv" for Vivian), the first or the last name alone, or a username made of the name ("vivmiller").
+     ("Nell" for Eleanor), the first or the last name alone, or a username made of the name ("nellhart").
      Never a name that plays against one of yours in any game: you can't play yourself. strong = first and last name
      agree; the rest are looser and say why. -> [{name, games, why, strong}] */
   function aliases(P,me){

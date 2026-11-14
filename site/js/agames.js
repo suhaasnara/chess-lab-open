@@ -17,7 +17,7 @@ window.AGames=(()=>{
   const blank=()=>({v:1,g:{},last:null});
   const load=()=>{ const o=Store.get(KEY); return o&&o.v===1&&o.g&&typeof o.g==='object'?o:blank() };
   const round=evs=>evs.map(v=>v==null?null:Math.round(v*100)/100);
-  const FIELDS=['id','site','date','ts','white','black','wr','br','wd','bd','wp','bp','color','result','speed','url','file','sys','event','evsrc'];
+  const FIELDS=['id','site','date','ts','white','black','wr','br','wd','bd','wp','bp','color','result','speed','url','file','sys','event','evsrc','ef'];   /* ef: per ply, was the move played the engine's first choice (analyze.js) */
   /* a game as Analyze holds it -> a record; pin: keep its evals in the record (a drill points to it) */
   function pack(game,evs,pin){
     const r={}; for(const k of FIELDS){ const v=game[k]; if(v!=null&&v!=='') r[k]=v }

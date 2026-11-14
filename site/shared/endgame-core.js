@@ -3,7 +3,8 @@
 
    A tablebase answer (tablebase.lichess.ovh/standard?fen=) lists the moves of the side to move; each move's `category`
    is the result for the OTHER side after it (loss = the mover wins). res(category) turns it into the mover's result:
-   W (win), D (draw), L (loss). met(move) = moves to mate (dtm) when known, else 10000 + dtz: smaller = faster.
+   W (win), D (draw), L (loss). met(move) = 0 for a move that mates, else moves to mate (dtm) when known, else
+   10000 + dtz: smaller = faster.
 
    EndgameCore.options(tb, goal) -> {b, w, d}: the user's moves as space-separated uci, in the stored-tree shape:
      b = the fastest wins, w = other wins, d = draws (goal 'win' grades best/good/throw; goal 'draw' hold/throw).
@@ -18,7 +19,7 @@
 window.EndgameCore=(()=>{
   const res=c=>({loss:'W',win:'L','maybe-loss':'W','maybe-win':'L','syzygy-loss':'W','syzygy-win':'L','blessed-loss':'D','cursed-win':'D'})[c]||'D';
   const RANK={W:2,D:1,L:0};
-  const met=m=>m.dtm!=null?Math.abs(m.dtm):10000+Math.abs(m.dtz||0);
+  const met=m=>m.checkmate?0:m.dtm!=null?Math.abs(m.dtm):10000+Math.abs(m.dtz||0);   /* a mating move has no dtm: it is the fastest win, never the slowest (14 Nov 2026) */
   const VAL={p:1,n:3,b:3,r:5,q:9,k:0};
   function material(g,color){ let s=0; for(const row of g.board()) for(const p of row) if(p&&p.color===color) s+=VAL[p.type]; return s }
   const U=u=>({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||undefined});
