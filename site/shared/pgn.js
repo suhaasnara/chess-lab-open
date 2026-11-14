@@ -54,8 +54,11 @@ window.PGN=(()=>{
       if(!inGame) begin();
       if(t==='('){ stack.push({fen:g.fen(),before,broken,lastKey}); if(before){ g=new Chess(before); broken=false } else broken=true; before=null; lastKey=null; pre=''; continue }
       if(t===')'){ const s=stack.pop(); if(s){ g=new Chess(s.fen); before=s.before; broken=s.broken; lastKey=s.lastKey } pre=''; continue }
-      const mk=(t.match(/[!?]+$/)||[''])[0];
-      const san=t.replace(/^\d+\.+/,'').replace(/^\.+/,'').replace(/[!?]+$/,'').replace(/^0-0-0/,'O-O-O').replace(/^0-0/,'O-O');
+      /* marks and NAGs glued on (Nf3$1, O-O+=, Qh7+-) and the ellipsis move number (3…a6) are read too (13 Nov 2026):
+         they used to make the move "not legal" and drop the rest of the line */
+      const glued=(t.match(/\$(\d+)$/)||[])[1], t2=t.replace(/\$\d+$/,'');
+      const mk=(t2.match(/[!?]+$/)||[''])[0]||(glued&&NAGS[+glued])||'';
+      const san=t2.replace(/^\d+\s*(?:\.+|…)/,'').replace(/^(?:\.+|…)/,'').replace(/[!?]+$/,'').replace(/(?:\+\/?[-=]|=\/?\+|-\/?\+|[±∓⩲⩱∞□⨀])+$/,'').replace(/^0-0-0/,'O-O-O').replace(/^0-0/,'O-O');
       if(!san||(/^\d+$/.test(san)&&san!=='0000')||san==='e.p.') continue;
       /* a move of a line that already broke: a variation after it is an alternative to a move that was never placed,
          so it is skipped too (it used to start from the last real move's position: wrong side to move, or wrong moves) */

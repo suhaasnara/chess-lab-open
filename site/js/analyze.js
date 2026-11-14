@@ -157,7 +157,8 @@ const effSys=f=>f.sys&&f.sys!=='auto'?f.sys:f.det.sys;
 const sysWhy=f=>f.sys&&f.sys!=='auto'?'chosen by you':f.det.why;
 function addFile(text,name){
   const P=PgnFile.parse(text);
-  if(!P.games.length||!PgnFile.players(P).length) throw new Error(`No games found in ${name}. Is it a PGN?`);
+  if(!P.games.length) throw new Error(`No games found in ${name}. Is it a PGN?`);
+  if(!PgnFile.players(P).length) throw new Error(`${name} has games but no player names (White / Black tags), so there is no way to tell which side you were. Add the names (in a Lichess study: the chapter’s tags) and try again.`);
   let nm=name, k=2; while(FILES.some(f=>f.name===nm)) nm=`${name} (${k++})`;
   const saved=(Store.get('pgn-sys')||{})[name];
   FILES.push({name:nm,parsed:P,det:PgnFile.detect(P),sys:saved||'auto'});
@@ -189,7 +190,7 @@ function renderFiles(){
 function syncSelect(names,ticked){ const sel=$('a-pgnname'); if(!sel) return;
   sel.innerHTML=names.slice(0,16).map(([n,c])=>`<option value="${esc(n)}">${esc(n)} (${c} game${c===1?'':'s'})</option>`).join('');
   const first=[...ticked][0]; if(first) sel.value=first }
-const skipText=sk=>[sk.fen&&`${sk.fen} from a set position`,sk.bullet&&`${sk.bullet} bullet`,sk.unfinished&&`${sk.unfinished} unfinished or very short`,sk.illegal&&`${sk.illegal} with an illegal move`].filter(Boolean).join(', ');
+const skipText=sk=>[sk.fen&&`${sk.fen} from a set position`,sk.bullet&&`${sk.bullet} bullet`,sk.noResult&&`${sk.noResult} with no result (Result "*": set it in the PGN or the study chapter)`,sk.unfinished&&`${sk.unfinished} unfinished or very short`,sk.illegal&&`${sk.illegal} with an illegal move`].filter(Boolean).join(', ');
 let LASTSKIP=null;
 
 /* ---------- Time estimates (measured on this device) ---------- */
