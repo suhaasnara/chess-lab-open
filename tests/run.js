@@ -237,6 +237,18 @@ section('t10: guess the move — theory auto-plays, guesses are scored, result s
   await sleep(20);
   const mv=w.document.getElementById('g-moves').textContent;
   assert(mv.includes(S.game.moves[S.ply-1]+' ✓')&&!mv.includes(S.game.moves[S.ply+1]||'~~'),'the Moves panel shows the game so far with your ✓, nothing ahead');
+  /* Take back (B): back to the last guess; the first answer keeps its score */
+  { const tb=w.document.getElementById('g-takeback'); assert(tb.disabled,'Take back waits until the reply has been played');
+    for(let i=0;i<30&&((S.ply%2===0?'w':'b')!==S.game.winner||S.busy);i++) await sleep(200);
+    const ply0=S.ply, pts0=S.pts, rows0=S.rows.length, got0=S.got;
+    assert(!tb.disabled,'once it is your move again, Take back is on');
+    w.GtmTab.takeBack();
+    assert(S.ply===ply0-2&&S.retry===S.ply&&/try another move/.test(w.document.getElementById('g-status').textContent),'B goes back to your last guess');
+    const gm2=new w.Chess(S.g.fen()).move(S.game.moves[S.ply]);
+    await w.GtmTab.userMove(gm2.from,gm2.to,gm2.promotion); await sleep(100);
+    assert(S.pts===pts0&&S.rows.length===rows0&&S.got===got0&&/first answer/.test(w.document.getElementById('g-status').textContent),'the retry scores nothing and adds no row: the first answer is what counts');
+    for(let i=0;i<30&&((S.ply%2===0?'w':'b')!==S.game.winner||S.busy);i++) await sleep(200);
+    assert(S.ply===ply0,'and the game carries on from where it was') }
   /* data sanity on the published game file */
   const g=S.game;
   const chk=new w.Chess();
@@ -646,6 +658,19 @@ section('t22: Endgame data — every stored move legal, goals met');
       const rootKey=w.normKey(z.fen); if(!z.nodes[rootKey]) bad++;
     }
     assert(bad===0,`${d.positions.length} endgames: legal lines, goals match the tablebase, root stored (${nodes} stored positions)`);
+    /* 14 Nov 2026 (audit item 1): a mate in one is always the best move, and a "mate" line ends in mate */
+    let noMate=[], ranked=[], mateNodes=0;
+    for(const z of d.positions){
+      if(z.goal!=='win') continue;
+      if(z.end==='mate'){ const g=new w.Chess(z.fen); for(const u of z.line) g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'}); if(!g.in_checkmate()) noMate.push(z.id) }
+      for(const k in z.nodes){ const n=z.nodes[k]; if(typeof n!=='object') continue;
+        const g=new w.Chess(k+' 0 1'); const mates=g.moves({verbose:true}).filter(m=>m.san.endsWith('#')).map(m=>m.from+m.to+(m.promotion||''));
+        if(!mates.length) continue; mateNodes++;
+        const b=(n.b||'').split(' ').filter(Boolean); if(b.length!==mates.length||!mates.every(u=>b.includes(u))) ranked.push(z.id+' '+k) } }
+    assert(noMate.length===0,'every "end: mate" line ends in checkmate'+(noMate.length?' (not: '+noMate.join(', ')+')':''));
+    assert(mateNodes>0&&ranked.length===0,`no grading position ranks a mate in one below another move (${mateNodes} positions with a mate in one)`+(ranked.length?' (wrong: '+ranked.slice(0,3).join('; ')+')':''));
+    const o=w.EndgameCore.options({moves:[{uci:'g2f2',category:'loss',dtm:-4,dtz:-4},{uci:'g2d2',category:'loss',dtm:null,dtz:null,checkmate:true},{uci:'c3d3',category:'loss',dtm:-4,dtz:-4}]},'win');
+    assert(o.b==='g2d2'&&o.w==='g2f2 c3d3','the live tablebase too: a mating move (no dtm) is the one best move');
   }
 }
 
@@ -1160,6 +1185,11 @@ section('t40: one keymap — the same letters on every page, ? lists them, never
   for(const v of ['openings','tactics','calc','endgames','drills','play','guess','players']) assert(Object.keys(K.map(v)).length,'the '+v+' page registers its keys');
   assert(K.map('openings').e&&K.map('openings').b&&K.map('openings').r&&K.map('openings').h&&K.map('openings').f&&K.map('openings').n&&K.map('openings').ArrowLeft,'Openings: ← → B R H F N E');
   assert(!K.map('endgames').ArrowLeft||/solution/.test(K.map('endgames').ArrowLeft[0]),'Endgames: ← steps the solution, take back is B');
+  /* 14 Nov 2026 (audit item 4): one key, one action on both sites */
+  assert(K.map('guess').b&&K.map('guess').r&&K.map('guess').n&&K.map('guess').h&&K.map('guess').f,'Guess the move: B take back, R restart, N next game, H, F (as on the private site)');
+  assert(/takebacks \(B;/.test(fs.readFileSync(path.join(H.SITE,'..','README.md'),'utf8')),'the README names B for Play’s take back');
+  { const kb=[...w.document.querySelectorAll('button kbd')].map(k=>[k.textContent.trim(),k.parentElement.textContent]);
+    assert(!kb.some(([k,t])=>/Take back/.test(t)&&k!=='B')&&!kb.some(([k,t])=>/Hint|threat/i.test(t)&&k!=='H')&&!kb.some(([k,t])=>/^Next/.test(t.trim())&&k!=='N'),'every keycap on a button: Take back is B, Hint / Show the threat is H, Next is N') }
   assert(K.map('endgames').b&&K.map('play').b&&K.map('play').p&&K.map('calc').r,'B takes back, P peeks, R resets');
   w.location.hash='#openings'; await sleep(50); w.document.body.dataset.view='openings';
   w.OpeningsTab.selectOpening('preset-any-white'); await sleep(200);
@@ -1455,24 +1485,24 @@ section('t71: your name written differently, games to check (13 Nov 2026)');
 section('t70: PGN accuracy (13 Nov 2026): zero castling, glued marks, e.p., ellipsis, study chapters, minutes time controls');
 {
   const {w}=await makePage(); await sleep(100); const F=w.PgnFile;
-  const hd=(o,extra='')=>`[Event "${o}"]\n[White "Jack"]\n[Black "${o}"]\n[Result "1-0"]\n[Date "2025.03.01"]\n${extra}\n`;
+  const hd=(o,extra='')=>`[Event "${o}"]\n[White "Robin"]\n[Black "${o}"]\n[Result "1-0"]\n[Date "2025.03.01"]\n${extra}\n`;
   const pgn=hd('Z')+'1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. 0-0 Nf6 5. d3 0-0 1-0\n\n'
     +hd('N')+'1.e4 e5 2.Nf3$1 Nc6 3.Bb5!? a6 4.Ba4 Nf6 5.O-O+= Be7 6.Qe2+- b5 1-0\n\n'
     +hd('E')+'1. e4 Nf6 2. e5 d5 3. exd6 e.p. exd6 4. d4 Be7 1-0\n\n'
     +hd('L')+'1. e4 e5 2. Nf3 Nc6 3. Bb5 3…a6 4. Ba4 Nf6 1-0\n\n';
-  const G=F.toGames(F.parse(pgn),'Jack');
+  const G=F.toGames(F.parse(pgn),'Robin');
   assert(G.games.length===4&&!G.skipped.illegal,'0-0, Nf3$1 / O-O+= / Qe2+-, "e.p." and 3…a6 all read ('+JSON.stringify(G.skipped)+')');
   const R=w.PGN.read(pgn); assert(R.bad===0&&R.games===4,'the shared reader (repertoire uploads) reads them too (bad '+R.bad+')');
   const k=Object.keys(R.notes).find(x=>R.notes[x].mk==='!'); assert(k,'a glued $1 becomes the ! mark');
-  const st=`[Event "Denver Open: Round 1"]\n[Site "https://lichess.org/study/abcdEFGH/ijklMNOP"]\n[Result "1-0"]\n[White "Jack"]\n[Black "Opp"]\n[WhiteElo "1650"]\n[BlackElo "1720"]\n[StudyName "Denver Open"]\n[ChapterName "Round 1"]\n[UTCDate "2026.06.01"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. O-O Nf6 1-0\n\n`
-    +`[Event "Denver Open: Round 2"]\n[Site "https://lichess.org/study/abcdEFGH/qrstUVWX"]\n[Result "*"]\n[White "Opp2"]\n[Black "Jack"]\n[StudyName "Denver Open"]\n\n1. d4 d5 2. c4 e6 3. Nc3 Nf6 *\n`;
-  const SP=F.parse(st), SG=F.toGames(SP,'Jack');
+  const st=`[Event "Denver Open: Round 1"]\n[Site "https://lichess.org/study/abcdEFGH/ijklMNOP"]\n[Result "1-0"]\n[White "Robin"]\n[Black "Opp"]\n[WhiteElo "1650"]\n[BlackElo "1720"]\n[StudyName "Denver Open"]\n[ChapterName "Round 1"]\n[UTCDate "2026.06.01"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. O-O Nf6 1-0\n\n`
+    +`[Event "Denver Open: Round 2"]\n[Site "https://lichess.org/study/abcdEFGH/qrstUVWX"]\n[Result "*"]\n[White "Opp2"]\n[Black "Robin"]\n[StudyName "Denver Open"]\n\n1. d4 d5 2. c4 e6 3. Nc3 Nf6 *\n`;
+  const SP=F.parse(st), SG=F.toGames(SP,'Robin');
   assert(F.detect(SP).sys==='uschess'&&SG.games[0].site==='pgn'&&SG.games[0].sys==='uschess','an over-the-board game kept in a Lichess study is not a Lichess game (its pool stays over the board)');
   assert(SG.games[0].date==='','the study chapter’s UTCDate (when it was made) is not taken as the game’s date');
   assert(SG.skipped.noResult===1,'a chapter with Result "*" is counted as having no result');
-  assert(F.toGames(F.parse('[White "Jack"]\n[Black "X"]\n[Result "1-0"]\n[Site "https://lichess.org/AbCdEfGh"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bc4 Nf6 1-0'),'Jack').games[0].site==='lichess','a real Lichess game link is still Lichess');
+  assert(F.toGames(F.parse('[White "Robin"]\n[Black "X"]\n[Result "1-0"]\n[Site "https://lichess.org/AbCdEfGh"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bc4 Nf6 1-0'),'Robin').games[0].site==='lichess','a real Lichess game link is still Lichess');
   assert(F.speedOf({TimeControl:'5+3'})==='blitz'&&F.speedOf({TimeControl:'90+30'})==='classical'&&F.speedOf({TimeControl:'15+10'})==='rapid'&&F.speedOf({TimeControl:'60+0'})==='bullet'&&F.speedOf({TimeControl:'300+3',Site:'https://lichess.org/AbCdEfGh'})==='blitz','minutes over the board (5+3 blitz, 90+30 classical, 15+10 rapid), seconds online; 60+0 stays bullet');
-  const two=F.parse('[Event "Empty chapter"]\n[White "Jack"]\n[Black "Nobody"]\n[Date "2020.01.01"]\n\n[Event "Real"]\n[White "Jack"]\n[Black "Opp"]\n[Result "0-1"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 0-1');
+  const two=F.parse('[Event "Empty chapter"]\n[White "Robin"]\n[Black "Nobody"]\n[Date "2020.01.01"]\n\n[Event "Real"]\n[White "Robin"]\n[Black "Opp"]\n[Result "0-1"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 0-1');
   assert(two.games.length===2&&!two.games[1].h.Date,'a game with no moves does not lend its tags (a date) to the next game');
   const nm=F.parse('[White "Jane Q. Doe"]\n[Black "A"]\n[Result "1-0"]\n\n1. d4 d5 2. Bf4 Nf6 3. e3 e6 1-0\n\n[White "Jane Q Doe"]\n[Black "Sam  Lee Park"]\n[Result "1-0"]\n\n1. d4 d5 2. Bf4 Nf6 3. e3 c5 1-0\n\n[White "jane q. doe"]\n[Black "C"]\n[Result "1-0"]\n\n1. d4 Nf6 2. Bf4 g6 3. e3 Bg7 1-0');
   const pl=F.players(nm); assert(pl[0][0]==='Jane Q. Doe'&&pl[0][1]===3,'names that differ only by dots, spaces or case are one player, shown as spelled most ('+JSON.stringify(pl)+')');
@@ -1791,7 +1821,7 @@ section('t59: Chess Lab packs retired (13 Nov 2026) — a browser that loaded on
   assert(B.status(bcB)==='solved','the result carried over from the pack: solved');
   B.open(bcA.id); B.show(); assert(/The threat: h6/.test($('bc-status').textContent),'Show the threat'); await sleep(1600); B.show();
   assert(B.state.phase==='done'&&/Stockfish: Bb5\+/.test($('bc-status').textContent),'Show the move');
-  assert(w.Keys.map('blundercheck').n&&w.Keys.map('blundercheck').s,'keys N and S');
+  assert(w.Keys.map('blundercheck').n&&w.Keys.map('blundercheck').h&&!w.Keys.map('blundercheck').s&&/<kbd>H<\/kbd>/.test(w.document.getElementById('bc-show').innerHTML),'keys N and H (H shows the threat, as on the private site; 14 Nov 2026)');
 
   /* removing the set takes the pack's drills and positions with their results; the rest is byte-identical */
   const P0=JSON.parse(JSON.stringify(S.get('adrills-progress'))); delete P0[dA.id];
@@ -2106,7 +2136,10 @@ section('t67: Analyze — Standard / Deep: depth used, evals kept per mode, Deep
   const game={id:'fTEST1',moves:'e4 e5 Nf3 Nc6 Bb5 a6 Ba4 Nf6'.split(' ')};
   w.Store.del('pgn-evals'); depths.length=0;
   await A.evalsFor(game,{games:9,cache:true,mode:'standard'});
-  assert(depths.length===8&&depths.every(d=>d===11)&&Array.isArray(w.Store.get('pgn-evals').fTEST1)&&game.evsrc==='standard','Standard: depth 11, kept as before (a list)');
+  assert(depths.length===8&&depths.every(d=>d===11)&&w.Store.get('pgn-evals').fTEST1.m==='standard'&&w.Store.get('pgn-evals').fTEST1.e.length===8&&w.Store.get('pgn-evals').fTEST1.f.length===8&&game.evsrc==='standard','Standard: depth 11, kept with the engine’s-first-choice flags ({m, e, f} since 14 Nov 2026)');
+  { w.Store.put('pgn-evals',Object.assign(w.Store.get('pgn-evals'),{fOLD:[0.2,0.1,0.3,0.2,0.3,0.2,0.3,0.2]})); const g2={...game,id:'fOLD'}; delete g2.ef; depths.length=0;
+    const e2=await A.evalsFor(g2,{games:9,cache:true,mode:'standard'}); assert(depths.length===0&&e2.length===8&&g2.evsrc==='standard'&&!g2.ef,'evals kept in the old list shape are still read (no flags: judged as before)');
+    assert(await A.evalsFor({...g2},{games:0,cache:true,mode:'deep'})===null,'and a Deep run does not take Standard evals for Deep ones') }
   depths.length=0; await A.evalsFor(game,{games:9,cache:true,mode:'standard'});
   assert(depths.length===0,'Standard again: nothing redone');
   await A.evalsFor(game,{games:9,cache:true,mode:'deep'});
@@ -2338,6 +2371,70 @@ section('t73: the games you analyzed are kept (js/agames.js): every drill and co
     assert(/storage is full/.test(w5.document.getElementById('a-note').textContent),'the note says so');
     w5.document.getElementById('a-savedrills').click(); await sleep(300);
     const gid=w5.Store.get('adrills')[0].g; assert(gid&&w5.Store.get('agames').g[gid]&&w5.Store.get('agames').g[gid].ev,'saving drills still keeps their game (with its evals)'); }
+}
+
+section('t74: Analyze — the engine’s first choice is never a mistake; drills are checked more deeply before saving (audit 14 Nov 2026, item 2)');
+{
+  /* Narayanan – Jordan, 20 Sep 2025 (a published game, data/gtm/game8.json): 6.Qa4+ is the only good move, by two pawns.
+     At depth 11 the position before it read +4.1 and the one after +2.2, and the report called it a mistake. */
+  const G8=JSON.parse(fs.readFileSync(path.join(H.SITE,'data','gtm','game8.json'),'utf8')), moves=G8.moves.slice(0,40);
+  const {w:w0}=await makePage();
+  const g0=new w0.Chess(), fens=[g0.fen()], ucis=[]; for(const san of moves){ const m=g0.move(san); ucis.push(m.from+m.to+(m.promotion||'')); fens.push(g0.fen()) }
+  const idx=new Map(fens.map((f,i)=>[f,i-1]));                 /* fen -> the ply index it comes after (-1 = start) */
+  assert(moves[10]==='Qa4+'&&ucis[10]==='d1a4','ply 10 is 6.Qa4+');
+  const EV=i=>i<9?0.3:i===9?4.1:i===10?2.2:i===14||i>=16?1.0:4.0;   /* White's side, after ply i */
+  const calls=[];
+  const analyse=async(fen,depth,mpv)=>{ const i=idx.get(fen); calls.push([i,depth,mpv]); if(i==null) return [{uci:'a7a6',cp:-1.0,mate:null}];   /* a position after a move of mine, off the game: +1.0 for White */
+    const j=i+1, wtm=/ w /.test(fen);
+    if(depth>=16&&mpv>=3){
+      if(j===10) return [{uci:'d1a4',cp:2.4,mate:null},{uci:'a2a3',cp:0.4,mate:null},{uci:'c4d5',cp:0.3,mate:null}];
+      if(j===14) return [{uci:ucis[14],cp:4.0,mate:null},{uci:'a2a3',cp:3.9,mate:null}];                    /* deeper: the game move is fine */
+      if(j===16) return [{uci:'a2a3',cp:4.0,mate:null},{uci:'h2h3',cp:3.0,mate:null}];                         /* a real mistake */
+      return [{uci:ucis[j],cp:1.0,mate:null}] }
+    if(depth>=16) return [{uci:'a7a6',cp:-1.0,mate:null}];
+    const v=EV(i); return [{uci:j===10?'d1a4':'a1a1',cp:wtm?v:-v,mate:null}] };
+  const {w}=await makePage({analyse}); await sleep(50);
+  const A=w.AnalyzeTab, $=id=>w.document.getElementById(id);
+  /* markGame alone: the same evals with and without the flag */
+  const game={id:'fT74',site:'pgn',color:'w',result:'1-0',white:'Narayanan, Suhaas',black:'Jordan, Pernell',date:'2025-09-20',moves};
+  const evs=moves.map((_,i)=>EV(i));
+  const old=A.markGame({...game},evs), ef='0000000000100000000000000000000000000000', now=A.markGame({...game,ef},evs);
+  assert(old.drops.some(d=>d.san==='Qa4+')&&old.punish.some(p=>p.san==='Qa4+'&&p.verdict==='missed'),'without the engine’s choice, the two evals alone call 6.Qa4+ a mistake and a missed punish (the old behaviour)');
+  assert(!now.drops.some(d=>d.san==='Qa4+')&&now.punish.find(p=>p.san==='Qa4+').verdict==='punished'&&now.mist===old.mist-1,'when 6.Qa4+ is the engine’s first choice no drop is counted: not a mistake, and the opponent’s error counts as punished');
+  assert(now.moves.find(m=>m.ply===10).winLost===0&&!now.bcand.some(c=>c.ply===10),'nor is it an inaccuracy in Move quality or a Blunder check candidate');
+  /* a whole run from a PGN file */
+  const pgn=`[Event "Masterminds September Quads"]\n[White "Narayanan, Suhaas"]\n[Black "Jordan, Pernell"]\n[Result "1-0"]\n[Date "2025.09.20"]\n\n${moves.map((m,i)=>(i%2?'':(i/2+1)+'. ')+m).join(' ')} 1-0\n`;
+  A.clearFiles(); A.addFiles([[pgn,'jordan.pgn']]); $('a-site').value='pgn'; $('a-site').dispatchEvent(new w.Event('change'));
+  await A.run('pgn',['Narayanan, Suhaas']); await sleep(100);
+  const R=w.AStats.last, st=Object.values(w.Store.get('pgn-evals'))[0];
+  assert(st&&st.f&&st.f[10]==='1'&&st.f.replace(/1/g,'').length===st.f.length-1,'the run records where the move played was Stockfish’s first choice (kept with the evals)');
+  assert(R&&!R.mistakes.some(m=>m.san==='Qa4+')&&!R.toPunish.some(m=>m.san==='Qa4+'),'the report: 6.Qa4+ is neither a costly move nor a missed punish');
+  assert(R.mistakes.some(m=>m.san===moves[14])&&R.mistakes.some(m=>m.san===moves[16]),'two other moves are candidates');
+  const kept=Object.values(w.Store.get('agames').g)[0]; assert(kept&&kept.ef&&kept.ef[10]==='1','the kept game carries it, so a restored report says the same');
+  const btn=$('a-savedrills'); btn.click(); await sleep(50); while(/Checking|Saving/.test(btn.textContent)) await sleep(30);
+  const D=w.Store.get('adrills')||[];
+  assert(calls.some(c=>c[1]===16&&c[2]===3),'before saving, each candidate is searched again at depth 16 with three lines');
+  assert(!D.some(d=>d.played==='Qa4+'),'6.Qa4+ is not a drill (the audit’s case)');
+  assert(!D.some(d=>d.played===moves[14])&&/left out/.test(btn.textContent),'a candidate whose game move is as good as the best on the deeper look is left out, and the button says so');
+  const real=D.find(d=>d.played===moves[16]);
+  assert(real&&real.best==='a2a3'&&real.v===1&&real.g,'a real mistake is saved with the checked best move (PGN drills had none)');
+  const n1=calls.length; w.Store.put('adrills',[]); A.rerender(); $('a-savedrills').click(); await sleep(300);
+  assert(!calls.slice(n1).some(c=>c[1]===16),'saving again asks the engine nothing twice (adrill-verify)');
+  /* a drill saved before the check: the game move is looked at before "find something better" */
+  const fenQ=fens[10];
+  w.Store.put('adrills',[{id:'aOLD00001',fen:fenQ,played:'Qa4+',playedUci:'d1a4',best:null,drop:0.25,before:4.1,date:'2025-09-20',opp:'Jordan, Pernell',site:'pgn',color:'w'},
+    {id:'aOLD00002',fen:fens[16],played:moves[16],playedUci:ucis[16],best:null,drop:0.4,before:4.0,date:'2025-09-20',opp:'Jordan, Pernell',site:'pgn',color:'w'}]);
+  w.Store.put('adrills-progress',{});
+  w.DrillsTab.refresh(); w.DrillsTab.load(w.Store.get('adrills')[0]); await sleep(30);
+  const dm=$('d-status');
+  await w.DrillsTab.userMove('d1','a4'); await sleep(100);
+  assert(dm.className.includes('good')&&/not a mistake/.test(dm.textContent)&&!/Find something better/.test(dm.textContent),'an older drill whose game move is best: accepted, with "not a mistake after all" instead of "Find something better"');
+  assert(w.Store.get('adrills')[0].gameBest===true&&w.Store.get('adrills-progress').aOLD00001.ok===true&&w.Store.get('adrills').length===2,'the drill stays, marked, and counts as solved');
+  w.DrillsTab.load(w.Store.get('adrills')[0]); await sleep(30);
+  assert(/find the best move/.test(dm.textContent)&&!/better move/.test(dm.textContent),'next time its prompt no longer asks for a better move');
+  w.DrillsTab.load(w.Store.get('adrills')[1]); await sleep(30);
+  await w.DrillsTab.userMove(ucis[16].slice(0,2),ucis[16].slice(2,4)); await sleep(100);
+  assert(dm.className.includes('bad')&&/Find something better/.test(dm.textContent)&&w.Store.get('adrills')[1].best==='a2a3','an older drill that is a real mistake still refuses the game move, and now stores the best move');
 }
 
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));

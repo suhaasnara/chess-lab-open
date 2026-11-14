@@ -48,13 +48,62 @@ def res(cat):
     return {'loss': 'W', 'win': 'L', 'maybe-loss': 'W', 'maybe-win': 'L'}.get(cat, 'D')
 
 def metric(m):
+    # A mating move comes back from the tablebase with no dtm (nothing is left to count), which used to rank it as
+    # the slowest win. Mate in one is always the best move (14 Nov 2026; user_node marks it with python-chess too).
+    if m.get('checkmate') or m.get('_mate'):
+        return 0
     return (abs(m['dtm']) if m.get('dtm') is not None else 10000 + abs(m.get('dtz') or 0))
+
+def mates_in_one(b):
+    out = []
+    for mv in b.legal_moves:
+        b.push(mv)
+        if b.is_checkmate():
+            out.append(mv.uci())
+        b.pop()
+    return out
+
+def fix_mates(q):
+    """No network. In a win exercise, wherever a mate in one is on the board it is the only best move, and the
+    stored line plays it and stops. Repairs sets built before metric() knew about mating moves; a no-op on a
+    correct set. Returns the number of grading nodes and line plies changed."""
+    if q.get('goal') != 'win':
+        return 0
+    changed = 0
+    for k, n in q['nodes'].items():
+        if not isinstance(n, dict):
+            continue
+        mates = mates_in_one(chess.Board(k + ' 0 1'))
+        if not mates or set(n.get('b', '').split()) == set(mates):
+            continue
+        rest = [u for u in (n.get('b', '') + ' ' + n.get('w', '')).split() if u not in mates]
+        n['b'] = ' '.join(mates)
+        if rest:
+            n['w'] = ' '.join(rest)
+        else:
+            n.pop('w', None)
+        changed += 1
+    b = chess.Board(q['fen'])
+    for i, u in enumerate(q['line']):
+        if i % 2 == 0:
+            mates = mates_in_one(b)
+            if mates and u not in mates:
+                pref = [x for x in q.get('prefer', []) if x in mates]
+                changed += len(q['line']) - i
+                q['line'] = q['line'][:i] + [(pref or mates)[0]]
+                break
+        b.push(chess.Move.from_uci(u))
+    return changed
 
 PREFER = []
 
 def user_node(b, goal):
     d = tb(b.fen())
     ms = d.get('moves') or []
+    mates = set(mates_in_one(b))
+    for m in ms:
+        if m['uci'] in mates:
+            m['_mate'] = True
     W = [m for m in ms if res(m['category']) == 'W']
     D = [m for m in ms if res(m['category']) == 'D']
     if goal == 'win' and W:
@@ -218,7 +267,11 @@ def main(src, out, budget, minutes=100):
     for p in spec['positions']:
         old = prev.get(p['id'])
         if old and all(old.get(k) == p.get(k) for k in ('fen', 'goal', 'end', 'prefer', 'rev')):   # rev: bump to force a rebuild
-            q = dict(old); q.update({k: p[k] for k in ('title', 'text', 'group')}); outp.append(q); continue
+            q = dict(old); q.update({k: p[k] for k in ('title', 'text', 'group')})
+            n = fix_mates(q)
+            if n:
+                print(f"{p['id']}: mate in one made best ({n} nodes / line plies changed)", flush=True)
+            outp.append(q); continue
         if time.time() > stop:
             print(f"TIME: {p['id']} not built (rerun to continue)", flush=True); continue
         t0 = time.time()
@@ -227,7 +280,7 @@ def main(src, out, budget, minutes=100):
             bad.append((p['id'], p['goal'], info))
             print(f"MISMATCH {p['id']}: goal {p['goal']}, tablebase says {info}", flush=True)
             continue
-        q = dict(p); q['tb'] = info; q.update(tree)
+        q = dict(p); q['tb'] = info; q.update(tree); fix_mates(q)
         outp.append(q); save()
         print(f"{p['id']}: {info['cat']} dtz {info['dtz']} dtm {info['dtm']}; line {len(tree['line'])} plies, "
               f"{len(tree['nodes'])} nodes, {time.time() - t0:.0f}s", flush=True)

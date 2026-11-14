@@ -77,12 +77,18 @@ async function fetchChesscom(user,blitz){
 /* ---------- Evals ---------- */
 /* evs[i] = eval in pawns (White's side) after ply i+1. Lichess server analysis first, then evals in the file, then
    Stockfish. Stockfish's evals are kept in this browser (pgn-evals, by game id), so a stopped or reloaded run picks up
-   where it left off. An entry is a list (Standard, the shape since 12 Nov) or {m:'deep', e:[…]}: a Deep run redoes
-   Standard entries and replaces them; a Standard run happily reuses Deep ones. */
+   where it left off. An entry is a list (Standard, the shape since 12 Nov) or {m:'standard'|'deep', e:[…], f:'0110…'}: a
+   Deep run redoes Standard entries and replaces them; a Standard run happily reuses Deep ones.
+   game.ef (14 Nov 2026, audit item 2): for each ply, whether the move played was the engine's first choice there (the
+   search of the position before it). Comparing only the evals of two consecutive positions called a best move a
+   mistake when the two searches disagreed (6.Qa4+, the only good move by two pawns, read 82% -> 69%): markGame counts
+   no drop on such a move. Kept with the evals (f) and with the game (agames field ef). */
 const EVKEY='pgn-evals', EVMAX=3000;
 const evCache={ raw(id){ const c=Store.get(EVKEY)||{}; return c[id]||null },
-  get(id,m){ const e=this.raw(id); if(!e) return null; if(Array.isArray(e)) return m==='deep'?null:{m:'standard',e}; return e.e&&e.e.length?e:null },
-  put(id,evs,m){ const c=Store.get(EVKEY)||{}; const r=evs.map(v=>Math.round(v*100)/100); c[id]=m==='deep'?{m:'deep',e:r}:r;
+  get(id,m){ const e=this.raw(id); if(!e) return null; if(Array.isArray(e)) return m==='deep'?null:{m:'standard',e};
+    if(m==='deep'&&e.m!=='deep') return null; return e.e&&e.e.length?e:null },
+  /* f (14 Nov 2026): one character per ply, '1' where the move played was Stockfish's first choice in that position */
+  put(id,evs,m,f){ const c=Store.get(EVKEY)||{}; const r=evs.map(v=>Math.round(v*100)/100); c[id]=f?{m:m==='deep'?'deep':'standard',e:r,f}:m==='deep'?{m:'deep',e:r}:r;
     const ks=Object.keys(c); if(ks.length>EVMAX) for(const k of ks.slice(0,ks.length-EVMAX)) delete c[k]; Store.put(EVKEY,c) } };
 let stopReq=false;
 /* where a game's evals come from: 'lichess' (server analysis), 'file' (evals in the PGN), 'standard' / 'deep' (here) */
@@ -91,21 +97,22 @@ async function evalsFor(game,budget,onStep){
     return game.analysis.map(a=>a.mate!=null?(a.mate>0?MATE/100:-MATE/100):(a.eval||0)/100);
   }
   const m=budget.mode||'standard', depth=DEPTH[m];
-  const cached=budget.cache?evCache.get(game.id,m):null; if(cached){ game.evsrc=cached.m; return cached.e }
+  const cached=budget.cache?evCache.get(game.id,m):null; if(cached){ game.evsrc=cached.m; if(cached.f) game.ef=cached.f; return cached.e }
   if(budget.games<=0) return null;
   budget.games--;
-  const g=new Chess(); const evs=[];
+  const g=new Chess(); const evs=[]; let ef='', first=null;   /* first: the engine's choice in the position on the board */
   for(let i=0;i<game.moves.length;i++){
     if(stopReq) return null;
-    if(!g.move(game.moves[i])) break;
+    const mv=g.move(game.moves[i]); if(!mv) break;
+    ef+=first&&first.slice(0,4)===mv.from+mv.to&&(first[4]||'')===(mv.promotion||'')?'1':'0'; first=null;
     if(g.in_checkmate()){ evs.push(g.turn()==='w'?-MATE/100:MATE/100); break }
     const a=await SharedEngine.analyse(g.fen(),depth,1,m==='deep'?30000:9000).catch(()=>null);
     if(!a||!a.length){ evs.push(evs.length?evs[evs.length-1]:0) }
-    else{ const cp=a[0].mate!=null?(a[0].mate>0?MATE/100:-MATE/100):a[0].cp; evs.push(g.turn()==='w'?cp:-cp) }
+    else{ const cp=a[0].mate!=null?(a[0].mate>0?MATE/100:-MATE/100):a[0].cp; evs.push(g.turn()==='w'?cp:-cp); first=a[0].uci||null }
     onStep&&onStep(i/game.moves.length);
   }
-  if(budget.cache) evCache.put(game.id,evs,m);
-  game.evsrc=m;
+  if(budget.cache) evCache.put(game.id,evs,m,ef);
+  game.evsrc=m; game.ef=ef;
   return evs;
 }
 /* Marks for the user's moves: winning-chance drops (White-side evals, kit thresholds 0.1/0.2/0.3 on the -1..1 scale).
@@ -118,6 +125,7 @@ function markGame(game,evs){
   const g=new Chess(); const fens=[g.fen()];
   for(const san of game.moves){ if(!g.move(san)) break; fens.push(g.fen()) }
   const n=Math.min(evs.length,game.moves.length);
+  const top=i=>!!game.ef&&game.ef[i]==='1';   /* the move played at ply i was the engine's first choice: no drop is counted on it */
   for(let i=0;i<n;i++){
     const moverIsMe=(i%2===0?'w':'b')===game.color;
     const cur=evs[i];
@@ -129,7 +137,7 @@ function markGame(game,evs){
     if(!moverIsMe&&i+1<n&&prev*sign<5){
       const oppDrop=(wc(prev)-wc(cur))*sign*-1, pawns=(prev-cur)*sign*-1;
       if(oppDrop>=0.2&&pawns>=0.7){
-        const replyDrop=(wc(cur)-wc(evs[i+1]))*sign;
+        const replyDrop=top(i+1)?0:(wc(cur)-wc(evs[i+1]))*sign;
         const verdict=replyDrop<0.1?'punished':replyDrop<0.2?'partly':'missed';
         out.punish.push({ply:i+1,fen:fens[i+1],san:game.moves[i+1],opp:game.moves[i],oppDrop:+oppDrop.toFixed(2),
           drop:+Math.max(0,replyDrop).toFixed(2),before:cur,after:evs[i+1],verdict,
@@ -137,11 +145,11 @@ function markGame(game,evs){
       }
     }
     if(moverIsMe){
-      const drop=(wc(prev)-wc(cur))*sign;
+      const drop=top(i)?0:(wc(prev)-wc(cur))*sign;
       out.moves.push({ply:i,winLost:Math.max(0,50*drop),before:prev*sign,after:cur*sign});
       /* a Blunder check candidate (the kit's tools/blundercheck rule): your Win% fell 15+ points from 30% or more */
       const w0=WinPct.pct(prev*sign), w1=WinPct.pct(cur*sign);
-      if(w0>=30&&w0-w1>=15&&fens[i]&&fens[i+1]){ const c=bcCand(fens[i],game.moves[i]);
+      if(!top(i)&&w0>=30&&w0-w1>=15&&fens[i]&&fens[i+1]){ const c=bcCand(fens[i],game.moves[i]);
         if(c) out.bcand.push({ply:i,fen:fens[i],san:game.moves[i],uci:c.uci,nul:c.nul,w0,w1,after:fens[i+1],reply:game.moves[i+1]||''}) }
       if(drop>=0.1){
         const kind=drop>=0.3?'blun':drop>=0.2?'mist':'inacc'; out[kind]++;
@@ -488,18 +496,50 @@ function saveCard(mistakes,toPunish,final,rows){
     <p class="note">${can?`${nm?`Your ${nm} costliest move${nm===1?'':'s'}`:''}${np?`${nm?', plus ':''}${np} position${np===1?'':'s'} where your opponent erred and you didn’t make them pay`:''}${nm+np?'. Train them in Drills.':''}${nb?` ${nb} of your blunders as blunder checks: spot the threat first, then your move.`:''}`:final?'No costly moves found in these games: nothing to save.':'Drills can be saved when the analysis finishes (or after Stop).'}</p></div>
     ${can?`<button class="btn primary" id="a-savedrills">Save ${what}</button>`:''}</div>${setsHtml()}</div>`;
 }
+/* Before a drill is saved its position is searched again, deeper and with three lines (14 Nov 2026, audit item 2):
+   the report's evals are one shallow line per position, enough for the statistics but not to tell someone "find a
+   better move". verifyDrill -> {best, drop} (drop: Win-chance lost by the game move against the best, 0..2 scale as wc),
+   or null when the engine didn't answer (the drill is then saved as before). A drill is dropped when the game move is
+   within the Drills tab's own tolerance of the best (0.1): there is nothing better to find. Results are kept
+   (adrill-verify, by position and move), so saving again asks nothing twice. */
+const VDEPTH={standard:16,deep:18}, VKEY='adrill-verify', VTOL=0.1, VMAX=400;
+async function verifyDrill(fen,uci,m,cache){
+  const key=fen+'|'+uci, d=VDEPTH[m]||16, c=cache[key];
+  if(c&&c.d>=d) return c;
+  const P=x=>x.mate!=null?(x.mate>0?MATE/100:-MATE/100):x.cp;
+  const a=await SharedEngine.analyse(fen,d,3,15000).catch(()=>null); if(!a||!a.length||!a[0].uci) return null;
+  const row=a.find(x=>x.uci&&x.uci.slice(0,4)===uci.slice(0,4)&&(x.uci[4]||'')===(uci[4]||'')); let mine;
+  if(row) mine=P(row);
+  else{ const g=new Chess(fen); if(!g.move({from:uci.slice(0,2),to:uci.slice(2,4),promotion:uci[4]||undefined})) return null;
+    if(g.in_checkmate()) mine=MATE/100;
+    else if(g.in_draw()||g.in_stalemate()) mine=0;
+    else{ const b=await SharedEngine.analyse(g.fen(),d,1,15000).catch(()=>null); if(!b||!b.length) return null; mine=-P(b[0]) } }
+  const r={d,best:a[0].uci,drop:Math.max(0,+(wc(P(a[0]))-wc(mine)).toFixed(3))};
+  cache[key]=r; return r;
+}
 async function saveDrills(btn){
   const R=AStats.last; if(!R) return;
   btn.disabled=true; btn.textContent='Saving…';
+  /* check each candidate first */
+  const cand=R.mistakes.slice(0,40).map(m=>[m,'a']).concat(R.toPunish.slice(0,20).map(m=>[m,'p']));
+  const vc=Store.get(VKEY)||{}, vm=mode(), ok=new Map(); let dropped=0, k=0;
+  for(const [m] of cand){ k++; const uci=uciOf(m.fen,m.san); if(!uci) continue;
+    btn.textContent=`Checking position ${k} of ${cand.length} more deeply…`;
+    const v=await verifyDrill(m.fen,uci,vm,vc);
+    if(v&&v.drop<VTOL){ dropped++; ok.set(m,false) } else ok.set(m,v||true) }
+  { const ks=Object.keys(vc); if(ks.length>VMAX) for(const x of ks.slice(0,ks.length-VMAX)) delete vc[x]; Store.tryPut(VKEY,vc) }
+  btn.textContent='Saving…';
   const drills=Store.get('adrills')||[], at=new Map(drills.map((d,i)=>[d.id,i]));
   const fl=(LAST&&LAST.files||[]).map(f=>f.name);
   const set={id:'s'+Date.now().toString(36),t:Date.now(),label:LAST&&LAST.site==='pgn'?`From ${(fl.length?fl:FILES.map(f=>f.name)).join(', ')}`:`From ${LAST&&LAST.user} on ${LAST&&LAST.site==='lichess'?'Lichess':'Chess.com'}`};
   let added=0; const games=new Map();
   const put=async(m,extra,prefix)=>{ const uci=uciOf(m.fen,m.san); if(!uci) return;
+    const v=ok.get(m); if(v===false) return;                       /* the game move is as good as the best: not a drill */
+    if(v&&v.best) m={...m,best:v.best};                             /* the checked best move, stored on the drill (PGN drills had none) */
     const id=await drillId(prefix,m.fen,uci);
     if(at.has(id)){ const d=drills[at.get(id)]; if(d.b&&!d.b.includes(set.id)) d.b=d.b.concat(set.id); return }   /* already saved: this set holds it too (older drills keep no list) */
     at.set(id,drills.length); added++;
-    drills.push({id,...extra,fen:m.fen,played:m.san,playedUci:uci,best:m.best,drop:m.drop,before:m.before,
+    drills.push({id,...extra,...(v&&v.best?{v:1}:{}),fen:m.fen,played:m.san,playedUci:uci,best:m.best,drop:m.drop,before:m.before,
       date:m.game.date,opp:m.game.color==='w'?m.game.black:m.game.white,site:m.game.site,url:m.game.url,color:m.game.color,g:m.game.id,ply:m.ply,b:[set.id]});
     games.set(m.game.id,m.game) };
   for(const m of R.mistakes.slice(0,40)) await put(m,{},'a');
@@ -515,7 +555,8 @@ async function saveDrills(btn){
   /* keep the games they come from, with their evals, so each opens in the game view */
   const evOf=new Map((R.rows||[]).map(r=>[r.game.id,r.marks.evs]));
   AGames.pin([...games.values()].map(g=>({game:g,evs:evOf.get(g.id)})));
-  btn.textContent=added||addedB?`Saved ${[added?`${added} drill${added===1?'':'s'}`:'',addedB?`${addedB} blunder check${addedB===1?'':'s'}`:''].filter(Boolean).join(' and ')} — see ${added?'Drills':'Blunder check'}.`:'Already saved — see the Drills tab.';
+  const left=dropped?` ${dropped} left out: on a deeper look the game move was as good as the best.`:'';
+  btn.textContent=(added||addedB?`Saved ${[added?`${added} drill${added===1?'':'s'}`:'',addedB?`${addedB} blunder check${addedB===1?'':'s'}`:''].filter(Boolean).join(' and ')} — see ${added?'Drills':'Blunder check'}.`:dropped&&!at.size?'Nothing to save.':'Already saved — see the Drills tab.')+left;
   if(window.DrillsTab) DrillsTab.refresh(); if(window.BlunderCheckTab) BlunderCheckTab.refresh();
   const box=btn.closest('.asave'); const old=box&&box.querySelector('.asets'); const h=setsHtml();
   if(box){ if(old) old.outerHTML=h; else box.insertAdjacentHTML('beforeend',h) }
@@ -596,7 +637,7 @@ function init(){
     if(AStats.click(e)&&LASTR) renderReport(...LASTR) });
   $('a-report').addEventListener('change',e=>{ if(AStats.change(e)&&LASTR) renderReport(...LASTR) });
 }
-window.AnalyzeTab={init,phaseAccuracy,phaseOf,run,markGame,fetchLichess,fetchChesscom,evalsFor,yearlyOf,drillSets,removeSet,addFile,bench,DEPTH,
+window.AnalyzeTab={init,verifyDrill,saveDrills,evCache,phaseAccuracy,phaseOf,run,markGame,fetchLichess,fetchChesscom,evalsFor,yearlyOf,drillSets,removeSet,addFile,bench,DEPTH,
   restore,live,findBlunderChecks,bcCandidates,BCMAX,get blunderChecks(){ return LASTBC },
   get files(){ return FILES },
   setFile(text,name){ FILES=[]; addFile(text,name||'file.pgn'); renderFiles() },

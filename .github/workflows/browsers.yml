@@ -3,7 +3,7 @@ name: Browsers
 # console errors, and screenshots (light/dark, desktop/phone) in Firefox and Chromium.
 on:
   push:
-    branches: [main, parity-1, positions, one-codebase, shared-screens, improvements, improvements-2, improvements-3, improvements-4, overnight-11nov, overnight-2, friend-pack, blind, analyze2, no-pack]
+    branches: [main, parity-1, positions, one-codebase, shared-screens, improvements, improvements-2, improvements-3, improvements-4, overnight-11nov, overnight-2, friend-pack, blind, analyze2, no-pack, audit-fixes]
   pull_request:
   workflow_dispatch:
     inputs:
@@ -42,6 +42,9 @@ jobs:
       - name: Blind tactics and Retry the miss on phones in ${{ matrix.browser }} (keys, no engine, iPhone SE bars, screenshots)
         if: ${{ !github.event.inputs.base }}
         run: cd tests/browser && node blind.js ${{ matrix.browser }} out/${{ matrix.browser }}/blind
+      - name: The 14 Nov 2026 audit's steps, replayed in ${{ matrix.browser }} (endgame mates, Analyze with the real Stockfish, the keys)
+        if: ${{ !github.event.inputs.base }}
+        run: cd tests/browser && node audit.js ${{ matrix.browser }} out/${{ matrix.browser }}/audit
       - name: Screenshots and summary
         if: always()
         uses: actions/upload-artifact@v4

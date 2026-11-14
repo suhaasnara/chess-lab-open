@@ -9,6 +9,10 @@ spec = importlib.util.spec_from_file_location('guard', os.path.join(ROOT, 'tools
 G = importlib.util.module_from_spec(spec); spec.loader.exec_module(G)
 TOK = 'zqxprivatezqx'
 G.HASHES.add(hashlib.sha256(TOK.encode()).hexdigest())
+NAME = 'zqxnell'
+for x in (NAME, NAME + 'hart'):
+    G.NAME_HASHES.add(hashlib.sha256(x.encode()).hexdigest())
+G.NAME_ALLOW[r'(^|/)data/gtm/'] = list(G.NAME_ALLOW.get(r'(^|/)data/gtm/', [])) + [hashlib.sha256(NAME.encode()).hexdigest()]
 fails = 0
 
 def run(files, build=True):
@@ -35,6 +39,15 @@ check('a denylisted token in a script', {'js/a.js': f'// {TOK}\n'}, True)
 check('… two-word form and trailing dot', {'a.md': f'see {TOK}.'}, True)
 check('… escaped in JSON (\\u0071 = q)', {'data/a.json': '{"n":"z\\u0071xprivatezqx"}'}, True)
 check('… as a text run inside a binary (.wasm)', {'sf/a.wasm': b'\x00\x01' + TOK.encode() + b'\x00'}, True)
+# 14 Nov 2026: single names and joined usernames (a made-up first name, 'zqxnell', and username, 'zqxnellhart')
+check('a private first name alone, in a comment', {'js/a.js': f'/* ("{NAME.capitalize()}" for short) */'}, True)
+check('… a joined username', {'js/a.js': f'// ("{NAME}hart")'}, True)
+check('… a username with digits or separators', {'js/a.js': f'// {NAME}hart262 and {NAME}_x'}, True)
+check('… in the repo scan too', {'README.md': f'thanks to {NAME}'}, True, build=False)
+check('… but allowed in a published game (the allow-list is per path)', {'data/gtm/game1.json': '{"black":"%s"}' % NAME}, False)
+check('… and not allowed anywhere else in data/', {'data/other.json': '{"black":"%s"}' % NAME}, True)
+check('opening books keyed by ids are not name-checked', {'data/masters.json': '{"%s":[["e2e4",1]]}' % NAME}, False)
+check('… but still checked against the two-word list', {'data/masters.json': '{"%s":1}' % TOK}, True)
 check('a .pgn file', {'data/a.pgn': '[Event "x"]\n1. e4 *'}, True)
 check('a private-kit path (players/)', {'players/x.json': '{}'}, True)
 check('an unknown file type (.zip) fails closed', {'data/a.zip': b'PK\x03\x04'}, True)

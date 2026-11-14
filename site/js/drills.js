@@ -52,13 +52,15 @@ function load(d){
   if(endbar) endbar.hide();
   S.cur=d; S.g=new Chess(d.fen); S.done=false; S.busy=false; S.hintStage=0; S.hinted=false;
   board.set(S.g,{last:null,orient:d.color});
-  if(isPunish(d)) status('',`${d.oppMove} was a mistake. Punish it.`,`${S.g.turn()==='w'?'White':'Black'} to move. In the game you played ${d.played}, which let them off (it gave back ${WinPct.pts(d.drop)} points of Win%).`,DROP_HELP);
+  if(isPunish(d)&&d.gameBest) status('',`${d.oppMove} was a mistake. Punish it.`,`${S.g.turn()==='w'?'White':'Black'} to move. In the game you played ${d.played}; a deeper look found nothing better.`);
+  else if(isPunish(d)) status('',`${d.oppMove} was a mistake. Punish it.`,`${S.g.turn()==='w'?'White':'Black'} to move. In the game you played ${d.played}, which let them off (it gave back ${WinPct.pts(d.drop)} points of Win%).`,DROP_HELP);
+  else if(d.gameBest) status('', (S.g.turn()==='w'?'White':'Black')+' to move — find the best move.',`In the game you played ${d.played}. A deeper look found nothing better, so this position was not a mistake.`);
   else status('', (S.g.turn()==='w'?'White':'Black')+' to move — find a better move.',`In the game you played ${d.played}: Win% ${WinPct.change(d.before,d.drop,d.color)}.`,DROP_HELP);
   const goal=playGoal(d);
   $('d-head').innerHTML=TV.head({kicker:`${isPunish(d)?'Punish · ':''}${esc(SITE[d.site]||d.site||'Your game')} · ${esc(d.date||'')}`,
     title:`vs ${esc(d.opp)}`,
     chips:[d.color==='w'?'White':'Black',`<span class="mono">${fmtW(d.before)}</span>${Help.q('Stockfish’s eval of this position from White’s side, in pawns (+ favors White).')}`,
-      `Win% ${WinPct.change(d.before,d.drop,d.color)} in the game${Help.q(DROP_HELP)}`],
+      d.gameBest?'the game move was best':`Win% ${WinPct.change(d.before,d.drop,d.color)} in the game${Help.q(DROP_HELP)}`],
     extra:`<div class="seg mini" role="group" aria-label="Training mode"><button type="button" aria-pressed="true">Find the move</button><button type="button" id="d-playout" aria-pressed="false" title="${goal==='win'?'Continue against Stockfish from this position. You were winning before the slip: convert it.':'Continue against Stockfish from this position. Hold it: a draw or better counts.'}">Play it out: ${goal==='win'?'win it':'hold it'}</button></div>`});
   $('d-playout').addEventListener('click',playOut);
   $('d-facts').innerHTML=`<dt>Date</dt><dd>${esc(d.date)}</dd><dt>Opponent</dt><dd>${esc(d.opp)}</dd>
@@ -71,7 +73,20 @@ async function userMove(from,to,promo){
   const d=S.cur;
   const test=new Chess(S.g.fen()); const m=test.move({from,to,promotion:promo||'q'}); if(!m) return;
   const uci=from+to+(m.promotion||'');
-  if(uci.slice(0,4)===d.playedUci.slice(0,4)){ board.flash([from,to],'bad'); status('bad',`${m.san} is the game move.`,'Find something better.'); saveResult(d.id,false); return }
+  if(uci.slice(0,4)===d.playedUci.slice(0,4)){
+    if(d.gameBest){ finish(m,true,'The game move, and nothing is better.'); return }
+    /* Drills saved since 14 Nov 2026 were checked more deeply before saving (d.v). An older one may hold a game move
+       that was the best move all along (the report compared two shallow searches): look once, deeper, before saying
+       "find something better", and remember the answer on the drill. */
+    if(!d.v&&window.AnalyzeTab&&AnalyzeTab.verifyDrill){
+      S.busy=true; status('',`${m.san} is the game move. Checking it more deeply…`,'');
+      const v=await AnalyzeTab.verifyDrill(d.fen,d.playedUci,'standard',{}).catch(()=>null);
+      S.busy=false; if(S.cur!==d) return;
+      if(v){ const L=drills(), o=L.find(x=>x.id===d.id);
+        if(v.drop<0.1){ d.gameBest=true; if(o){ o.gameBest=true; o.v=1; Store.put('adrills',L) }
+          finish(m,true,'This is the game move, and on a deeper look nothing is better: it was not a mistake after all.'); return }
+        d.v=1; if(!d.best) d.best=v.best; if(o){ o.v=1; if(!o.best) o.best=v.best; Store.put('adrills',L) } } }
+    board.flash([from,to],'bad'); status('bad',`${m.san} is the game move.`,'Find something better.'); saveResult(d.id,false); return }
   if(d.best&&uci.slice(0,4)===d.best.slice(0,4)){ finish(m,true,'The engine’s choice.'); return }
   S.busy=true; status('','Checking with Stockfish…','');
   const a=await SharedEngine.analyse(S.g.fen(),DEPTH,3,10000).catch(()=>null);

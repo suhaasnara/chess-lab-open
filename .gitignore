@@ -8,3 +8,5 @@ screenshots/
 tests/browser/out/
 tests/browser/node_modules
 tests/browser/package-lock.json
+__pycache__/
+*.pyc

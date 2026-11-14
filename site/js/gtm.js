@@ -44,7 +44,7 @@ async function load(file){
   const game=typeof file==='object'&&file?deep(file):await fetch(Site.url('gtm',file)).then(r=>r.json()).catch(()=>null);
   if(!game){ status('bad','Could not load the game.',''); return }
   if(endbar) endbar.hide();
-  S.game=game; S.g=new Chess(game.fen||undefined); S.ply=0; S.pts=0; S.got=0; S.missed=0; S.alsoGood=0; S.done=false; S.busy=false; S.hintStage=0; S.rows=[]; S.view=null; S.vr=null; S.read=false; S.gen=(S.gen||0)+1;
+  S.game=game; S.g=new Chess(game.fen||undefined); S.ply=0; S.pts=0; S.got=0; S.missed=0; S.alsoGood=0; S.done=false; S.busy=false; S.hintStage=0; S.rows=[]; S.retry=null; S.view=null; S.vr=null; S.read=false; S.gen=(S.gen||0)+1;
   readTools(); showTrain(true);
   const me=game.winner;
   $('g-head').innerHTML=TV.head({kicker:game.own?'Your game':(INDEX||[]).some(e=>e.id===game.id&&e.set==='masters')?'Master game':'Suhaas’s game',
@@ -86,7 +86,24 @@ function next(){
   S.answered=false; S.hintStage=0;
   const n=Math.floor(S.ply/2)+1;
   status('',`Move ${n}: your move.`,'Guess what was played.');
+  backBtn();
 }
+/* Take back (B), as on the private site: back to your last guess to try another move. The first answer keeps its
+   score: a retry changes no points and no row of the table. Only while it is your move (the reply has been played). */
+function canBack(){ const g=S.game; return !!(g&&!S.done&&!S.busy&&!S.read&&S.rows.length&&(S.ply%2===0?'w':'b')===g.winner&&S.rows[S.rows.length-1].ply<S.ply) }
+function backBtn(){ const b=$('g-takeback'); if(b){ b.hidden=!S.game||S.done||S.read; b.disabled=!canBack() } }
+function takeBack(){
+  if(!canBack()) return false;
+  const last=S.rows[S.rows.length-1];
+  while(S.ply>last.ply){ S.g.undo(); S.ply-- }
+  S.retry=last.ply; S.hintStage=0; S.tick=(S.tick||0)+1; board.setHint(null);
+  const h=S.g.history({verbose:true}), m=h[h.length-1];
+  board.set(S.g,{last:m?{from:m.from,to:m.to}:null,orient:board.orient}); renderMoves();
+  status('',`Move ${Math.floor(S.ply/2)+1}: try another move.`,`A retry: your first answer (${last.guess}) is what counts.`);
+  backBtn();
+}
+function nextGame(){ if(!INDEX||!INDEX.length) return false; const i=INDEX.findIndex(e=>S.game&&e.id===S.game.id); const e=INDEX[(i+1)%INDEX.length]; if(e) load(e.file) }
+function restart(){ if(!S.game) return false; if(S.game.own) load(ownGame(S.game.id)); else load(INDEX.find(e=>e.id===S.game.id).file) }
 async function userMove(from,to,promo){
   const g=S.game;
   if(!g||S.done||S.busy||S.read) return;
@@ -118,15 +135,17 @@ async function userMove(from,to,promo){
       else{ S.missed++; verdict=['warn',`${m.san} is weaker. The game went ${esc(g.moves[S.ply])}.`] }
     }else{ S.missed++; verdict=['warn',`The game went ${esc(g.moves[S.ply])}.`] }
   }else{ S.missed++; verdict=['warn',`The game went ${esc(g.moves[S.ply])}.`] }
-  S.pts+=earned;
-  S.rows.push({ply:S.ply,n:Math.floor(S.ply/2)+1,game:g.moves[S.ply],guess:m.san,earned,max:info.pts});
+  const retry=S.retry===S.ply; S.retry=null;
+  if(retry){ const v=verdict[0]; if(uci.slice(0,4)===gameUci.slice(0,4)) S.got--; else if(v==='good') S.alsoGood--; else S.missed--; earned=0 }   /* a retry: nothing is counted again */
+  else{ S.pts+=earned;
+    S.rows.push({ply:S.ply,n:Math.floor(S.ply/2)+1,game:g.moves[S.ply],guess:m.san,earned,max:info.pts}) }
   /* the game move is what stays on the board */
   applyMove(g.moves[S.ply],'me'); S.ply++;
   board.flash([gameMove.from,gameMove.to],earned>0?'good':'bad');
-  status(verdict[0],verdict[1],`+${earned} · ${S.pts} points so far`);
+  status(verdict[0],verdict[1],retry?'A retry: your first answer is what counts.':`+${earned} · ${S.pts} points so far`);
   renderScore();
-  S.busy=false;
-  setTimeout(next,900);
+  S.busy=false; backBtn();
+  { const tk=S.tick=(S.tick||0)+1; setTimeout(()=>{ if(tk===S.tick) next() },900) }   /* a Take back in between cancels it */
 }
 function hint(){
   const g=S.game;
@@ -136,8 +155,9 @@ function hint(){
   if(S.hintStage===0){ S.hintStage=1; board.setHint(gm.from); status('warn','Hint: this piece moves.','H again shows the move — then it earns nothing.') }
   else{
     board.setHint(gm.from,gm.to); status('warn','It was '+g.moves[S.ply]+'.','No points for this one.');
-    S.missed++; S.rows.push({ply:S.ply,n:Math.floor(S.ply/2)+1,game:g.moves[S.ply],guess:'(shown)',earned:0,max:(g.m[String(S.ply)]||{}).pts||1});
-    applyMove(g.moves[S.ply],'me'); S.ply++; renderScore(); setTimeout(next,900);
+    if(S.retry===S.ply) S.retry=null;
+    else{ S.missed++; S.rows.push({ply:S.ply,n:Math.floor(S.ply/2)+1,game:g.moves[S.ply],guess:'(shown)',earned:0,max:(g.m[String(S.ply)]||{}).pts||1}) }
+    applyMove(g.moves[S.ply],'me'); S.ply++; renderScore(); { const tk=S.tick=(S.tick||0)+1; setTimeout(()=>{ if(tk===S.tick) next() },900) }
   }
 }
 function endGame(){
@@ -252,7 +272,7 @@ function readTools(){
   const on=!!(S.game&&S.done), g=S.game;
   $('g-nav').hidden=!on;
   $('g-show').hidden=!S.game||S.done;
-  $('g-hint').hidden=on;
+  $('g-hint').hidden=on; backBtn();
   if(on){ $('g-prev').disabled=!S.vr&&S.view<=0; $('g-next').disabled=S.vr?S.vr.at>=S.vr.path.length:S.view>=g.moves.length }
 }
 /* "Show the game": skip the guessing and read the annotated game from the start (no score is saved) */
@@ -271,7 +291,7 @@ function status(tone,head,rest){ const el=$('g-status'); el.className='status'+(
 
 function init(){
   board=makeBoard($('g-board'),{onMove:userMove});
-  endbar=endBanner($('g-board'),()=>{ const i=(INDEX||[]).findIndex(e=>S.game&&e.id===S.game.id); const e=INDEX[(i+1)%INDEX.length]; if(e) load(e.file) },'Next game');
+  endbar=endBanner($('g-board'),nextGame,'Next game');
   board.set(new Chess(),{locked:true});
   fetch(Site.url('gtmIndex')).then(r=>r.json()).then(j=>{ INDEX=j; renderList() }).catch(()=>{ INDEX=[]; renderList() });
   $('g-src').addEventListener('change',e=>{ if(e.target.name==='g-src'){ S.src=e.target.value; renderList() } });
@@ -283,7 +303,8 @@ function init(){
   TV.fitBoard('#g-wrap','#g-tools');
   $('g-hint').addEventListener('click',hint);
   $('g-flip').addEventListener('click',()=>board.flip());
-  $('g-restart').addEventListener('click',()=>{ if(!S.game) return; if(S.game.own) load(ownGame(S.game.id)); else load(INDEX.find(e=>e.id===S.game.id).file) });
+  $('g-restart').addEventListener('click',restart);
+  $('g-takeback').addEventListener('click',takeBack); $('g-nextgame').addEventListener('click',nextGame);
   $('g-addsave').addEventListener('click',addGames);
   $('g-addcancel').addEventListener('click',()=>{ $('g-addmodal').hidden=true });
   $('g-addmodal').addEventListener('click',e=>{ if(e.target.id==='g-addmodal') $('g-addmodal').hidden=true });
@@ -304,6 +325,9 @@ function init(){
     leftLabel:'Back through the game (after it ends)',rightLabel:'Forward (the picked line where lines branch)'});
   Keys.on('guess',Object.assign({},NAV.keys,{
     Home:['Start of the game',()=>{ if(!done()) return false; viewAt(0) }], End:['End of the game',()=>{ if(!done()) return false; viewAt(S.game.moves.length) }],
+    /* B / R / N as on the private site (one keymap, 14 Nov 2026) */
+    b:['Take back (try another move; the first answer counts)',()=>takeBack()], r:['Restart the game',()=>{ if($('g-train').hidden) return false; restart() }],
+    n:['Next game',()=>{ if($('g-train').hidden) return false; nextGame() }],
     h:['Hint',()=>hint()], f:['Flip the board',()=>board.flip()]}));
 }
 /* ---------- Your own games ---------- */
@@ -396,5 +420,5 @@ async function ownEvals(g){
   const own=ownGames(), o=own.find(x=>x.game.id===g.id); if(o){ o.game.evs=evs; Store.put('gtm-own',own) }
   if(S.game&&S.game.id===g.id){ S.game.evs=evs; drawGraph() }
 }
-window.GtmTab={init,load,lobby,userMove,hint,drawGraph,showGame,viewAt,parseGames,addGames,ownGames,get state(){return S}};
+window.GtmTab={init,load,lobby,userMove,hint,takeBack,nextGame,restart,drawGraph,showGame,viewAt,parseGames,addGames,ownGames,get state(){return S}};
 })();
