@@ -39,6 +39,7 @@ const ctxOpts=o=>BROWSER==='firefox'?{viewport:o.viewport,hasTouch:o.hasTouch}:o
           const r={stuck:b.top>=nav.bottom-1&&b.top<nav.bottom+40,onScreen:b.bottom<=innerHeight,row:pv.right<=nx.left&&nx.right<=fw.left&&Math.abs(pv.top-nx.top)<4&&fw.right<=innerWidth,hscroll:document.documentElement.scrollWidth>innerWidth+1}; scrollTo(0,0); return r });
         ok(`${dev} openings: board pinned while the notes scroll, ‹ main › in one row, no sideways scroll`,pin.stuck&&pin.onScreen&&pin.row&&!pin.hscroll,JSON.stringify(pin));
         await p.screenshot({path:path.join(OUT,`${dev}-openings-pinned.png`)}); continue }
+      { const mb=p.locator('.bbar .bb-morebtn').locator('visible=true').first(); if(await mb.count()){ await mb.click().catch(()=>{}); await p.waitForTimeout(200) } }   /* 14 Nov: on a phone Read sits under the bottom bar's ⋯ */
       const btn=await p.$(sel); const vis=btn&&await btn.isVisible();
       ok(`${dev} ${name}: Read button on a phone`,vis);
       if(!vis) continue;

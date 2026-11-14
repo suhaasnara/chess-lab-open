@@ -298,6 +298,7 @@ window.BlindTactics=(()=>{
       if(z) load(z); else say('warn','No puzzles match these settings.',' Widen the rating range or pick Any.');
       return true;
     }
+    if(window.TV&&TV.bar) TV.bar(q('tools'),{primary:'[data-b="next"]',host:root});   /* 14 Nov: the shared bottom bar (phones and iPads), Next beside the right corner like every other page */
     q('next').addEventListener('click',()=>next());
     q('peek').addEventListener('click',()=>peek());
     q('giveup').addEventListener('click',()=>giveUp());

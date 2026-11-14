@@ -71,6 +71,7 @@ function renderLine(){
   if(!S.sub){ const yours=sanLine(S.start,S.line);
     $('cc-line').innerHTML=yours.length?numbered(S.start,yours):'<span class="note">Your line appears here.</span>' }
   $('cc-submit').disabled=S.sub||!S.line.length; $('cc-undo').disabled=S.sub||!S.line.length;
+  $('cc-next').classList.toggle('primary',!!S.sub);   /* 14 Nov: one filled button: Submit until the line is in, then Next */
 }
 function userMove(from,to,promo){
   if(!S.cur||S.sub) return;

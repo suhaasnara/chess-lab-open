@@ -241,6 +241,7 @@ function stats(){ const p=prog(); const all=DATA?DATA.positions:[];
 
 function init(){
   TV.fitBoard('#eg-wrap','#eg-tools');
+  TV.bar('#eg-tools',{prev:'#eg-prev',next:'#eg-fwd',primary:'#eg-next',note:'#eg-step',more:['#eg-back','#eg-retry','#eg-flip','#eg-lichess','#eg-delpos','#eg-readslot'],host:'#endgames'});   /* 14 Nov: the shared bottom bar on phones and iPads */
   $('eg-moves').addEventListener('click',e=>{ const b=e.target.closest('.vmv[data-at]'); if(b&&S.sol){ S.view=+b.dataset.at; showSol(); buttons() } });
   board=makeBoard($('eg-board'),{onMove:userMove});
   endbar=endBanner($('eg-board'),()=>next(),'Next endgame');

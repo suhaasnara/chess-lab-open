@@ -209,3 +209,77 @@ th.num{text-align:right}
   .tv .chips,.chips{row-gap:6px}
   .qhelp{width:24px;height:24px}
 }
+
+/* ---------- Bottom bar (14 Nov 2026, phone fix run): one bar for every board page on phones and iPads ----------
+   Rules (written out in the private kit's HANDOFF, "Layout rules"): thumb reach, so the page's buttons sit in a bar fixed to
+   the bottom of the screen; ‹ Previous is always the far left corner and › Next the far right one (they step through the
+   line or solution on the board and are dimmed, never moved, when there is nothing to step through); the page's main
+   action is the one filled button, beside ›; everything is 44 px tall with 4 px between; less-used tools fold into ⋯ on
+   phones and sit in the row on iPads. A page turns its own button row into the bar with TV.bar(row, {...}) (trainview.js):
+   the buttons keep their ids, handlers and place in the document, so laptops and the tests see no change.
+   "Touch" below = a touch screen of any size, or a narrow / upright window (the phone layout). */
+.bb-morebtn,.btn.bb-morebtn,.bb-only,.btn.bb-only{display:none}
+@media (hover:none) and (pointer:coarse),(max-width:1099.98px) and (orientation:portrait),(max-height:499.98px) and (orientation:landscape){
+  .bbar.bbar{position:fixed!important;left:0;right:0;bottom:0;top:auto;z-index:40;margin:0!important;display:flex!important;flex-wrap:wrap-reverse!important;align-items:center;justify-content:center;gap:0 4px!important;
+    width:auto;max-width:none!important;min-height:0;box-sizing:border-box;
+    padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))!important;
+    background:var(--white);border:0;border-top:1px solid var(--line);border-radius:0;box-shadow:0 -8px 16px -12px rgba(19,40,74,.35)}
+  .bbar.bbar .navgrp,.bbar.bbar .boardtools,.bbar.bbar .bb-in{display:contents!important}
+  :where(.boardwrap,.panel,.tv):has(.bbar){container-type:normal!important;contain:none!important}   /* a size container would hold the fixed bar inside itself */
+  .bbar.bbar .cspacer{display:none}
+  .bbar.bbar .btn.rd-open{display:none!important}   /* Read: only where the reader is offered (phones, upright iPads), as outside the bar */
+  .bbar.bbar .bb-in[hidden]{display:contents!important}.bbar.bbar .bb-in[hidden]>.bb-prev,.bbar.bbar .bb-in[hidden]>.bb-next{opacity:.32;pointer-events:none}
+  .bbar.bbar .bb-only{display:inline-flex}
+  .bbar.bbar .btn{order:0!important;margin:0!important;flex:1 1 44px!important;min-width:44px;min-height:44px;max-width:168px;padding:4px 8px!important;display:inline-flex;align-items:center;justify-content:center;text-align:center;
+    white-space:normal;font-size:.82rem;line-height:1.15;border-color:transparent;background:transparent;box-sizing:border-box}
+  .bbar.bbar [hidden]:not(.bb-prev):not(.bb-next):not(.bb-in){display:none!important}
+  .bbar.bbar .btn.primary{background:var(--navy);border-color:var(--navy);color:var(--on-navy)}
+  .bbar.bbar .btn.primary:disabled{background:transparent;border-color:transparent;color:var(--muted)}
+  .bbar.bbar .btn[aria-pressed="true"],.bbar.bbar .btn.on{background:var(--callout);border-color:var(--blue)}
+  .bbar.bbar kbd,.bbar.bbar .pinlab{display:none}
+  .bbar.bbar .bb-prev,.bbar.bbar .bb-next{display:inline-flex!important;flex:0 0 52px!important;max-width:52px;font-size:1.6rem;line-height:1;padding:0 0 3px!important;border-color:var(--line);background:var(--white);color:var(--head)}
+  .bbar.bbar .bb-prev{order:-10!important;margin-right:auto!important}
+  .bbar.bbar .bb-next{order:10!important;margin-left:auto!important}
+  .bbar.bbar .bb-prev[hidden],.bbar.bbar .bb-next[hidden]{opacity:.32;pointer-events:none}
+  .bbar.bbar .bb-prev:disabled,.bbar.bbar .bb-next:disabled{opacity:.32}
+  .bbar.bbar .bb-primary{order:9!important}
+  .bbar.bbar .bb-morebtn{display:inline-flex;order:8!important;flex:0 0 44px!important;font-size:1.25rem;letter-spacing:.05em}
+  .bbar.bbar .bb-morebtn[aria-expanded="true"]{background:var(--callout);border-color:var(--blue)}
+  .bbar.bbar::before{content:'';order:15;flex:0 0 100%;height:0}
+  .bbar.bbar .bb-x{order:20!important;display:none!important}
+  .bbar.bbar [data-t="more"]{display:none!important}   /* a page's own "more" toggle (the opening trainer's): the bar's ⋯ replaces it */
+  .bbar.bbar.bb-open .bb-x:not([hidden]){display:inline-flex!important;flex:1 1 auto!important;margin-bottom:6px!important;border-color:var(--line);background:var(--white);padding:4px 12px!important}
+  .bbar.bbar .bb-note{order:30!important;flex:0 0 100%;text-align:center;font-size:.78rem;color:var(--muted);background:none;border:0;padding:0 0 4px;white-space:normal}
+  .bbar-host{padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))!important}
+}
+@media (orientation:portrait) and (max-width:1099.98px),(orientation:landscape) and (max-height:499.98px){.bbar.bbar .btn.rd-open{display:inline-flex!important}}
+@media (min-width:600px){
+  .bbar.bbar{gap:0 8px!important}
+  .bbar.bbar .btn{font-size:.9rem;padding:4px 14px!important;max-width:220px;white-space:nowrap}
+  .bbar.bbar .bb-prev,.bbar.bbar .bb-next{flex-basis:64px!important;max-width:64px}
+}
+@media (max-width:359.98px){
+  .bbar.bbar{gap:0 2px;padding-left:4px;padding-right:4px}
+  .bbar.bbar .btn{padding:4px 5px!important;font-size:.78rem}
+  .bbar.bbar .bb-prev,.bbar.bbar .bb-next{flex-basis:44px!important;max-width:44px}
+}
+@media (hover:none) and (pointer:coarse) and (min-width:900px),(min-width:900px) and (max-width:1099.98px) and (orientation:portrait){   /* wide touch screens (iPads on their side, the big iPad upright): room for every button, no ⋯ */
+  .bbar.bbar{gap:0 8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .bbar.bbar .btn{flex:0 1 auto!important;padding:4px 16px!important;font-size:.9rem;white-space:nowrap}
+  .bbar.bbar .bb-x:not([hidden]),.bbar.bbar.bb-open .bb-x:not([hidden]){display:inline-flex!important;order:0!important;flex:0 1 auto!important;margin-bottom:0!important;border-color:transparent;background:transparent;padding:4px 16px!important}
+  .bbar.bbar .bb-morebtn{display:none}
+  .bbar.bbar .bb-prev,.bbar.bbar .bb-next{flex:0 0 64px!important;max-width:64px}
+}
+
+/* ---------- Pinned board (14 Nov 2026): on phones and upright iPads the board stays under the tab row while the page's
+   status, notation and notes scroll underneath, as in the opening trainer. TV.pin(section, boardColumn) (trainview.js).
+   The board gives up height so that about 220 px of text is always in view between it and the bottom bar. */
+@media (orientation:portrait) and (max-width:1099.98px){
+  .tvpin{position:sticky!important;top:calc(env(safe-area-inset-top,0px) + var(--navh,44px));z-index:25;background:var(--band);padding:4px 0 8px;
+    box-shadow:0 8px 10px -10px rgba(19,40,74,.45);max-width:none!important;width:auto;justify-self:stretch}
+  .tvpin>.board{max-width:min(100%,calc(100vh - var(--navh,44px) - 300px));max-width:min(100%,calc(100dvh - var(--navh,44px) - 300px));margin-inline:auto}
+  .tvpinned>.tvpin{order:-1}
+  .tvpinned .pscroll{max-height:none!important;min-height:0!important;overflow:visible!important}
+  .tvpinned .status{padding:8px 12px;font-size:.9rem;line-height:1.4}
+  .tvpinned .status strong{display:inline;margin-right:4px}
+}

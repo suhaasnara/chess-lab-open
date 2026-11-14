@@ -454,6 +454,7 @@ td.num,th.num{text-align:right;white-space:nowrap}
 @media (max-width:389px){#openings .otrain.pin #o-tools{gap:4px}#openings .otrain.pin #o-newline{min-width:0;padding-inline:9px}}
 @media (max-width:359px){#openings .otrain.pin #o-tools:not(.more)>#o-back{display:none}#openings .otrain.pin #o-tools.more>#o-back{order:20}}
 #openings .otrain.pin #o-more{display:inline-flex!important}
+#openings .otrain.pin #o-tools.bbar #o-more,#o-tools.bbar #o-more{display:none!important}   /* 14 Nov: the shared bottom bar has its own ⋯ */
 #openings .otrain.pin #o-endhere,#openings .otrain.pin #o-flip,#openings .otrain.pin #o-type{display:none}
 #openings .otrain.pin #o-tools.more{flex-wrap:wrap}
 #openings .otrain.pin #o-tools.more>#o-endhere,#openings .otrain.pin #o-tools.more>#o-flip,#openings .otrain.pin #o-tools.more>#o-type{display:inline-flex;order:20}

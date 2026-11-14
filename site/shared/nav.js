@@ -82,7 +82,9 @@ window.Nav=(function(){
       /* 13 Nov: ↑ sits under the tab bar, ↓ at the bottom of the screen (under the tab bar it covered a card's top-right button,
          e.g. Open's welcome card's Close) */
       if(up){ mvBtn.style.top=Math.round((nav?Math.max(0,nav.getBoundingClientRect().bottom):0)+8)+'px'; mvBtn.style.bottom='' }
-      else { mvBtn.style.top='auto'; mvBtn.style.bottom='calc(14px + env(safe-area-inset-bottom,0px))' } } }
+      else { let bb=0;   /* 14 Nov: above the bottom bar where a page has one (trainview.css .bbar) */
+        for(const e of document.querySelectorAll('.bbar')){ if(getComputedStyle(e).position!=='fixed') continue; const r=e.getBoundingClientRect(); if(r.height) bb=Math.max(bb,innerHeight-r.top) }
+        mvBtn.style.top='auto'; mvBtn.style.bottom=bb?Math.round(bb+10)+'px':'calc(14px + env(safe-area-inset-bottom,0px))' } } }
   function mvWatch(){ if(mvBtn) return; mvBtn=document.createElement('button'); mvBtn.type='button'; mvBtn.id='mv-btn'; mvBtn.className='mvbtn'; mvBtn.hidden=true;
     mvBtn.title='Back to the main view (M)'; mvBtn.setAttribute('aria-label','Back to the board (M)'); mvBtn.addEventListener('click',()=>snap()); document.body.appendChild(mvBtn);
     const q=()=>{ if(!mvRaf) mvRaf=requestAnimationFrame(mvUpdate) }; addEventListener('scroll',q,{passive:true}); addEventListener('resize',q); addEventListener('hashchange',()=>setTimeout(q,60)) }
