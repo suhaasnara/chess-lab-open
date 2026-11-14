@@ -372,6 +372,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
     <div class="field" id="a-pgnwho" hidden><span>Which player is you? <span class="note">Tick more than one if your name differs between files.</span></span>
       <div class="chips" id="a-pgnnames"></div>
       <select id="a-pgnname" hidden aria-hidden="true" tabindex="-1"></select></div>
+    <div class="card acheckcard" id="a-checks" hidden></div>
     <p class="note" data-src="online">Blitz adds many games; Lichess rarely has stored evals for them, so at most 25 games are analyzed by Stockfish in your browser (the bar shows progress). Results by colour and by rating use every game fetched.</p>
     <fieldset class="amode" id="a-est"><legend>Analysis</legend>
       <label class="amopt"><input type="radio" name="a-mode" value="standard" checked><span><b>Standard</b> <span class="note">depth 11 · quick</span><span class="note aest" id="a-est-standard"></span></span></label>

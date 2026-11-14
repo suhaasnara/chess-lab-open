@@ -48,7 +48,63 @@ window.PgnFile=(()=>{
   const norm=s=>String(s||'').trim().replace(/\s+/g,' ');
   /* one player however the name is typed (13 Nov 2026: "Jane Q. Doe" and "Jane Q Doe" were two people, and
      the second's win was left out): case, dots, commas and spaces don't matter */
-  const nameKey=s=>norm(s).toLowerCase().replace(/[.,]/g,' ').replace(/\s+/g,' ').trim();
+  const nameKey=s=>{ let v=norm(s).toLowerCase();
+    /* "Doe, Jane Q." is "Jane Q. Doe" (one comma: last name first) */
+    const c=v.split(','); if(c.length===2&&c[0].trim()&&c[1].trim()) v=c[1]+' '+c[0];
+    return v.replace(/[.,]/g,' ').replace(/\s+/g,' ').trim() };
+  /* Names in the files that look like the ones ticked as "you" but are written differently (13 Nov 2026): the same
+     first and last name without (or with another) middle name, an initial and the last name, a short first name
+     ("Viv" for Vivian), the first or the last name alone, or a username made of the name ("vivmiller").
+     Never a name that plays against one of yours in any game: you can't play yourself. strong = first and last name
+     agree; the rest are looser and say why. -> [{name, games, why, strong}] */
+  function aliases(P,me){
+    const mine=new Set((Array.isArray(me)?me:[me]).map(nameKey).filter(Boolean)); if(!mine.size) return [];
+    const toks=[...mine].map(k=>k.split(' ')).filter(t=>t.length>=2);
+    const against=new Set(), seen=new Map();
+    for(const g of P.games){ const w=nameKey(g.h.White), b=nameKey(g.h.Black);
+      if(mine.has(w)&&b) against.add(b); if(mine.has(b)&&w) against.add(w);
+      for(const v of [g.h.White,g.h.Black]){ const k=nameKey(v); if(!k||k==='?'||mine.has(k)) continue; const e=seen.get(k)||{name:norm(v),games:0}; e.games++; seen.set(k,e) } }
+    const pre=(a,b)=>a.length>=3&&b.startsWith(a);
+    const out=[];
+    for(const [k,e] of seen){ if(against.has(k)) continue;
+      const c=k.split(' '); let why='', strong=false;
+      for(const t of toks){ const f=t[0], l=t[t.length-1];
+        if(c.length>=2){ const cf=c[0], cl=c[c.length-1];
+          if(cl===l&&cf===f){ why='the same first and last name'; strong=true }
+          else if(cl===l&&cf.length===1&&cf===f[0]){ why='your initial and last name'; strong=true }
+          else if(cl===l&&(pre(cf,f)||pre(f,cf))){ why='a short form of your first name and your last name'; strong=true }
+          else if(cf===l&&cl===f){ why='your name, last name first'; strong=true }
+          else if(cl===l&&cf.length>=3&&f.length>=3&&cf.slice(0,3)===f.slice(0,3)) why='your last name and a first name like yours' }
+        else if(c.length===1){ const x=c[0];
+          if(x===f) why='your first name alone';
+          else if(x===l) why='your last name alone';
+          else if(x.length>=5&&(x.includes(l)&&(x.startsWith(f.slice(0,3))||x.startsWith(f[0])))) why='a username made of your name';
+          else if(pre(x,f)) why='a short form of your first name, alone' }
+        if(strong) break }
+      if(why) out.push({name:e.name,games:e.games,why,strong}) }
+    return out.sort((a,b)=>(b.strong-a.strong)||(b.games-a.games));
+  }
+  /* Games to look at again (13 Nov 2026), from the games of yours toGames returned:
+     colour: you are Black in the tags, but White's first three moves are the ones you play in most of your White games
+       and your "Black" moves are none you play as Black (or the other way round): White and Black swapped in the tags
+       (a friend's chapter had her London under the opponent's name);
+     result: the game ends in checkmate or stalemate and the result says otherwise, or the Result tag and the result at
+       the end of the moves disagree. -> [{game, kind, text}] */
+  function checks(games){
+    const out=[], sig=(g,c)=>g.moves.filter((_,i)=>i%2===(c==='w'?0:1)).slice(0,3).join(' ');
+    const by={w:new Map(),b:new Map()}, n={w:0,b:0};
+    for(const g of games){ if(g.moves.length<6) continue; n[g.color]++; const k=sig(g,g.color); by[g.color].set(k,(by[g.color].get(k)||0)+1) }
+    for(const g of games){ if(g.moves.length<6) continue;
+      const me=g.color, other=me==='w'?'b':'w', theirs=sig(g,other), mine=sig(g,me);
+      const asOther=by[other].get(theirs)||0, asMine=(by[me].get(mine)||0)-1;
+      if(n[other]>=6&&asOther>=3&&asOther>=0.25*n[other]&&asMine<=0)
+        out.push({game:g,kind:'colour',text:`${other==='w'?'White':'Black'}’s first moves (${theirs}) are the ones you play in ${asOther} of your ${n[other]} ${other==='w'?'White':'Black'} games, but you are ${me==='w'?'White':'Black'} here. If White and Black are swapped in this game’s tags, swap them back.`}) }
+    for(const g of games){
+      if(g.tagResult&&g.textResult&&g.tagResult!==g.textResult&&g.textResult!=='*') out.push({game:g,kind:'result',text:`the Result tag says ${g.tagResult}, the end of the moves says ${g.textResult} (the tag is used).`});
+      if(g.end==='mate'||g.end==='stalemate'){ const want=g.end==='stalemate'?'1/2-1/2':g.moves.length%2?'1-0':'0-1';
+        if(g.result!==want) out.push({game:g,kind:'result',text:`the game ends in ${g.end==='mate'?'checkmate':'stalemate'}, so the result should be ${want}, not ${g.result}.`}) } }
+    return out;
+  }
   function players(P){
     const n=new Map();
     for(const g of P.games) for(const k of ['White','Black']){ const v=norm(g.h[k]); if(!v||v==='?') continue;
@@ -106,7 +162,8 @@ window.PgnFile=(()=>{
   function merge(files){
     const seen=new Set(), games=[]; let dupes=0;
     files.forEach((f,fi)=>{ for(const x of f.parsed.games){ const h=x.h;
-      const k=[nameKey(h.White),nameKey(h.Black),(h.Date||h.UTCDate||'').replace(/\?/g,''),x.sans.join(' ')].join('|');
+      /* a long game is the same game on the same day whatever the names say (two spellings in two files) */
+      const k=x.sans.length>=40?['*',(h.Date||h.UTCDate||'').replace(/\?/g,''),x.sans.join(' ')].join('|'):[nameKey(h.White),nameKey(h.Black),(h.Date||h.UTCDate||'').replace(/\?/g,''),x.sans.join(' ')].join('|');
       if(x.sans.length&&seen.has(k)){ dupes++; continue } seen.add(k);
       games.push(Object.assign({},x,{file:f.name,fileIdx:fi,sys:f.sys})) } });
     return {games,dupes};
@@ -126,6 +183,7 @@ window.PgnFile=(()=>{
       const speed=speedOf(h); if(speed==='bullet'){ sk('bullet'); return }
       const g=new Chess(), moves=[];
       for(const san of x.sans){ const m=g.move(san,{sloppy:true}); if(!m){ sk('illegal'); return } moves.push(m.san) }
+      const end=g.in_checkmate()?'mate':g.in_stalemate()?'stalemate':'';
       if(moves.length<6){ sk('unfinished'); return }
       const site=siteOf(h);
       const date=dateOf(h), color=iw?'w':'b';
@@ -137,10 +195,10 @@ window.PgnFile=(()=>{
       const rnd=parseFloat(h.Round)||0;
       out.push({site,id:'f'+PGN.posId([h.White,h.Black,h.Date,h.Round,moves.join(' ')].join('|')),date,ts:(date?Date.parse(date):0)+rnd*60000+i,
         white:norm(h.White),black:norm(h.Black),wr:int(h.WhiteElo),br:int(h.BlackElo),wd:int(h.WhiteRatingDiff),bd:int(h.BlackRatingDiff),wp:provOf(h.WhiteElo),bp:provOf(h.BlackElo),file:x.file||'',sys,
-        color,result,moves,analysis,speed,url:/^https?:\/\//.test(h.Site||'')?h.Site:/^https?:\/\//.test(h.Link||'')?h.Link:'',event:h.Event||''});
+        color,result,tagResult:RESULTS.has(h.Result)?h.Result:'',textResult:x.result||'',end,moves,analysis,speed,url:/^https?:\/\//.test(h.Site||'')?h.Site:/^https?:\/\//.test(h.Link||'')?h.Link:'',event:h.Event||''});
     });
     out.sort((a,b)=>a.ts-b.ts);
     return {games:out,skipped};
   }
-  return {parse,players,toGames,toGamesAsync,speedOf,detect,merge,provOf,nameKey};
+  return {parse,players,toGames,toGamesAsync,speedOf,detect,merge,provOf,nameKey,aliases,checks};
 })();
