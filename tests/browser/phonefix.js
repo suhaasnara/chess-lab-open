@@ -116,6 +116,20 @@ const SIZES=[['iPhone 13',390,664,true],['iPhone SE',320,568,true],['iPad uprigh
     } else check('Reader: a Read button is offered on the endgame solution (phone)',false);
     await page.context().close() }
 
+  /* ---------- stage 2: one chip, the tab row's edge, Blind tactics without the move count ---------- */
+  { const page=await open(390,664,true,'#tactics'); await page.waitForSelector('#t-list button',{timeout:20000}).catch(()=>{}); await page.click('#t-next').catch(()=>{}); await sleep(800);
+    const chips=await page.evaluate(()=>{ const c=[...document.querySelectorAll('#t-head .ohchips>span')].filter(x=>x.offsetParent); const h=c.map(x=>Math.round(x.getBoundingClientRect().height));
+      const inner=c.flatMap(x=>[...x.querySelectorAll('span')]).filter(x=>parseFloat(getComputedStyle(x).borderTopWidth)>0).length;
+      const t=document.querySelector('nav.tabs a'), rg=document.createRange(); rg.selectNodeContents(t);
+      return {n:c.length,heights:[...new Set(h)],inner,tab:Math.round(rg.getBoundingClientRect().left),board:Math.round(document.querySelector('#t-board').getBoundingClientRect().left)} });
+    check('Tactics: every chip is the same height, none has an outline inside it',chips.n>1&&chips.heights.length===1&&chips.heights[0]>=28&&!chips.inner,JSON.stringify(chips));
+    check('The first tab starts on the same left edge as the board',Math.abs(chips.tab-chips.board)<=1,`tab ${chips.tab}, board ${chips.board}`);
+    await page.context().close() }
+  { const page=await open(390,664,true,'#blind'); await page.waitForSelector('#bl-root [data-b="next"]',{timeout:20000}).catch(()=>{}); await sleep(800);
+    const t=await page.evaluate(()=>document.getElementById('bl-root').innerText);
+    check('Blind tactics: nowhere says how many moves the solution has',!/\d+\s+moves?\s+for you/i.test(t),(t.match(/.{0,20}for you.{0,10}/i)||[''])[0]);
+    await page.context().close() }
+
   check('no page errors',!errors.length,errors.slice(0,3).join(' | '));
   await browser.close(); srv.close();
   console.log(failed?`\n${failed} check(s) FAILED`:'\nAll phone-fix checks passed.'); process.exit(failed?1:0);
