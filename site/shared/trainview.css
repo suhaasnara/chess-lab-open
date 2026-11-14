@@ -283,3 +283,18 @@ th.num{text-align:right}
   .tvpinned .status{padding:8px 12px;font-size:.9rem;line-height:1.4}
   .tvpinned .status strong{display:inline;margin-right:4px}
 }
+
+/* ---------- One chip (14 Nov 2026): the facts under a title ("White · 2210", "1/2-1/2 · date", "+1.6 ?") ----------
+   Every chip is the same height with its text centred on one line; a "?" bubble or a link inside a chip never makes
+   it taller or gives it a second outline. 24 px, 28 px on touch screens (the "?" keeps a 36 px tap area around it). */
+.ohchips{align-items:center}
+.ohchips>span{display:inline-flex;align-items:center;gap:4px;min-height:24px;box-sizing:border-box;line-height:1.15;padding:2px 9px;white-space:nowrap;max-width:100%}
+.ohchips>span>*{line-height:1.15}
+.ohchips>span span{border:0;background:none;padding:0;border-radius:0;font:inherit;color:inherit}
+.ohchips>span .qhelp{width:18px;height:18px;margin:0 -3px 0 0;flex:0 0 auto;font-size:10.5px}
+.ohchips>span a{color:inherit}
+@media (pointer:coarse){
+  .ohchips{gap:6px}
+  .ohchips>span{min-height:28px;padding:2px 11px;font-size:.78rem}
+  .ohchips>span .qhelp{width:20px;height:20px}
+}

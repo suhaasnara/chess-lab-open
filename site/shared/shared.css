@@ -115,7 +115,7 @@ nav.tabs a.settab svg{flex:none;width:22px;height:22px}
 @media (max-width:480px){nav.tabs .inner > a.ph-x{display:none}.xmenu a.ph-x{display:flex}nav.tabs .xtab.cur-ph{color:var(--head);border-bottom-color:var(--blue);font-weight:600}nav.tabs a.settab{display:none}.xmenu .xset{display:flex;border-top:1px solid var(--line);margin-top:4px;padding-top:11px}
   .xmenu.grouped{padding:6px}.xmenu.grouped a span{display:none}.xmenu.grouped a{padding:9px 10px;min-height:40px;justify-content:center}.xmenu.grouped .xgh{padding:6px 10px 2px}
   .xmenu.grouped .xph{display:grid;grid-template-columns:1fr 1fr;gap:0 6px;border-bottom:1px solid var(--line);padding:0 0 4px;margin-bottom:2px}
-  nav.tabs a,nav.tabs .xtab{padding:12px 4px;font-size:.84rem}nav.tabs .tabgap{min-width:0}nav.tabs .inner{gap:0;padding-left:8px;padding-right:8px}}
+  nav.tabs a,nav.tabs .xtab{padding:12px 4px;font-size:.84rem}nav.tabs .tabgap{min-width:0}nav.tabs .inner{gap:0;padding-left:12px;padding-right:4px}}   /* 14 Nov: 12 + the tab's own 4 = the page's 16 px margin, so the first tab's word starts on the same edge as the board and the cards (it sat 4 px left of them) */
 @media print{nav.tabs,.xmenu{display:none!important}}
 /* Side lines you can click through (shared/varline.js): moves are buttons, notes grey, nested lines in brackets */
 .vline{margin:3px 0 4px;font-size:.86rem;line-height:1.75;color:var(--muted)}
