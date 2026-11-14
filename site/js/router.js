@@ -1,8 +1,8 @@
 /* Chess Lab Open — router: which section is on screen (#openings, #tactics, ...). */
 'use strict';
 (function(){
-const VIEWS=['today','openings','tactics','blind','calc','endgames','analyze','drills','play','guess','players','watch','blundercheck','progress','settings'];
-const TITLES={today:'Today',openings:'Openings',tactics:'Tactics',blind:'Blind tactics',calc:'Calculation',endgames:'Endgames',analyze:'Analyze my games',drills:'Drills',play:'Play',guess:'Guess the move',players:'Players',watch:'Watch',blundercheck:'Blunder check',progress:'Progress',settings:'Settings'};
+const VIEWS=['today','openings','tactics','blind','calc','endgames','analyze','drills','play','guess','players','watch','blundercheck','game','progress','settings'];
+const TITLES={today:'Today',openings:'Openings',tactics:'Tactics',blind:'Blind tactics',calc:'Calculation',endgames:'Endgames',analyze:'Analyze my games',drills:'Drills',play:'Play',guess:'Guess the move',players:'Players',watch:'Watch',blundercheck:'Blunder check',game:'A game you analyzed',progress:'Progress',settings:'Settings'};
 /* The header (shared/nav.js): the same main row and Extra menu as the private Chess Lab, plus Analyze my games. */
 Nav.mount(document.getElementById('tabs'),SITE.tabs);   /* js/config.js */
 /* the section on screen: shared/router.js with this site's views; the rest is this site's own work for each view */
@@ -24,6 +24,8 @@ function onShow(v){
   if(v==='calc') CalcTab.ensure();
   if(v==='blind') BlindTab.show();   /* the set (about 1 MB) loads on first use; no engine on this tab */
   if(v==='openings'||v==='analyze') Book.ready();   /* start the Elite book download as soon as it may be needed */
+  if(v==='analyze') AnalyzeTab.restore();   /* the last report, from the kept games (js/agames.js); nothing if one is on screen */
+  if(v==='game') GameView.show();   /* #game?id=&ply=: a game you analyzed, at a move (js/gameview.js) */
   if(v==='openings') OpeningsTab.openDefault();   /* as in Chess Lab: the page opens on an opening (your last one, else the top of your list) */
   if(v==='progress'){ ProgressTab.render(); CalcTab.ensure().then(()=>{ if(document.body.dataset.view==='progress') ProgressTab.render() }) }
   if(v==='today') TodayTab.render();
@@ -45,7 +47,7 @@ document.addEventListener('click',e=>{   /* capture phase: the list re-renders o
     if(top<nav||top>innerHeight*0.5) scrollTo({top:scrollY+top-nav-8,behavior:'smooth'});
   },60);
 },true);
-OpeningsTab.init(); TacticsTab.init(); BlindTab.init(); CalcTab.init(); EndgamesTab.init(); TodayTab.init(); AnalyzeTab.init(); DrillsTab.init(); PlayTab.init(); GtmTab.init(); PlayersTab.init(); WatchTab.init(); BlunderCheckTab.init(); ProgressTab.init(); SettingsTab.init();
-Router.start({views:Object.fromEntries(VIEWS.map(v=>[v,{el:v}])),fallback:'today',scrollTop:true,onShow,
+OpeningsTab.init(); TacticsTab.init(); BlindTab.init(); CalcTab.init(); EndgamesTab.init(); TodayTab.init(); AnalyzeTab.init(); DrillsTab.init(); PlayTab.init(); GtmTab.init(); PlayersTab.init(); WatchTab.init(); BlunderCheckTab.init(); GameView.init(); ProgressTab.init(); SettingsTab.init();
+Router.start({views:Object.fromEntries(VIEWS.map(v=>[v,v==='game'?{el:v,nav:'analyze'}:{el:v}])),fallback:'today',scrollTop:true,onShow,
   title:v=>v==='today'?'Chess Lab Open':TITLES[v]+' · Chess Lab Open'});
 })();

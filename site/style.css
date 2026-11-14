@@ -404,11 +404,19 @@ body.no-coords .coord{display:none}body.no-last .sq.last{background:none}body.no
 .gmoves .gnote .vline{margin:2px 0 4px}
 .ccline .vmv.cur{color:var(--on-navy)}
 
-/* ---------- Chess Lab pack on Progress (report card as the private Chess Lab lays it out) ---------- */
-.packnote.good{color:var(--good)}.packnote.err{color:var(--bad)}
-.packcard{margin:0 0 18px}.packcard .stats{margin:6px 0 10px}
-.packreport{margin:0 0 22px}.packreport h3{margin:18px 0 8px}
-.packreport .rbar .seg{margin-left:0}
+/* ---------- The game view (#game, js/gameview.js; 13 Nov 2026) ---------- */
+.gvmoves{max-height:min(360px,calc(100vh - 380px))}
+.gvmoves .gvno{color:var(--muted);font-size:.85rem;margin-left:2px}
+.gvmoves .gmv{font-weight:500;color:var(--ink)}.gvmoves .gmv.gvme{font-weight:700;color:var(--head)}
+.gvmoves .gmv.inacc{color:var(--warn)}.gvmoves .gmv.miss{color:var(--bad)}
+.gvmoves .gmv.gvfocus{outline:2px solid var(--brass);outline-offset:1px}
+.gvmoves .gmv.cur,.gvmoves .gmv.cur.inacc,.gvmoves .gmv.cur.miss{color:var(--on-navy)}
+.gvgraph svg{cursor:pointer}
+.gvempty{max-width:640px}.gvempty h2{font-size:1.25rem;margin:0 0 6px}
+.gvactions .btns{margin:0}
+#gv-tools .navgrp{display:inline-flex;gap:4px;margin-left:0}
+.aglinks{white-space:nowrap}.aglinks a+a{margin-left:6px}
+@media (pointer:coarse){#gv-tools .navgrp .btn{min-width:44px;min-height:44px}}
 .tgood{color:var(--good);font-weight:600}.tbad{color:var(--bad);font-weight:600}
 td.num,th.num{text-align:right;white-space:nowrap}
 .repfoot{margin-top:10px;max-width:80ch}

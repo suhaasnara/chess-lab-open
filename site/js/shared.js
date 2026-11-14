@@ -38,45 +38,35 @@ window.Store=(()=>{
   const keys=()=>{ const out=[]; try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.startsWith(PRE)) out.push(k.slice(PRE.length)) } }catch(e){} return out };
   const exportAll=()=>{ const o={_app:'chess-lab-open',_v:1,_t:new Date().toISOString()}; for(const k of keys()) o[k]=get(k); return o };
   const importAll=o=>{ if(!o||o._app!=='chess-lab-open') throw new Error('Not a Chess Lab Open export.');
-    let n=0; for(const k in o){ if(k[0]==='_') continue; put(k,o[k]); n++ } return n };
-  /* A Chess Lab pack (a friend's own games analysed by the private kit, sent as one file): merged in, never overwriting.
-     Drills are united with yours by id (the same move found by Analyze my games is the same drill; your results in
-     adrills-progress are never touched); the pack's report card, blunder-check positions, prep and player go to pack-*
-     keys (replaced by a newer pack); its repertoires become imported repertoires (pack-<id>, replaced on reload).
-     All or nothing: if this browser's storage is full, everything written is put back and the error says so. */
-  const PACK_KEYS=['pack-player','pack-meta','pack-report','pack-bc','pack-prep'];
-  const importPack=o=>{
-    if(!o||typeof o!=='object'||o._app!=='chess-lab-pack') throw new Error(o&&o._app==='chess-lab-open'?'That is a progress export: use Import progress for it.':'Not a Chess Lab pack.');
-    if(!(o._v>=1)||o._v>1) throw new Error('This pack is from a newer version of Chess Lab (version '+o._v+'). Reload the page to get the latest Chess Lab Open, then try again.');
-    if(!Array.isArray(o.drills||[])||!Array.isArray(o.bc||[])) throw new Error('This pack is damaged (drills or blunder check are not lists).');
-    const okDrill=d=>d&&typeof d.id==='string'&&/^[ap][0-9a-f]{8}$/.test(d.id)&&typeof d.fen==='string'&&typeof d.playedUci==='string';
-    const okBc=d=>d&&typeof d.id==='string'&&/^k[0-9a-f]{8}$/.test(d.id)&&typeof d.fen==='string'&&typeof d.null==='string'&&Array.isArray(d.threats)&&Array.isArray(d.goods);
-    const drills=(o.drills||[]).filter(okDrill), bc=(o.bc||[]).filter(okBc);
-    const mine=get('adrills')||[], at=new Map(mine.map((d,i)=>[d.id,i]));
-    let added=0, updated=0;
-    for(const d of drills){ const r={...d,pack:1}; if(at.has(d.id)){ mine[at.get(d.id)]={...mine[at.get(d.id)],...r}; updated++ } else { at.set(d.id,mine.length); mine.push(r); added++ } }
-    const writes=[['adrills',mine],['pack-player',o.player||null],['pack-meta',Object.assign({},o.meta||{},{loaded:new Date().toISOString(),t:o._t||null})],
-      ['pack-report',o.report||null],['pack-bc',bc],['pack-prep',o.prep||null]];
-    const reps=[];
-    for(const r of Array.isArray(o.reps)?o.reps:[]){
-      if(!r||!r.pgn||!/^[a-z0-9-]{1,40}$/i.test(String(r.id||''))||!(r.side==='white'||r.side==='black')||!window.OpeningsTab) continue;
-      const p=OpeningsTab.parseRepPGN(r.pgn), id='pack-'+r.id;
-      writes.push(['rep-'+id,{name:String(r.name||'Repertoire'),side:r.side,pos:Object.fromEntries(Object.entries(p.pos).map(([k,v])=>[k,v.join(' ')])),ann:p.ann,startFen:p.startFen||undefined}]);
-      reps.push({id,name:String(r.name||'Repertoire'),side:r.side,positions:p.positions,notes:Object.keys(p.ann).length,startFen:p.startFen||undefined});
+    let n=0; for(const k in o){ if(k[0]==='_') continue; put(k,o[k]); n++ } migrate(); return n };   /* an old export can hold a pack's keys */
+  /* put that says whether it worked (false when this browser's storage is full) */
+  const tryPut=(k,v)=>{ try{ localStorage.setItem(PRE+k,JSON.stringify(v)); return true }catch(e){ return false } };
+  /* Chess Lab packs are retired (13 Nov 2026): a friend's own games now go through Analyze my games. A browser that loaded
+     one keeps everything it brought: its drills (in adrills, marked pack:1) join a drill set "From your Chess Lab pack"
+     (removable like any saved set), its Blunder check positions join abc (your blunder checks) in the same set, results
+     untouched (adrills-progress, bc-progress; same ids). Then the pack-* keys go. Runs at start-up and after an import
+     (an old progress export can still hold pack-* keys); nothing is deleted unless the new keys were written. */
+  const PACK_KEYS=['pack-player','pack-meta','pack-report','pack-bc','pack-prep','pack-view'];
+  const migrate=()=>{
+    if(!PACK_KEYS.some(k=>get(k)!=null)) return null;
+    const meta=get('pack-meta')||{}, bc=(get('pack-bc')||[]).filter(d=>d&&typeof d.id==='string'&&/^k[0-9a-f]{8}$/.test(d.id));
+    const D=get('adrills')||[], mine=D.filter(d=>d&&d.pack);
+    let ok=true;
+    if(mine.length||bc.length){
+      const sets=get('adrill-sets')||[];
+      if(!sets.some(s=>s.id==='pack')) sets.push({id:'pack',t:Date.parse(meta.loaded||'')||Date.now(),label:'From your Chess Lab pack'});
+      for(const d of mine) d.b=[...new Set([...(d.b||[]),'pack'])];
+      const A=get('abc')||[], at=new Map(A.map((d,i)=>[d.id,i]));
+      for(const d of bc){ const r={...d,site:d.site||d.src||'',b:['pack']};
+        if(at.has(d.id)){ const o=A[at.get(d.id)]; o.b=[...new Set([...(o.b||[]),'pack'])] } else { at.set(d.id,A.length); A.push(r) } }
+      ok=tryPut('adrills',D)&&tryPut('abc',A)&&tryPut('adrill-sets',sets);
     }
-    if(reps.length){ const ids=new Set(reps.map(r=>r.id)); writes.push(['reps-index',(get('reps-index')||[]).filter(r=>!ids.has(r.id)).concat(reps)]) }
-    const before=writes.map(([k])=>[k,localStorage.getItem(PRE+k)]);
-    try{ for(const [k,v] of writes) localStorage.setItem(PRE+k,JSON.stringify(v)) }
-    catch(e){
-      for(const [k,v] of before){ try{ v==null?localStorage.removeItem(PRE+k):localStorage.setItem(PRE+k,v) }catch(x){} }
-      const kb=Math.round(writes.reduce((a,[,v])=>a+JSON.stringify(v).length,0)/1024);
-      throw new Error(`This pack doesn’t fit in this browser’s storage (it needs about ${kb} KB; browsers give a site about 5 MB). Nothing was changed. Export your progress, remove imported repertoires or Guess-the-move games you no longer use, and load the pack again.`);
-    }
-    return {drills:drills.length,added,updated,bc:bc.length,games:o.report&&o.report.overall?o.report.overall.games:0,reps:reps.length,player:o.player&&o.player.name||''};
+    if(ok) for(const k of PACK_KEYS) del(k);
+    return ok?{drills:mine.length,bc:bc.length}:null;
   };
-  const pack=()=>{ const m=get('pack-meta'); return m?{player:get('pack-player')||{},meta:m,report:get('pack-report'),bc:get('pack-bc')||[],prep:get('pack-prep')}:null };
-  return {get,put,del,keys,exportAll,importAll,importPack,pack,PACK_KEYS};
+  return {get,put,tryPut,del,keys,exportAll,importAll,migrate,PACK_KEYS};
 })();
+Store.migrate();
 const deep=o=>o==null?o:JSON.parse(JSON.stringify(o));
 /* Lichess puzzle theme ids as words: hangingPiece -> Hanging piece, mateIn4 -> Mate in 4, backRankMate -> Back rank mate. */
 const themeName=t=>{ if(!t) return ''; if(t==='attackingF2F7') return 'Attacking f2/f7'; const w=String(t).replace(/([a-z])([A-Z0-9])/g,'$1 $2').replace(/([0-9])([A-Za-z])/g,'$1 $2').toLowerCase(); return w[0].toUpperCase()+w.slice(1) };

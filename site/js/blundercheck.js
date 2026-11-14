@@ -1,24 +1,27 @@
 /* Chess Lab Open — Blunder check (Extra → Blunder check), the private Chess Lab's bc.js on Open's Store, board and keys.
-   Positions come from a Chess Lab pack (Store pack-bc, built by the private kit's tools/blundercheck from your own games):
-   your move there dropped your Win% by 15+ points from 30%+. Step 1, the question you skipped: what does your opponent
+   Positions come from Analyze my games (Store abc, saved with your drills; since 13 Nov 2026, the private kit's
+   tools/blundercheck rule run in the browser: js/analyze.js findBlunderChecks; a Chess Lab pack's positions, from before
+   packs were retired, were moved there by Store.migrate): your move there dropped your Win% by 15+ points from 30%+. Step 1, the question you skipped: what does your opponent
    threaten? (the same position with them to move: play their move; any move within 0.5 pawns of their best counts).
    Step 2: your move (any of Stockfish's top 3 within 0.3 pawns of the best counts). Then the game: what you played and how
-   it was punished. No engine needed: the answers come with the pack.
+   it was punished. No engine needed here: the answers were worked out when the games were analyzed. "Open the game"
+   shows the position in its game (js/gameview.js).
    Results: Store bc-progress {<id>: {n, ok, okN, t}} — both steps right on the first try = solved, back after 3, 7, 21
-   days; otherwise back the next day. Ids: 'k' + sha1(fen|played uci)[:8], so a newer pack keeps your results. */
+   days; otherwise back the next day. Ids: 'k' + sha1(fen|played uci)[:8], so the same blunder saved again keeps its results. */
 'use strict';
 (function(){
 const DAY=864e5, REVIEW=[3,7,21];
 const S={cur:null,phase:'idle',firstTry:true,okThreat:null,okMove:null,filt:'todo'};
 let board=null, timer=0;
-const data=()=>Store.get('pack-bc')||[];
+const data=()=>Store.get('abc')||[];
 const res=()=>Store.get('bc-progress')||{};
 const due=r=>!!r&&(r.ok?Date.now()-r.t>=REVIEW[Math.min(REVIEW.length-1,(r.okN||1)-1)]*DAY:r.t<new Date().setHours(0,0,0,0));
 const status=d=>{ const r=res()[d.id]; return !r?'new':due(r)?'due':r.ok?'solved':'missed' };
-const SITE={lichess:'Lichess',chesscom:'Chess.com',otb:'Over the board'};
+const SITE={lichess:'Lichess',chesscom:'Chess.com',otb:'Over the board',pgn:'Over the board'};
 const sanOf=(fen,u)=>{ try{ const m=new Chess(fen).move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'}); return m?m.san:u }catch(e){ return u } };
 const no=d=>`${d.moveNo}${d.color==='white'?'.':'…'}`;
-const first=d=>String(d.opp||'your opponent').split(/[ ,]/)[0];
+/* the opponent's first name: "Last, First" (PGN files) -> First; "First Last" -> First; a username stays whole */
+const first=d=>{ const o=String(d.opp||'').trim(); if(!o) return 'your opponent'; const m=o.match(/^[^,]+,\s*([^\s,]+)/); return m?m[1]:o.split(/\s+/)[0] };
 const FILTERS=[['todo','To do'],['all','All'],['solved','Solved']];
 function items(){ const L=data();
   return S.filt==='all'?L:S.filt==='solved'?L.filter(d=>status(d)==='solved'):L.filter(d=>status(d)!=='solved') }
@@ -33,7 +36,7 @@ function render(){
       meta:`${esc(SITE[d.site]||d.site||'')} · ${esc(d.date||'')}${d.strong?' · 2200+':''} · ${s==='solved'?'✓ solved':s==='missed'?'✗ missed':s==='due'?'due':'new'}`,
       right:TV.dots([[s==='solved'?'good':s==='missed'?'bad':'','Both steps']]),current:!!(S.cur&&S.cur.id===d.id),data:{id:d.id}}) }).join('');
   el.classList.toggle('isempty',!shown.length);
-  if(!L.length) el.innerHTML='<p class="empty">No positions yet. Blunder check needs a <b>Chess Lab pack</b>: a file built from your own games with the private Chess Lab kit. Load one in <a href="#progress">Progress</a> → <i>Load a Chess Lab pack</i>.</p>';
+  if(!L.length) el.innerHTML='<p class="empty">No positions yet. Run <a href="#analyze"><b>Analyze my games</b></a>: after the games, it finds the threat you missed in each of your biggest blunders. Save them with your drills and they come here.</p>';
   else if(!shown.length) el.innerHTML='<p class="empty">Nothing here: every position is done for now. Solved ones come back after 3, 7 and 21 days.</p>';
   for(const id of ['bc-next','bc-show']) $(id).disabled=!L.length;
   if(!S.cur){ $('bc-head').innerHTML=''; $('bc-reveal').innerHTML=''; $('bc-lichess').hidden=true }
@@ -43,11 +46,11 @@ function open(d){
   S.cur=d; S.phase='threat'; S.firstTry=true; S.okThreat=null; S.okMove=null;
   board.set(new Chess(d.null),{orient:d.color==='white'?'w':'b',last:null,locked:false});
   $('bc-reveal').innerHTML=''; $('bc-show').hidden=false; $('bc-show').firstChild.textContent='Show the threat ';
-  const url=d.url&&/^https:\/\/(www\.)?(chess\.com|lichess\.org)\//.test(d.url)?d.url:'';
+  const url=d.url&&/^https:\/\/(www\.)?(chess\.com|lichess\.org)\//.test(d.url)?d.url:'', inSite=d.g&&AGames.has(d.g)?AGames.href(d.g,d.ply,'blundercheck'):'';
   $('bc-head').innerHTML=TV.head({kicker:`${esc(SITE[d.site]||'')} · ${esc(d.date||'')} · move ${esc(d.moveNo)}${d.strong?' · vs 2200+':''}`,
     title:`vs ${esc(d.opp)}${d.oppElo?` <span class="note mono">${esc(d.oppElo)}</span>`:''}`,
     chips:[d.color==='white'?'You had White':'You had Black',`Win% ${esc(d.w0)} → ${esc(d.w1)}${Help.q('Your Win% before your move and after it, from your side. '+WinPct.HELP)}`,
-      url?`<a href="${esc(url)}" target="_blank" rel="noopener">game ↗</a>`:'']});
+      inSite?`<a href="${esc(inSite)}">open the game</a>`:'',url?`<a href="${esc(url)}" target="_blank" rel="noopener" title="The game on ${/lichess/.test(url)?'Lichess':'Chess.com'}">game ↗</a>`:'']});
   $('bc-lichess').href='https://lichess.org/analysis/'+encodeURIComponent(d.fen.replace(/ /g,'_'))+'?color='+(d.color==='white'?'white':'black'); $('bc-lichess').hidden=false;
   say('',`Step 1: what does ${esc(first(d))} threaten?`,'Play their move, as if they could move again now (it’s really your move).');
   render();

@@ -8,7 +8,7 @@ const S={cur:null,g:null,done:false,busy:false,kind:'all',state:'all',plat:'all'
 const KINDS=[['all','All'],['mine','Your mistakes'],['punish','Punish']];
 const STATES=[['all','Any'],['new','Not tried'],['missed','Missed'],['solved','Solved']];
 const SITE={lichess:'Lichess',chesscom:'Chess.com','chess.com':'Chess.com',pgn:'Over the board',otb:'Over the board'};
-/* where a drill's game was played: Lichess, Chess.com, or over the board (a PGN file you analyzed, or a pack's OTB games) */
+/* where a drill's game was played: Lichess, Chess.com, or over the board (a PGN file you analyzed) */
 const platOf=d=>d.site==='lichess'?'lichess':d.site==='chesscom'||d.site==='chess.com'?'chesscom':'otb';
 const PLATS=[['all','All'],['otb','OTB'],['lichess','Lichess'],['chesscom','Chess.com']];   // OTB, as the private site's Source row says it
 /* an eval in pawns from White's side, as everywhere: +1.6 / −0.8 */
@@ -62,7 +62,7 @@ function load(d){
     extra:`<div class="seg mini" role="group" aria-label="Training mode"><button type="button" aria-pressed="true">Find the move</button><button type="button" id="d-playout" aria-pressed="false" title="${goal==='win'?'Continue against Stockfish from this position. You were winning before the slip: convert it.':'Continue against Stockfish from this position. Hold it: a draw or better counts.'}">Play it out: ${goal==='win'?'win it':'hold it'}</button></div>`});
   $('d-playout').addEventListener('click',playOut);
   $('d-facts').innerHTML=`<dt>Date</dt><dd>${esc(d.date)}</dd><dt>Opponent</dt><dd>${esc(d.opp)}</dd>
-    <dt>You played</dt><dd>${esc(d.played)}</dd><dt>Play it out</dt><dd>${playGoal(d)==='win'?'win from here':'don’t lose from here'}${Help.q('The goal comes from the eval before your slip: from +1.5 or better for you it is a win to convert; otherwise hold the position.')}</dd>${d.url?`<dt>Game</dt><dd><a href="${esc(d.url)}" target="_blank" rel="noopener">open ↗</a></dd>`:''}`;
+    <dt>You played</dt><dd>${esc(d.played)}</dd><dt>Play it out</dt><dd>${playGoal(d)==='win'?'win from here':'don’t lose from here'}${Help.q('The goal comes from the eval before your slip: from +1.5 or better for you it is a win to convert; otherwise hold the position.')}</dd>${gameLinks(d)}`;
   $('d-lichess').href='https://lichess.org/analysis/'+encodeURIComponent(d.fen.replace(/ /g,'_'));
   renderL();
 }
@@ -111,6 +111,13 @@ async function show(){
 }
 /* Play it out: continue from the drill position against Stockfish (Play tab). The goal comes from the eval
    before the slip: from +1.5 for you it is a win (convert); otherwise don't lose (hold), as in the private kit. */
+/* the drill's game: on this site at the move (js/gameview.js), and on Lichess / Chess.com */
+function gameLinks(d){
+  const here=d.g&&AGames.has(d.g)?AGames.href(d.g,d.ply,H?'today':'drills'):'';
+  const url=d.url&&/^https:\/\/(www\.)?(chess\.com|lichess\.org)\//.test(d.url)?d.url:'';
+  if(!here&&!url) return '';
+  return `<dt>Game</dt><dd>${here?`<a href="${esc(here)}" id="d-gamelink">open the game at this move</a>`:''}${here&&url?' · ':''}${url?`<a href="${esc(url)}" target="_blank" rel="noopener">${/lichess/.test(url)?'Lichess':'Chess.com'} ↗</a>`:''}</dd>`;
+}
 const playGoal=d=>((d.before||0)*(d.color==='w'?1:-1))>=1.5?'win':'hold';
 const DROP_HELP=WinPct.HELP;
 function playOut(){
