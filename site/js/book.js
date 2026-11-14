@@ -87,6 +87,8 @@ window.Book=(()=>{
   function levelLabel(lv){ return (LEVELS[lv]||LEVELS.masters).label }
   return {moves,now,oppMoves,nameOf,levelLabel,LEVELS,ORDER,
     hasBook:lv=>!!STATIC[LEVELS[lv]?lv:'masters'],
+    /* 'ready', 'failed' (the file didn't load: named lines instead) or 'pending' (it loads when a line starts) */
+    state:lv=>{ const v=STATIC[LEVELS[lv]?lv:'masters']; return v?'ready':v===null?'failed':'pending' },
     get hasStatic(){return !!STATIC.masters},
     ready:()=>Promise.all([namesP,demoP,staticBook('masters')])};
 })();

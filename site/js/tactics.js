@@ -9,7 +9,8 @@ const BANDS=[['All','Any rating'],['1200','1200–1499'],['1500','1500–1799'],
 const STATUSES=['All','Unsolved','Missed','Solved'];
 
 function prog(){ return Store.get('tactics-progress')||{} }
-function rating(){ return Store.get('tac-rating')||{r:2000,n:0} }
+/* a new visitor starts at 1500, the level Today assumes too (14 Nov 2026: it was 2000 here and 1500 there) */
+function rating(){ return Store.get('tac-rating')||{r:1500,n:0} }
 function saveResult(id,ok){
   const p=prog(); p[id]={ok,t:Date.now()}; Store.put('tactics-progress',p);
   const rt=rating(); const pz=LIB.find(x=>x.id===id);
@@ -32,8 +33,9 @@ function weakRow(){ const p=prog(), items=[]; for(const z of LIB){ const r=p[z.i
   return Puzzles.weakRow(Puzzles.weak(items),S.motifs.length===1?S.motifs[0]:null,themeName) }
 document.addEventListener('click',e=>{ const b=e.target.closest('#t-rate [data-wk]'); if(!b) return; const m=b.dataset.wk;
   S.motifs=S.motifs.length===1&&S.motifs[0]===m?[]:[m]; if(CTL) CTL.motifs.set(S.motifs); renderHeader(); renderL() });
-/* Rating: Near my rating (±150, the default once 10 puzzles are rated, as in Chess Lab), Any, or the slider's range */
-const bandNow=()=>S.band||(rating().n>=10?'near':'all');
+/* Rating: Near my rating (±150, the default from the first puzzle since 14 Nov 2026: Next used to serve 1504, then
+   2411, then 1690 until 10 puzzles were rated), Any, or the slider's range */
+const bandNow=()=>S.band||'near';
 function filtered(){
   const p=prog();
   return LIB.filter(z=>{
@@ -158,12 +160,16 @@ function next(){
 }
 function status(tone,head,rest){ const el=$('t-status-box'); el.className='status'+(tone?' '+tone:''); el.innerHTML=`<strong>${esc(head)}</strong>${esc(rest||'')}` }
 
+let libP=null;
+function ensure(){
+  return libP||(libP=fetch(Site.url('tactics')).then(r=>r.json()).then(j=>{ LIB=j; dispatchEvent(new Event('tactics-lib')); renderHeader(); renderFilters(); renderL(); if(!S.cur) first() })
+    .catch(()=>{ $('t-list').innerHTML='<p class="empty">The puzzle library could not load.</p>'; LIB=[] }));
+}
 function init(){
   board=makeBoard($('t-board'),{onMove:userMove});
   endbar=endBanner($('t-board'),()=>next(),'Next puzzle');
   board.set(new Chess(),{locked:true});
-  fetch(Site.url('tactics')).then(r=>r.json()).then(j=>{ LIB=j; dispatchEvent(new Event('tactics-lib')); renderHeader(); renderFilters(); renderL(); if(!S.cur) first() })
-    .catch(()=>{ $('t-list').innerHTML='<p class="empty">The puzzle library could not load.</p>'; LIB=[] });
+  /* the puzzle library (2.9 MB) loads when a page needs it (Today, Tactics: ensure()), not on every visit (14 Nov 2026) */
   $('t-list').addEventListener('click',e=>{ const b=e.target.closest('.drill'); if(!b||!LIB) return; const z=LIB.find(x=>x.id===b.dataset.id); if(z){ load(z); if(innerWidth<860) $('t-board').scrollIntoView({behavior:'smooth',block:'start'}) } });
   TV.fitBoard('#t-wrap','#t-tools');
   $('t-next').addEventListener('click',next);
@@ -172,5 +178,5 @@ function init(){
   Keys.on('tactics',{n:['Next puzzle',()=>next()],h:['Hint',()=>hint()],f:['Flip the board',()=>board.flip()]});
   addEventListener('hashchange',()=>{ if(location.hash==='#tactics'&&LIB) renderHeader() });   /* the rating and Weak row after an import on Progress */
 }
-window.TacticsTab={init,get state(){return S},load,next,userMove,hint,filtered,host:h=>{ H=h||null },flip:()=>board.flip(),get lib(){return LIB}};
+window.TacticsTab={init,ensure,get state(){return S},saveResult,load,next,userMove,hint,filtered,host:h=>{ H=h||null },flip:()=>board.flip(),get lib(){return LIB}};
 })();

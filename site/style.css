@@ -271,6 +271,9 @@ body.welcomed[data-view="today"] .hero{display:none}
 .welcome{position:relative;margin-bottom:12px;border-top:3px solid var(--brass)}
 .welcomex{position:absolute;top:12px;right:14px;font-size:.85rem}
 .welcomelist{margin:0;padding-left:18px;line-height:1.55}.welcomelist li{margin:4px 0}
+.welcomelead{margin:0;max-width:62ch;line-height:1.5}
+.welcomemore{margin-top:12px}.welcomemore>summary{cursor:pointer;color:var(--blue);font-weight:600;padding:6px 0;min-height:32px}
+.welcomemore[open]>summary{margin-bottom:6px}
 .hero .linkbtn.herohelp{color:var(--brass-light);font-size:inherit}
 
 /* Progress charts (single series each; site navy line/bars, recessive grid, one-hue activity scale) */
@@ -552,3 +555,13 @@ td.num,th.num{text-align:right;white-space:nowrap}
 .asetbtns{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
 .btn.danger{background:var(--bad);border-color:var(--bad);color:#fff}
 @media (max-width:560px){.aset{grid-template-columns:1fr auto}.asetbtns{grid-column:1/-1;justify-content:flex-start}}
+
+/* Phones, 14 Nov 2026 (audit Q4, Q9): before a game starts Play shows the board, the status and New game, not Hint /
+   Take back / Peek / Resign and the typed-move box; the strength buttons and "estimate the time" are 40 px targets. */
+@media (max-width:860px){
+  #play.idle #pl-tools,#play.idle #pl-moveform{display:none}
+}
+@media (hover:none) and (pointer:coarse) and (max-width:700px){
+  #pl-setup .seg button,#pl-setup .chip{min-height:40px}
+  #a-est .linkbtn{display:inline-block;padding:11px 6px;margin:-6px 0}
+}

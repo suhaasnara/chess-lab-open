@@ -25,6 +25,7 @@ function renderGames(){
       <a class="note" href="${g.fen?'https://lichess.org/analysis/'+encodeURIComponent(g.fen.replace(/ /g,'_')):'https://lichess.org/analysis/pgn/'+encodeURIComponent(g.moves)}" target="_blank" rel="noopener">review ↗</a></div>`).join('');
 }
 function newGame(){
+  $('play').classList.remove('idle');   /* phones: the game's buttons appear once there is a game */
   S.start=null; S.goal=null; S.label='';
   S.g=new Chess(); S.moves=[]; S.over=false; S.busy=false; S.resignArm=false; S.peeks=0; S.takebacks=0; S.hints=0; S.hintStage=0; S.view=null; S.result=null; S.gid++; { const b=$('pl-review'); if(b) b.hidden=true }
   S.elo=$('pl-elo').value==='max'?'max':+$('pl-elo').value;
@@ -38,6 +39,7 @@ function newGame(){
 }
 /* From a drill: same strength setting, no blindfold; goal 'win' (convert) or 'hold' (don't lose). */
 function fromPosition(fen,me,goal,label){
+  $('play').classList.remove('idle');
   S.g=new Chess(fen); S.start=fen; S.goal=goal; S.label=label||''; S.moves=[]; S.over=false; S.busy=false; S.resignArm=false; S.peeks=0; S.takebacks=0; S.hints=0; S.hintStage=0; S.view=null; S.result=null; S.gid++; { const b=$('pl-review'); if(b) b.hidden=true }
   S.elo=$('pl-elo').value==='max'?'max':+$('pl-elo').value; S.me=me; S.blind=false;
   $('pl-board').classList.remove('blind');

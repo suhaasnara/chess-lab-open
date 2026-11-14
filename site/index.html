@@ -21,8 +21,7 @@
 <meta name="twitter:title" content="Chess Lab Open — a free, open-source chess trainer">
 <meta name="twitter:description" content="Openings against real games, 11,000 puzzles, hard calculation and drills from your own games. No account.">
 <meta name="twitter:image" content="https://suhaasnarayanan.com/chess-lab-open/assets/og.jpg">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap">
+<link rel="stylesheet" href="fonts.css?v=__V__">
 <link rel="stylesheet" href="shared/theme.css?v=__V__">
 <link rel="stylesheet" href="shared/shared.css?v=__V__">
 <link rel="stylesheet" href="shared/trainview.css?v=__V__">
@@ -55,7 +54,10 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
     <div class="card welcome" id="welcome" hidden>
       <button class="linkbtn welcomex" id="welcome-x" aria-label="Close">Close ✕</button>
       <span class="label">New here?</span>
-      <h2 style="margin:6px 0 8px">How Chess Lab Open works</h2>
+      <h2 style="margin:6px 0 8px">Train on your own games</h2>
+      <p class="welcomelead">Chess Lab Open turns your games into a report card and drills, with puzzles, openings and endgames around them. No account, and nothing is uploaded.</p>
+      <div class="btns" style="margin-top:10px"><a class="btn primary" href="#analyze" id="welcome-go">Analyze my games</a><button class="btn" id="welcome-try" type="button">Just try a puzzle</button></div>
+      <details class="welcomemore" id="welcome-more"><summary>How it works</summary>
       <ul class="welcomelist">
         <li><b>Start with your own games.</b> In <a href="#analyze">Analyze my games</a>, type your Lichess or Chess.com username: you get a report card and drills from your mistakes (and the ones your opponents got away with).</li>
         <li><b>Come back to <a href="#today">Today</a>.</b> A short daily session: a few of your drills, five puzzles near your rating, one endgame, one opening line.</li>
@@ -65,7 +67,8 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
         <li><b>On every board:</b> right-click or right-drag for circles and arrows (Shift red, Alt or Ctrl blue). Settings → Theme switches to dark.</li>
         <li><b>Private by design:</b> no account, nothing uploaded. Your progress stays in this browser (Progress → Export to move it).</li>
       </ul>
-      <div class="btns" style="margin-top:10px"><a class="btn primary" href="#analyze" id="welcome-go">Analyze my games</a><button class="btn" id="welcome-ok">Got it</button></div>
+      <div class="btns" style="margin-top:10px"><button class="btn" id="welcome-ok" type="button">Got it</button></div>
+      </details>
     </div>
   </div>
   <div class="grid tv" id="td-grid">
@@ -476,7 +479,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
 </section>
 
 <!-- ================= Play ================= -->
-<section id="play" hidden>
+<section id="play" class="idle" hidden>
   <div class="tvplay">
     <div class="boardwrap" id="pl-wrap">
       <div class="board" id="pl-board" role="group" aria-label="Chess board"></div>

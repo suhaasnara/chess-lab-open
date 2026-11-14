@@ -1,0 +1,8 @@
+/* The site's two fonts, served from here (14 Nov 2026; they came from Google Fonts before, which sat oddly beside
+   "nothing leaves your browser"). Latin subset, SIL Open Font License: assets/fonts/OFL.txt. */
+@font-face{font-family:'Libre Caslon Text';font-style:normal;font-weight:400;font-display:swap;src:url(assets/fonts/libre-caslon-text-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'Libre Caslon Text';font-style:italic;font-weight:400;font-display:swap;src:url(assets/fonts/libre-caslon-text-latin-400-italic.woff2) format('woff2')}
+@font-face{font-family:'Libre Caslon Text';font-style:normal;font-weight:700;font-display:swap;src:url(assets/fonts/libre-caslon-text-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'Source Sans 3';font-style:normal;font-weight:400;font-display:swap;src:url(assets/fonts/source-sans-3-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'Source Sans 3';font-style:italic;font-weight:400;font-display:swap;src:url(assets/fonts/source-sans-3-latin-400-italic.woff2) format('woff2')}
+@font-face{font-family:'Source Sans 3';font-style:normal;font-weight:600;font-display:swap;src:url(assets/fonts/source-sans-3-latin-600-normal.woff2) format('woff2')}

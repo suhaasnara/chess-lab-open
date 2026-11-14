@@ -5,7 +5,8 @@ same tool. The only intended difference is the data: the private site is built a
 calculation books and opponents, and none of that can be published. Everything that works on open data, or on the
 visitor's own data, belongs in both.
 
-This file records where the two stand (as of the `one-codebase` branch, 9 Nov 2026) and how to close the rest.
+This file records where the two stand (started on the `one-codebase` branch, 9 Nov 2026; last updated 14 Nov 2026,
+branch `audit-fixes`) and how the shared code is organized.
 
 ## Now the same in both
 
@@ -46,6 +47,7 @@ This file records where the two stand (as of the `one-codebase` branch, 9 Nov 20
 | 13 Nov quality pass (branch `overnight-13nov`) | Shared: the header tab row fades at the edge where more tabs are hidden (phones); Blind tactics' board fits short phones above the bottom bar; settings choice rows fill the width on phones (`.tvset`). |
 | Performance rating by rating system (14 Nov 2026, branch `analyze2`) | Shared `perf.js` (`Perf.calc`, `Perf.help`), used by `yearly.js` on both sites; the private kit's `lib/report.py` `perf_stats` is the Python twin (kit test t53 checks them field by field). US Chess's linear formula for US Chess / over-the-board pools, FIDE's method (average + dp) for FIDE, Lichess, Chess.com and unspecified; the 400-point rule; unrated left out and counted; 5+ rated games per pool; score vs expected. |
 | Your own PGN file (12 Nov 2026; several files, Standard / Deep and the v2 report card on 14 Nov, branch `analyze2`) | Open only for now: Analyze my games → Source → My PGN files (several at once, drag-and-drop or a Lichess study link; each with its rating system), Standard (depth 11) or Deep (depth 16) analysis with time estimates measured on the device, filters over the whole report, results with opponents' average and median, performance per pool and score vs expected, charts, move quality, leaving the book; Save drills near the top, saved in sets that can be removed (`adrill-sets`, drills' `b`). See the private kit's HANDOFF "Version 100" for the full map. Read in the browser (`js/pgnfile.js`), you pick which name is you, the report and Year by year appear at once; Stockfish analyzes games without evals in the browser (evals already in the file are used), cached in `pgn-evals` so Stop / run again carries on. Drills save as from online games. Typed-in PGN ratings give the net change only. Blunder check comes from the same run (13 Nov 2026; Chess Lab packs retired). 13 Nov 2026: names that differ only by case, dots, commas, spaces or a comma'd "Last, First" are one player; "Also you?" ticks your name written another way (no middle initial, initial + last name, a short or similar first name, first or last name alone, a username), never a name that plays against you, and an untick is remembered (`pgn-not-me`); "Check these games" lists games whose colours look swapped (your other colour's first three moves) or whose result doesn't fit (mate / stalemate on the board, Result tag vs the end of the moves); a 40+ ply game on the same day is one game across files whatever the names (`PgnFile.aliases`, `PgnFile.checks`, t71). |
+| The 14 Nov 2026 audit fixes (branch `audit-fixes`) | **Both:** a mate in one is always the best move in Endgames (`tools/build_endgames.py` `metric` / `fix_mates`, shared `endgame-core.js` `met`; the five basic mates' lines end in mate); one keymap: Take back is B, Blunder check's threat key is H (Open had S), Guess the move has B / R / N on Open too (a take back keeps the first answer's score, as on the private site); on phones no key caps on buttons and 40 px switches (shared.css). **Open only:** Analyze my games never calls Stockfish's first choice a mistake (`game.ef`, kept in `pgn-evals` as `f` and in `agames` as `ef`), and every drill is searched again at depth 16 (18 after a Deep run) with three lines before it is saved (`verifyDrill`, cache `adrill-verify`; dropped when the game move is within 0.1 Win chance of the best; the best move is stored, `v:1`); an older drill re-checks its game move once before "Find something better" (`gameBest`). The private kit has always verified its drills at depth 22. A new visitor starts at puzzle rating 1500 with Near my rating from the first puzzle (the private site keeps 2000 and "after 10": his rating exists); the first-visit card is short; Today starts the engine at the first board touch only (the private site still also after 3 s); the puzzle library loads on Today and Tactics only; fonts are served from the site; the report card's headline uses the Move quality rule (book moves are Book); Rated hides the file's move behind Hint; Play's buttons appear when a game starts (phones). Privacy guard: single names and joined usernames (hashed), per-path allow-list. `tests/browser/audit.js` (and the kit's `tools/review/audit.js`) replay the audit's steps in Firefox, Chromium and WebKit (WebKit reports only). |
 
 ## Still different, and why
 
@@ -74,9 +76,9 @@ the other side, captured pieces, the eval column, Show mistakes after a line), a
 Both items that were left (Players' opening names, filter and notes; Watch on Today's balanced plan) are done on the
 `improvements` branch (10 Nov 2026). Nothing is open here now.
 
-## Plan: one source, two builds
+## Plan: one source, two builds (done; kept as the record of how it is organized)
 
-Today the two sites are separate code that has been ported back and forth by hand. The plan to stop that:
+Until 9 Nov 2026 the two sites were separate code ported back and forth by hand. The plan that stopped that:
 
 1. **Shared modules first** (no behaviour change): move the code both sites run into one place, written against a
    small interface instead of each site's globals:

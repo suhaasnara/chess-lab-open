@@ -36,7 +36,7 @@ accounts, no uploads: progress lives in localStorage with JSON export/import.
   your side: it is saved in this browser (and in the progress export) and trains like a preset; rename or delete it
   any time. **Save this position** in the trainer turns the moves on the board into a new position of your own.
 - **Tactics** — 11,260 CC0 puzzles from the Lichess puzzle database (rated 1200–2900,
-  33 motifs, filter by motif and rating), with a puzzle rating (Elo against each puzzle's Lichess rating, first attempt only).
+  49 motifs, 30 of them offered as Themes filters, plus a rating filter), with a puzzle rating (Elo against each puzzle's Lichess rating, first attempt only).
 - **Blind tactics** (Extra) — after listudy's blind tactics, with a rating range: the board shows the position 2 to
   16 plies before a Lichess puzzle, the hidden moves are listed under it, and you solve without the board moving (type
   the move, SAN or squares, or tap its two squares). 3,990 puzzles rated 1000–2899, 210 per 100 points, with plenty of

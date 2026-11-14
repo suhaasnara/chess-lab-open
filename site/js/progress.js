@@ -84,7 +84,7 @@ function render(){
   const bcs=Store.get('abc')||[], bp=Store.get('bc-progress')||{};
   const eg=window.EndgamesTab?EndgamesTab.stats():{solved:0,total:0};
   $('p-stats').innerHTML=`
-    <div class="stat"><b>${withStats.reduce((a,x)=>a+x.st.lines,0)}</b><span class="note">opening lines trained</span></div>
+    <div class="stat"><b>${withStats.reduce((a,x)=>a+x.st.lines,0)}</b><span class="note">opening line${withStats.reduce((a,x)=>a+x.st.lines,0)===1?'':'s'} trained</span></div>
     <div class="stat"><b>${tac.n>=TAC_MIN?tac.r:'–'}</b><span class="note">puzzle rating (${tac.n>=TAC_MIN?Help.n(tac.n,'rated puzzle'):`after ${TAC_MIN} rated puzzles; ${tac.n} so far`})${Help.q('Elo against each puzzle’s Lichess rating, first try only. It shows once you have solved or missed '+TAC_MIN+' puzzles, so one lucky puzzle can’t set it.')}</span></div>
     <div class="stat"><b>${tsolved}</b><span class="note">${tsolved===1?'puzzle':'puzzles'} solved</span></div>
     ${(()=>{ const b=BlindTactics.stats(Store.get('blind-progress'),Store.get('blind-rating')); return `<div class="stat"><b>${b.rating==null?'–':b.rating}</b><span class="note">Blind rating · ${b.solved} solved${b.avgPlies?` · ${b.avgPlies} hidden plies on average`:''}${Help.q('Blind tactics (Extra): Elo against each puzzle’s Lichess rating, first try only; a peek counts as a miss. The average is over the puzzles you solved, at the number of hidden plies you had set.')}</span></div>` })()}

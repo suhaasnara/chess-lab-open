@@ -140,6 +140,55 @@ const waitFor=async(page,fn,arg,ms=20000)=>{ try{ await page.waitForFunction(fn,
       await shot(page,'4-guess-'+tag) }
     await page.context().close() }
 
+  /* ---------- stage 2 (items 6, 7, 8, 10, quick wins): a new visitor, on an iPhone and a laptop ---------- */
+  { const ph=await open(390,844,'#today'); const reqs=[]; ph.on('request',r=>reqs.push(r.url()));
+    await waitFor(ph,()=>window.TodayTab&&(TacticsTab.lib||[]).length>0&&!document.getElementById('welcome').hidden);
+    const card=await ph.$eval('#welcome',e=>Math.round(e.getBoundingClientRect().height));
+    check('first phone screen: the first-visit card is short (was 923 px on an 844 px screen)',card<420,card+' px');
+    await shot(ph,'6-first-visit-phone');
+    await sleep(6500);
+    const all=await ph.evaluate(()=>performance.getEntriesByType('resource').map(r=>r.name));
+    check('Today, 6 s, no touch: no Stockfish download',!all.some(u=>/stockfish|\.wasm/.test(u)),all.filter(u=>/stockfish|wasm/.test(u)).join(' '));
+    check('no request to Google Fonts; the two fonts come from the site',!all.some(u=>/fonts\.(googleapis|gstatic)/.test(u))&&all.some(u=>/assets\/fonts\/.*\.woff2/.test(u)),all.filter(u=>/font/.test(u)).length+' font files');
+    await ph.click('#welcome-try'); await sleep(900);
+    const st=await ph.evaluate(()=>({sel:String(TodayTab.sel),hidden:document.getElementById('welcome').hidden,r:(TacticsTab.state.cur||{}).rating}));
+    check('Just try a puzzle: a puzzle near 1500 is on the board',/^puzzle/.test(st.sel)&&st.hidden&&Math.abs(st.r-1500)<=150,JSON.stringify(st));
+    await shot(ph,'6-try-a-puzzle-phone');
+    const r1=await ph.evaluate(()=>{ const z=TacticsTab.state.cur; TacticsTab.saveResult(z.id,true); return Store.get('tac-rating') });
+    check('after the first solved puzzle the rating has moved from 1500, not to 2002',r1.n===1&&r1.r>1500&&r1.r<1540,JSON.stringify(r1));
+    await ph.evaluate(()=>{ location.hash='#tactics' }); await sleep(600);
+    const near=await ph.evaluate(()=>{ const L=TacticsTab.filtered(), r=Store.get('tac-rating').r; return [L.length,L.every(z=>Math.abs(z.rating-r)<=150),document.querySelector('#t-chiprows [aria-pressed="true"]').textContent] });
+    check('Tactics: Near my rating from the first puzzle',near[0]>20&&near[1]&&/Near/.test(near[2]),near.join(' | '));
+    await ph.evaluate(()=>{ location.hash='#play' }); await sleep(500);
+    const idle=await ph.evaluate(()=>[document.getElementById('pl-tools').offsetParent===null,document.getElementById('pl-moveform').offsetParent===null,!!document.getElementById('pl-new').offsetParent]);
+    check('Play on a phone before a game: New game, without Hint / Take back / Peek / Resign and the move box',idle[0]&&idle[1]&&idle[2],idle.join(','));
+    await shot(ph,'8-play-idle-phone');
+    await ph.click('#pl-new'); await sleep(600);
+    check('…they appear when the game starts',await ph.evaluate(()=>document.getElementById('pl-tools').offsetParent!==null));
+    check('phones show no key caps on buttons',BROWSER==='firefox'||await ph.evaluate(()=>[...document.querySelectorAll('.btn kbd')].every(k=>k.offsetParent===null)));
+    await ph.context().close();
+    const pg=await open(1440,900,'#openings'); await sleep(2500);
+    const res=await pg.evaluate(()=>performance.getEntriesByType('resource').map(r=>r.name));
+    check('landing on Openings: the puzzle library (2.9 MB) is not downloaded',!res.some(u=>/tactics\.json/.test(u)));
+    const acct=await pg.evaluate(()=>{ const b=document.getElementById('o-acct'); return b?b.textContent:'' });
+    check('the book note never says "isn’t loaded" to a new visitor',!/isn’t loaded/.test(acct),acct.slice(0,70));
+    await shot(pg,'6-openings-laptop'); await pg.evaluate(()=>{ location.hash='#today' }); await sleep(800); await shot(pg,'6-first-visit-laptop');
+    await pg.context().close(); }
+  /* item 10: the report card says one number for inaccuracies (the ten published games, Standard, the real engine) */
+  { const idx=JSON.parse(fs.readFileSync(path.join(SITE,'data','gtm','index.json'),'utf8')).filter(e=>e.set!=='masters').slice(0,10);
+    const pgn=idx.map(e=>{ const G=JSON.parse(fs.readFileSync(path.join(SITE,'data','gtm',e.file),'utf8'));
+      return `[Event "${G.event}"]\n[Date "${G.date}"]\n[White "${G.white}"]\n[Black "${G.black}"]\n[Result "${G.result}"]\n\n${G.moves.map((m,i)=>(i%2?'':(i/2+1)+'. ')+m).join(' ')} ${G.result}\n` }).join('\n');
+    const page=await open(1440,900,'#analyze');
+    await page.selectOption('#a-site','pgn'); await sleep(100);
+    await page.setInputFiles('#a-pgnfile',{name:'published.pgn',mimeType:'application/x-chess-pgn',buffer:Buffer.from(pgn)});
+    await waitFor(page,()=>AnalyzeTab.files.length===1&&document.querySelectorAll('#a-pgnnames input:checked').length>=1);
+    await page.click('#a-go');
+    const done=await waitFor(page,()=>!AnalyzeTab.running&&/Done\./.test(document.getElementById('a-note').textContent),null,600000);
+    const R=await page.evaluate(()=>{ const t=document.getElementById('a-report').textContent; const h=t.match(/(\d+) \/ (\d+) \/ (\d+)\s*your blunders/); const row=k=>{ const c=document.querySelector('#a-report tr.q-'+k+' td[data-l="All"] .note'); return c?+c.textContent:null };
+      return {head:h?h.slice(1).map(Number):null,table:[row('blun'),row('mist'),row('inacc')],n:AStats.last.rows.length} });
+    check('report card: the headline and Move quality agree on blunders / mistakes / inaccuracies',done&&R.head&&R.table.every((v,i)=>v===R.head[i]),JSON.stringify(R));
+    await shot(page,'10-report-laptop'); await page.context().close(); }
+
   check('no page errors',errors.length===0,errors.slice(0,3).join(' | '));
   await browser.close(); if(srv) srv.close();
   console.log(failed?`\n${failed} FAILED`:'\nAll audit steps reproduce as fixed.');
