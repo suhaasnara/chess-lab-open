@@ -5,7 +5,7 @@
    3. A preset starts it; Play starts it at once; the first check of the visit answers correctly. */
 'use strict';
 const http=require('http'), fs=require('fs'), path=require('path');
-const {chromium,firefox}=require('playwright');
+const {chromium,firefox,webkit}=require('playwright');
 const BROWSER=process.argv[2]||'chromium', SITE=path.join(__dirname,'..','..','site');
 const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.wasm':'application/wasm','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg'};
 const SENT=[];
@@ -23,7 +23,7 @@ const WATCH=()=>{ const W=window.Worker; window.__workers=0; window.Worker=funct
 const QUIET=()=>{ try{ if(!sessionStorage.getItem('q')){ sessionStorage.setItem('q','1'); localStorage.setItem('clo-settings',JSON.stringify({evalCol:false,osfinfo:false})) } }catch(e){} };
 (async()=>{
   const srv=await serve(), base=`http://127.0.0.1:${srv.address().port}/`;
-  const type={chromium,firefox}[BROWSER]; const browser=await type.launch(BROWSER==='chromium'&&process.env.CHROME?{executablePath:process.env.CHROME}:{});
+  const type={chromium,firefox,webkit}[BROWSER]; const browser=await type.launch(BROWSER==='chromium'&&process.env.CHROME?{executablePath:process.env.CHROME}:{});
   async function page(hash){ const ctx=await browser.newContext({viewport:{width:390,height:844}}); const pg=await ctx.newPage(); const errors=[];
     pg.on('pageerror',e=>errors.push(e.message)); pg.on('console',m=>{ if(m.type()==='error') errors.push(m.text()) });
     await pg.addInitScript(WATCH); await pg.addInitScript(QUIET); await pg.goto(base+'index.html'+hash); await sleep(300); return {ctx,pg,errors} }
