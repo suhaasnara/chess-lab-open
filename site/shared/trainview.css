@@ -227,6 +227,7 @@ th.num{text-align:right}
   .bbar.bbar .navgrp,.bbar.bbar .boardtools,.bbar.bbar .bb-in{display:contents!important}
   :where(.boardwrap,.panel,.tv):has(.bbar){container-type:normal!important;contain:none!important}   /* a size container would hold the fixed bar inside itself */
   .bbar.bbar .cspacer{display:none}
+  .bbar.bbar .btn.rd-open{display:none!important}   /* Read: only where the reader is offered (phones, upright iPads), as outside the bar */
   .bbar.bbar .bb-in[hidden]{display:contents!important}.bbar.bbar .bb-in[hidden]>.bb-prev,.bbar.bbar .bb-in[hidden]>.bb-next{opacity:.32;pointer-events:none}
   .bbar.bbar .bb-only{display:inline-flex}
   .bbar.bbar .btn{order:0!important;margin:0!important;flex:1 1 44px!important;min-width:44px;min-height:44px;max-width:168px;padding:4px 8px!important;display:inline-flex;align-items:center;justify-content:center;text-align:center;
@@ -251,6 +252,7 @@ th.num{text-align:right}
   .bbar.bbar .bb-note{order:30!important;flex:0 0 100%;text-align:center;font-size:.78rem;color:var(--muted);background:none;border:0;padding:0 0 4px;white-space:normal}
   .bbar-host{padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))!important}
 }
+@media (orientation:portrait) and (max-width:1099.98px),(orientation:landscape) and (max-height:499.98px){.bbar.bbar .btn.rd-open{display:inline-flex!important}}
 @media (min-width:600px){
   .bbar.bbar{gap:0 8px!important}
   .bbar.bbar .btn{font-size:.9rem;padding:4px 14px!important;max-width:220px;white-space:nowrap}
