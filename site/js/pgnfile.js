@@ -45,11 +45,16 @@ window.PgnFile=(()=>{
     }
     return {games:games.filter(g=>g.sans.length||Object.keys(g.h).length)};
   }
-  const norm=s=>String(s||'').trim();
+  const norm=s=>String(s||'').trim().replace(/\s+/g,' ');
+  /* one player however the name is typed (13 Nov 2026: "Jane Q. Doe" and "Jane Q Doe" were two people, and
+     the second's win was left out): case, dots, commas and spaces don't matter */
+  const nameKey=s=>norm(s).toLowerCase().replace(/[.,]/g,' ').replace(/\s+/g,' ').trim();
   function players(P){
     const n=new Map();
-    for(const g of P.games) for(const k of ['White','Black']){ const v=norm(g.h[k]); if(v&&v!=='?') n.set(v,(n.get(v)||0)+1) }
-    return [...n.entries()].sort((a,b)=>b[1]-a[1]);
+    for(const g of P.games) for(const k of ['White','Black']){ const v=norm(g.h[k]); if(!v||v==='?') continue;
+      const key=nameKey(v); let e=n.get(key); if(!e){ e={n:0,sp:new Map()}; n.set(key,e) } e.n++; e.sp.set(v,(e.sp.get(v)||0)+1) }
+    /* each player once, under the spelling used most */
+    return [...n.values()].map(e=>[[...e.sp.entries()].sort((a,b)=>b[1]-a[1])[0][0],e.n]).sort((a,b)=>b[1]-a[1]);
   }
   const int=v=>{ const x=parseInt(String(v||'').replace(/^\+/,''),10); return isFinite(x)?x:null };
   function speedOf(h){
@@ -101,17 +106,17 @@ window.PgnFile=(()=>{
   function merge(files){
     const seen=new Set(), games=[]; let dupes=0;
     files.forEach((f,fi)=>{ for(const x of f.parsed.games){ const h=x.h;
-      const k=[norm(h.White).toLowerCase(),norm(h.Black).toLowerCase(),(h.Date||h.UTCDate||'').replace(/\?/g,''),x.sans.join(' ')].join('|');
+      const k=[nameKey(h.White),nameKey(h.Black),(h.Date||h.UTCDate||'').replace(/\?/g,''),x.sans.join(' ')].join('|');
       if(x.sans.length&&seen.has(k)){ dupes++; continue } seen.add(k);
       games.push(Object.assign({},x,{file:f.name,fileIdx:fi,sys:f.sys})) } });
     return {games,dupes};
   }
   function toGames(P,me,base=0){
     const fileSys=P.games.some(x=>!x.sys)?detect(P).sys:null;   /* one file read directly (not through merge): its own guess */
-    const names=(Array.isArray(me)?me:[me]).map(n=>norm(n).toLowerCase()).filter(Boolean), out=[]; const skipped={notYou:0,fen:0,bullet:0,noResult:0,unfinished:0,illegal:0,byFile:{}};
+    const names=(Array.isArray(me)?me:[me]).map(nameKey).filter(Boolean), out=[]; const skipped={notYou:0,fen:0,bullet:0,noResult:0,unfinished:0,illegal:0,byFile:{}};
     P.games.forEach((x,j)=>{ const i=base+j;
       const sk=k=>{ skipped[k]++; if(x.file){ const f=skipped.byFile[x.file]=skipped.byFile[x.file]||{}; f[k]=(f[k]||0)+1 } };
-      const h=x.h, w=norm(h.White).toLowerCase(), b=norm(h.Black).toLowerCase();
+      const h=x.h, w=nameKey(h.White), b=nameKey(h.Black);
       const iw=names.includes(w), ib=names.includes(b);
       if(!iw&&!ib||iw&&ib){ sk('notYou'); return }
       if(h.FEN||h.SetUp==='1'){ sk('fen'); return }
@@ -137,5 +142,5 @@ window.PgnFile=(()=>{
     out.sort((a,b)=>a.ts-b.ts);
     return {games:out,skipped};
   }
-  return {parse,players,toGames,toGamesAsync,speedOf,detect,merge,provOf};
+  return {parse,players,toGames,toGamesAsync,speedOf,detect,merge,provOf,nameKey};
 })();

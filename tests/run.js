@@ -1432,6 +1432,9 @@ section('t70: PGN accuracy (13 Nov 2026): zero castling, glued marks, e.p., elli
   assert(F.speedOf({TimeControl:'5+3'})==='blitz'&&F.speedOf({TimeControl:'90+30'})==='classical'&&F.speedOf({TimeControl:'15+10'})==='rapid'&&F.speedOf({TimeControl:'60+0'})==='bullet'&&F.speedOf({TimeControl:'300+3',Site:'https://lichess.org/AbCdEfGh'})==='blitz','minutes over the board (5+3 blitz, 90+30 classical, 15+10 rapid), seconds online; 60+0 stays bullet');
   const two=F.parse('[Event "Empty chapter"]\n[White "Jack"]\n[Black "Nobody"]\n[Date "2020.01.01"]\n\n[Event "Real"]\n[White "Jack"]\n[Black "Opp"]\n[Result "0-1"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 0-1');
   assert(two.games.length===2&&!two.games[1].h.Date,'a game with no moves does not lend its tags (a date) to the next game');
+  const nm=F.parse('[White "Jane Q. Doe"]\n[Black "A"]\n[Result "1-0"]\n\n1. d4 d5 2. Bf4 Nf6 3. e3 e6 1-0\n\n[White "Jane Q Doe"]\n[Black "Sam  Lee Park"]\n[Result "1-0"]\n\n1. d4 d5 2. Bf4 Nf6 3. e3 c5 1-0\n\n[White "jane q. doe"]\n[Black "C"]\n[Result "1-0"]\n\n1. d4 Nf6 2. Bf4 g6 3. e3 Bg7 1-0');
+  const pl=F.players(nm); assert(pl[0][0]==='Jane Q. Doe'&&pl[0][1]===3,'names that differ only by dots, spaces or case are one player, shown as spelled most ('+JSON.stringify(pl)+')');
+  const NG=F.toGames(nm,'Jane Q. Doe'); assert(NG.games.length===3&&NG.games[1].black==='Sam Lee Park','all three games are hers (the dot-less spelling counted); double spaces tidied');
 }
 
 section('t61: your own PGN file in Analyze my games (js/pgnfile.js): parse, who you are, report with Year by year, evals kept');

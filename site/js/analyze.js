@@ -177,7 +177,9 @@ function renderFiles(){
         <button type="button" class="btn sm" data-frm="${i}" aria-label="Remove ${esc(f.name)}">✕</button></div>` }).join('')}</div>`:'';
   /* who you are: every name in the files, most games first; tick more than one when your name differs between files */
   const M=merged(), names=PgnFile.players({games:M.games}), saved=[].concat(Store.get('pgn-me')||[]), cur=meList();
-  const ticked=new Set(cur.length?cur.filter(n=>names.some(([x])=>x===n)):saved.filter(n=>names.some(([x])=>x===n)));
+  /* a saved name finds its player however it was spelled (names are one player when only case, dots or spaces differ) */
+  const shown=n=>{ const k=PgnFile.nameKey(n), e=names.find(([x])=>PgnFile.nameKey(x)===k); return e?e[0]:null };
+  const ticked=new Set((cur.length?cur:saved).map(shown).filter(Boolean));
   if(!ticked.size&&names.length) ticked.add(names[0][0]);
   $('a-pgnwho').hidden=!FILES.length;
   const main=names.filter(([n,c],i)=>i<2||c>=2||ticked.has(n)).slice(0,12), rest=names.filter(x=>!main.includes(x)).slice(0,40);
@@ -218,8 +220,8 @@ const fmtDur=s=>s<60?`${Math.max(5,Math.round(s/5)*5)} s`:s<5400?`${Math.round(s
 function pliesToAnalyse(m){
   if($('a-site').value!=='pgn'){ return {plies:MAX_ENGINE_GAMES*80,games:MAX_ENGINE_GAMES,online:true} }
   if(!FILES.length) return null;
-  const me=meList().map(n=>n.toLowerCase()); let plies=0, games=0, ready=0;
-  for(const x of merged().games){ const w=String(x.h.White||'').trim().toLowerCase(), b=String(x.h.Black||'').trim().toLowerCase();
+  const me=meList().map(PgnFile.nameKey); let plies=0, games=0, ready=0;
+  for(const x of merged().games){ const w=PgnFile.nameKey(x.h.White), b=PgnFile.nameKey(x.h.Black);
     if(!me.includes(w)&&!me.includes(b)) continue;
     const n=x.evals.filter(v=>v!=null).length; if(n>=0.7*x.sans.length){ ready++; continue }
     const id='f'+PGN.posId([x.h.White,x.h.Black,x.h.Date,x.h.Round,x.sans.join(' ')].join('|'));
