@@ -181,10 +181,20 @@ function renderFiles(){
   const shown=n=>{ const k=PgnFile.nameKey(n), e=names.find(([x])=>PgnFile.nameKey(x)===k); return e?e[0]:null };
   const ticked=new Set((cur.length?cur:saved).map(shown).filter(Boolean));
   if(!ticked.size&&names.length) ticked.add(names[0][0]);
+  /* your name written differently elsewhere in the files (a missing middle initial, an initial, a short first name, the
+     first or last name alone, a username), never one that plays against you: ticked for you, with the reason; untick
+     one and it stays unticked (pgn-not-me) */
+  const notMe=new Set(Store.get('pgn-not-me')||[]), AL=new Map();
+  for(const a of PgnFile.aliases({games:M.games},[...ticked])){ const n=shown(a.name)||a.name, k=PgnFile.nameKey(n);
+    AL.set(n,a); if(!notMe.has(k)) ticked.add(n) }
   $('a-pgnwho').hidden=!FILES.length;
-  const main=names.filter(([n,c],i)=>i<2||c>=2||ticked.has(n)).slice(0,12), rest=names.filter(x=>!main.includes(x)).slice(0,40);
+  const main=names.filter(([n,c],i)=>!AL.has(n)&&(i<2||c>=2||ticked.has(n))).slice(0,12), rest=names.filter(x=>!AL.has(x[0])&&!main.includes(x)).slice(0,40);
   const chip=([n,c])=>`<label class="chip achk"><input type="checkbox" value="${esc(n)}"${ticked.has(n)?' checked':''}> ${esc(n)} <span class="note">${c}</span></label>`;
-  $('a-pgnnames').innerHTML=main.map(chip).join('')+(rest.length?`<details class="amore"><summary class="note">${rest.length} more name${rest.length===1?'':'s'} with one game</summary><div class="chips">${rest.map(chip).join('')}</div></details>`:'');
+  const alChip=([n,a])=>`<label class="chip achk" title="${esc(a.why)}"><input type="checkbox" data-alias="1" value="${esc(n)}"${ticked.has(n)?' checked':''}> ${esc(n)} <span class="note">${a.games} · ${esc(a.why)}</span></label>`;
+  $('a-pgnnames').innerHTML=main.map(chip).join('')+(AL.size?`<div class="aalias"><span class="note">Also you? Your name written another way${Help.q('Names in your files that look like yours: the same first and last name without the middle initial, an initial and your last name, a short first name, your first or last name alone, or a username made of your name. A name that plays against you in any game is never suggested. They are ticked for you; untick any that isn’t you and it stays unticked.')}</span><div class="chips">${[...AL].map(alChip).join('')}</div></div>`:'')+(rest.length?`<details class="amore"><summary class="note">${rest.length} more name${rest.length===1?'':'s'} with one game</summary><div class="chips">${rest.map(chip).join('')}</div></details>`:'');
+  /* games to look at again, from the last run: colours that look swapped, results that don't fit the moves */
+  const ck=$('a-checks'); if(ck){ const C=LASTCHECKS||[]; ck.hidden=!C.length;
+    ck.innerHTML=C.length?`<span class="label">Check ${C.length===1?'this game':'these '+C.length+' games'}${Help.q('Games in your files that look wrong: you are one colour in the tags but your moves are the ones you play with the other colour (White and Black swapped in the tags), or a result that doesn’t fit the game (checkmate or stalemate on the board, or the Result tag and the end of the moves disagree). Nothing is changed for you: fix the file and load it again.')}</span>${C.slice(0,8).map(c=>`<div class="acheck"><span class="note">${esc(c.game.date||'no date')}</span> <b>${esc(c.game.white)} – ${esc(c.game.black)}</b>${c.game.event?` <span class="note">${esc(c.game.event)}</span>`:''}: ${esc(c.text)}</div>`).join('')}${C.length>8?`<div class="note">and ${C.length-8} more</div>`:''}`:'' }
   syncSelect(names,ticked);
   updateEstimate();
 }
@@ -193,7 +203,7 @@ function syncSelect(names,ticked){ const sel=$('a-pgnname'); if(!sel) return;
   sel.innerHTML=names.slice(0,16).map(([n,c])=>`<option value="${esc(n)}">${esc(n)} (${c} game${c===1?'':'s'})</option>`).join('');
   const first=[...ticked][0]; if(first) sel.value=first }
 const skipText=sk=>[sk.fen&&`${sk.fen} from a set position`,sk.bullet&&`${sk.bullet} bullet`,sk.noResult&&`${sk.noResult} with no result (Result "*": set it in the PGN or the study chapter)`,sk.unfinished&&`${sk.unfinished} unfinished or very short`,sk.illegal&&`${sk.illegal} with an illegal move`].filter(Boolean).join(', ');
-let LASTSKIP=null;
+let LASTSKIP=null, LASTCHECKS=null;
 
 /* ---------- Time estimates (measured on this device) ---------- */
 /* three ordinary middlegame positions, searched once at each depth; the time per position × the positions to analyse */
@@ -254,11 +264,12 @@ async function run(site,user,blitz){
       const me=[].concat(user), M=merged(), nm=FILES.length===1?FILES[0].name:`${FILES.length} files`;
       note(`Checking the moves of ${M.games.length} games in ${nm}…`,true); prog(0);
       const r=await PgnFile.toGamesAsync({games:M.games},me,(d,n)=>{ prog(d/n); note(`Checking the moves: ${d} of ${n} games in ${nm}…`,true) }); games=r.games.slice().reverse();   // newest first: recent results appear first
-      const sk=r.skipped, skip=skipText(sk); LASTSKIP=sk.byFile; renderFiles();
+      const sk=r.skipped, skip=skipText(sk); LASTSKIP=sk.byFile; LASTCHECKS=PgnFile.checks(r.games); renderFiles();
       fileNote=`${games.length} of your games in ${nm}${skip?` (left out: ${skip})`:''}${M.dupes?`; ${M.dupes} game${M.dupes===1?'':'s'} found in two files counted once`:''}.`;
       budget={games:Infinity,cache:true,mode:m};
       user=me.join(' / ');
     } else {
+      LASTCHECKS=null; if($('a-checks')) $('a-checks').hidden=true;
       note('Fetching games…',true);
       games=site==='lichess'?await fetchLichess(user,blitz):await fetchChesscom(user,blitz);
       budget={games:MAX_ENGINE_GAMES,cache:true,mode:m};
@@ -407,11 +418,11 @@ async function readFiles(list){
   if($('a-site').value!=='pgn'){ $('a-site').value='pgn'; srcUI() }
   const bad=[];
   for(const f of fs){ try{ note(`Reading ${f.name}…`,true); await new Promise(r=>setTimeout(r,20)); addFile(await f.text(),f.name) }catch(e){ bad.push(String(e.message||e)) } }
-  LASTSKIP=null; renderFiles();
+  LASTSKIP=null; LASTCHECKS=null; renderFiles();
   const n=FILES.reduce((a,f)=>a+f.parsed.games.length,0);
   note(bad.length?bad.join(' '):`${n} games in ${FILES.length} file${FILES.length===1?'':'s'}. Check which name is you, then press Analyze.`);
 }
-function srcUI(){ const f=$('a-site').value==='pgn'; document.querySelectorAll('#analyze [data-src]').forEach(e=>{ e.hidden=(e.dataset.src==='pgn')!==f });
+function srcUI(){ const f=$('a-site').value==='pgn'; document.querySelectorAll('#analyze [data-src]').forEach(e=>{ e.hidden=(e.dataset.src==='pgn')!==f }); if($('a-checks')) $('a-checks').hidden=!f||!(LASTCHECKS&&LASTCHECKS.length);
   $('a-pgnwho').hidden=!(f&&FILES.length); $('a-files').hidden=!(f&&FILES.length); $('a-go').textContent=f?'Analyze':'Fetch & analyze'; updateEstimate() }
 function init(){
   prefill(); addEventListener('hashchange',prefill);
@@ -434,14 +445,16 @@ function init(){
   /* a Lichess study link: the whole study's PGN, fetched by this browser */
   if($('a-study')) $('a-studygo').addEventListener('click',async()=>{ const u=$('a-study').value.trim(); if(!u) return;
     $('a-studygo').disabled=true; note('Fetching the study from Lichess…',true);
-    try{ const s=await Net.fetchStudy(u); addFile(s.pgn,(s.name||'Lichess study')+'.pgn'); $('a-study').value=''; LASTSKIP=null; renderFiles(); note(`Added ${s.name||'the study'} (${s.chapters} chapters).`) }
+    try{ const s=await Net.fetchStudy(u); addFile(s.pgn,(s.name||'Lichess study')+'.pgn'); $('a-study').value=''; LASTSKIP=null; LASTCHECKS=null; renderFiles(); note(`Added ${s.name||'the study'} (${s.chapters} chapters).`) }
     catch(e){ note(String(e.message||e)) }
     $('a-studygo').disabled=false });
   $('a-files').addEventListener('change',e=>{ const s=e.target.closest('[data-fsys]'); if(!s) return; const f=FILES[+s.dataset.fsys]; f.sys=s.value;
     const o=Store.get('pgn-sys')||{}; if(s.value==='auto') delete o[f.name]; else o[f.name]=s.value; Store.put('pgn-sys',o);
     if(LASTR&&LAST&&LAST.site==='pgn'){ for(const g of LAST.games) if(g.file===f.name&&g.site==='pgn') g.sys=effSys(f); renderReport(...LASTR) } });
-  $('a-files').addEventListener('click',e=>{ const b=e.target.closest('[data-frm]'); if(!b) return; FILES.splice(+b.dataset.frm,1); LASTSKIP=null; renderFiles(); if(!FILES.length) note('') });
-  $('a-pgnnames').addEventListener('change',()=>{ Store.put('pgn-me',meList()); syncSelect(PgnFile.players({games:merged().games}),new Set(meList())); updateEstimate() });
+  $('a-files').addEventListener('click',e=>{ const b=e.target.closest('[data-frm]'); if(!b) return; FILES.splice(+b.dataset.frm,1); LASTSKIP=null; LASTCHECKS=null; renderFiles(); if(!FILES.length) note('') });
+  $('a-pgnnames').addEventListener('change',e=>{
+    const i=e.target; if(i&&i.dataset&&i.dataset.alias){ const k=PgnFile.nameKey(i.value), o=new Set(Store.get('pgn-not-me')||[]); if(i.checked) o.delete(k); else o.add(k); Store.put('pgn-not-me',[...o]) }
+    Store.put('pgn-me',meList()); syncSelect(PgnFile.players({games:merged().games}),new Set(meList())); updateEstimate() });
   if($('a-pgnname')) $('a-pgnname').addEventListener('change',e=>{ document.querySelectorAll('#a-pgnnames input').forEach(i=>{ i.checked=i.value===e.target.value }); Store.put('pgn-me',meList()) });
   $('a-demo').addEventListener('click',()=>{ $('a-site').value='chesscom'; $('a-user').value='CoachSuhaas'; srcUI(); run('chesscom','CoachSuhaas') });
   $('a-user').addEventListener('keydown',e=>{ if(e.key==='Enter') $('a-go').click() });

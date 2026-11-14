@@ -1410,6 +1410,48 @@ section('t60: Year by year (shared/yearly.js): FIDE performance, opponents, rati
   assert(Y.section({byYear:{'2026':S.byYear['2026']}})==='','one year: no section');
 }
 
+section('t71: your name written differently, games to check (13 Nov 2026)');
+{
+  const {w}=await makePage(); await sleep(100); const F=w.PgnFile;
+  assert(F.nameKey('Doe, Jane Q.')===F.nameKey('jane q doe'),'"Last, First" is the same name as "First Last"');
+  const mv='1. d4 d5 2. Bf4 Nf6 3. e3 e6 4. Nf3 c5 1-0';
+  const G=(w_,b,res='1-0',m=mv)=>`[White "${w_}"]\n[Black "${b}"]\n[Result "${res}"]\n[Date "2025.01.0${1+(G.n=(G.n||0)+1)%9}"]\n\n${m.replace(/1-0$/,res)}\n\n`;
+  let t=G('Jane Q. Doe','A')+G('Jane Q. Doe','B')+G('Jane Doe','D')+G('J. Doe','E')+G('Janie Doe','F')+G('Jane','G')+G('janedoe','I')
+    +G('Sam Doe','Jane Q. Doe','0-1','1. e4 c6 2. d4 d5 3. e5 Bf5 4. Nf3 e6 0-1')+G('Doe','Jane Q. Doe','0-1','1. e4 c6 2. d4 d5 3. e5 Bf5 4. Nf3 e6 0-1')+G('Doe','K')+G('Bob Smith','Al Jones');
+  const P=F.parse(t), A=F.aliases(P,['Jane Q. Doe']), by=n=>A.find(a=>a.name===n);
+  assert(by('Jane Doe')&&by('Jane Doe').strong&&by('J. Doe')&&by('J. Doe').strong,'strong: no middle initial, an initial and the last name ('+JSON.stringify(A.map(a=>a.name))+')');
+  assert(by('Jane')&&!by('Jane').strong&&by('janedoe')&&by('Janie Doe'),'looser: the first name alone, a username, a first name like yours with your last name — each with its reason');
+  assert(!by('Sam Doe')&&!by('Doe'),'never a name that plays against you (Sam Doe, and "Doe", who did once)');
+  assert(!by('Bob Smith')&&!by('A'),'unrelated names left alone');
+  /* the page ticks them and remembers an untick */
+  w.Store.del('pgn-not-me'); w.Store.del('pgn-me');
+  w.AnalyzeTab.setFile(t,'jane.pgn'); await sleep(50);
+  const box=w.document.getElementById('a-pgnnames'), al=[...box.querySelectorAll('input[data-alias]')];
+  assert(al.length===A.length&&al.every(i=>i.checked),'"Also you?" chips, ticked ('+al.length+')');
+  const j=al.find(i=>i.value==='Jane'); j.checked=false; j.dispatchEvent(new w.Event('change',{bubbles:true})); await sleep(20);
+  w.AnalyzeTab.setFile(t,'jane.pgn'); await sleep(50);
+  const j2=[...w.document.querySelectorAll('#a-pgnnames input[data-alias]')].find(i=>i.value==='Jane');
+  assert(j2&&!j2.checked,'an alias you untick stays unticked');
+  /* a game with White and Black swapped in the tags: her White openings under the opponent's name */
+  let u=''; for(let k=0;k<7;k++) u+=G('Jane Q. Doe','W'+k)+G('B'+k,'Jane Q. Doe','1-0','1. e4 c6 2. d4 d5 3. e5 Bf5 4. Nf3 e6 1-0');
+  u+=G('Swapped Opp','Jane Q. Doe','1/2-1/2','1. d4 Nf6 2. Bf4 g6 3. e3 Bg7 4. Nf3 O-O 1/2-1/2');
+  u+='[White "Mated"]\n[Black "Jane Q. Doe"]\n[Result "0-1"]\n[Date "2025.02.02"]\n\n1. e4 e5 2. Bc4 Nc6 3. Qh5 Nf6 4. Qxf7# 0-1\n\n';
+  u+='[White "Jane Q. Doe"]\n[Black "Tag"]\n[Result "1-0"]\n[Date "2025.02.01"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bc4 Nf6 0-1\n\n';
+  const UG=F.toGames(F.parse(u),'Jane Q. Doe').games, C=F.checks(UG);
+  const sw=C.filter(c=>c.kind==='colour'), rs=C.filter(c=>c.kind==='result');
+  assert(sw.length===1&&sw[0].game.white==='Swapped Opp','one game flagged as colours swapped (her d4 Bf4 e3 under the opponent’s name), nothing else ('+sw.map(c=>c.game.white).join()+')');
+  assert(rs.some(c=>c.game.white==='Mated'&&/checkmate/.test(c.text))&&rs.some(c=>c.game.black==='Tag'&&/Result tag/.test(c.text)),'results that don’t fit: checkmate on the board, and the Result tag against the end of the moves');
+  /* the page lists them after a run */
+  w.AnalyzeTab.setFile(u,'u.pgn'); await sleep(30); w.Store.del('pgn-evals');
+  const ck=w.document.getElementById('a-checks');
+  await w.AnalyzeTab.run('pgn','Jane Q. Doe'); await sleep(150);
+  assert(!ck.hidden&&/Swapped Opp/.test(ck.textContent)&&/checkmate/.test(ck.textContent),'"Check these games" shows on the page after a run');
+  /* one game in two files under two spellings is counted once (40+ plies, same day) */
+  const long='1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5 7. Bb3 d6 8. c3 O-O 9. h3 Nb8 10. d4 Nbd7 11. Nbd2 Bb7 12. Bc2 Re8 13. Nf1 Bf8 14. Ng3 g6 15. a4 c5 16. d5 c4 17. Bg5 h6 18. Be3 Nc5 19. Qd2 h5 20. Bg5 Be7 1-0';
+  const f1=F.parse(`[White "Jane Q. Doe"]\n[Black "X"]\n[Result "1-0"]\n[Date "2025.03.03"]\n\n${long}\n`), f2=F.parse(`[White "Doe, Jane"]\n[Black "X Y"]\n[Result "1-0"]\n[Date "2025.03.03"]\n\n${long}\n`);
+  assert(F.merge([{name:'a',parsed:f1},{name:'b',parsed:f2}]).dupes===1,'the same long game under two spellings in two files is counted once');
+}
+
 section('t70: PGN accuracy (13 Nov 2026): zero castling, glued marks, e.p., ellipsis, study chapters, minutes time controls');
 {
   const {w}=await makePage(); await sleep(100); const F=w.PgnFile;

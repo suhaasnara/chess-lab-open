@@ -475,6 +475,8 @@ td.num,th.num{text-align:right;white-space:nowrap}
 .afname{overflow-wrap:anywhere;font-size:.9rem}.afn .note{display:none}
 .afile select{border:1px solid var(--line);border-radius:var(--radius);padding:5px 7px;background:var(--white);color:var(--ink);font-size:.88rem}
 @media (max-width:560px){.afhead{display:none}.afile{grid-template-columns:minmax(0,1fr) auto;border-top:1px solid var(--line);margin-top:6px;border-radius:var(--radius)}.afile .afname{grid-column:1/-1}.afn{text-align:left}.afn .note{display:inline}.afile select{grid-column:1;grid-row:3;width:100%}.afile .btn{grid-column:2;grid-row:3}}
+.aalias{flex-basis:100%;margin-top:4px}.aalias .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.acheckcard{margin-top:10px;border-left:3px solid var(--warn,#c80)}.acheck{margin-top:6px;line-height:1.45}
 .amore{flex-basis:100%;margin-top:2px}.amore summary{cursor:pointer}.amore .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 #a-pgnwho{margin-top:10px}
 #a-pgnnames{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
