@@ -7,7 +7,7 @@ Site.define({
     main:[['today','Today'],['openings','Openings'],['drills','Drills'],['tactics','Tactics'],['analyze','Analyze my games','Report card and drills from your own games'],['progress','Progress']],
     extra:[   /* grouped, two columns (shared nav.js, 13 Nov 2026) */
       ['blind','Blind tactics','Solve a puzzle from a position several moves back','Puzzles'],['calc','Calculation','Long puzzles, timed, with a free board','Puzzles'],
-      ['blundercheck','Blunder check','Your blunders from a Chess Lab pack: spot the threat, then your move','Puzzles'],
+      ['blundercheck','Blunder check','Your blunders from Analyze my games: spot the threat, then your move','Puzzles'],
       ['guess','Guess the move','Master games and your own, move by move','Study and play'],['endgames','Endgames','Textbook endings against perfect defence','Study and play'],
       ['play','Play','Games against Stockfish, blindfold','Study and play'],['watch','Watch','Your video library: place, notes, bookmarks','Study and play'],
       ['players','Players','Any Lichess or Chess.com player: openings, pre-round sheet','Opponents']]},

@@ -91,11 +91,14 @@ accounts, no uploads: progress lives in localStorage with JSON export/import.
   Shift+right-click, so Settings → *Arrow colour (plain right-click)* lets you make red the no-modifier colour.
 - **Dark mode** — Settings → Theme: Match device (default), Light or Dark.
 - **Progress** — totals and per-opening ratings, with JSON export/import.
-- **Chess Lab packs** — a friend with the private Chess Lab kit can analyse your games much deeper than a browser can
-  (every game, Stockfish at depth 22) and send you one file: Progress → *Load a Chess Lab pack* merges its drills into
-  Drills and Today (your results kept), shows its report card on Progress, and fills **Blunder check** (Extra): positions
-  from your games where your move was a blunder: first find what your opponent threatens, then your move. The pack holds
-  only your own games' data and stays in this browser like everything else.
+- **Blunder check** (Extra) — after the games, Analyze my games takes your biggest blunders (your Win% fell 15+
+  points from 30% or more; up to 40 a run) and asks the question you skipped: first find what your opponent threatens
+  (the same position with them to move: their best reply, or any within half a pawn of it), then your move (any of
+  Stockfish's top three within 0.3 pawns of the best). Saved with your drills, in the same removable set.
+- **The game view** — every analyzed game is kept in your browser, so each drill, blunder check, costly moment and
+  game in the report opens its game at the move: the board, the moves marked ?! / ? / ?? by the Win% they lost, an eval
+  graph, and buttons to train that position (over-the-board PGN games too). The last report comes back after a reload
+  without fetching or analyzing anything again.
 - **On a phone** — Openings notes, Guess the move, Calculation and Endgame solutions open in a **reader**: the board on
   top, the notes below with the current move at the top, Prev / Next at the bottom within thumb reach, and the screen
   kept awake. iPads and desktops keep the side-by-side layout.

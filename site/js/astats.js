@@ -7,7 +7,9 @@
      AStats.render(ctx)  HTML for the whole report; ctx {user, site, rows, allGames, total, final, fileNote, files,
                          yearly(games, sc), save(mistakes, toPunish, final)}
      AStats.click(e) / AStats.change(e)  filter and toggle events from the report; true when it should redraw
-     AStats.last         {mistakes, toPunish} of the last render (Save drills uses them)
+     AStats.last         {mistakes, toPunish, rows} of the last render (Save drills uses them)
+   Every game and costly moment links to the game view (#game?id=…&ply=…, js/gameview.js), at the move; online games keep
+   their ↗ link to Lichess or Chess.com beside it.
      AStats.quality(rows), AStats.leftBook(game), AStats.filter(games, F), AStats.perfCell(games)  (tests) */
 'use strict';
 window.AStats=(()=>{
@@ -168,6 +170,9 @@ window.AStats=(()=>{
       <figcaption class="alegend"><span><i class="ls"></i>Score</span>${hasA?'<span><i class="la"></i>Accuracy</span>':''}</figcaption></figure></div>`;
   }
 
+  /* a game's links: the game view on this site (at a move), and the game on Lichess / Chess.com */
+  const links=(g,ply)=>`<span class="aglinks"><a class="note" href="${esc(AGames.href(g.id,ply,'analyze'))}">${ply!=null?'open at the move':'open'}</a>${g.url&&/^https:\/\/(www\.)?(lichess\.org|chess\.com)\//.test(g.url)?` <a class="note" href="${esc(g.url)}" target="_blank" rel="noopener" title="The game on ${/lichess/.test(g.url)?'Lichess':'Chess.com'}">↗</a>`:''}</span>`;
+
   /* ---------- the report ---------- */
   function render(ctx){
     const {user,site,rows:rows0,allGames,total,final,files}=ctx;
@@ -175,7 +180,7 @@ window.AStats=(()=>{
     const SITE={lichess:'Lichess',chesscom:'Chess.com',pgn:files&&files.length>1?'Your PGN files':'Your PGN file'}[site]||site, got=site==='pgn'?'in the file'+(files&&files.length>1?'s':''):'fetched';
     const head=`<div class="rhead"><h2>Report card: ${esc(user)}</h2><span class="note">${esc(SITE)} · ${allGames.length} games ${got}${final?'':' · analyzing…'}</span></div>`;
     const bar=filterBar(allGames,all.length,files);
-    if(!all.length){ last={mistakes:[],toPunish:[]}; return head+bar+'<p class="empty">No games match these filters.</p>' }
+    if(!all.length){ last={mistakes:[],toPunish:[],rows:[]}; return head+bar+'<p class="empty">No games match these filters.</p>' }
     const W=rows.filter(r=>r.marks.score===1).length, D=rows.filter(r=>r.marks.score===0.5).length, L=rows.length-W-D;
     const blun=rows.reduce((a,r)=>a+r.marks.blun,0), mist=rows.reduce((a,r)=>a+r.marks.mist,0), inacc=rows.reduce((a,r)=>a+r.marks.inacc,0);
     const convs=rows.filter(r=>r.marks.conv!=null), saves=rows.filter(r=>r.marks.save!=null);
@@ -187,7 +192,7 @@ window.AStats=(()=>{
     const mistakes=rows.flatMap(r=>r.marks.drops.map(d=>({...d,game:r.game}))).sort((a,b)=>b.drop-a.drop);
     const pun=rows.flatMap(r=>r.marks.punish.map(d=>({...d,game:r.game})));
     const toPunish=pun.filter(p=>p.verdict!=='punished').sort((a,b)=>b.drop-a.drop);
-    last={mistakes,toPunish};
+    last={mistakes,toPunish,rows};
     const modes=[...new Set(rows.map(r=>r.game.evsrc).filter(Boolean))];
     const MODE={lichess:'Lichess server analysis',file:'evals in the file',standard:'Standard analysis',deep:'Deep analysis'};
     const syss=[...new Set(all.map(sysOf))], mixed=syss.length>1||new Set(all.filter(g=>opp(g)>0).map(poolKey)).size>1;
@@ -221,7 +226,7 @@ window.AStats=(()=>{
     const rowOf=new Map(rows.map(r=>[r.game.id,r]));
     const bmi=gs=>{ const rs=gs.map(g=>rowOf.get(g.id)).filter(Boolean); if(!rs.length) return '—'; const n=rs.length;
       return `${(rs.reduce((a,r)=>a+r.marks.blun,0)/n).toFixed(1)} / ${(rs.reduce((a,r)=>a+r.marks.mist,0)/n).toFixed(1)} / ${(rs.reduce((a,r)=>a+r.marks.inacc,0)/n).toFixed(1)}` };
-    const gameLine=g=>`<div class="agline"><span class="note">${esc(g.date||'')}</span><span>vs ${esc(oppName(g))}${opp(g)>0?` <span class="note">${opp(g)}</span>`:''}</span><span class="pill ${sc(g)===1?'good':sc(g)===0?'bad':'none'}">${sc(g)===1?'Won':sc(g)===0?'Lost':'Drawn'}</span>${g.url?`<a class="note" href="${esc(g.url)}" target="_blank" rel="noopener">game ↗</a>`:`<span class="note">${esc(g.event||'')}</span>`}</div>`;
+    const gameLine=g=>`<div class="agline"><span class="note">${esc(g.date||'')}</span><span><a href="${esc(AGames.href(g.id,null,'analyze'))}" title="Open the game">vs ${esc(oppName(g))}</a>${opp(g)>0?` <span class="note">${opp(g)}</span>`:''}</span><span class="pill ${sc(g)===1?'good':sc(g)===0?'bad':'none'}">${sc(g)===1?'Won':sc(g)===0?'Lost':'Drawn'}</span>${links(g)}</div>`;
     const opTable=c=>{ const L=opsOf(c); if(!L.length) return '<p class="note">No games with this colour.</p>';
       return `<div class="tablewrap"><table class="rtable atable aops"><thead><tr><th>Opening</th><th class="num">Games<div class="note">W / D / L</div></th><th class="num">Score</th><th class="num">Opponents<div class="note">avg · median</div></th><th class="num">Performance</th><th class="num">B / M / I${q('Your blunders / mistakes / inaccuracies per analyzed game in that opening.')}<div class="note">per game</div></th></tr></thead><tbody>${L.map(([k,gs])=>{ const [w,d,l]=wdlOf(gs), s=gs.reduce((a,g)=>a+sc(g),0), key=c+':'+k, open=OPEN===key;
         return `<tr class="aoprow"><td class="arname"><button type="button" class="linkbtn" data-opgames="${esc(key)}" aria-expanded="${open}">${esc(k)}</button>${wdlBar(w,d,l,k)}</td><td class="num" data-l="Games">${gs.length}<div class="note">${w} / ${d} / ${l}</div></td><td class="num" data-l="Score">${pct(s,gs.length)}%</td><td class="num" data-l="Opponents avg · median">${oppCell(gs)}</td><td class="num" data-l="Performance">${perfCell(gs,files)}</td><td class="num" data-l="B / M / I per game">${bmi(gs)}</td></tr>`+
@@ -261,11 +266,11 @@ window.AStats=(()=>{
       <div style="margin-top:6px">${mistakes.slice(0,10).map(m=>`<div class="gamerow"><span class="src">${esc(m.game.date)}</span>
         <span>${esc(m.san)} <span class="note">vs ${esc(oppName(m.game))}</span></span>
         <span class="pill ${m.drop>=0.3?'bad':'warn'}" title="Win%, from your side">${WinPct.change(m.before,m.drop,m.game.color)}</span>
-        ${m.game.url?`<a class="note" href="${esc(m.game.url)}" target="_blank" rel="noopener">game ↗</a>`:`<span class="note">${esc(m.game.event||'')}</span>`}</div>`).join('')||`<p class="note">${rows.length?'None found. Clean play!':'Waiting for analyzed games.'}</p>`}</div></div>`;
+        ${links(m.game,m.ply)}</div>`).join('')||`<p class="note">${rows.length?'None found. Clean play!':'Waiting for analyzed games.'}</p>`}</div></div>`;
     return `${head}${bar}
       <p class="lead note">Your results, mistakes and the positions worth drilling, from your own games.</p>
       ${tiles}
-      ${ctx.save(mistakes,toPunish,final)}
+      ${ctx.save(mistakes,toPunish,final,rows)}
       ${Yearly.section(yearly)}
       <div class="repgrid">
         ${results}

@@ -43,6 +43,7 @@ function activity(el){
   for(const v of Object.values(Store.get('calc-progress')||{})) if(v.t) ts.push(v.t);
   for(const v of Object.values(Store.get('blind-progress')||{})) if(v.t) ts.push(v.t);
   for(const v of Object.values(Store.get('endgame-progress')||{})) if(v.t) ts.push(v.t);
+  for(const v of Object.values(Store.get('bc-progress')||{})) if(v.t) ts.push(v.t);
   for(const o of OpeningsTab.openings()) for(const h of OpeningsTab.stats(o.id).history) ts.push(h.t);
   for(const g of Store.get('play-games')||[]) ts.push(g.t);
   const key=t=>{ const d=new Date(t); return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate() };
@@ -80,6 +81,7 @@ function render(){
   const tac=Store.get('tac-rating')||{r:null,n:0};
   const tsolved=Object.values(Store.get('tactics-progress')||{}).filter(x=>x.ok).length;
   const dr=Store.get('adrills')||[]; const dp=Store.get('adrills-progress')||{};
+  const bcs=Store.get('abc')||[], bp=Store.get('bc-progress')||{};
   const eg=window.EndgamesTab?EndgamesTab.stats():{solved:0,total:0};
   $('p-stats').innerHTML=`
     <div class="stat"><b>${withStats.reduce((a,x)=>a+x.st.lines,0)}</b><span class="note">opening lines trained</span></div>
@@ -87,6 +89,7 @@ function render(){
     <div class="stat"><b>${tsolved}</b><span class="note">${tsolved===1?'puzzle':'puzzles'} solved</span></div>
     ${(()=>{ const b=BlindTactics.stats(Store.get('blind-progress'),Store.get('blind-rating')); return `<div class="stat"><b>${b.rating==null?'–':b.rating}</b><span class="note">Blind rating · ${b.solved} solved${b.avgPlies?` · ${b.avgPlies} hidden plies on average`:''}${Help.q('Blind tactics (Extra): Elo against each puzzle’s Lichess rating, first try only; a peek counts as a miss. The average is over the puzzles you solved, at the number of hidden plies you had set.')}</span></div>` })()}
     <div class="stat"><b>${Object.values(dp).filter(x=>x.ok).length} / ${dr.length}</b><span class="note">game drills solved</span></div>
+    ${bcs.length?`<div class="stat"><b>${bcs.filter(d=>bp[d.id]&&bp[d.id].ok).length} / ${bcs.length}</b><span class="note">blunder checks passed (<a href="#blundercheck">Blunder check</a>)${Help.q('Passed: both steps right on the first try (the threat, then your move). A passed position comes back after 3, 7 and 21 days.')}</span></div>`:''}
     <div class="stat"><b>${eg.solved} / ${eg.total||'–'}</b><span class="note">endgames solved</span></div>`;
   { const lines=withStats.reduce((a,x)=>a+x.st.lines,0), ds=Object.values(dp).filter(x=>x.ok).length;
     const parts=[lines?Help.n(lines,'opening line')+' trained':'',tsolved?Help.n(tsolved,'puzzle')+' solved':'',dr.length?`${ds} of ${Help.n(dr.length,'drill')} from your games solved`:'',eg.solved?`${eg.solved} of ${eg.total} endgames won or held`:''].filter(Boolean);
@@ -99,16 +102,6 @@ function render(){
       return `<tr><td>${esc(o.name)}</td><td>${o.side}</td><td>${st.lines}</td><td>${st.rating}</td><td>${last}</td></tr>`;
     }).join('')||'<tr><td colspan="5" class="note">Nothing trained yet. Opening lines you play in Rated mode show up here.</td></tr>');
   charts(withStats);
-  if(window.PackReport) PackReport.render();   /* a loaded Chess Lab pack: what it holds and its report card */
-}
-/* Load a Chess Lab pack (a file built for you by the private kit): merged in, your results kept. */
-function loadPack(txt){
-  let o; try{ o=JSON.parse(txt) }catch(e){ throw new Error('That file is not a Chess Lab pack (it isn’t JSON).') }
-  const r=Store.importPack(o);
-  const parts=[`${r.added} new drill${r.added===1?'':'s'}${r.updated?` (${r.updated} you already had, kept with your results)`:''}`,`${r.bc} Blunder check position${r.bc===1?'':'s'}`];
-  if(r.games) parts.push(`a report card from ${r.games} games`);
-  if(r.reps) parts.push(`${r.reps} repertoire${r.reps===1?'':'s'}`);
-  return `Loaded ${r.player?r.player+'’s ':''}Chess Lab pack: ${parts.join(', ')}.`;
 }
 function init(){
   $('p-op').addEventListener('change',()=>render());
@@ -119,21 +112,12 @@ function init(){
     setTimeout(()=>URL.revokeObjectURL(a.href),5000);
   });
   $('p-import').addEventListener('click',()=>$('p-file').click());
-  $('p-loadpack').addEventListener('click',()=>$('p-packfile').click());
-  $('p-packfile').addEventListener('change',e=>{
-    const f=e.target.files[0]; if(!f) return; const n=$('p-packnote');
-    f.text().then(txt=>{ n.textContent=loadPack(txt); n.className='note packnote good'; n.hidden=false;
-        if(window.DrillsTab) DrillsTab.refresh(); if(window.BlunderCheckTab) BlunderCheckTab.refresh(); render() })
-      .catch(err=>{ n.textContent=String(err.message||err); n.className='note packnote err'; n.hidden=false });
-    e.target.value='';
-  });
-  if(window.PackReport) PackReport.init();
   $('p-file').addEventListener('change',e=>{
     const f=e.target.files[0]; if(!f) return;
-    f.text().then(txt=>{ const n=Store.importAll(JSON.parse(txt)); $('p-note').textContent=`Imported ${n} entries.`; render() })
+    f.text().then(txt=>{ const n=Store.importAll(JSON.parse(txt)); $('p-note').textContent=`Imported ${n} entries.`; render(); if(window.DrillsTab) DrillsTab.refresh(); if(window.BlunderCheckTab) BlunderCheckTab.refresh() })
       .catch(err=>{ $('p-note').textContent=String(err.message||err) });
     e.target.value='';
   });
 }
-window.ProgressTab={init,render,loadPack};
+window.ProgressTab={init,render};
 })();

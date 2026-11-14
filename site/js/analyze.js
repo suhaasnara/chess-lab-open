@@ -4,7 +4,10 @@
    evals is analyzed by Stockfish in your browser (Standard or Deep). Output: a report card (js/astats.js draws its
    stats and charts) and drills from your own mistakes, saved in sets you can remove again.
    v2 (14 Nov 2026): several PGN files at once (drag-and-drop, a Lichess study link), each with its rating system;
-   Standard / Deep analysis with time estimates measured on this device; Save drills near the top; saved sets. */
+   Standard / Deep analysis with time estimates measured on this device; Save drills near the top; saved sets.
+   13 Nov 2026: Blunder check from your own games (findBlunderChecks, after the analysis: the kit's tools/blundercheck
+   rule, in the browser); the games are kept (js/agames.js) so drills, blunder checks and costly moments open their game
+   (#game, js/gameview.js), and the last report comes back after a reload (restore). */
 'use strict';
 (function(){
 const CAP_CHESSCOM=25, CAP_LICHESS=60, MAX_ENGINE_GAMES=25;
@@ -109,7 +112,7 @@ async function evalsFor(game,budget,onStep){
    Also every move of yours with its Win% lost (moves[]), for Move quality. */
 function markGame(game,evs){
   const sign=game.color==='w'?1:-1;
-  const out={inacc:0,mist:0,blun:0,drops:[],conv:null,save:null,punish:[],moves:[]};
+  const out={inacc:0,mist:0,blun:0,drops:[],conv:null,save:null,punish:[],moves:[],bcand:[]};
   let prev=0.2; /* a shade for White at the start */
   let reachedWin=false,reachedLoss=false;
   const g=new Chess(); const fens=[g.fen()];
@@ -136,6 +139,10 @@ function markGame(game,evs){
     if(moverIsMe){
       const drop=(wc(prev)-wc(cur))*sign;
       out.moves.push({ply:i,winLost:Math.max(0,50*drop),before:prev*sign,after:cur*sign});
+      /* a Blunder check candidate (the kit's tools/blundercheck rule): your Win% fell 15+ points from 30% or more */
+      const w0=WinPct.pct(prev*sign), w1=WinPct.pct(cur*sign);
+      if(w0>=30&&w0-w1>=15&&fens[i]&&fens[i+1]){ const c=bcCand(fens[i],game.moves[i]);
+        if(c) out.bcand.push({ply:i,fen:fens[i],san:game.moves[i],uci:c.uci,nul:c.nul,w0,w1,after:fens[i+1],reply:game.moves[i+1]||''}) }
       if(drop>=0.1){
         const kind=drop>=0.3?'blun':drop>=0.2?'mist':'inacc'; out[kind]++;
         if(kind!=='inacc') out.drops.push({ply:i,fen:fens[i],san:game.moves[i],drop:+drop.toFixed(2),before:prev,after:cur,
@@ -150,6 +157,54 @@ function markGame(game,evs){
   out.score=myScore; out.fens=fens;
   return out;
 }
+
+/* ---------- Blunder check (13 Nov 2026: from your own games, in the browser) ----------
+   The private kit's tools/blundercheck rule, which built the Chess Lab packs' Blunder check: one of your moves that
+   dropped your Win% by 15+ points from 30%+, with 6+ pieces on the board, you not in check and the "null move" legal
+   (the same position with your opponent to move). Two searches per position at the run's depth, 3 lines each: the null
+   position (their best = the threat, kept when it gains them 1+ pawn over the position's eval; any reply within 0.5 of
+   it counts) and the real position (your answers: within 0.3 pawns of the best). At most BCMAX a run, costliest first.
+   The searches are kept (bc-evals, by position and move, with their depth), so a rerun or a restored report redoes
+   nothing. Ids: 'k' + sha1(fen|played uci)[:8], the kit's, so a pack's positions are the same positions. */
+const BCMAX=40, BCKEY='bc-evals', BCCACHE=600;
+function bcCand(fen,san){
+  if(fen.split(' ')[0].replace(/[^a-zA-Z]/g,'').length<6) return null;
+  const g=new Chess(fen); if(g.in_check()) return null;
+  const m=g.move(san,{sloppy:true}); if(!m) return null;
+  const p=fen.split(' '); p[1]=p[1]==='w'?'b':'w'; p[3]='-';
+  const nul=p.join(' '), n=new Chess(); if(!n.load(nul)||n.in_check()) return null;
+  return {uci:m.from+m.to+(m.promotion||''),nul};
+}
+const bcCandidates=rows=>rows.flatMap(r=>(r.marks.bcand||[]).map(c=>({...c,game:r.game}))).sort((a,b)=>(b.w0-b.w1)-(a.w0-a.w1)||(b.game.ts||0)-(a.game.ts||0)).slice(0,BCMAX);
+async function bcRecord(c,e){
+  const base=e.r[0][1], thr=e.n[0], gain=thr[1]+base;   /* engine scores in pawns from the mover's side (mate = 99) */
+  if(gain<1) return null;
+  const threats=e.n.filter(x=>x[1]+base>=gain-0.5).map(x=>x[0]), goods=e.r.filter(x=>x[1]>=base-0.3).map(x=>x[0]);
+  const g=c.game, oppElo=g.color==='w'?g.br:g.wr, ru=c.reply?uciOf(c.after,c.reply):'';
+  return {id:await drillId('k',c.fen,c.uci),fen:c.fen,null:c.nul,color:g.color==='w'?'white':'black',opp:g.color==='w'?g.black:g.white,oppElo:oppElo||'',
+    date:g.date||'',event:g.event||'',moveNo:+c.fen.split(' ')[5]||Math.floor(c.ply/2)+1,played:c.san,playedUci:c.uci,reply:c.reply,replyUci:ru||'',
+    w0:Math.round(c.w0),w1:Math.round(c.w1),threat:sanOf(c.nul,thr[0]),threatUci:thr[0],threats,gain:Math.round(gain*10)/10,
+    ignored:!!ru&&ru.slice(0,4)===thr[0].slice(0,4),best:sanOf(c.fen,e.r[0][0]),bestUci:e.r[0][0],goods,strong:oppElo>=2200,
+    site:g.site,url:g.url||'',g:g.id,ply:c.ply};
+}
+async function findBlunderChecks(rows,m,onStep){
+  const cands=bcCandidates(rows), depth=DEPTH[m], cache=Store.get(BCKEY)||{}, out=[]; let i=0, fresh=0;
+  for(const c of cands){
+    if(stopReq) break;
+    const key=c.fen+'|'+c.uci; let e=cache[key];
+    if(!e||!(e.d>=depth)){
+      const lim=m==='deep'?30000:9000;
+      const real=await SharedEngine.analyse(c.fen,depth,3,lim).catch(()=>null);
+      const nul=real&&real.length?await SharedEngine.analyse(c.nul,depth,3,lim).catch(()=>null):null;
+      if(real&&real.length&&nul&&nul.length){ e={d:depth,r:real.map(x=>[x.uci,x.cp]),n:nul.map(x=>[x.uci,x.cp])}; delete cache[key]; cache[key]=e; fresh++ } else e=null }
+    if(e){ const r=await bcRecord(c,e); if(r) out.push(r) }
+    onStep&&onStep(++i,cands.length);
+  }
+  if(fresh){ const ks=Object.keys(cache); if(ks.length>BCCACHE) for(const k of ks.slice(0,ks.length-BCCACHE)) delete cache[k]; Store.put(BCKEY,cache) }
+  return out;
+}
+/* the blunder checks of a set of rows from the stored searches only (no engine): the report after a filter */
+const bcOf=(rows,list)=>{ const ids=new Set(rows.map(r=>r.game.id)); return (list||[]).filter(d=>ids.has(d.g)) };
 
 /* ---------- Your files (several at once) ---------- */
 let FILES=[];        /* [{name, parsed, det:{sys,why}, sys:'auto'|<system>}] */
@@ -215,6 +270,11 @@ let BENCH=null, benching=null;
    positions take about 0.3× a benchmark position (openings, endgames and the hash carried from move to move are
    quick); at depth 16 about 1.1× */
 const CAL={standard:0.3,deep:1.1};
+/* Blunder check after the games: two 3-line searches per blunder, each about BCF × a benchmark search (Stockfish 18 lite,
+   30 real blunder positions and their null-move twins against the three benchmark positions, 13 Nov 2026: 1.36× at
+   depth 11, 2.55× at depth 16); about 0.3 blunders a game (0.25 in an NM's 208 over-the-board games, 0.24 in a club
+   player's 2,500 online games), at most BCMAX. */
+const BCF={standard:1.4,deep:2.6}, BC_PER_GAME=0.3;
 function bench(){
   if(BENCH||benching) return benching;
   benching=(async()=>{ const out={};
@@ -228,7 +288,7 @@ function bench(){
 const fmtDur=s=>s<60?`${Math.max(5,Math.round(s/5)*5)} s`:s<5400?`${Math.round(s/60)} min`:`${(s/3600).toFixed(1)} h`;
 /* plies that still need Stockfish for a mode: games of yours without evals in the file or a cached run good enough */
 function pliesToAnalyse(m){
-  if($('a-site').value!=='pgn'){ return {plies:MAX_ENGINE_GAMES*80,games:MAX_ENGINE_GAMES,online:true} }
+  if($('a-site').value!=='pgn'){ const n=$('a-site').value==='lichess'?CAP_LICHESS:CAP_CHESSCOM; return {plies:MAX_ENGINE_GAMES*80,games:MAX_ENGINE_GAMES,online:true,bc:Math.min(BCMAX,Math.ceil(BC_PER_GAME*n))} }
   if(!FILES.length) return null;
   const me=meList().map(PgnFile.nameKey); let plies=0, games=0, ready=0;
   for(const x of merged().games){ const w=PgnFile.nameKey(x.h.White), b=PgnFile.nameKey(x.h.Black);
@@ -237,7 +297,7 @@ function pliesToAnalyse(m){
     const id='f'+PGN.posId([x.h.White,x.h.Black,x.h.Date,x.h.Round,x.sans.join(' ')].join('|'));
     if(evCache.get(id,m)){ ready++; continue }
     plies+=x.sans.length; games++ }
-  return {plies,games,ready};
+  return {plies,games,ready,bc:Math.min(BCMAX,Math.ceil(BC_PER_GAME*(games+ready)))};
 }
 function updateEstimate(){
   const el=$('a-est'); if(!el) return;
@@ -246,7 +306,8 @@ function updateEstimate(){
     if(!P){ t.textContent=''; continue }
     if(!P.online&&!P.games){ t.textContent=P.ready?'nothing to do: every game already has evals':''; continue }
     if(!BENCH){ if(benching||FILES.length) t.textContent='measuring this device…'; else t.innerHTML='<button type="button" class="linkbtn" data-bench>estimate the time</button>'; continue }
-    t.textContent=`≈ ${fmtDur(P.plies*BENCH[m]*CAL[m])}${P.online?' for 25 games without stored evals':` for ${P.games} game${P.games===1?'':'s'}`}` }
+    t.textContent=`≈ ${fmtDur(P.plies*BENCH[m]*CAL[m]+P.bc*2*BCF[m]*BENCH[m])}${P.online?' for 25 games without stored evals':` for ${P.games} game${P.games===1?'':'s'}`}`;
+    t.title='Includes Blunder check (two searches for each of your biggest blunders, up to '+BCMAX+') after the games.' }
   /* the engine is measured only once there are games to analyse (or when asked): it downloads the engine */
   if(!BENCH&&!benching&&$('a-site').value==='pgn'&&FILES.length&&pliesToAnalyse('standard').games) bench();
 }
@@ -274,7 +335,7 @@ async function run(site,user,blitz){
       games=site==='lichess'?await fetchLichess(user,blitz):await fetchChesscom(user,blitz);
       budget={games:MAX_ENGINE_GAMES,cache:true,mode:m};
     }
-    LAST={games,site,fileNote,user};
+    LAST={games,site,fileNote,user,files:site==='pgn'?FILES.map(f=>({name:f.name,sys:effSys(f),why:sysWhy(f)})):[]}; LASTBC=[];
     if(!games.length) throw new Error(site==='pgn'?`No finished games by “${user}” in these files.`:`No recent ${blitz?'blitz, ':''}rapid or classical games found.`);
     const needEngine=games.filter(g=>!g.analysis&&!evCache.get(g.id,m)), nEng=Math.min(needEngine.length,budget.games);
     const engPlies=needEngine.slice(0,nEng).reduce((a,g)=>a+g.moves.length,0);
@@ -296,11 +357,56 @@ async function run(site,user,blitz){
       if(rows.length&&(Date.now()-drawn>1500||rows.length===1)){ renderReport(user,site,rows,games.length,false); drawn=Date.now() }
       if(Date.now()-tick>40){ await new Promise(r=>setTimeout(r,0)); tick=Date.now() }
     }
+    /* Blunder check: your biggest blunders, the threat you missed and your move (two searches each, kept for next time) */
+    let bcStopped=false;
+    if(!stopReq&&rows.length){ const nb=bcCandidates(rows).length;
+      if(nb){ if($('a-stop')) $('a-stop').hidden=false; prog(0); note(`Blunder check: finding the threat in your ${nb} biggest blunder${nb===1?'':'s'} (Stockfish, ${how})…`,true);
+        LASTBC=await findBlunderChecks(rows,m,(k,n)=>{ prog(k/n); note(`Blunder check: position ${k} of ${n} (Stockfish, ${how})…`,true) });
+        bcStopped=stopReq } }
     renderReport(user,site,rows,games.length,true);
-    note(stopReq?`Stopped: ${rows.length} of ${games.length} games analyzed so far. Press Analyze again to carry on (nothing is redone).`:site==='pgn'?`${fileNote} Done.`:'Done.');
+    const kept=keepRun(rows,games.length,m);
+    const keptNote=kept==='ok'?'':kept==='partial'?' This browser’s storage is full: the games your drills come from are kept, but this report won’t come back after a reload.':' This browser’s storage is full: these games can’t be kept, so the report won’t come back after a reload.';
+    note((bcStopped?`Stopped during Blunder check: ${LASTBC.length} position${LASTBC.length===1?'':'s'} found so far. Press Analyze again to carry on (nothing is redone).`
+      :stopReq?`Stopped: ${rows.length} of ${games.length} games analyzed so far. Press Analyze again to carry on (nothing is redone).`:site==='pgn'?`${fileNote} Done.`:'Done.')+keptNote);
   }catch(e){ note(String(e.message||e)) }
   prog(0,false); $('a-go').disabled=false; if($('a-stop')) $('a-stop').hidden=true; running=false; updateEstimate();
 }
+
+/* ---------- Keeping the games (js/agames.js) ---------- */
+function keepRun(rows,total,m){
+  const evs=new Map(rows.map(r=>[r.game.id,r.marks.evs]));
+  const res=AGames.saveRun({site:LAST.site,user:LAST.user,files:LAST.files,fileNote:LAST.fileNote,games:LAST.games,bc:LASTBC,total,mode:m},evs);
+  backfill(rows);
+  return res;
+}
+/* drills and blunder checks saved before games were kept have no game to open: find theirs in these games (the same
+   position and move) and point them to it */
+function backfill(rows){
+  const at=new Map();
+  for(const r of rows){ const f=r.marks.fens||[]; r.game.moves.forEach((san,i)=>{ if(f[i]) at.set(f[i]+'|'+san,{g:r.game.id,ply:i,r}) }) }
+  const used=new Map();
+  for(const k of ['adrills','abc']){ const L=Store.get(k)||[]; let ch=false;
+    for(const d of L){ if(d.g) continue; const x=at.get(d.fen+'|'+d.played); if(!x) continue; d.g=x.g; d.ply=x.ply; ch=true; used.set(x.g,x.r) }
+    if(ch) Store.put(k,L) }
+  if(used.size) AGames.pin([...used.values()].map(r=>({game:r.game,evs:r.marks.evs})));
+}
+/* the last report after a reload: its games and the stored evals, no fetch and no engine */
+const day=t=>new Date(t).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});
+function restore(){
+  if(LASTR||running) return false;
+  const L=AGames.last(); if(!L||!Array.isArray(L.ids)||!L.ids.length) return false;
+  const all=AGames.all(), games=L.ids.map(id=>all[id]).filter(Boolean).map(AGames.unpack); if(!games.length) return false;
+  const rows=[];
+  for(const game of games){
+    const evs=game.analysis?game.analysis.map(a=>a.mate!=null?(a.mate>0?MATE/100:-MATE/100):(a.eval||0)/100):AGames.evals(all[game.id]);
+    if(evs&&evs.length>=6) rows.push({game,marks:Object.assign(markGame(game,evs),{phase:phaseAccuracy(game,evs),evs})}) }
+  LAST={games,site:L.site,fileNote:L.fileNote||'',user:L.user,files:L.files||[],restored:L.t}; LASTBC=L.bc||[];
+  renderReport(L.user,L.site,rows,L.total||games.length,true);
+  note(`Your last report, from ${day(L.t)}: ${games.length} game${games.length===1?'':'s'}. Analyze again to update it.`);
+  return true;
+}
+/* a game of the report on screen (the game view asks while a run is still going, before the games are kept) */
+function live(id){ const g=LAST&&LAST.games.find(x=>x.id===id); if(!g) return null; const r=LASTR&&LASTR[2].find(x=>x.game.id===id); return {game:g,evs:r?r.marks.evs:null} }
 
 /* ---------- Phases and accuracy ----------
    Phases as Lichess divides a game: the middlegame starts when 10 or fewer major and minor pieces are left, or a back
@@ -319,18 +425,20 @@ function phaseAccuracy(game,evs){
     const drop=Math.max(0,winPct(before,mover)-winPct(cur,mover)); out[phase].push(Math.max(0,Math.min(100,103.1668*Math.exp(-0.04354*drop)-3.1669))) }
   Object.defineProperty(out,'at',{value:at,enumerable:false});
   return out }
-let LAST=null, LASTR=null;
+let LAST=null, LASTR=null, LASTBC=[];
 
 /* ---------- Saved drill sets ----------
    Every Save makes a set (adrill-sets: [{id, t, label, n}]); each drill lists the sets that saved it (d.b). Removing a
    set takes it off its drills and deletes only the drills no other set holds, with their results. Drills saved before
-   sets existed (no d.b) form one set per source (OTB / Lichess / Chess.com); a pack's drills (d.pack) are the pack's. */
+   sets existed (no d.b) form one set per source (OTB / Lichess / Chess.com). Since 13 Nov 2026 a set holds blunder checks
+   too (abc, results in bc-progress), and a loaded Chess Lab pack is the set "pack" (Store.migrate). */
 const platOf=d=>d.site==='lichess'?'lichess':d.site==='chesscom'||d.site==='chess.com'?'chesscom':'otb';
 const PLAT={otb:'over-the-board',lichess:'Lichess',chesscom:'Chess.com'};
 function drillSets(){
-  const D=Store.get('adrills')||[], S=(Store.get('adrill-sets')||[]).map(s=>({...s,n:D.filter(d=>(d.b||[]).includes(s.id)).length})).filter(s=>s.n);
+  const D=Store.get('adrills')||[], K=Store.get('abc')||[];
+  const S=(Store.get('adrill-sets')||[]).map(s=>({...s,n:D.filter(d=>(d.b||[]).includes(s.id)).length,nb:K.filter(d=>(d.b||[]).includes(s.id)).length})).filter(s=>s.n||s.nb);
   const old={}; for(const d of D) if(!d.b&&!d.pack){ const p=platOf(d); old[p]=(old[p]||0)+1 }
-  return S.sort((a,b)=>b.t-a.t).concat(Object.entries(old).map(([p,n])=>({id:'old:'+p,old:true,label:`Saved earlier from ${PLAT[p]} games`,n})));
+  return S.sort((a,b)=>b.t-a.t).concat(Object.entries(old).map(([p,n])=>({id:'old:'+p,old:true,label:`Saved earlier from ${PLAT[p]} games`,n,nb:0})));
 }
 function removeSet(id){
   const D=Store.get('adrills')||[], P=Store.get('adrills-progress')||{}, keep=[], gone=[];
@@ -342,15 +450,19 @@ function removeSet(id){
   }
   for(const k of gone) delete P[k];
   Store.put('adrills',keep); Store.put('adrills-progress',P);
+  /* the set's blunder checks: the same rule (one another set also holds stays) */
+  const K=Store.get('abc')||[], BP=Store.get('bc-progress')||{}, kk=[]; let nb=0;
+  for(const d of K){ if(!(d.b||[]).includes(id)){ kk.push(d); continue } const b=d.b.filter(x=>x!==id); if(b.length) kk.push({...d,b}); else { delete BP[d.id]; nb++ } }
+  if(nb||K.length!==kk.length){ Store.put('abc',kk); Store.put('bc-progress',BP) }
   Store.put('adrill-sets',(Store.get('adrill-sets')||[]).filter(s=>s.id!==id));
-  if(window.DrillsTab) DrillsTab.refresh();
-  return gone.length;
+  if(window.DrillsTab) DrillsTab.refresh(); if(window.BlunderCheckTab) BlunderCheckTab.refresh();
+  return gone.length+nb;
 }
+const setCount=s=>[s.n?`${s.n} drill${s.n===1?'':'s'}`:'',s.nb?`${s.nb} blunder check${s.nb===1?'':'s'}`:''].filter(Boolean).join(' · ');
 function setsHtml(){
   const S=drillSets(); if(!S.length) return '';
-  const day=t=>new Date(t).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});
-  return `<details class="asets"${S.length<=3?' open':''}><summary>Your saved drill sets (${S.length})${Help.q('Each time you save drills here they form a set. Remove a set to take its drills out of Drills, with their results; a position that another set also saved stays. Nothing else (your other drills, tactics, openings) is touched.')}</summary>
-    <div class="asetlist">${S.map(s=>`<div class="aset" data-set="${esc(s.id)}"><span>${esc(s.label)}${s.t?` <span class="note">· ${day(s.t)}</span>`:''}</span><span class="note num">${s.n} drill${s.n===1?'':'s'}</span>
+  return `<details class="asets"${S.length<=3?' open':''}><summary>Your saved drill sets (${S.length})${Help.q('Each time you save drills here they form a set, with its blunder checks. Remove a set to take its drills out of Drills and its positions out of Blunder check, with their results; a position that another set also saved stays. Nothing else (your other drills, tactics, openings) is touched.')}</summary>
+    <div class="asetlist">${S.map(s=>`<div class="aset" data-set="${esc(s.id)}"><span>${esc(s.label)}${s.t?` <span class="note">· ${day(s.t)}</span>`:''}</span><span class="note num">${setCount(s)}</span>
       <span class="asetbtns"><button type="button" class="btn sm" data-setrm="${esc(s.id)}">Remove</button></span></div>`).join('')}</div></details>`;
 }
 
@@ -358,36 +470,53 @@ function setsHtml(){
 function renderReport(user,site,rows0,total,final){
   LASTR=[user,site,rows0,total,final];
   const allG=(LAST&&LAST.games)||rows0.map(r=>r.game);
-  const html=AStats.render({user,site,rows:rows0,allGames:allG,total,final,fileNote:LAST&&LAST.fileNote,files:FILES.map(f=>({name:f.name,sys:effSys(f),why:sysWhy(f)})),
+  /* the files' rating systems: live while the loaded files are this report's (a change in the list redraws it); a restored
+     report keeps the ones it was made with */
+  const live=FILES.map(f=>({name:f.name,sys:effSys(f),why:sysWhy(f)}));
+  const files=LAST&&LAST.restored&&LAST.files&&LAST.files.length?LAST.files:live;
+  if(LAST&&!LAST.restored&&LAST.site==='pgn') LAST.files=live;
+  const html=AStats.render({user,site,rows:rows0,allGames:allG,total,final,fileNote:LAST&&LAST.fileNote,files,
     yearly:yearlyOf,save:saveCard});
   $('a-report').innerHTML=html;
 }
 /* the Save drills card (near the top: the most useful thing to do with a report) */
-function saveCard(mistakes,toPunish,final){
-  const nm=Math.min(mistakes.length,40), np=Math.min(toPunish.length,20);
-  const can=final&&(nm||np);
-  return `<div class="card asave"><div class="asavehead"><div><span class="label">Drills from these games${Help.q('A drill is the position before one of your costly moves: find a better move, judged by Stockfish. Punish drills are positions where your opponent erred and you didn’t make them pay. They go to the Drills tab (and Today) and come back until you solve them.')}</span>
-    <p class="note">${can?`Your ${nm} costliest move${nm===1?'':'s'}${np?`, plus ${np} position${np===1?'':'s'} where your opponent erred and you didn’t make them pay`:''}. Train them in Drills.`:final?'No costly moves found in these games: nothing to save.':'Drills can be saved when the analysis finishes (or after Stop).'}</p></div>
-    ${can?`<button class="btn primary" id="a-savedrills">Save ${nm+np} drills</button>`:''}</div>${setsHtml()}</div>`;
+function saveCard(mistakes,toPunish,final,rows){
+  const nm=Math.min(mistakes.length,40), np=Math.min(toPunish.length,20), nb=bcOf(rows||[],LASTBC).length;
+  const can=final&&(nm||np||nb);
+  const what=[nm+np?`${nm+np} drill${nm+np===1?'':'s'}`:'',nb?`${nb} blunder check${nb===1?'':'s'}`:''].filter(Boolean).join(' and ');
+  return `<div class="card asave"><div class="asavehead"><div><span class="label">Drills from these games${Help.q('A drill is the position before one of your costly moves: find a better move, judged by Stockfish. Punish drills are positions where your opponent erred and you didn’t make them pay. They go to the Drills tab (and Today) and come back until you solve them. A blunder check is one of your blunders asked the other way round: first spot what your opponent threatens, then find your move (Extra → Blunder check).')}</span>
+    <p class="note">${can?`${nm?`Your ${nm} costliest move${nm===1?'':'s'}`:''}${np?`${nm?', plus ':''}${np} position${np===1?'':'s'} where your opponent erred and you didn’t make them pay`:''}${nm+np?'. Train them in Drills.':''}${nb?` ${nb} of your blunders as blunder checks: spot the threat first, then your move.`:''}`:final?'No costly moves found in these games: nothing to save.':'Drills can be saved when the analysis finishes (or after Stop).'}</p></div>
+    ${can?`<button class="btn primary" id="a-savedrills">Save ${what}</button>`:''}</div>${setsHtml()}</div>`;
 }
 async function saveDrills(btn){
   const R=AStats.last; if(!R) return;
   btn.disabled=true; btn.textContent='Saving…';
   const drills=Store.get('adrills')||[], at=new Map(drills.map((d,i)=>[d.id,i]));
-  const set={id:'s'+Date.now().toString(36),t:Date.now(),label:LAST&&LAST.site==='pgn'?`From ${FILES.map(f=>f.name).join(', ')}`:`From ${LAST&&LAST.user} on ${LAST&&LAST.site==='lichess'?'Lichess':'Chess.com'}`};
-  let added=0;
+  const fl=(LAST&&LAST.files||[]).map(f=>f.name);
+  const set={id:'s'+Date.now().toString(36),t:Date.now(),label:LAST&&LAST.site==='pgn'?`From ${(fl.length?fl:FILES.map(f=>f.name)).join(', ')}`:`From ${LAST&&LAST.user} on ${LAST&&LAST.site==='lichess'?'Lichess':'Chess.com'}`};
+  let added=0; const games=new Map();
   const put=async(m,extra,prefix)=>{ const uci=uciOf(m.fen,m.san); if(!uci) return;
     const id=await drillId(prefix,m.fen,uci);
     if(at.has(id)){ const d=drills[at.get(id)]; if(d.b&&!d.b.includes(set.id)) d.b=d.b.concat(set.id); return }   /* already saved: this set holds it too (older drills keep no list) */
     at.set(id,drills.length); added++;
     drills.push({id,...extra,fen:m.fen,played:m.san,playedUci:uci,best:m.best,drop:m.drop,before:m.before,
-      date:m.game.date,opp:m.game.color==='w'?m.game.black:m.game.white,site:m.game.site,url:m.game.url,color:m.game.color,b:[set.id]}) };
+      date:m.game.date,opp:m.game.color==='w'?m.game.black:m.game.white,site:m.game.site,url:m.game.url,color:m.game.color,g:m.game.id,ply:m.ply,b:[set.id]});
+    games.set(m.game.id,m.game) };
   for(const m of R.mistakes.slice(0,40)) await put(m,{},'a');
   for(const m of R.toPunish.slice(0,20)) await put(m,{kind:'punish',oppMove:m.opp,oppDrop:m.oppDrop,verdict:m.verdict},'p');
-  Store.put('adrills',drills);
+  /* blunder checks (abc), the same set */
+  const K=Store.get('abc')||[], kat=new Map(K.map((d,i)=>[d.id,i])); let addedB=0;
+  for(const d of bcOf(R.rows||[],LASTBC)){
+    if(kat.has(d.id)){ const o=K[kat.get(d.id)]; if(!(o.b||[]).includes(set.id)) o.b=(o.b||[]).concat(set.id); if(!o.g){ o.g=d.g; o.ply=d.ply } }
+    else { kat.set(d.id,K.length); K.push({...d,b:[set.id]}); addedB++ }
+    const r=(R.rows||[]).find(x=>x.game.id===d.g); if(r) games.set(r.game.id,r.game) }
+  Store.put('adrills',drills); Store.put('abc',K);
   Store.put('adrill-sets',(Store.get('adrill-sets')||[]).concat(set));
-  btn.textContent=added?`Saved ${added} — see the Drills tab.`:'Already saved — see the Drills tab.';
-  if(window.DrillsTab) DrillsTab.refresh();
+  /* keep the games they come from, with their evals, so each opens in the game view */
+  const evOf=new Map((R.rows||[]).map(r=>[r.game.id,r.marks.evs]));
+  AGames.pin([...games.values()].map(g=>({game:g,evs:evOf.get(g.id)})));
+  btn.textContent=added||addedB?`Saved ${[added?`${added} drill${added===1?'':'s'}`:'',addedB?`${addedB} blunder check${addedB===1?'':'s'}`:''].filter(Boolean).join(' and ')} — see ${added?'Drills':'Blunder check'}.`:'Already saved — see the Drills tab.';
+  if(window.DrillsTab) DrillsTab.refresh(); if(window.BlunderCheckTab) BlunderCheckTab.refresh();
   const box=btn.closest('.asave'); const old=box&&box.querySelector('.asets'); const h=setsHtml();
   if(box){ if(old) old.outerHTML=h; else box.insertAdjacentHTML('beforeend',h) }
 }
@@ -450,7 +579,7 @@ function init(){
     $('a-studygo').disabled=false });
   $('a-files').addEventListener('change',e=>{ const s=e.target.closest('[data-fsys]'); if(!s) return; const f=FILES[+s.dataset.fsys]; f.sys=s.value;
     const o=Store.get('pgn-sys')||{}; if(s.value==='auto') delete o[f.name]; else o[f.name]=s.value; Store.put('pgn-sys',o);
-    if(LASTR&&LAST&&LAST.site==='pgn'){ for(const g of LAST.games) if(g.file===f.name&&g.site==='pgn') g.sys=effSys(f); renderReport(...LASTR) } });
+    if(LASTR&&LAST&&LAST.site==='pgn'&&!LAST.restored&&!running){ for(const g of LAST.games) if(g.file===f.name&&g.site==='pgn') g.sys=effSys(f); renderReport(...LASTR); keepRun(LASTR[2],LASTR[3],mode()) } });   /* kept games follow it, so a reload shows the same */
   $('a-files').addEventListener('click',e=>{ const b=e.target.closest('[data-frm]'); if(!b) return; FILES.splice(+b.dataset.frm,1); LASTSKIP=null; LASTCHECKS=null; renderFiles(); if(!FILES.length) note('') });
   $('a-pgnnames').addEventListener('change',e=>{
     const i=e.target; if(i&&i.dataset&&i.dataset.alias){ const k=PgnFile.nameKey(i.value), o=new Set(Store.get('pgn-not-me')||[]); if(i.checked) o.delete(k); else o.add(k); Store.put('pgn-not-me',[...o]) }
@@ -461,13 +590,14 @@ function init(){
   $('a-report').addEventListener('click',e=>{
     const sd=e.target.closest('#a-savedrills'); if(sd){ saveDrills(sd); return }
     const rm=e.target.closest('[data-setrm]'); if(rm){ const row=rm.closest('.aset'), id=rm.dataset.setrm, n=(drillSets().find(s=>s.id===id)||{}).n||0;
-      row.querySelector('.asetbtns').innerHTML=`<span class="note">Remove ${n} drill${n===1?'':'s'} and their results?</span> <button type="button" class="btn sm danger" data-setyes="${esc(id)}">Remove</button> <button type="button" class="btn sm" data-setno>Keep</button>`; return }
-    const yes=e.target.closest('[data-setyes]'); if(yes){ const n=removeSet(yes.dataset.setyes); const box=yes.closest('.asets'); if(box) box.outerHTML=setsHtml()||`<p class="note">Removed ${n} drill${n===1?'':'s'}.</p>`; return }
+      row.querySelector('.asetbtns').innerHTML=`<span class="note">Remove ${esc(setCount(drillSets().find(s=>s.id===id)||{n}))} and their results?</span> <button type="button" class="btn sm danger" data-setyes="${esc(id)}">Remove</button> <button type="button" class="btn sm" data-setno>Keep</button>`; return }
+    const yes=e.target.closest('[data-setyes]'); if(yes){ const n=removeSet(yes.dataset.setyes); const box=yes.closest('.asets'); if(box) box.outerHTML=setsHtml()||`<p class="note">Removed ${n} position${n===1?'':'s'}.</p>`; return }
     if(e.target.closest('[data-setno]')){ const box=e.target.closest('.asets'); if(box) box.outerHTML=setsHtml(); return }
     if(AStats.click(e)&&LASTR) renderReport(...LASTR) });
   $('a-report').addEventListener('change',e=>{ if(AStats.change(e)&&LASTR) renderReport(...LASTR) });
 }
 window.AnalyzeTab={init,phaseAccuracy,phaseOf,run,markGame,fetchLichess,fetchChesscom,evalsFor,yearlyOf,drillSets,removeSet,addFile,bench,DEPTH,
+  restore,live,findBlunderChecks,bcCandidates,BCMAX,get blunderChecks(){ return LASTBC },
   get files(){ return FILES },
   setFile(text,name){ FILES=[]; addFile(text,name||'file.pgn'); renderFiles() },
   addFiles(list){ for(const [text,name] of list) addFile(text,name); renderFiles() },

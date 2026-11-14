@@ -1729,113 +1729,57 @@ section('t58: Retry the miss (Y): the line again from your first miss, nothing r
   assert(S.log.length===2&&myTurn(),'Y: back to the first miss');
 }
 
-section('t59: a Chess Lab pack — Store.importPack merges by id, keeps your results, rejects other files, says when storage is full; Progress, Blunder check, Drills, Today');
+section('t59: Chess Lab packs retired (13 Nov 2026) — a browser that loaded one keeps its drills, positions and results (Store.migrate)');
 {
-  /* A made-up player (never a real one): two drills and two blunder checks on positions from a short game, ids as Open makes them. */
+  /* A made-up player (never a real one): what the old Store.importPack left in a browser — two pack drills (one the same
+     move Analyze had saved before, its result kept), one ordinary saved drill, two blunder-check positions, the pack-* keys. */
   const sha=s=>crypto.createHash('sha1').update(s).digest('hex').slice(0,8);
-  const {w}=await makePage(); const $=id=>w.document.getElementById(id), S=w.Store;
-  const g=new w.Chess(); for(const m of ['e4','e5','Nf3','Nc6','Bc4','Nf6','Ng5','d5','exd5','Na5']) g.move(m);
+  const {Chess}=require('../site/vendor/chess.js');
+  const g=new Chess(); for(const m of ['e4','e5','Nf3','Nc6','Bc4','Nf6','Ng5','d5','exd5','Na5']) g.move(m);
   const fen1=g.fen();                                  /* White to move: 6.Bb5+ is best, the made-up game had 6.d3 */
-  const g2=new w.Chess(); for(const m of ['d4','d5','c4','e6','Nc3','Nf6','Bg5','Be7']) g2.move(m);
+  const g2=new Chess(); for(const m of ['d4','d5','c4','e6','Nc3','Nf6','Bg5','Be7']) g2.move(m);
   const fen2=g2.fen();
   const dA={id:'a'+sha(fen1+'|d2d3'),fen:fen1,played:'d3',playedUci:'d2d3',best:'c4b5',drop:0.12,before:0.4,date:'2026-10-02',opp:'made_up_opp',site:'chesscom',url:'https://www.chess.com/game/live/1',color:'w',pack:1,type:'convert',tc:'10+0'};
   const dB={id:'a'+sha(fen2+'|e2e3'),fen:fen2,played:'e3',playedUci:'e2e3',best:'g1f3',drop:0.21,before:-0.3,date:'2026-09-12',opp:'another_opp',site:'chesscom',url:'',color:'w',pack:1,type:'save',tc:'15+10'};
-  const nullFen=fen1.replace(' w ',' b ');
-  const bcA={id:'k'+sha(fen1+'|d2d3'),fen:fen1,null:nullFen,color:'white',opp:'made_up_opp',oppElo:'1801',date:'2026-10-02',event:'',moveNo:6,played:'d3',playedUci:'d2d3',reply:'h6',replyUci:'h7h6',
-    w0:62,w1:41,e0:0.5,e1:-0.9,threat:'h6',threatUci:'h7h6',threats:['h7h6','f8c5'],gain:1.4,ignored:true,best:'Bb5+',bestUci:'c4b5',goods:['c4b5','b1c3'],strong:false,site:'chesscom',url:'',tc:'10+0'};
-  const bcB=Object.assign({},bcA,{id:'k'+sha(fen2+'|e2e3'),fen:fen2,null:fen2.replace(' w ',' b '),played:'e3',playedUci:'e2e3',threats:['f6e4'],threat:'Ne4',threatUci:'f6e4',goods:['g1f3'],best:'Nf3',bestUci:'g1f3',strong:true,oppElo:'2210'});
-  const pack={_app:'chess-lab-pack',_v:1,_t:'2026-11-11T12:00:00Z',player:{name:'Pat Example',chesscom:'pat_example',lichess:''},
-    meta:{built:'2026-11-11',games:120,rapid:40,blitz:80,newest:'2026-11-10',oldest:'2025-11-12'},
-    drills:[dA,dB],bc:[bcA,bcB],
-    report:{since:null,overall:{games:120},views:{'online|all':{overall:{games:120,wins:60,draws:10,losses:50,score:54.2,convN:30,convWon:21,convDrawn:3,conversion:70,saveN:25,saveHeld:6,saveRate:24},
-      bySpeed:{'Chess.com blitz':{games:80,wins:40,draws:6,losses:34,score:53.8,convN:20,convWon:14,convDrawn:2,conversion:70,saveN:17,saveHeld:4,saveRate:23.5},'Chess.com rapid':{games:40,wins:20,draws:4,losses:16,score:55,convN:10,convWon:7,convDrawn:1,conversion:70,saveN:8,saveHeld:2,saveRate:25}},
-      byYear:{'2025':{games:20,wins:9,draws:2,losses:9,score:50,convN:5,convWon:3,convDrawn:1,conversion:60,saveN:4,saveHeld:1,saveRate:25},'2026':{games:100,wins:51,draws:8,losses:41,score:55,convN:25,convWon:18,convDrawn:2,conversion:72,saveN:21,saveHeld:5,saveRate:23.8}},
-      poolsByYear:{'2025':[{pool:'Chess.com blitz',games:20,score:50,oppN:20,oppAvg:1500,oppMed:1490,perf:1500,start:1480,end:1530,gained:120,lost:70}],'2026':[{pool:'Chess.com blitz',games:80,score:55,oppN:80,oppAvg:1580,oppMed:1600,perf:1616,start:1530,end:1610,gained:400,lost:320},{pool:'Chess.com rapid',games:20,score:55,oppN:20,oppAvg:1900,oppMed:1910,perf:1935,start:1550,end:1540,gained:60,lost:70}]},
-      pools:[{pool:'Chess.com blitz',games:100,score:54,oppN:100,oppAvg:1564,oppMed:1580,perf:1592},{pool:'Chess.com rapid',games:20,score:55,oppN:20,oppAvg:1900,oppMed:1910,perf:1935}],
-      byQuarter:{'2026 Q2':{games:50,wins:25,draws:5,losses:20,score:55,convN:12,convWon:8,convDrawn:1,conversion:66.7,saveN:10,saveHeld:3,saveRate:30},'2026 Q3':{games:50,wins:26,draws:3,losses:21,score:55,convN:13,convWon:10,convDrawn:1,conversion:76.9,saveN:11,saveHeld:2,saveRate:18.2}},
-      byBand:{'Under 1800':{games:70,wins:45,draws:5,losses:20,score:67.9,convN:20,convWon:16,convDrawn:1,conversion:80,saveN:10,saveHeld:4,saveRate:40}},
-      openings:[{family:'Italian Game',side:'white',games:30,wins:16,draws:2,losses:12,score:56.7,convN:8,convWon:6,convDrawn:0,conversion:75,saveN:5,saveHeld:1,saveRate:20,ev12:0.31,line:['e4','e5','Nf3','Nc6','Bc4']}]}}},
-    prep:null,reps:[]};
-
-  /* other files are refused, with a clear reason */
-  const bad=(o,re,msg)=>{ let e=null; try{ S.importPack(o) }catch(x){ e=x } assert(e&&re.test(e.message),msg+' ('+(e&&e.message)+')') };
-  bad({_app:'chess-lab-open',_v:1},/progress export/i,'a progress export is refused (use Import progress)');
-  bad({_app:'something-else'},/Not a Chess Lab pack/,'another app’s file is refused');
-  bad(Object.assign({},pack,{_v:2}),/newer version/,'a pack from a newer version is refused');
-  assert(!S.get('pack-meta')&&!(S.get('adrills')||[]).length,'nothing was stored by a refused file');
-
-  /* the same move found earlier by Analyze my games: one drill, your result kept */
-  S.put('adrills',[{id:dA.id,fen:fen1,played:'d3',playedUci:'d2d3',best:null,drop:0.1,before:0.5,date:'2026-10-02',opp:'made_up_opp',site:'chesscom',url:'',color:'w'}]);
-  S.put('adrills-progress',{[dA.id]:{tries:2,ok:true,okN:1,t:1700000000000}});
-  const prog0=JSON.stringify(S.get('adrills-progress'));
-  const r=S.importPack(pack);
-  assert(r.added===1&&r.updated===1&&r.bc===2&&r.games===120,'counts: 1 new drill, 1 already there, 2 blunder checks, 120 games ('+JSON.stringify(r)+')');
+  const dC={id:'a00000c01',fen:fen2,played:'h3',playedUci:'h2h3',best:null,drop:0.3,before:0.1,date:'2026-08-01',opp:'third_opp',site:'pgn',url:'',color:'w',b:['s1']};
+  const bcA={id:'k'+sha(fen1+'|d2d3'),fen:fen1,null:fen1.replace(' w ',' b '),color:'white',opp:'made_up_opp',oppElo:'1801',date:'2026-10-02',event:'',moveNo:6,played:'d3',playedUci:'d2d3',reply:'h6',replyUci:'h7h6',
+    w0:62,w1:41,threat:'h6',threatUci:'h7h6',threats:['h7h6','f8c5'],gain:1.4,ignored:true,best:'Bb5+',bestUci:'c4b5',goods:['c4b5','b1c3'],strong:false,src:'chesscom',url:'',tc:'10+0'};
+  const bcB=Object.assign({},bcA,{id:'k'+sha(fen2+'|e2e3'),fen:fen2,null:fen2.replace(' w ',' b '),played:'e3',playedUci:'e2e3',threats:['f6e4'],threat:'Ne4',threatUci:'f6e4',goods:['g1f3'],best:'Nf3',bestUci:'g1f3',strong:true,oppElo:'2210',opp:'another_opp'});
+  const PROG={[dA.id]:{tries:2,ok:true,okN:1,t:1700000000000},[dC.id]:{tries:1,t:1700000000001}}, BCP={[bcB.id]:{n:1,ok:true,okN:1,t:Date.now()}};
+  const seed=(ls,extra={})=>{ const put=(k,v)=>ls.setItem('clo:'+k,JSON.stringify(v));
+    put('adrills',[dA,dB,dC]); put('adrills-progress',PROG); put('adrill-sets',[{id:'s1',t:1700000000000,label:'From club.pgn'}]); put('bc-progress',BCP);
+    put('pack-player',{name:'Pat Example'}); put('pack-meta',{built:'2026-11-11',loaded:'2026-11-12T10:00:00.000Z',games:120}); put('pack-report',{views:{}}); put('pack-bc',[bcA,bcB,{id:'junk'}]); put('pack-prep',null); put('pack-view',{src:'online'});
+    for(const k in extra) put(k,extra[k]) };
+  const {w}=await makePage({beforeLoad:w=>seed(w.localStorage)}); const $=id=>w.document.getElementById(id), S=w.Store;
+  assert(['pack-player','pack-meta','pack-report','pack-bc','pack-prep','pack-view'].every(k=>w.localStorage.getItem('clo:'+k)==null),'on start-up the pack-* keys are gone');
   const D=S.get('adrills');
-  assert(D.length===2&&D.filter(d=>d.id===dA.id).length===1,'merged by id: no duplicate');
-  assert(D.find(d=>d.id===dA.id).best==='c4b5'&&D.every(d=>d.pack===1),'the pack’s verified record (best move) replaces the old one, marked as from the pack');
-  assert(JSON.stringify(S.get('adrills-progress'))===prog0,'adrills-progress untouched');
-  const r2=S.importPack(pack);
-  assert(r2.added===0&&r2.updated===2&&S.get('adrills').length===2,'loading it again adds nothing');
-  assert(S.get('pack-player').name==='Pat Example'&&S.get('pack-bc').length===2&&S.get('pack-report').views['online|all'],'player, blunder check and report stored (pack-*)');
-  /* a junk record in a pack is skipped, not stored */
-  const r3=S.importPack(Object.assign({},pack,{drills:[...pack.drills,{id:'zz',fen:'x'}],bc:[...pack.bc,{id:'k123'}]}));
-  assert(r3.drills===2&&r3.bc===2,'records without a valid id / fen / answer lists are skipped');
+  assert(D.map(d=>d.id).join()===[dA.id,dB.id,dC.id].join(),'every drill stays, in order, none added');
+  assert(D[0].b.join()==='pack'&&D[1].b.join()==='pack'&&D[2].b.join()==='s1','the pack’s drills join the set "pack"; the ordinary drill keeps its own set');
+  assert(D[0].best==='c4b5'&&D[0].url===dA.url,'the pack’s records are kept as they were (best move, link)');
+  assert(JSON.stringify(S.get('adrills-progress'))===JSON.stringify(PROG)&&JSON.stringify(S.get('bc-progress'))===JSON.stringify(BCP),'drill and Blunder check results byte-identical');
+  const K=S.get('abc');
+  assert(K.length===2&&K.map(d=>d.id).join()===[bcA.id,bcB.id].join()&&K.every(d=>d.b.join()==='pack'&&d.site==='chesscom'),'its Blunder check positions move to abc (junk left out), in the set, with where they were played');
+  const sets=w.AnalyzeTab.drillSets(), ps=sets.find(x=>x.id==='pack');
+  assert(ps&&ps.label==='From your Chess Lab pack'&&ps.n===2&&ps.nb===2&&ps.t===Date.parse('2026-11-12T10:00:00.000Z'),'Analyze lists it as a saved set: 2 drills · 2 blunder checks, dated when it was loaded');
+  assert(!S.importPack&&!S.pack&&!$('p-loadpack')&&!$('p-pack')&&!$('p-report')&&!w.PackReport,'nothing left of the loader: no importPack, no button, no pack report card');
+  assert(![...w.document.querySelectorAll('#welcome li')].some(li=>/pack/i.test(li.textContent))&&!/pack/i.test($('d-about').textContent)&&!/pack/i.test($('bc-about').textContent),'no page text mentions packs any more');
+  assert(S.migrate()===null,'running it again does nothing');
 
-  /* storage full: all or nothing, and the reason in plain words */
-  { const ls=w.localStorage, SP=w.Storage.prototype, real=SP.setItem; const before=ls.getItem('clo:adrills'), bcBefore=ls.getItem('clo:pack-bc');
-    SP.setItem=function(k,v){ if(k==='clo:pack-report'){ const e=new Error('quota'); e.name='QuotaExceededError'; throw e } return real.call(this,k,v) };
-    const big=Object.assign({},pack,{drills:[...pack.drills,Object.assign({},dB,{id:'a'+sha('x|y'),fen:fen2})]});
-    let err=null; try{ S.importPack(big) }catch(e){ err=e }
-    SP.setItem=real;
-    assert(err&&/doesn’t fit in this browser’s storage/.test(err.message)&&/Nothing was changed/.test(err.message),'storage full: a clear message ('+(err&&err.message.slice(0,60))+'…)');
-    assert(ls.getItem('clo:adrills')===before&&ls.getItem('clo:pack-bc')===bcBefore,'storage full: what was written is put back'); }
-
-  /* Progress: the load button, what the pack holds, its report card */
-  assert($('p-loadpack')&&$('p-packfile')&&$('p-packfile').accept.includes('json'),'Progress has "Load a Chess Lab pack"');
+  /* Progress: a tile for Blunder check */
   w.location.hash='#progress'; await sleep(80);
-  assert(!$('p-pack').hidden&&/Pat Example/.test($('p-pack').textContent)&&/120 games \(40 rapid, 80 blitz\)/.test($('p-pack').textContent),'the pack card: whose, how many games');
-  assert(/1 \/ 2/.test($('p-pack').textContent)&&/0 \/ 2/.test($('p-pack').textContent),'pack drills solved (1 of 2, the result from Analyze kept) and blunder checks passed');
-  const rc=$('p-report'); assert(!rc.hidden&&/Report card/.test(rc.textContent),'the report card shows');
-  assert(/From 120 online games/.test(rc.textContent)&&/70%/.test(rc.textContent),'lead and tiles from the pack (120 games, 70% conversion)');
-  const hs=[...rc.querySelectorAll('h3')].map(h=>h.textContent);
-  assert(['By opponent rating','By opening','By game type','Year by year','By quarter'].every(t=>hs.includes(t)),'tables: opponent rating, opening, game type, year by year, quarter ('+hs.join(', ')+')');
-  { const yt=rc.querySelector('.ytable'), prs=[...yt.querySelectorAll('tbody tr.ypoolrow')];
-    assert(yt.classList.contains('ymulti')&&yt.querySelectorAll('tbody tr.yrow').length===2&&prs.length===3,'Year by year: a row per year and a line per rating pool under it');
-    const blitz26=prs[1], rapid26=prs[2];
-    assert(/Chess\.com blitz/.test(blitz26.textContent)&&/1580 · 1600/.test(blitz26.textContent)&&/1616/.test(blitz26.textContent),'pool line: opponents average · median and performance in that pool');
-    assert(/▲ 116/.test(blitz26.textContent)&&blitz26.querySelector('.ydelta.tgood'),'pool line: performance against the same pool’s previous year (▲ 116)');
-    assert(/1530 → 1610\s*\+400 \/ −320/.test(blitz26.textContent),'pool line: rating start → end, gained / lost');
-    assert(/1935/.test(rapid26.textContent)&&!rapid26.querySelector('.ydelta'),'a pool new this year: no change shown (nothing to compare with)');
-    assert(/against 2025: a score of 55% \(\+5 points\)/.test(rc.querySelector('.yearbox').textContent)&&/Chess\.com blitz: performance 1616 \(\+116\)/.test(rc.querySelector('.yearbox').textContent),'the summary line: score overall, performance per pool');
-    const st=rc.querySelector('.stats').textContent;
-    assert(/Performance rating, by pool/.test(st)&&/1592/.test(st)&&/1935/.test(st),'the tile gives each pool’s performance, never one mixed figure'); }
-  assert(!rc.querySelector('[data-prv]'),'online games only: no Over the board / Combined switch, no period switch');
-  assert(/\+0\.31/.test(rc.textContent),'eval after move 12 from White’s side (+0.31 as White)');
-  const drill=rc.querySelector('[data-pdrill]'); assert(drill,'"Drill this" on the opening row');
-  drill.click(); await sleep(150);
-  assert(w.location.hash==='#openings'&&w.OpeningsTab.state.op&&w.OpeningsTab.state.op.name==='Italian Game as White','Drill this opens the line in the opening trainer');
-  drill.click(); await sleep(150);
-  assert(w.OpeningsTab.customs().filter(c=>c.name==='Italian Game as White').length===1,'a second Drill this reuses it');
+  assert(/1 \/ 2\s*blunder checks passed/.test($('p-stats').textContent),'Progress: 1 / 2 blunder checks passed');
 
-  /* the file input path, end to end */
-  w.location.hash='#progress'; await sleep(60);
-  if(!w.File.prototype.text) w.File.prototype.text=function(){ return new Promise(res=>{ const r=new w.FileReader(); r.onload=()=>res(r.result); r.readAsText(this) }) };   /* jsdom has no Blob.text */
-  const fi=$('p-packfile'); const file=new w.File([JSON.stringify(pack)],'pack.json',{type:'application/json'});
-  Object.defineProperty(fi,'files',{value:[file],configurable:true}); fi.dispatchEvent(new w.Event('change')); await sleep(150);
-  assert(/Loaded Pat Example’s Chess Lab pack: 0 new drills \(2 you already had, kept with your results\), 2 Blunder check positions, a report card from 120 games\./.test($('p-packnote').textContent),'loading from the file says what came in: '+$('p-packnote').textContent);
-  Object.defineProperty(fi,'files',{value:[new w.File(['not json'],'x.json')],configurable:true}); fi.dispatchEvent(new w.Event('change')); await sleep(120);
-  assert(/isn’t JSON/.test($('p-packnote').textContent)&&$('p-packnote').classList.contains('err'),'a broken file: a clear error');
-
-  /* Drills and Today use the pack's drills */
+  /* Drills and Today still use the pack's drills */
   w.location.hash='#drills'; await sleep(80);
-  assert(w.document.querySelectorAll('#d-list .drill').length===2,'Drills lists the pack’s drills');
+  assert(w.document.querySelectorAll('#d-list .drill').length===3,'Drills lists the three drills');
+  w.DrillsTab.load(S.get('adrills')[0]); assert(/Chess\.com ↗/.test($('d-facts').textContent)&&!$('d-gamelink'),'a pack drill keeps its Chess.com link (its game was never kept here, so no game view link)');
   w.Store.del('today'); w.location.hash='#today'; await sleep(120);
   assert((w.Store.get('today')||{drills:[]}).drills.includes(dB.id),'Today picks the untried pack drill');
 
-  /* Blunder check: the threat, then your move */
+  /* Blunder check: the threat, then your move (positions now from abc) */
   w.location.hash='#blundercheck'; await sleep(100);
   const B=w.BlunderCheckTab;
-  assert(w.document.querySelectorAll('#bc-list .drill').length===2,'Blunder check lists the pack’s positions');
+  assert(/of 2 positions/.test($('bc-listlabel').textContent)&&w.document.querySelectorAll('#bc-list .drill').length===1,'Blunder check holds the moved positions (the one already solved is under All)');
   assert(B.state.cur&&B.state.phase==='threat','opening the tab opens the first position at step 1');
   B.open(bcA.id); assert(/what does made_up_opp threaten/.test($('bc-status').textContent),'step 1 asks for the threat');
   B.move('a7','a6'); assert($('bc-status').classList.contains('bad')&&B.state.phase==='threat','a wrong threat: try again');
@@ -1844,26 +1788,33 @@ section('t59: a Chess Lab pack — Store.importPack merges by id, keeps your res
   B.move('c4','b5'); assert(B.state.phase==='done'&&/Bb5\+ holds/.test($('bc-status').textContent),'a good move holds');
   assert(w.Store.get('bc-progress')[bcA.id].ok===false,'a missed first try at the threat: not solved, back tomorrow');
   assert(/Back tomorrow/.test($('bc-reveal').textContent)&&/That was exactly the threat/.test($('bc-reveal').textContent),'the game: what happened');
-  B.open(bcB.id); B.move('f6','e4'); await sleep(1450); B.move('g1','f3');
-  assert(w.Store.get('bc-progress')[bcB.id].ok===true&&/back in 3 days/.test($('bc-reveal').textContent),'both steps right first time: solved, back in 3 days');
-  assert(B.status(bcB)==='solved'&&B.status(bcA)==='missed','statuses');
+  assert(B.status(bcB)==='solved','the result carried over from the pack: solved');
   B.open(bcA.id); B.show(); assert(/The threat: h6/.test($('bc-status').textContent),'Show the threat'); await sleep(1600); B.show();
   assert(B.state.phase==='done'&&/Stockfish: Bb5\+/.test($('bc-status').textContent),'Show the move');
   assert(w.Keys.map('blundercheck').n&&w.Keys.map('blundercheck').s,'keys N and S');
-  /* a newer pack keeps the results (same ids) */
-  S.importPack(pack); assert(w.Store.get('bc-progress')[bcB.id].ok===true,'a reloaded pack keeps Blunder check results');
 
-  /* remove the pack: its report and positions go, results and tried drills stay */
-  w.location.hash='#progress'; await sleep(60);
-  w.Store.put('adrills-progress',{[dA.id]:{tries:2,ok:true,okN:1,t:1700000000000}});
-  $('p-packrm').click(); await sleep(60);
-  assert(!S.get('pack-meta')&&!S.get('pack-bc')&&$('p-pack').hidden&&$('p-report').hidden,'Remove the pack: report and Blunder check gone');
-  assert(S.get('adrills').map(d=>d.id).join()===dA.id&&S.get('bc-progress')[bcB.id],'tried drills and every result stay');
+  /* removing the set takes the pack's drills and positions with their results; the rest is byte-identical */
+  const P0=JSON.parse(JSON.stringify(S.get('adrills-progress'))); delete P0[dA.id];
+  assert(w.AnalyzeTab.removeSet('pack')===4,'Remove the pack set: 2 drills + 2 positions');
+  assert(S.get('adrills').map(d=>d.id).join()===dC.id&&!(S.get('abc')||[]).length,'only the ordinary drill stays');
+  assert(JSON.stringify(S.get('adrills-progress'))===JSON.stringify(P0)&&!Object.keys(S.get('bc-progress')).length,'their results go; the other result is untouched');
   w.location.hash='#blundercheck'; await sleep(60);
-  assert(/needs a Chess Lab pack/.test($('bc-list').textContent),'Blunder check without a pack explains where positions come from');
-  assert([...w.document.querySelectorAll('#welcome li')].some(li=>/Got a pack from a friend\?/.test(li.textContent)),'the welcome card mentions packs');
-}
+  assert(/Run Analyze my games/.test($('bc-list').textContent),'an empty Blunder check says where positions come from now');
 
+  /* storage full during the move: nothing is deleted, it runs again next time */
+  { const {w:w2}=await makePage({beforeLoad:w=>{ seed(w.localStorage); const SP=w.Storage.prototype, real=SP.setItem;
+      SP.setItem=function(k,v){ if(k==='clo:abc'){ const e=new Error('quota'); e.name='QuotaExceededError'; throw e } return real.call(this,k,v) }; w.__realSet=real }});
+    assert(w2.localStorage.getItem('clo:pack-bc')&&w2.localStorage.getItem('clo:pack-meta'),'storage full: the pack keys stay (nothing lost)');
+    w2.Storage.prototype.setItem=w2.__realSet;
+    const r=w2.Store.migrate();
+    assert(r&&r.drills===2&&r.bc===2&&!w2.localStorage.getItem('clo:pack-bc')&&w2.Store.get('abc').length===2&&w2.Store.get('adrills')[0].b.join()==='pack','and the next start moves them, once (no duplicate set)');
+    assert(w2.Store.get('adrill-sets').filter(x=>x.id==='pack').length===1,'one pack set'); }
+
+  /* an old progress export that still holds pack keys: moved on import */
+  { const {w:w3}=await makePage();
+    w3.Store.importAll({_app:'chess-lab-open',_v:1,adrills:[dA],'pack-bc':[bcA],'pack-meta':{loaded:'2026-11-12T10:00:00.000Z'}});
+    assert(!w3.Store.get('pack-bc')&&w3.Store.get('abc').length===1&&w3.Store.get('adrills')[0].b.join()==='pack','importing an old export moves its pack keys too'); }
+}
 section('t61: Opponent level per opening (olevels): "Only for <opening>", the slider moves its level, others keep the global one');
 {
   const {w}=await makePage();
@@ -2240,6 +2191,153 @@ section('t69: Analyze — filters, results with opponents and performance, colou
   const lb=S.leftBook({moves:'e4 e5 Nf3 Nc6 Bb5'.split(' '),color:'w'});
   assert(lb&&lb.ply===4&&lb.me===true&&lb.move===3,'leaving the book: 3.Bb5 is the first move outside the book, yours, at move 3');
   assert(/Leaving the book/.test(rep.textContent)&&/You left the book first in/.test(rep.textContent),'Leaving the book card');
+}
+
+/* A made-up over-the-board game (never a real one): 4.Ba4 is White's blunder in the mocked engine's eyes. */
+const BC1=(()=>{ const {Chess}=require('../site/vendor/chess.js');
+  const moves='e4 e5 Nf3 Nc6 Bb5 a6 Ba4 Nf6 O-O Be7'.split(' '), c=new Chess(); for(const m of moves.slice(0,6)) c.move(m);
+  const real=c.fen(), p=real.split(' '); p[1]='b'; p[3]='-'; const nul=p.join(' ');
+  const pgn=`[Event "Club"]\n[Site "Denver"]\n[Date "2026.03.14"]\n[Round "1"]\n[White "Doe, Jane"]\n[Black "Example, Pat"]\n[Result "1-0"]\n[WhiteElo "1800"]\n[BlackElo "2250"]\n[TimeControl "G/90;d5"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 1-0\n\n`;
+  const calls=[];
+  /* single line: +4 for Black after 4.Ba4 (Black to move at move 4), else +0.2; 3 lines: the real and the null position */
+  const analyse=async(fen,depth,mpv)=>{ calls.push({fen,depth,mpv});
+    if(mpv>1){ if(fen===real) return [{uci:'b1c3',cp:0.3,mate:null},{uci:'d2d3',cp:0.2,mate:null},{uci:'h2h3',cp:-0.6,mate:null}];
+      if(fen===nul) return [{uci:'a6b5',cp:3.2,mate:null},{uci:'c6d4',cp:2.9,mate:null},{uci:'h7h6',cp:0.3,mate:null}]; return [] }
+    return [{uci:'e2e4',cp:/ b .* 4$/.test(fen)?4:0.2,mate:null}] };
+  return {moves,real,nul,pgn,analyse,calls} })();
+const runPgn=async(w,pgn,name)=>{ const A=w.AnalyzeTab, $=id=>w.document.getElementById(id);
+  A.clearFiles(); A.addFiles([[pgn,name||'club.pgn']]); $('a-site').value='pgn'; $('a-site').dispatchEvent(new w.Event('change'));
+  await sleep(30); $('a-go').click(); await sleep(200); while(A.running) await sleep(40) };
+
+section('t72: Blunder check from Analyze my games (13 Nov 2026): the kit’s rule in the browser, saved with your drills, removed with their set');
+{
+  const sha=s=>crypto.createHash('sha1').update(s).digest('hex').slice(0,8);
+  const {w}=await makePage({analyse:BC1.analyse}); await sleep(50);
+  const A=w.AnalyzeTab, $=id=>w.document.getElementById(id);
+  BC1.calls.length=0; await runPgn(w,BC1.pgn);
+  const L=A.blunderChecks, d=L[0];
+  assert(L.length===1,'one blunder check: 4.Ba4 (Win% about 52 → 19)');
+  assert(d&&d.id==='k'+sha(BC1.real+'|b5a4')&&d.fen===BC1.real&&d.null===BC1.nul,'id k + sha1(fen|uci), the kit’s; the null-move position has Black to move, no en passant');
+  assert(d.threat==='axb5'&&d.threats.join()==='a6b5,c6d4'&&d.gain===3.5,'the threat: their best in the null position (…axb5, +3.5 over the position’s eval); …Nd4 within half a pawn also counts');
+  assert(d.best==='Nc3'&&d.goods.join()==='b1c3,d2d3','your move: Stockfish’s best, and every line within 0.3 pawns of it');
+  assert(d.played==='Ba4'&&d.reply==='Nf6'&&d.replyUci==='g8f6'&&!d.ignored,'what happened in the game: 4.Ba4, answered by 4…Nf6 (not the threat)');
+  assert(d.color==='white'&&d.moveNo===4&&d.w0>=30&&d.w0-d.w1>=15&&d.opp==='Example, Pat'&&d.oppElo===2250&&d.strong===true,'colour, move number, Win% from your side, the opponent (2200+)');
+  assert(d.site==='pgn'&&d.g&&d.ply===6,'where it came from: the game and the move');
+  const deep=BC1.calls.filter(c=>c.mpv>1);
+  assert(deep.length===2&&deep.every(c=>c.depth===11&&c.mpv===3),'two searches, 3 lines each, at the run’s depth (Standard: 11)');
+  BC1.calls.length=0; await runPgn(w,BC1.pgn);
+  assert(!BC1.calls.length&&A.blunderChecks.length===1,'run again: nothing redone (evals and the searches are kept)');
+  /* the rule: never while you were in check, never with fewer than 6 pieces, kept only when the threat is real */
+  const chk=A.markGame({color:'b',result:'1-0',moves:'e4 f5 Qh5+ g6 Qxg6+ hxg6'.split(' ')},[0.2,0.5,1.0,5.0,5.0,5.0]);
+  assert(chk.blun>=1&&!chk.bcand.length,'a blunder made while in check is not a blunder check (no null move)');
+  const end=A.markGame({color:'w',result:'0-1',moves:[]},[]); assert(Array.isArray(end.bcand),'markGame lists candidates (bcand)');
+  { const rows=[{game:{id:'fX',color:'w',moves:BC1.moves,date:'2026-03-14',black:'Example, Pat',white:'Doe, Jane',br:2250,site:'pgn'},marks:{bcand:[{ply:6,fen:BC1.real,san:'Ba4',uci:'b5a4',nul:BC1.nul,w0:52,w1:19,after:'',reply:''}]}}];
+    w.Store.del('bc-evals'); const keep=w.SharedEngine.analyse;
+    w.SharedEngine.analyse=async(fen,dp,mpv)=>fen===BC1.real?[{uci:'b1c3',cp:0.3,mate:null}]:[{uci:'h7h6',cp:0.2,mate:null}];
+    assert(!(await A.findBlunderChecks(rows,'standard')).length,'a threat worth under a pawn is left out');
+    w.SharedEngine.analyse=keep; w.Store.del('bc-evals'); }
+  /* the time estimate counts it */
+  assert(/Blunder check/.test($('a-est-standard').title||''),'the time estimate includes Blunder check');
+  /* save: drills and the blunder check in one set */
+  await runPgn(w,BC1.pgn);
+  const sv=$('a-savedrills'); assert(sv&&/1 blunder check/.test(sv.textContent)&&/1 of your blunders as blunder checks/.test($('a-report').querySelector('.asave').textContent),'Save says what it saves: drills and 1 blunder check ('+(sv&&sv.textContent)+')');
+  sv.click(); await sleep(300);
+  const set=w.Store.get('adrill-sets').slice(-1)[0], K=w.Store.get('abc');
+  assert(K.length===1&&K[0].id===d.id&&K[0].b.join()===set.id&&K[0].g===d.g,'the blunder check is saved in the set, with its game');
+  assert(/1 blunder check/.test($('a-report').querySelector('.aset').textContent),'the set lists its blunder checks');
+  w.location.hash='#blundercheck'; await sleep(100);
+  assert(w.document.querySelectorAll('#bc-list .drill').length===1,'Blunder check lists it');
+  w.BlunderCheckTab.open(d.id); const gl=[...$('bc-head').querySelectorAll('a')].find(a=>/open the game/.test(a.textContent));
+  assert(gl&&decodeURIComponent(gl.getAttribute('href'))===`#game?id=${d.g}&ply=6&from=blundercheck`,'its header opens the game at the move');
+  const BP={[d.id]:{n:1,ok:true,okN:1,t:1},kzzzzzzzz:{n:1,ok:false,t:2}}; w.Store.put('bc-progress',BP);
+  const n=A.removeSet(set.id);
+  assert(n>=2&&!w.Store.get('abc').length&&JSON.stringify(w.Store.get('bc-progress'))==='{"kzzzzzzzz":{"n":1,"ok":false,"t":2}}','removing the set removes its blunder check and that result only');
+}
+
+section('t73: the games you analyzed are kept (js/agames.js): every drill and costly moment opens its game (#game), the report comes back after a reload');
+{
+  const {w}=await makePage({analyse:BC1.analyse}); await sleep(50);
+  const A=w.AnalyzeTab, $=id=>w.document.getElementById(id), S=w.Store;
+  /* an older drill (saved before games were kept): the same position and move, no game link */
+  S.put('adrills',[{id:'aold00001',fen:BC1.real,played:'Ba4',playedUci:'b5a4',date:'2026-03-14',opp:'Example, Pat',site:'pgn',color:'w'}]);
+  await runPgn(w,BC1.pgn);
+  const st=S.get('agames'), id=st.last.ids[0], rec=st.g[id];
+  assert(st.v===1&&st.last.ids.length===1&&st.last.site==='pgn'&&st.last.files[0].name==='club.pgn'&&st.last.bc.length===1,'the run is kept: its game, the file, its blunder checks');
+  assert(rec.moves===BC1.moves.join(' ')&&rec.white==='Doe, Jane'&&rec.evsrc==='standard'&&S.get('pgn-evals')[id],'a compact record: tags and moves; Stockfish’s evals are in pgn-evals');
+  const old=S.get('adrills')[0]; assert(old.g===id&&old.ply===6,'the older drill now points to its game (same position and move)');
+  assert(S.get('agames').g[id].ev&&S.get('agames').g[id].ev.length===10,'a game a drill points to keeps its evals with it');
+  /* links in the report */
+  const links=[...$('a-report').querySelectorAll('a[href^="#game?"]')].map(a=>decodeURIComponent(a.getAttribute('href')));
+  assert(links.includes(`#game?id=${id}&ply=6&from=analyze`),'the costliest moment opens the game at the move ('+links.slice(0,3).join(' ')+')');
+  /* save the drills, then open the game view from Drills */
+  $('a-savedrills').click(); await sleep(300);
+  const dr=S.get('adrills').find(x=>x.id!=='aold00001'&&x.played==='Ba4')||S.get('adrills').find(x=>x.played==='Ba4');
+  assert(dr&&dr.g===id&&dr.ply===6,'saved drills carry their game and move');
+  w.location.hash='#drills'; await sleep(60); w.DrillsTab.load(dr);
+  const gl=$('d-gamelink'); assert(gl&&decodeURIComponent(gl.getAttribute('href'))===`#game?id=${id}&ply=6&from=drills`,'Drills: "open the game at this move"');
+  w.location.hash=gl.getAttribute('href'); await sleep(80);
+  const G=w.GameView.state;
+  assert(w.document.body.dataset.view==='game'&&!$('game').hidden&&!$('gv-main').hidden,'the game view is on screen');
+  assert(w.document.querySelector('nav.tabs a[data-view="analyze"]').getAttribute('aria-current')==='page','it belongs to Analyze my games (the tab is marked)');
+  assert(G.p===6&&G.focus===6&&w.document.querySelectorAll('#gv-board .sq').length===64,'the board opens on the position before 4.Ba4');
+  const fm=$('gv-moves').querySelector('.gvfocus'); assert(fm&&/Ba4/.test(fm.textContent)&&/\?\?/.test(fm.textContent)&&fm.classList.contains('miss'),'the moment is marked in the moves: 4.Ba4??');
+  assert(/The moment: move 4\./.test($('gv-status').textContent)&&/Win% \d+% → \d+%/.test($('gv-status').textContent),'the status says what happened there, in Win% from your side');
+  assert(/Train this drill/.test($('gv-actions').textContent)&&/Blunder check this/.test($('gv-actions').textContent),'it offers the saved drill and blunder check of that position');
+  assert(/Doe, Jane/.test($('gv-head').textContent)&&/You had White/.test($('gv-head').textContent)&&/club\.pgn/.test($('gv-head').textContent),'the head: players, your colour, the file');
+  assert(/Standard analysis/.test($('gv-facts').textContent),'the facts say where the evals came from');
+  assert(!$('gv-graphcard').hidden&&$('gv-graph').querySelector('svg circle'),'the eval graph, your blunder as a dot');
+  assert($('gv-back').getAttribute('href')==='#drills'&&/Drills/.test($('gv-back').textContent),'Back goes to where you came from');
+  const key=k=>w.dispatchEvent(new w.KeyboardEvent('keydown',{key:k,bubbles:true}));
+  key('ArrowRight'); assert(G.p===7&&$('gv-moves').querySelector('.gmv.cur')&&/Ba4/.test($('gv-moves').querySelector('.gmv.cur').textContent),'→ plays the move');
+  key('Home'); assert(G.p===0,'Home: the start'); key('End'); assert(G.p===10,'End: the end'); key('ArrowLeft'); assert(G.p===9,'← back one');
+  $('gv-moves').querySelector('[data-ply="3"]').click(); assert(G.p===3,'a tap on a move goes there');
+  assert(w.Keys.map('game').f&&w.Keys.map('game').ArrowLeft&&w.Keys.map('game').Home,'keys: ← → Home End F (the shared keymap)');
+  w.location.hash=`#game?id=${encodeURIComponent(id)}&ply=6&from=analyze`; await sleep(60);
+  assert(w.GameView.state.p===6&&$('gv-back').getAttribute('href')==='#analyze','a new link to the same game opens it at its move again');
+  $('gv-actions').querySelector('[data-gvdrill]').click(); await sleep(100);
+  assert(w.document.body.dataset.view==='drills'&&w.DrillsTab.state.cur&&w.DrillsTab.state.cur.fen===BC1.real,'Train this drill opens it in Drills');
+  /* a game that isn't kept */
+  w.location.hash='#game?id=nope'; await sleep(60);
+  assert(!$('gv-empty').hidden&&$('gv-main').hidden&&/isn’t kept in this browser/.test($('gv-empty').textContent),'an unknown game: a plain explanation, no broken board');
+
+  /* a reload: the report comes back from the kept games, no fetch and no engine */
+  const saved={}; for(let i=0;i<w.localStorage.length;i++){ const k=w.localStorage.key(i); saved[k]=w.localStorage.getItem(k) }
+  let engine=0; const {w:w2}=await makePage({analyse:async()=>{ engine++; return null },beforeLoad:x=>{ for(const k in saved) x.localStorage.setItem(k,saved[k]) }}); await sleep(50);
+  w2.location.hash='#analyze'; await sleep(150);
+  const rep=w2.document.getElementById('a-report');
+  assert(/Report card/.test(rep.textContent)&&/Your last report, from/.test(w2.document.getElementById('a-note').textContent),'after a reload the last report is back, and says so');
+  assert(engine===0,'no engine for that');
+  assert([...rep.querySelectorAll('a[href^="#game?"]')].some(a=>decodeURIComponent(a.getAttribute('href'))===`#game?id=${id}&ply=6&from=analyze`),'its links still open the game');
+  assert(rep.querySelector('.asave')&&/club\.pgn/.test(rep.querySelector('.aset').textContent),'its Save card and sets are there');
+  w2.location.hash=`#game?id=${encodeURIComponent(id)}&ply=6`; await sleep(60);
+  assert(w2.GameView.state.p===6&&/\?\?/.test(w2.document.querySelector('#gv-moves .gvfocus').textContent),'the game view works after a reload too');
+
+  /* a Lichess game with server analysis: the best moves come back too */
+  { const moves='e4 e5 Nf3 Nc6 Bb5 a6 Ba4 Nf6 Ke2 Nxe4 d3 Nf6'.split(' ');
+    const analysis=[{eval:30},{eval:25},{eval:35},{eval:30},{eval:35},{eval:30},{eval:35},{eval:30},{eval:-320,best:'e1g1'},{eval:-330},{eval:-320},{eval:-335}];
+    const nd=JSON.stringify({id:'lich0001',createdAt:1762300000000,speed:'rapid',players:{white:{user:{name:'TestUser'},rating:2000},black:{user:{name:'Opponent1'},rating:2010}},winner:'black',moves:moves.join(' '),analysis})+'\n';
+    const {w:w3}=await makePage({fetch:async u=>u.includes('lichess.org/api/games/user/')?{ok:true,status:200,text:async()=>nd,json:async()=>({})}:null});
+    await w3.AnalyzeTab.run('lichess','TestUser'); await sleep(100);
+    const r3=w3.Store.get('agames').g.lich0001;
+    assert(r3&&r3.ev&&r3.ev.length===12&&r3.best&&r3.best[8]==='e1g1'&&r3.url==='https://lichess.org/lich0001','a Lichess game keeps its server evals and best moves (nothing else has them)');
+    const ls={}; for(let i=0;i<w3.localStorage.length;i++){ const k=w3.localStorage.key(i); ls[k]=w3.localStorage.getItem(k) }
+    const {w:w4}=await makePage({beforeLoad:x=>{ for(const k in ls) x.localStorage.setItem(k,ls[k]) }});
+    w4.location.hash='#analyze'; await sleep(150);
+    assert(/Ke2/.test(w4.document.getElementById('a-report').textContent),'restored: the same costliest moment');
+    w4.document.getElementById('a-savedrills').click(); await sleep(300);
+    const d4=w4.Store.get('adrills')[0]; assert(d4&&d4.played==='Ke2'&&d4.best==='e1g1'&&d4.g==='lich0001'&&d4.url==='https://lichess.org/lich0001','drills saved from a restored report: the best move, the game, the Lichess link');
+    w4.location.hash='#game?id=lich0001&ply=8'; await sleep(60);
+    assert(/Lichess game/.test(w4.document.getElementById('gv-ext').textContent)&&!w4.document.getElementById('gv-ext').hidden&&/Stockfish preferred O-O/.test(w4.document.getElementById('gv-status').textContent),'the game view links the Lichess game and names the best move (O-O)'); }
+
+  /* storage full: the games your drills come from are kept, the report isn't, and the note says so */
+  { const {w:w5}=await makePage({analyse:BC1.analyse,beforeLoad:x=>{ const SP=x.Storage.prototype, real=SP.setItem;
+      SP.setItem=function(k,v){ if(k==='clo:agames'&&/"last":\{/.test(v)){ const e=new Error('quota'); e.name='QuotaExceededError'; throw e } return real.call(this,k,v) } }});
+    await sleep(50); await runPgn(w5,BC1.pgn);
+    const s5=w5.Store.get('agames');
+    assert(s5&&s5.last===null&&!Object.keys(s5.g).length,'storage full: no report kept (no drill points to these games yet)');
+    assert(/storage is full/.test(w5.document.getElementById('a-note').textContent),'the note says so');
+    w5.document.getElementById('a-savedrills').click(); await sleep(300);
+    const gid=w5.Store.get('adrills')[0].g; assert(gid&&w5.Store.get('agames').g[gid]&&w5.Store.get('agames').g[gid].ev,'saving drills still keeps their game (with its evals)'); }
 }
 
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));
