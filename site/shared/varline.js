@@ -147,11 +147,14 @@ window.VarLine=(()=>{
   function scrollBox(el){ for(let b=el&&el.parentElement;b&&b!==document.body;b=b.parentElement){ const cs=getComputedStyle(b);
       if(/(auto|scroll)/.test(cs.overflowY)&&b.scrollHeight>b.clientHeight+2) return b } return null }
   function covered(){ let y=0; const nv=document.querySelector('nav.tabs'); if(nv){ const r=nv.getBoundingClientRect(); if(r.bottom>0&&r.top<=1) y=r.bottom }
-    for(const e of document.querySelectorAll('.boardwrap,.rd-boardbox,.boardbox')){ if(!e.offsetParent) continue; const cs=getComputedStyle(e); if(cs.position!=='sticky'&&cs.position!=='fixed') continue;
+    for(const e of document.querySelectorAll('.boardwrap,.rd-boardbox,.boardbox,.tvpin')){ if(!e.offsetParent) continue; const cs=getComputedStyle(e); if(cs.position!=='sticky'&&cs.position!=='fixed') continue;
       const r=e.getBoundingClientRect(); if(r.top<=y+2&&r.bottom>y) y=r.bottom } return y }
   function follow(el,box,pad){ if(!el) return; pad=pad==null?8:pad; box=box&&box.scrollHeight>box.clientHeight+2?box:scrollBox(el); const r=el.getBoundingClientRect(), tap=clicked();
     if(box){ const q=box.getBoundingClientRect(); if(tap||r.bottom>q.bottom-8||r.top<q.top) box.scrollTop+=r.top-q.top-pad; return }
-    const top=covered(); if(tap||r.bottom>innerHeight-8||r.top<top) window.scrollBy(0,r.top-top-pad) }
+    const top=covered(); if(tap||r.bottom>floor()-8||r.top<top) window.scrollBy(0,r.top-top-pad) }
+  /* the bottom edge of what can be seen: the top of a bottom bar fixed over the page (trainview.css .bbar), else the window's */
+  function floor(){ let y=innerHeight; for(const e of document.querySelectorAll('.bbar')){ if(!e.offsetParent&&getComputedStyle(e).position!=='fixed') continue; if(getComputedStyle(e).position!=='fixed') continue;
+      const r=e.getBoundingClientRect(); if(r.height&&r.top<y) y=r.top } return y }
   /* scroll the box the element is in (never the page) so the element shows */
   function show(el){ const b=scrollBox(el); if(b) follow(el,b) }
   function nav(o){

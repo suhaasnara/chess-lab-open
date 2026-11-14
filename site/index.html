@@ -325,8 +325,8 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
           <button class="btn sm" id="eg-back">Take back <kbd>B</kbd></button>
           <button class="btn sm" id="eg-hint">Hint <kbd>H</kbd></button>
           <button class="btn sm" id="eg-sol">Solution</button>
-          <button class="btn sm" id="eg-prev" aria-label="Back through the solution" hidden>&#8592;</button>
-          <button class="btn sm" id="eg-fwd" aria-label="Forward through the solution" hidden>&#8594;</button>
+          <button class="btn sm navbtn" id="eg-prev" aria-label="Back through the solution" hidden>&#8249;</button>
+          <button class="btn sm navbtn" id="eg-fwd" aria-label="Forward through the solution" hidden>&#8250;</button>
           <span class="evalchip" id="eg-step" hidden></span>
           <span id="eg-readslot"></span>
           <button class="btn sm" id="eg-retry">Retry</button>
@@ -535,12 +535,12 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
       <div class="board" id="g-board" role="group" aria-label="Chess board"></div>
       <div class="boardtools" id="g-tools">
         <button class="btn sm" id="g-hint">Hint <kbd>H</kbd></button>
-        <span class="gnav" id="g-nav" hidden><button class="btn sm" id="g-prev" aria-label="Previous move">&#9664;</button><button class="btn sm" id="g-next" aria-label="Next move">&#9654;</button></span>
+        <span class="gnav" id="g-nav" hidden><button class="btn sm navbtn" id="g-prev" aria-label="Previous move">&#8249;</button><button class="btn sm navbtn" id="g-next" aria-label="Next move">&#8250;</button></span>
         <button class="btn sm" id="g-show" hidden title="Skip the guessing and read the game">Show the game</button>
         <span id="g-readslot"></span>
         <button class="btn sm" id="g-takeback" title="Take back to your last guess and try another move (B). Your first answer is what counts." disabled>Take back <kbd>B</kbd></button>
         <button class="btn sm" id="g-restart">Restart game <kbd>R</kbd></button>
-        <button class="btn sm" id="g-nextgame">Next game <kbd>N</kbd></button>
+        <button class="btn sm primary" id="g-nextgame">Next game <kbd>N</kbd></button>
         <button class="btn sm" id="g-flip">Flip <kbd>F</kbd></button>
         <span class="evalchip" id="g-score"></span>
       </div>

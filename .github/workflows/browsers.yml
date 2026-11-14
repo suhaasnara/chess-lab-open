@@ -3,7 +3,7 @@ name: Browsers
 # console errors, and screenshots (light/dark, desktop/phone) in Firefox and Chromium.
 on:
   push:
-    branches: [main, parity-1, positions, one-codebase, shared-screens, improvements, improvements-2, improvements-3, improvements-4, overnight-11nov, overnight-2, friend-pack, blind, analyze2, no-pack, audit-fixes]
+    branches: [main, parity-1, positions, one-codebase, shared-screens, improvements, improvements-2, improvements-3, improvements-4, overnight-11nov, overnight-2, friend-pack, blind, analyze2, no-pack, audit-fixes, phone-fixes, sync]
   pull_request:
   workflow_dispatch:
     inputs:
@@ -47,6 +47,9 @@ jobs:
       - name: The 14 Nov 2026 audit's steps, replayed in ${{ matrix.browser }} (endgame mates, Analyze with the real Stockfish, the keys)
         if: ${{ !github.event.inputs.base }}
         run: cd tests/browser && node audit.js ${{ matrix.browser }} out/${{ matrix.browser }}/audit
+      - name: The 14 Nov 2026 phone fixes in ${{ matrix.browser }} (the bottom bar on phones and iPads, the pinned board, the reader's bar)
+        if: ${{ !github.event.inputs.base }}
+        run: cd tests/browser && node phonefix.js ${{ matrix.browser }} out/${{ matrix.browser }}/phonefix
       - name: Screenshots and summary
         if: always()
         uses: actions/upload-artifact@v4

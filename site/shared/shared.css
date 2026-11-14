@@ -35,7 +35,10 @@ html.reader-open,html.reader-open body{overflow:hidden}
 .rd-board{width:auto;height:100%;max-width:100%;aspect-ratio:1}
 .rd-handle{display:grid;place-items:center;cursor:row-resize;touch-action:none}
 .rd-handle span{width:44px;height:5px;border-radius:3px;background:var(--line)}
-.rd-notes{overflow-y:auto;padding:4px 14px 40vh;-webkit-overflow-scrolling:touch;scroll-behavior:auto;overscroll-behavior:contain}
+.rd-notes{overflow-y:auto;padding:4px 14px 0;min-height:0;position:relative;z-index:0;scroll-behavior:auto;overscroll-behavior:contain}
+.rd-notes::after{content:'';display:block;height:40vh}   /* 14 Nov: the room to scroll the last move up used to be the box's own padding. A box can't be shorter than its
+   padding, so with a tall board it grew past its row and lay over the bottom bar: the text showed through it, and on iPhones (where a scrolling box is its own layer)
+   it took the taps meant for ‹ › and Flip. */
 .rd-flow{max-width:44rem;margin:0 auto;font:400 16.5px/1.75 var(--sans);color:var(--ink)}
 .rd-p{margin:0 0 10px}
 .rd-note{margin:0 0 10px;line-height:1.55;color:var(--ink)}
@@ -47,7 +50,7 @@ html.reader-open,html.reader-open body{overflow:hidden}
 .rd-flow .rd-sl .vtext,.rd-flow .rd-sl .vdead{color:var(--side)}
 .rd-flow .rd-sl .vpar{color:var(--side);opacity:.7}
 .rd-done{margin:12px auto;max-width:44rem;padding:12px;background:var(--white);border-radius:var(--radius)}
-.rd-bar{display:flex;align-items:center;gap:8px;padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px));background:var(--white);border-top:1px solid var(--line)}
+.rd-bar{display:flex;align-items:center;gap:8px;padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px));background:var(--white);border-top:1px solid var(--line);position:relative;z-index:2}
 .rd-bar .btn{min-height:44px;min-width:44px}
 .rd-bar .rd-prev,.rd-bar .rd-next{min-width:64px;font-size:1.6rem;line-height:1;padding:4px 10px 6px}.rd-bar .btn.sm{min-height:44px}   /* 13 Nov: scoped so .btn's size no longer wins (they were 14 px glyphs, Flip 40 px) */
 .rd-prev{margin-right:auto}.rd-next{margin-left:auto}

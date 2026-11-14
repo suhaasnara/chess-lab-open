@@ -66,5 +66,37 @@ function fitBoard(wrapSel,ctlSel){
 function pick(label,key,opts,cur){ return `<label class="field tvpick"><span class="label">${esc(label)}</span><select data-k="${esc(key)}" aria-label="${esc(label)}">`+
   opts.map(([v,l])=>`<option value="${esc(v)}"${String(v)===String(cur)?' selected':''}>${esc(l)}</option>`).join('')+'</select></label>' }
 function onPick(el,fn){ el.addEventListener('change',e=>{ const s=e.target.closest('.tvpick select[data-k]'); if(s) fn(s.dataset.k,s.value) }) }
-window.TV={esc,chips,onChip,rate,row,dots,head,session,fitBoard,pick,onPick};
+/* The bottom bar on phones and iPads (14 Nov 2026; styles and the rules: trainview.css ".bbar"). bar(row, o) turns a page's
+   own button row into it: o.prev / o.next = the buttons that step back / forward through the line on the board (far left
+   and far right), o.primary = the page's main action (beside ›), o.more = less-used buttons folded into ⋯ on phones, o.note = a short status line shown above the buttons, o.inner = wrappers inside the row whose buttons join the bar,
+   o.host = the element that gets room at the bottom so nothing hides behind the bar. Values are selectors (or lists of
+   them) for buttons inside the row. Only classes are added: ids, handlers and document order stay, so laptops, keys and
+   tests are untouched; a row that is rebuilt (innerHTML) is marked again. */
+function bar(el,o={}){
+  if(typeof el==='string') el=document.querySelector(el); if(!el) return null;
+  el.classList.add('bbar');
+  const host=typeof o.host==='string'?document.querySelector(o.host):o.host; if(host) host.classList.add('bbar-host');
+  const kids=sel=>{ const out=[]; for(const s of [].concat(sel||[])){ let m=[]; try{ m=el.querySelectorAll(s) }catch(e){} for(const b of m) out.push(b) } return out };
+  const close=()=>{ el.classList.remove('bb-open'); const m=el.querySelector('.bb-morebtn'); if(m) m.setAttribute('aria-expanded','false') };
+  const mark=()=>{
+    for(const [sel,cls] of [[o.prev,'bb-prev'],[o.next,'bb-next'],[o.primary,'bb-primary'],[o.more,'bb-x'],[o.note,'bb-note'],[o.inner,'bb-in']]) for(const b of kids(sel)) if(!b.classList.contains(cls)) b.classList.add(cls);
+    let m=null, need=false; for(const c of el.querySelectorAll('.bb-morebtn,.bb-x')){ if(c.classList.contains('bb-morebtn')) m=c; else if(!c.hidden) need=true }
+    if(need&&!m){ m=document.createElement('button'); m.type='button'; m.className='btn sm bb-morebtn'; m.setAttribute('aria-label','More buttons'); m.setAttribute('aria-expanded',String(el.classList.contains('bb-open'))); m.textContent='⋯'; el.appendChild(m) }
+    else if(!need&&m){ m.remove(); close() } };
+  mark();
+  if(window.MutationObserver) new MutationObserver(mark).observe(el,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});
+  el.addEventListener('click',e=>{ const m=e.target.closest&&e.target.closest('.bb-morebtn');
+    if(m&&m.parentNode===el){ const on=!el.classList.contains('bb-open'); el.classList.toggle('bb-open',on); m.setAttribute('aria-expanded',String(on)); e.stopPropagation() } else close() });
+  document.addEventListener('click',e=>{ if(!el.contains(e.target)) close() });
+  return el;
+}
+/* Pinned board on phones and upright iPads (styles: trainview.css ".tvpin"): pin(section, column that holds the board). */
+function pin(sec,col){ const q=x=>typeof x==='string'?document.querySelector(x):x; sec=q(sec); col=q(col); if(!sec||!col) return;
+  sec.classList.add('tvpinned'); col.classList.add('tvpin');
+  /* --navh = the tab row's height (the board sticks just under it). The row may not be built yet when a page calls this. */
+  const set=()=>{ const nv=document.querySelector('nav.tabs'); if(nv&&nv.offsetHeight>20) document.documentElement.style.setProperty('--navh',nv.offsetHeight+'px') };
+  set(); setTimeout(set,0); setTimeout(set,800); addEventListener('load',set); addEventListener('resize',set); addEventListener('hashchange',()=>setTimeout(set,60)) }
+/* true where the pinned layout is on (the page scrolls under the board; boxes with their own scrollbars are opened up) */
+function pinned(){ return !!(window.matchMedia&&matchMedia('(orientation:portrait) and (max-width:1099.98px)').matches) }
+window.TV={esc,chips,onChip,rate,row,dots,head,session,fitBoard,pick,onPick,bar,pin,pinned};
 })();
