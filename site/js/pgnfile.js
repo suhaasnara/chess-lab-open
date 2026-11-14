@@ -8,7 +8,7 @@
    PgnFile.toGames(parsed, me) -> Analyze's game records for the games "me" played (White or Black), oldest first:
                                  {site:'pgn'|'lichess'|'chesscom', id, date, ts, white, black, wr, br, wd, bd, wp, bp, color,
                                   result, moves, analysis, speed, url, file, sys}; games from a set position (FEN), bullet,
-                                 unfinished or with an illegal move are counted in `skipped`, not analysed.
+                                 without a result (*), very short or with an illegal move are counted in `skipped`, not analysed.
                                  me: one name or a list of names (a Lichess handle in one file, a full name in another).
    Several files (14 Nov 2026; Lichess studies stop at 64 chapters, so one player's games come as several exports):
    PgnFile.merge([{name, parsed, sys}]) -> one parsed set, each game tagged with its file and rating system; the same
@@ -20,6 +20,10 @@
 window.PgnFile=(()=>{
   const TOKEN=/\[\s*(\w+)\s+"((?:[^"\\]|\\.)*)"\s*\]|\{[^}]*\}|;[^\n]*|\(|\)|\$\d+|[^\s(){}[\];]+/g;
   const RESULTS=new Set(['1-0','0-1','1/2-1/2','*']);
+  /* a move token as chess.js reads it (13 Nov 2026): move numbers (1. 1... 1…), marks and NAGs glued on (Nf3!? Nf3$1
+     O-O+= Qh7+-), "e.p." and zero castling (0-0, 0-0-0: hand-typed and DGT files) — each used to make the game "illegal" */
+  const cleanSan=t=>String(t).replace(/^\d+\s*(?:\.+|…)/,'').replace(/^(?:\.+|…)/,'').replace(/e\.p\.?$/i,'')
+    .replace(/(?:\$\d+|[!?]+|\+\/?[-=]|=\/?\+|-\/?\+|[±∓⩲⩱∞□⨀]|=$)+$/,'').replace(/^0-0-0/,'O-O-O').replace(/^0-0/,'O-O');
   function evalOf(c){ const m=/\[%eval\s+(#?)(-?[\d.]+)/.exec(c); if(!m) return null; const v=parseFloat(m[2]); return m[1]?(v>0?99:v<0?-99:0):v }
   function parse(text){
     const games=[]; let cur=null, depth=0;
@@ -27,30 +31,40 @@ window.PgnFile=(()=>{
     const src=String(text||'').replace(/^﻿/,'').replace(/\r/g,'');
     for(const m of src.matchAll(TOKEN)){
       const t=m[0];
-      if(m[1]){ if(!cur||cur.sans.length||cur.result) start(); cur.h[m[1]]=m[2].replace(/\\"/g,'"'); continue }
+      if(m[1]){ if(!cur||cur.sans.length||cur.result||(m[1]==='Event'&&'Event' in cur.h)) start(); cur.h[m[1]]=m[2].replace(/\\"/g,'"'); continue }
       if(!cur) start();
       if(t==='('){ depth++; continue } if(t===')'){ depth=Math.max(0,depth-1); continue }
       if(depth) continue;
       if(t[0]==='{'){ const e=evalOf(t); if(e!=null&&cur.sans.length) cur.evals[cur.sans.length-1]=e; continue }
       if(t[0]===';'||t[0]==='$') continue;
       if(RESULTS.has(t)){ cur.result=t; continue }
-      const san=t.replace(/^\d+\.+/,'').replace(/[!?]+$/,'');
-      if(!san||/^\d+\.*$/.test(t)) continue;
+      if(/^\d+\.*$/.test(t)||/^e\.p\.?$/i.test(t)) continue;
+      const san=cleanSan(t);
+      if(!san) continue;
       cur.sans.push(san);
     }
     return {games:games.filter(g=>g.sans.length||Object.keys(g.h).length)};
   }
-  const norm=s=>String(s||'').trim();
+  const norm=s=>String(s||'').trim().replace(/\s+/g,' ');
+  /* one player however the name is typed (13 Nov 2026: "Jane Q. Doe" and "Jane Q Doe" were two people, and
+     the second's win was left out): case, dots, commas and spaces don't matter */
+  const nameKey=s=>norm(s).toLowerCase().replace(/[.,]/g,' ').replace(/\s+/g,' ').trim();
   function players(P){
     const n=new Map();
-    for(const g of P.games) for(const k of ['White','Black']){ const v=norm(g.h[k]); if(v&&v!=='?') n.set(v,(n.get(v)||0)+1) }
-    return [...n.entries()].sort((a,b)=>b[1]-a[1]);
+    for(const g of P.games) for(const k of ['White','Black']){ const v=norm(g.h[k]); if(!v||v==='?') continue;
+      const key=nameKey(v); let e=n.get(key); if(!e){ e={n:0,sp:new Map()}; n.set(key,e) } e.n++; e.sp.set(v,(e.sp.get(v)||0)+1) }
+    /* each player once, under the spelling used most */
+    return [...n.values()].map(e=>[[...e.sp.entries()].sort((a,b)=>b[1]-a[1])[0][0],e.n]).sort((a,b)=>b[1]-a[1]);
   }
   const int=v=>{ const x=parseInt(String(v||'').replace(/^\+/,''),10); return isFinite(x)?x:null };
   function speedOf(h){
     const tc=h.TimeControl||'';
     let m=/^(\d+)(?:\+(\d+))?$/.exec(tc);   // seconds + increment: the clock decides
-    if(m){ const t=+m[1]+40*(+m[2]||0); return t<180?'bullet':t<480?'blitz':t<1500?'rapid':'classical' }
+    if(m){ let base=+m[1]; const inc=+m[2]||0;
+      /* over the board, "90+30" or "5+3" is minutes + seconds (they used to read as 90 or 5 seconds: rapid, or bullet and
+         left out); online files keep seconds. 60+0 / 120+1 stay seconds (bullet) */
+      if(siteOf(h)==='pgn'&&(base<60||base===90||(base<=120&&inc>=5))) base*=60;
+      const t=base+40*inc; return t<180?'bullet':t<480?'blitz':t<1500?'rapid':'classical' }
     const ev=(h.Event||'').toLowerCase();
     for(const k of ['bullet','blitz','rapid','classical']) if(ev.includes(k)) return k;
     m=/^G\/?(\d+)/i.exec(tc)||/(?:^|;)(?:\d+\/)?(\d+)(?::|$)/.exec(tc);   // G/90;d5 (US Chess) or 40/5400:1800 (minutes or seconds)
@@ -58,13 +72,13 @@ window.PgnFile=(()=>{
     return 'classical';   // an over-the-board file without a time control: classical
   }
   function dateOf(h){
-    const d=(h.Date||h.UTCDate||'').replace(/\?\?/g,'01');
+    const d=(h.Date||(studyOf(h)?'':h.UTCDate)||'').replace(/\?\?/g,'01');   /* a study's UTCDate is when the chapter was made, not the game */
     return /^\d{4}\.\d\d\.\d\d$/.test(d)&&!/^\?/.test(h.Date||'')?d.replace(/\./g,'-'):'';
   }
   /* toGamesAsync: the same, handing the browser back every few games so a big file never freezes the page
      (13 Nov 2026: a 208-game file locked Chrome while every move was checked), with onProgress(done, total) */
   async function toGamesAsync(P,me,onProgress){
-    const all=P.games, out={games:[],skipped:{notYou:0,fen:0,bullet:0,unfinished:0,illegal:0,byFile:{}}};
+    const all=P.games, out={games:[],skipped:{notYou:0,fen:0,bullet:0,noResult:0,unfinished:0,illegal:0,byFile:{}}};
     for(let i=0;i<all.length;i+=3){ const r=toGames({games:all.slice(i,i+3)},me,i);
       out.games.push(...r.games); for(const k in r.skipped) if(k!=='byFile') out.skipped[k]+=r.skipped[k];
       for(const [f,o] of Object.entries(r.skipped.byFile)){ const t=out.skipped.byFile[f]=out.skipped.byFile[f]||{}; for(const k in o) t[k]=(t[k]||0)+o[k] }
@@ -72,7 +86,10 @@ window.PgnFile=(()=>{
     out.games.sort((a,b)=>a.ts-b.ts); return out }
   /* provisional ratings as US Chess writes them: 1450P, 1450P12, 1450/12 */
   const provOf=v=>/^\s*\d+\s*(P\d*|\/\d+)\s*$/i.test(String(v||''));
-  const siteOf=h=>/lichess\.org/i.test(h.Site||'')?'lichess':/chess\.com/i.test((h.Site||'')+(h.Link||''))?'chesscom':'pgn';
+  /* an online game: a Lichess game link (not a study or broadcast — over-the-board games kept in a study carry the
+     study's link as their Site, 13 Nov 2026), or Chess.com */
+  const studyOf=h=>/lichess\.org\/(?:study|broadcast)\//i.test(h.Site||'')||!!h.StudyName;
+  const siteOf=h=>studyOf(h)?'pgn':/lichess\.org\/[A-Za-z0-9]{8}(?![A-Za-z0-9])/i.test(h.Site||'')?'lichess':/chess\.com/i.test((h.Site||'')+(h.Link||''))?'chesscom':'pgn';
   function detect(P){
     const c={lichess:0,chesscom:0,fide:0,otb:0,rated:0};
     for(const x of P.games){ const h=x.h, s=siteOf(h);
@@ -89,22 +106,23 @@ window.PgnFile=(()=>{
   function merge(files){
     const seen=new Set(), games=[]; let dupes=0;
     files.forEach((f,fi)=>{ for(const x of f.parsed.games){ const h=x.h;
-      const k=[norm(h.White).toLowerCase(),norm(h.Black).toLowerCase(),(h.Date||h.UTCDate||'').replace(/\?/g,''),x.sans.join(' ')].join('|');
+      const k=[nameKey(h.White),nameKey(h.Black),(h.Date||h.UTCDate||'').replace(/\?/g,''),x.sans.join(' ')].join('|');
       if(x.sans.length&&seen.has(k)){ dupes++; continue } seen.add(k);
       games.push(Object.assign({},x,{file:f.name,fileIdx:fi,sys:f.sys})) } });
     return {games,dupes};
   }
   function toGames(P,me,base=0){
     const fileSys=P.games.some(x=>!x.sys)?detect(P).sys:null;   /* one file read directly (not through merge): its own guess */
-    const names=(Array.isArray(me)?me:[me]).map(n=>norm(n).toLowerCase()).filter(Boolean), out=[]; const skipped={notYou:0,fen:0,bullet:0,unfinished:0,illegal:0,byFile:{}};
+    const names=(Array.isArray(me)?me:[me]).map(nameKey).filter(Boolean), out=[]; const skipped={notYou:0,fen:0,bullet:0,noResult:0,unfinished:0,illegal:0,byFile:{}};
     P.games.forEach((x,j)=>{ const i=base+j;
       const sk=k=>{ skipped[k]++; if(x.file){ const f=skipped.byFile[x.file]=skipped.byFile[x.file]||{}; f[k]=(f[k]||0)+1 } };
-      const h=x.h, w=norm(h.White).toLowerCase(), b=norm(h.Black).toLowerCase();
+      const h=x.h, w=nameKey(h.White), b=nameKey(h.Black);
       const iw=names.includes(w), ib=names.includes(b);
       if(!iw&&!ib||iw&&ib){ sk('notYou'); return }
       if(h.FEN||h.SetUp==='1'){ sk('fen'); return }
+      if(!x.sans.length){ sk('unfinished'); return }   /* a chapter or game with tags only */
       const result=h.Result&&RESULTS.has(h.Result)&&h.Result!=='*'?h.Result:x.result&&x.result!=='*'?x.result:null;
-      if(!result){ sk('unfinished'); return }
+      if(!result){ sk('noResult'); return }   /* Result "*": a study chapter whose result was never set, or an unfinished game */
       const speed=speedOf(h); if(speed==='bullet'){ sk('bullet'); return }
       const g=new Chess(), moves=[];
       for(const san of x.sans){ const m=g.move(san,{sloppy:true}); if(!m){ sk('illegal'); return } moves.push(m.san) }
@@ -124,5 +142,5 @@ window.PgnFile=(()=>{
     out.sort((a,b)=>a.ts-b.ts);
     return {games:out,skipped};
   }
-  return {parse,players,toGames,toGamesAsync,speedOf,detect,merge,provOf};
+  return {parse,players,toGames,toGamesAsync,speedOf,detect,merge,provOf,nameKey};
 })();

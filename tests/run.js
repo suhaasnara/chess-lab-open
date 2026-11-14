@@ -1410,6 +1410,33 @@ section('t60: Year by year (shared/yearly.js): FIDE performance, opponents, rati
   assert(Y.section({byYear:{'2026':S.byYear['2026']}})==='','one year: no section');
 }
 
+section('t70: PGN accuracy (13 Nov 2026): zero castling, glued marks, e.p., ellipsis, study chapters, minutes time controls');
+{
+  const {w}=await makePage(); await sleep(100); const F=w.PgnFile;
+  const hd=(o,extra='')=>`[Event "${o}"]\n[White "Jack"]\n[Black "${o}"]\n[Result "1-0"]\n[Date "2025.03.01"]\n${extra}\n`;
+  const pgn=hd('Z')+'1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. 0-0 Nf6 5. d3 0-0 1-0\n\n'
+    +hd('N')+'1.e4 e5 2.Nf3$1 Nc6 3.Bb5!? a6 4.Ba4 Nf6 5.O-O+= Be7 6.Qe2+- b5 1-0\n\n'
+    +hd('E')+'1. e4 Nf6 2. e5 d5 3. exd6 e.p. exd6 4. d4 Be7 1-0\n\n'
+    +hd('L')+'1. e4 e5 2. Nf3 Nc6 3. Bb5 3…a6 4. Ba4 Nf6 1-0\n\n';
+  const G=F.toGames(F.parse(pgn),'Jack');
+  assert(G.games.length===4&&!G.skipped.illegal,'0-0, Nf3$1 / O-O+= / Qe2+-, "e.p." and 3…a6 all read ('+JSON.stringify(G.skipped)+')');
+  const R=w.PGN.read(pgn); assert(R.bad===0&&R.games===4,'the shared reader (repertoire uploads) reads them too (bad '+R.bad+')');
+  const k=Object.keys(R.notes).find(x=>R.notes[x].mk==='!'); assert(k,'a glued $1 becomes the ! mark');
+  const st=`[Event "Denver Open: Round 1"]\n[Site "https://lichess.org/study/abcdEFGH/ijklMNOP"]\n[Result "1-0"]\n[White "Jack"]\n[Black "Opp"]\n[WhiteElo "1650"]\n[BlackElo "1720"]\n[StudyName "Denver Open"]\n[ChapterName "Round 1"]\n[UTCDate "2026.06.01"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. O-O Nf6 1-0\n\n`
+    +`[Event "Denver Open: Round 2"]\n[Site "https://lichess.org/study/abcdEFGH/qrstUVWX"]\n[Result "*"]\n[White "Opp2"]\n[Black "Jack"]\n[StudyName "Denver Open"]\n\n1. d4 d5 2. c4 e6 3. Nc3 Nf6 *\n`;
+  const SP=F.parse(st), SG=F.toGames(SP,'Jack');
+  assert(F.detect(SP).sys==='uschess'&&SG.games[0].site==='pgn'&&SG.games[0].sys==='uschess','an over-the-board game kept in a Lichess study is not a Lichess game (its pool stays over the board)');
+  assert(SG.games[0].date==='','the study chapter’s UTCDate (when it was made) is not taken as the game’s date');
+  assert(SG.skipped.noResult===1,'a chapter with Result "*" is counted as having no result');
+  assert(F.toGames(F.parse('[White "Jack"]\n[Black "X"]\n[Result "1-0"]\n[Site "https://lichess.org/AbCdEfGh"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bc4 Nf6 1-0'),'Jack').games[0].site==='lichess','a real Lichess game link is still Lichess');
+  assert(F.speedOf({TimeControl:'5+3'})==='blitz'&&F.speedOf({TimeControl:'90+30'})==='classical'&&F.speedOf({TimeControl:'15+10'})==='rapid'&&F.speedOf({TimeControl:'60+0'})==='bullet'&&F.speedOf({TimeControl:'300+3',Site:'https://lichess.org/AbCdEfGh'})==='blitz','minutes over the board (5+3 blitz, 90+30 classical, 15+10 rapid), seconds online; 60+0 stays bullet');
+  const two=F.parse('[Event "Empty chapter"]\n[White "Jack"]\n[Black "Nobody"]\n[Date "2020.01.01"]\n\n[Event "Real"]\n[White "Jack"]\n[Black "Opp"]\n[Result "0-1"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 0-1');
+  assert(two.games.length===2&&!two.games[1].h.Date,'a game with no moves does not lend its tags (a date) to the next game');
+  const nm=F.parse('[White "Jane Q. Doe"]\n[Black "A"]\n[Result "1-0"]\n\n1. d4 d5 2. Bf4 Nf6 3. e3 e6 1-0\n\n[White "Jane Q Doe"]\n[Black "Sam  Lee Park"]\n[Result "1-0"]\n\n1. d4 d5 2. Bf4 Nf6 3. e3 c5 1-0\n\n[White "jane q. doe"]\n[Black "C"]\n[Result "1-0"]\n\n1. d4 Nf6 2. Bf4 g6 3. e3 Bg7 1-0');
+  const pl=F.players(nm); assert(pl[0][0]==='Jane Q. Doe'&&pl[0][1]===3,'names that differ only by dots, spaces or case are one player, shown as spelled most ('+JSON.stringify(pl)+')');
+  const NG=F.toGames(nm,'Jane Q. Doe'); assert(NG.games.length===3&&NG.games[1].black==='Sam Lee Park','all three games are hers (the dot-less spelling counted); double spaces tidied');
+}
+
 section('t61: your own PGN file in Analyze my games (js/pgnfile.js): parse, who you are, report with Year by year, evals kept');
 {
   const {w}=await makePage(); await sleep(100); const F=w.PgnFile;
@@ -1426,7 +1453,7 @@ section('t61: your own PGN file in Analyze my games (js/pgnfile.js): parse, who 
   assert(P.games.length===15&&P.games[0].sans.length===8&&P.games[0].evals[0]===0.3,'parse: 15 games, the main line only (side line skipped), [%eval] kept per move');
   assert(F.players(P)[0][0]==='Doe, Jane'&&F.players(P)[0][1]===15,'players: you are the name in every game');
   const G=F.toGames(P,'Doe, Jane');
-  assert(G.games.length===12&&G.skipped.bullet===1&&G.skipped.fen===1&&G.skipped.unfinished===1,'toGames: 12 games; bullet, a set position and an unfinished game left out ('+JSON.stringify(G.skipped)+')');
+  assert(G.games.length===12&&G.skipped.bullet===1&&G.skipped.fen===1&&G.skipped.noResult===1,'toGames: 12 games; bullet, a set position and a game without a result left out ('+JSON.stringify(G.skipped)+')');
   assert(G.games.every(g=>g.site==='pgn'&&g.speed==='classical'&&!g.url)&&G.games.find(g=>g.analysis),'over the board, classical from G/90;d5; the game with evals in the file keeps them');
   assert(F.speedOf({TimeControl:'G/25;d5'})==='rapid'&&F.speedOf({TimeControl:'5400+30'})==='classical'&&F.speedOf({TimeControl:'180+2'})==='blitz','time controls: US Chess G/25 rapid, 90+30 classical, 3+2 blitz');
   w.AnalyzeTab.setFile(pgn,'jane.pgn');
