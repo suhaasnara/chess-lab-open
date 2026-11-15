@@ -146,12 +146,17 @@ window.VarLine=(()=>{
   const clicked=()=>Date.now()-lastTap<1200;
   function scrollBox(el){ for(let b=el&&el.parentElement;b&&b!==document.body;b=b.parentElement){ const cs=getComputedStyle(b);
       if(/(auto|scroll)/.test(cs.overflowY)&&b.scrollHeight>b.clientHeight+2) return b } return null }
-  function covered(){ let y=0; const nv=document.querySelector('nav.tabs'); if(nv){ const r=nv.getBoundingClientRect(); if(r.bottom>0&&r.top<=1) y=r.bottom }
-    for(const e of document.querySelectorAll('.boardwrap,.rd-boardbox,.boardbox,.tvpin')){ if(!e.offsetParent) continue; const cs=getComputedStyle(e); if(cs.position!=='sticky'&&cs.position!=='fixed') continue;
+  function covered(){ let y=window.TV&&TV.safeTop?TV.safeTop():0; const nv=document.querySelector('nav.tabs'); if(nv){ const r=nv.getBoundingClientRect(); if(r.bottom>y&&r.top<=y+1) y=r.bottom }
+    for(const e of document.querySelectorAll('.boardwrap,.rd-boardbox,.boardbox,.tvpin,[data-pinpad]')){ if(!e.offsetParent) continue; const cs=getComputedStyle(e); if(cs.position!=='sticky'&&cs.position!=='fixed') continue;
       const r=e.getBoundingClientRect(); if(r.top<=y+2&&r.bottom>y) y=r.bottom } return y }
-  function follow(el,box,pad){ if(!el) return; pad=pad==null?8:pad; box=box&&box.scrollHeight>box.clientHeight+2?box:scrollBox(el); const r=el.getBoundingClientRect(), tap=clicked();
+  /* 15 Nov 2026 ("the moves don't snap to the right place: the move is cut off and I see only the explanation"): with no
+     scrolling box, the current move goes to the top of what can be seen (just under the tab row and a pinned board) when it
+     was tapped, when it is above that line, or when it or its note (tail) runs past the bottom bar; the move is never left
+     under the board with only its note showing. */
+  function follow(el,box,pad,tail){ if(!el) return; pad=pad==null?8:pad; box=box&&box.scrollHeight>box.clientHeight+2?box:scrollBox(el); const r=el.getBoundingClientRect(), tap=clicked();
     if(box){ const q=box.getBoundingClientRect(); if(tap||r.bottom>q.bottom-8||r.top<q.top) box.scrollTop+=r.top-q.top-pad; return }
-    const top=covered(); if(tap||r.bottom>floor()-8||r.top<top) window.scrollBy(0,r.top-top-pad) }
+    const top=covered(), fl=floor(), t=tail&&tail.getBoundingClientRect?tail.getBoundingClientRect():r, bottom=Math.max(r.bottom,t.bottom);
+    if(tap||r.top<top+2||bottom>fl-8){ const want=r.top-top-pad; if(Math.abs(want)>2) window.scrollBy(0,want) } }
   /* the bottom edge of what can be seen: the top of a bottom bar fixed over the page (trainview.css .bbar), else the window's */
   function floor(){ let y=innerHeight; for(const e of document.querySelectorAll('.bbar')){ if(!e.offsetParent&&getComputedStyle(e).position!=='fixed') continue; if(getComputedStyle(e).position!=='fixed') continue;
       const r=e.getBoundingClientRect(); if(r.height&&r.top<y) y=r.top } return y }
@@ -179,5 +184,5 @@ window.VarLine=(()=>{
       ArrowRight:[o.rightLabel||'Forward a move (the picked line where lines branch)',right],
       ArrowDown:['Where lines branch: pick the next line',()=>{ if(o.active&&!o.active()) return false; pick(1) }],
       ArrowUp:['Where lines branch: pick the line before',()=>{ if(o.active&&!o.active()) return false; pick(-1) }]}} }
-  return {html,wrap,prose,path,mark,kids,nav,follow,clicked};
+  return {html,wrap,prose,path,mark,kids,nav,follow,clicked,covered,floor};
 })();
