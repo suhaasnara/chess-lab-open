@@ -102,14 +102,17 @@ function pin(sec,col){ const q=x=>typeof x==='string'?document.querySelector(x):
 function safeTop(){ let p=document.getElementById('tv-safe'); if(!p){ p=document.createElement('div'); p.id='tv-safe'; p.setAttribute('aria-hidden','true');
     p.style.cssText='position:fixed;top:0;left:0;width:0;height:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none'; document.body.appendChild(p) }
   return p.offsetHeight||0 }
-function pads(){ const de=document.documentElement; let top=0, bot=0;
-  const nv=document.querySelector('nav.tabs'); if(nv&&!de.classList.contains('navhid')){ const cs=getComputedStyle(nv); if(/sticky|fixed/.test(cs.position)) top=Math.max(top,(parseFloat(cs.top)||0)+nv.offsetHeight) }
+function pads(){ const de=document.documentElement; let top=0, bot=0, nav=0;
+  const nv=document.querySelector('nav.tabs'); if(nv&&!de.classList.contains('navhid')){ const cs=getComputedStyle(nv); if(/sticky|fixed/.test(cs.position)) top=nav=Math.max(top,(parseFloat(cs.top)||0)+nv.offsetHeight) }
   for(const e of document.querySelectorAll('.tvpin,[data-pinpad]')){ if(!e.offsetParent) continue; const cs=getComputedStyle(e); if(cs.position!=='sticky'&&cs.position!=='fixed') continue;
     top=Math.max(top,(de.classList.contains('navhid')?safeTop():(parseFloat(cs.top)||0))+e.offsetHeight) }
   for(const e of document.querySelectorAll('.bbar')){ const cs=getComputedStyle(e); if(cs.position!=='fixed') continue; const r=e.getBoundingClientRect(); if(r.height) bot=Math.max(bot,r.height) }
-  return {top,bot} }
+  return {top,bot,nav} }
 let padQ=0;
-function padNow(){ padQ=0; const {top,bot}=pads(), st=document.documentElement.style; st.scrollPaddingTop=top?Math.round(top+8)+'px':''; st.scrollPaddingBottom=bot?Math.round(bot+8)+'px':'' }
+function padNow(){ padQ=0; const {top,bot,nav}=pads(), st=document.documentElement.style; st.scrollPaddingTop=top?Math.round(top+8)+'px':''; st.scrollPaddingBottom=bot?Math.round(bot+8)+'px':'';
+  /* the pinned board itself (or a square on it) scrolled into view goes just under the tab row, not under the padding: its
+     scroll-margin takes the padding back (trainview.css) */
+  st.setProperty('--pinback',top>nav?Math.round(nav-top-8)+'px':'0px') }
 function padLater(){ if(!padQ) padQ=requestAnimationFrame(padNow) }
 if(typeof window!=='undefined'&&typeof document!=='undefined'){
   addEventListener('resize',padLater); addEventListener('hashchange',()=>setTimeout(padLater,80)); addEventListener('load',padLater);

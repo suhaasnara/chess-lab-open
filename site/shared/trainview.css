@@ -289,6 +289,9 @@ th.num{text-align:right}
   .tvpinned .status strong{display:inline;margin-right:4px}
 }
 
+/* 15 Nov 2026: see trainview.js padNow (scroll-padding under a pinned board; the board itself goes under the tab row) */
+.tvpin,.tvpin *,[data-pinpad],[data-pinpad] *{scroll-margin-top:var(--pinback,0px)}
+
 /* ---------- One chip (14 Nov 2026): the facts under a title ("White · 2210", "1/2-1/2 · date", "+1.6 ?") ----------
    Every chip is the same height with its text centred on one line; a "?" bubble or a link inside a chip never makes
    it taller or gives it a second outline. 24 px, 28 px on touch screens (the "?" keeps a 36 px tap area around it). */
