@@ -290,7 +290,7 @@ th.num{text-align:right}
 }
 
 /* 15 Nov 2026: see trainview.js padNow (scroll-padding under a pinned board; the board itself goes under the tab row) */
-.tvpin,.tvpin *,[data-pinpad],[data-pinpad] *{scroll-margin-top:var(--pinback,0px)}
+.tvpin,.tvpin *,[data-pinpad],[data-pinpad] *{scroll-margin-top:var(--pinback,0px)!important}
 
 /* ---------- One chip (14 Nov 2026): the facts under a title ("White · 2210", "1/2-1/2 · date", "+1.6 ?") ----------
    Every chip is the same height with its text centred on one line; a "?" bubble or a link inside a chip never makes
