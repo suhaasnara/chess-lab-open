@@ -155,7 +155,9 @@ html.navhid nav.tabs{transform:translateY(calc(-100% - env(safe-area-inset-top,0
 .bl .bl-form{display:flex;gap:6px;margin:0}
 .bl .bl-form input{flex:1;min-width:0;border:1px solid var(--line);border-radius:var(--radius);padding:7px 10px;font:inherit;font-size:16px;background:var(--white);color:var(--ink)}
 .bl .bl-form input:focus{border-color:var(--blue);outline:none;box-shadow:0 0 0 3px var(--callout)}
-.bl .bl-how{margin:8px 0 0;font-size:.78rem}
+.bl .bl-lab{display:flex;align-items:center;gap:2px}.bl .bl-lab .qhelp{letter-spacing:0}
+/* 15 Nov 2026: phones and tablets solve on the board; the typed-move box (and its keyboard) is for laptops, and its help is behind the "?" */
+@media (hover:none) and (pointer:coarse){.bl .bl-form{display:none}.bl .bl-line{margin-bottom:0}}
 .bl .sq.bl-sel{box-shadow:inset 0 0 0 3px var(--blue)}
 .bl .board.bl-peek{outline:3px solid var(--brass);outline-offset:2px}
 @media (max-width:860px){
