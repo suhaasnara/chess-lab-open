@@ -1993,7 +1993,7 @@ section('t60: Blind tactics — the stored set replays, filters, first-try scori
   /* Peek: the real position for 2 s, then back; the puzzle is assisted */
   T.next(); await sleep(10);
   const z3=S.cur, b3=pieces();
-  assert(/shown when solved/.test($('bl-root').querySelector('.ohead').textContent),'themes hidden until solved');
+  assert(!/Themes:/.test($('bl-root').querySelector('.ohead').textContent)&&/^Puzzle /.test($('bl-root').querySelector('.ohead h2').textContent),'themes hidden until solved (title: Puzzle n)');
   w.dispatchEvent(new w.KeyboardEvent('keydown',{key:'p',bubbles:true})); await sleep(20);
   assert(pieces()!==b3&&new w.Chess(S.real.fen()).fen()===S.real.fen(),'P peeks: the board shows the real position');
   p=w.Store.get('blind-progress');
