@@ -103,10 +103,10 @@ function safeTop(){ let p=document.getElementById('tv-safe'); if(!p){ p=document
     p.style.cssText='position:fixed;top:0;left:0;width:0;height:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none'; document.body.appendChild(p) }
   return p.offsetHeight||0 }
 function pads(){ const de=document.documentElement; let top=0, bot=0, nav=0;
-  const nv=document.querySelector('nav.tabs'); if(nv&&!de.classList.contains('navhid')){ const cs=getComputedStyle(nv); if(/sticky|fixed/.test(cs.position)) top=nav=Math.max(top,(parseFloat(cs.top)||0)+nv.offsetHeight) }
+  const nv=document.querySelector('nav.tabs'); if(nv&&nv.offsetHeight&&!de.classList.contains('navhid')){ const cs=getComputedStyle(nv); if(/sticky|fixed/.test(cs.position)) top=nav=Math.max(top,(parseFloat(cs.top)||0)+nv.offsetHeight) }
   for(const e of document.querySelectorAll('.tvpin,[data-pinpad]')){ if(!e.offsetParent) continue; const cs=getComputedStyle(e); if(cs.position!=='sticky'&&cs.position!=='fixed') continue;
     top=Math.max(top,(de.classList.contains('navhid')?safeTop():(parseFloat(cs.top)||0))+e.offsetHeight) }
-  for(const e of document.querySelectorAll('.bbar')){ const cs=getComputedStyle(e); if(cs.position!=='fixed') continue; const r=e.getBoundingClientRect(); if(r.height) bot=Math.max(bot,r.height) }
+  for(const e of document.querySelectorAll('.bbar')){ const r=e.getBoundingClientRect(); if(!r.height) continue; if(getComputedStyle(e).position!=='fixed') continue; bot=Math.max(bot,r.height) }   /* size first: getComputedStyle is slow in test DOMs */
   return {top,bot,nav} }
 let padQ=0;
 function padNow(){ padQ=0; const {top,bot,nav}=pads(), st=document.documentElement.style; st.scrollPaddingTop=top?Math.round(top+8)+'px':''; st.scrollPaddingBottom=bot?Math.round(bot+8)+'px':'';
