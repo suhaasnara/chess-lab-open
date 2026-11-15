@@ -80,7 +80,7 @@ textarea{width:100%;min-height:72px;border:1px solid var(--line);border-radius:v
 
 /* Board: Lichess maple squares, cburnett pieces, Lichess move highlights */
 .board{display:grid;grid-template-columns:repeat(8,1fr);aspect-ratio:1;max-width:100%;background:url("assets/board/maple.jpg");background-size:100% 100%;user-select:none;-webkit-user-select:none;touch-action:manipulation;box-shadow:0 2px 12px var(--shadow);position:relative}
-.sq{position:relative;cursor:pointer}
+.sq{position:relative;cursor:pointer}.board>.sq{aspect-ratio:1;min-width:0}   /* 14 Nov 2026: WebKit leaves a grid's auto rows 0 px tall when the board's height comes from aspect-ratio; each square sizes itself */
 .sq.last{background:rgba(155,199,0,.41)}
 .sq.sel{background:rgba(20,85,30,.5)}
 .sq.hint{background:rgba(20,85,30,.35)}
