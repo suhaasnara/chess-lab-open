@@ -70,6 +70,12 @@ window.Nav=(function(){
   let hid=false, lastY=0, acc=0, lastUser=0;
   function hideNav(on){ on=!!on&&!!HIDEQ&&HIDEQ.matches; if(on===hid) return; hid=on; document.documentElement.classList.toggle('navhid',on);
     if(on&&nav&&nav.contains(document.activeElement)) document.activeElement.blur() }
+  /* 15 Nov 2026 (his phone review, "all the movement"): while a board is pinned on screen the header stays, so the board
+     never slides up and down under the thumb (tapping ‹ › scrolls the moves, and those taps counted as a reader's scroll).
+     A pinned board = a showing board inside a sticky block (TV.pin's .tvpin, Openings' and the courses' own). */
+  function pinnedBoard(){ for(const b of document.querySelectorAll('.board')){ if(!b.getClientRects().length) continue;
+      for(let e=b.parentElement;e&&e!==document.body;e=e.parentElement) if(getComputedStyle(e).position==='sticky') return true }
+    return false }
   function autoHide(){ if(!nav||autoHide.on) return; autoHide.on=true; lastY=scrollY;
     const user=()=>{ lastUser=Date.now() };
     for(const ev of ['touchstart','touchmove','touchend','wheel','keydown']) addEventListener(ev,user,{passive:true,capture:true});
@@ -79,7 +85,7 @@ window.Nav=(function(){
       if(y<0||y>max+1) return;                                  // iOS rubber-band past either end
       if(menu&&!menu.hidden) return;
       if(Date.now()-lastUser>1200) return;                      // the page scrolled itself
-      if(dy>0){ acc=Math.max(0,acc)+dy; if(acc>16) hideNav(true) } else if(dy<0){ acc=Math.min(0,acc)+dy; if(acc<-16) hideNav(false) } },{passive:true});
+      if(dy>0){ acc=Math.max(0,acc)+dy; if(acc>16&&!pinnedBoard()) hideNav(true) } else if(dy<0){ acc=Math.min(0,acc)+dy; if(acc<-16) hideNav(false) } },{passive:true});
     addEventListener('hashchange',()=>{ acc=0; hideNav(false) });
     nav.addEventListener('focusin',()=>hideNav(false));
     if(HIDEQ&&HIDEQ.addEventListener) HIDEQ.addEventListener('change',()=>hideNav(false)) }

@@ -162,7 +162,7 @@ window.BlindTactics=(()=>{
       const el=q('list'), p=prog(), list=ordered();
       q('listlabel').textContent=`${list.length.toLocaleString()} puzzle${list.length===1?'':'s'}${list.length>200?' · first 200 shown':''} · Next picks the next one`;
       el.classList.toggle('isempty',!list.length);
-      el.innerHTML=list.length?list.slice(0,200).map(z=>{ const r=p[z.id], done=!!r;
+      el.innerHTML=list.length?list.slice(0,200).map(z=>{ const r=p[z.id], done=!!r&&!(S.cur&&S.cur.id===z.id&&!S.solved&&!S.gaveUp);   /* the puzzle on the board: no theme until this try ends */
         return TV.row({badge:z.rating,title:esc(Puzzles.title(z.id,themeName(z.motif),done,Puzzles.num(S.lib,z.id))),
           meta:[r&&due(r)?'<span class="tag info">review</span>':'',r&&r.a?'peeked':''].filter(Boolean).join(' · ')||(r?'done':'not tried'),   /* 14 Nov: never how many moves the solution has (that is part of the puzzle) */
           right:TV.dots([[r?(r.ok?'good':'bad'):'','Puzzle']]),current:!!(S.cur&&S.cur.id===z.id),data:{id:z.id}}) }).join('')
@@ -190,12 +190,14 @@ window.BlindTactics=(()=>{
         f(); if(document.readyState!=='complete') addEventListener('load',()=>setTimeout(f,0),{once:true}) }   /* Firefox moves focus at the end of loading */
       q('in').value='';
     }
-    function renderHead(){ const z=S.cur; if(!z) return; const done=S.scored||S.solved||S.gaveUp||!!prog()[z.id];
+    /* 15 Nov 2026 (his phone review): the theme is part of the answer, so on the puzzle being solved it shows only once this
+       try has ended (solved or given up): not for a review of one done before, and not with Settings → Show theme in title. */
+    function renderHead(){ const z=S.cur; if(!z) return; const ended=S.solved||S.gaveUp;
       const th=(z.themes||[]).filter(t=>!NOT_THEME.includes(t)).map(themeName).join(', ')||themeName(z.motif);
       q('head').innerHTML=TV.head({kicker:'Blind tactics · Lichess puzzle',right:rating().n?String(rating().r):'',
-        title:esc(Puzzles.title(z.id,themeName(z.motif),done,Puzzles.num(S.lib,z.id))),
+        title:esc(ended&&z.motif?themeName(z.motif):'Puzzle '+(Puzzles.num(S.lib,z.id)||z.id)),
         chips:[`<span class="mono">${z.rating}</span>`,`${side()} to move`,Help.n(hp(),'hidden ply','hidden plies'),
-          `Themes: ${esc(Puzzles.theme(th,done))}`,done?`<a href="https://lichess.org/training/${esc(z.id.slice(3))}" target="_blank" rel="noopener">Lichess ↗</a>`:'']}) }
+          ended?`Themes: ${esc(th||'—')}`:'',ended?`<a href="https://lichess.org/training/${esc(z.id.slice(3))}" target="_blank" rel="noopener">Lichess ↗</a>`:'']}) }
     /* the move list: the hidden moves (numbered from the shown position), the task, then your moves and the replies as text */
     function renderLine(){
       const z=S.cur, el=q('line'); if(!z){ el.textContent=''; return }
