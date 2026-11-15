@@ -82,18 +82,18 @@ window.BlindTactics=(()=>{
     <div class="side">
       <div data-b="head"></div>
       <div class="card bl-moves">
-        <div class="label">The hidden moves</div>
+        <div class="label bl-lab">The hidden moves${window.Help?Help.q("Tap the piece's square, then where it goes (on a keyboard you can also type the move in the box). Moves are read in the real position, after the hidden moves. Esc leaves the box so the keys work."):''}</div>
         <p class="bl-line mono" data-b="line"></p>
         <form class="bl-form" data-b="form" autocomplete="off">
           <input type="text" data-b="in" inputmode="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Your move: Nxe5 or g1f3" aria-label="Your move (SAN or squares)">
           <button type="submit" class="btn sm primary" data-b="go">Play <kbd>↵</kbd></button>
         </form>
-        <p class="note bl-how">Type a move, or tap the piece's square and then where it goes: both are read in the real position, after the hidden moves. Esc leaves the box so the keys work.</p>
       </div>
       <div class="status" data-b="status" aria-live="polite"><strong>Loading the puzzles…</strong></div>
     </div>
   </div>
 </div>`;
+    if(window.TV&&TV.pin) TV.pin(root.querySelector('.panel'),q('wrap'));   /* 15 Nov 2026: the board stays put on phones while the moves and the verdict scroll under it */
     const boardEl=q('board');
     const board=makeBoard(boardEl,{});
     const endbar=endBanner(boardEl,()=>next(),'Next puzzle');

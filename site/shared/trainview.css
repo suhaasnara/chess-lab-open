@@ -208,6 +208,9 @@ th.num{text-align:right}
   .chip{min-height:32px}
   .tv .chips,.chips{row-gap:6px}
   .qhelp{width:24px;height:24px}
+  /* 15 Nov 2026: a link or label styled as a button (Lichess ↗, Cheat sheet, Watch ↗) centres its words in the 44 px like a
+     real button does; inline-block put them at the top */
+  a.btn,label.btn,summary.btn,span.btn{display:inline-flex;align-items:center;justify-content:center;text-align:center;vertical-align:middle}
 }
 
 /* ---------- Bottom bar (14 Nov 2026, phone fix run): one bar for every board page on phones and iPads ----------
@@ -279,10 +282,15 @@ th.num{text-align:right}
     box-shadow:0 8px 10px -10px rgba(19,40,74,.45);max-width:none!important;width:auto;justify-self:stretch}
   .tvpin>.board{max-width:min(100%,calc(100vh - var(--navh,44px) - 300px));max-width:min(100%,calc(100dvh - var(--navh,44px) - 300px));margin-inline:auto}
   .tvpinned>.tvpin{order:-1}
+  .tvpinned .tvpin{justify-self:stretch!important}   /* 15 Nov: a page's own justify-self:center made a pinned column shrink to its board's 0 px */
+  .tvpin{transition:top .22s ease}html.navhid .tvpin{top:env(safe-area-inset-top,0px)}   /* 15 Nov: the header slid away (nav.js), the board follows it up */
   .tvpinned .pscroll{max-height:none!important;min-height:0!important;overflow:visible!important}
   .tvpinned .status{padding:8px 12px;font-size:.9rem;line-height:1.4}
   .tvpinned .status strong{display:inline;margin-right:4px}
 }
+
+/* 15 Nov 2026: see trainview.js padNow (scroll-padding under a pinned board; the board itself goes under the tab row) */
+.tvpin,.tvpin *,[data-pinpad],[data-pinpad] *{scroll-margin-top:var(--pinback,0px)!important}
 
 /* ---------- One chip (14 Nov 2026): the facts under a title ("White · 2210", "1/2-1/2 · date", "+1.6 ?") ----------
    Every chip is the same height with its text centred on one line; a "?" bubble or a link inside a chip never makes

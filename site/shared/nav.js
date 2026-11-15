@@ -35,12 +35,18 @@ window.Nav=(function(){
     menu.className='xmenu'; menu.setAttribute('role','menu'); menu.hidden=true;
     phx=(cfg.main||[]).filter(x=>x[2]).map(x=>x[0]);
     const item=([v,l,d],cls)=>`<a href="#${v}" data-view="${v}" role="menuitem"${cls?` class="${cls}"`:''}><b>${esc(l)}</b>${d?`<span>${esc(d)}</span>`:''}</a>`;
-    const phItems=(cfg.main||[]).filter(x=>x[2]).map(x=>item(x,'ph-x')).join(''), ex=cfg.extra||[], grouped=ex.some(x=>x[3]);
-    let body;
-    if(grouped){ const order=[], by={}; for(const x of ex){ const g=x[3]||'More'; if(!by[g]){ by[g]=[]; order.push(g) } by[g].push(x) }
-      body=(phItems?`<div class="xgrp xph">${phItems}</div>`:'')+order.map(g=>`<div class="xgrp" role="group" aria-label="${esc(g)}"><div class="xgh" aria-hidden="true">${esc(g)}</div>${by[g].map(x=>item(x)).join('')}</div>`).join('') }
-    else body=phItems+ex.map(x=>item(x)).join('');
-    menu.classList.toggle('grouped',grouped); if(grouped) menu.style.setProperty('--xg',String(new Set(ex.map(x=>x[3]||'More')).size));
+    /* 15 Nov 2026: a main tab that moves into Extra on phones may name a group (4th entry) and the group it follows (5th):
+       ['watch','Watch','Your video library','Videos','Puzzles'] puts it under its own "Videos" heading after Puzzles,
+       instead of on a lone row above the groups. A group made only of such tabs shows on phones only. */
+    const phAll=(cfg.main||[]).filter(x=>x[2]), phTop=phAll.filter(x=>!x[3]), phGrp=phAll.filter(x=>x[3]);
+    const phItems=phTop.map(x=>item(x,'ph-x')).join(''), ex=cfg.extra||[], grouped=ex.some(x=>x[3]);
+    let body, nGroups=0;
+    if(grouped){ const order=[], by={}, phOnly=new Set(); for(const x of ex){ const g=x[3]||'More'; if(!by[g]){ by[g]=[]; order.push(g) } by[g].push(x) }
+      for(const x of phGrp){ const g=x[3]; if(!by[g]){ by[g]=[]; phOnly.add(g); const at=order.indexOf(x[4]); order.splice(at<0?order.length:at+1,0,g) } by[g].push(Object.assign(x.slice(),{ph:1})) }
+      nGroups=order.filter(g=>!phOnly.has(g)).length;
+      body=(phItems?`<div class="xgrp xph">${phItems}</div>`:'')+order.map(g=>`<div class="xgrp${phOnly.has(g)?' xphg':''}" role="group" aria-label="${esc(g)}"><div class="xgh" aria-hidden="true">${esc(g)}</div>${by[g].map(x=>item(x,x.ph?'ph-x':'')).join('')}</div>`).join('') }
+    else body=phAll.map(x=>item(x,'ph-x')).join('')+ex.map(x=>item(x)).join('');
+    menu.classList.toggle('grouped',grouped); if(grouped) menu.style.setProperty('--xg',String(nGroups));
     menu.innerHTML=body+'<a href="#settings" data-view="settings" role="menuitem" class="xset"><b>Settings</b><span>Board, pieces, moves and training</span></a>';
     btn=document.getElementById('x-btn');
     if(btn) btn.addEventListener('click',e=>{ e.stopPropagation(); menu.hidden?open():close() });
@@ -52,8 +58,31 @@ window.Nav=(function(){
     const again=e=>{ const a=e.target.closest('a[data-view]'); if(!a||a.getAttribute('aria-current')!=='page'||e.ctrlKey||e.metaKey||e.shiftKey) return; e.preventDefault(); close(); snap() };
     nav.addEventListener('click',again); menu.addEventListener('click',again,true);
     const row=nav.querySelector('.inner'); row.addEventListener('scroll',edges,{passive:true}); addEventListener('resize',edges); edges();
-    mvWatch();
+    mvWatch(); autoHide();
   }
+  /* ---------- The header hides while you read (15 Nov 2026) ----------
+     A "partially persistent" header (Nielsen Norman Group's term; Material's "hide on scroll"; Headroom.js): on phones and
+     touch screens the tab row slides away when you scroll down and comes back as soon as you scroll up, so a pinned board
+     and the notes under it get the row's ~48 px. It never hides near the top of the page, while the Extra menu is open,
+     or for scrolling the page did itself (a move brought into view): only scrolls that follow a touch, the wheel or a key
+     count. html.navhid is the state; CSS moves the row (and anything stuck under it) up with a transform / top. */
+  const HIDEQ=window.matchMedia?matchMedia('(hover:none) and (pointer:coarse),(max-width:860px)'):null;
+  let hid=false, lastY=0, acc=0, lastUser=0;
+  function hideNav(on){ on=!!on&&!!HIDEQ&&HIDEQ.matches; if(on===hid) return; hid=on; document.documentElement.classList.toggle('navhid',on);
+    if(on&&nav&&nav.contains(document.activeElement)) document.activeElement.blur() }
+  function autoHide(){ if(!nav||autoHide.on) return; autoHide.on=true; lastY=scrollY;
+    const user=()=>{ lastUser=Date.now() };
+    for(const ev of ['touchstart','touchmove','touchend','wheel','keydown']) addEventListener(ev,user,{passive:true,capture:true});
+    addEventListener('scroll',()=>{ const y=scrollY, max=document.documentElement.scrollHeight-innerHeight, dy=y-lastY; lastY=y;
+      const nh=nav.offsetHeight||48;
+      if(y<=nh*1.5){ acc=0; hideNav(false); return }            // near the top: always shown
+      if(y<0||y>max+1) return;                                  // iOS rubber-band past either end
+      if(menu&&!menu.hidden) return;
+      if(Date.now()-lastUser>1200) return;                      // the page scrolled itself
+      if(dy>0){ acc=Math.max(0,acc)+dy; if(acc>16) hideNav(true) } else if(dy<0){ acc=Math.min(0,acc)+dy; if(acc<-16) hideNav(false) } },{passive:true});
+    addEventListener('hashchange',()=>{ acc=0; hideNav(false) });
+    nav.addEventListener('focusin',()=>hideNav(false));
+    if(HIDEQ&&HIDEQ.addEventListener) HIDEQ.addEventListener('change',()=>hideNav(false)) }
   /* a row that scrolls sideways (narrow phones) fades at the edge where more tabs are hidden (13 Nov 2026) */
   function edges(){ const row=nav&&nav.querySelector('.inner'); if(!row) return; const m=row.scrollWidth-row.clientWidth;
     row.classList.toggle('fl',m>1&&row.scrollLeft>1); row.classList.toggle('fr',m>1&&row.scrollLeft<m-1) }
@@ -99,5 +128,5 @@ window.Nav=(function(){
     if(row&&cur&&row.scrollWidth>row.clientWidth){ const l=cur.offsetLeft-row.offsetLeft; if(l<row.scrollLeft||l+cur.offsetWidth>row.scrollLeft+row.clientWidth) row.scrollLeft=Math.max(0,l-24) }
     edges();
   }
-  return {mount,set,close,snap,mainEl};
+  return {mount,set,close,snap,mainEl,hide:hideNav,hidden:()=>hid};
 })();

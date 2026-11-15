@@ -74,7 +74,7 @@ function onPick(el,fn){ el.addEventListener('change',e=>{ const s=e.target.close
    tests are untouched; a row that is rebuilt (innerHTML) is marked again. */
 function bar(el,o={}){
   if(typeof el==='string') el=document.querySelector(el); if(!el) return null;
-  el.classList.add('bbar');
+  el.classList.add('bbar'); setTimeout(()=>{ if(padLater.watch) padLater.watch(); padLater() },0);
   const host=typeof o.host==='string'?document.querySelector(o.host):o.host; if(host) host.classList.add('bbar-host');
   const kids=sel=>{ const out=[]; for(const s of [].concat(sel||[])){ let m=[]; try{ m=el.querySelectorAll(s) }catch(e){} for(const b of m) out.push(b) } return out };
   const close=()=>{ el.classList.remove('bb-open'); const m=el.querySelector('.bb-morebtn'); if(m) m.setAttribute('aria-expanded','false') };
@@ -95,8 +95,30 @@ function pin(sec,col){ const q=x=>typeof x==='string'?document.querySelector(x):
   sec.classList.add('tvpinned'); col.classList.add('tvpin');
   /* --navh = the tab row's height (the board sticks just under it). The row may not be built yet when a page calls this. */
   const set=()=>{ const nv=document.querySelector('nav.tabs'); if(nv&&nv.offsetHeight>20) document.documentElement.style.setProperty('--navh',nv.offsetHeight+'px') };
-  set(); setTimeout(set,0); setTimeout(set,800); addEventListener('load',set); addEventListener('resize',set); addEventListener('hashchange',()=>setTimeout(set,60)) }
+  set(); setTimeout(set,0); setTimeout(set,800); addEventListener('load',set); addEventListener('resize',set); addEventListener('hashchange',()=>setTimeout(set,60)); if(padLater.watch) padLater.watch(); padLater() }
+/* 15 Nov 2026: what is stuck over the page (the tab row and a pinned board at the top, the bottom bar at the bottom) becomes
+   the page's scroll-padding, so scrollIntoView, find-in-page and a #link land in the part of the screen you can see
+   instead of under the board (a solution card's heading used to go under it). Pinned boards are .tvpin or [data-pinpad]. */
+function safeTop(){ let p=document.getElementById('tv-safe'); if(!p){ p=document.createElement('div'); p.id='tv-safe'; p.setAttribute('aria-hidden','true');
+    p.style.cssText='position:fixed;top:0;left:0;width:0;height:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none'; document.body.appendChild(p) }
+  return p.offsetHeight||0 }
+function pads(){ const de=document.documentElement; let top=0, bot=0, nav=0;
+  const nv=document.querySelector('nav.tabs'); if(nv&&nv.offsetHeight&&!de.classList.contains('navhid')){ const cs=getComputedStyle(nv); if(/sticky|fixed/.test(cs.position)) top=nav=Math.max(top,(parseFloat(cs.top)||0)+nv.offsetHeight) }
+  for(const e of document.querySelectorAll('.tvpin,[data-pinpad]')){ if(!e.offsetParent) continue; const cs=getComputedStyle(e); if(cs.position!=='sticky'&&cs.position!=='fixed') continue;
+    top=Math.max(top,(de.classList.contains('navhid')?safeTop():(parseFloat(cs.top)||0))+e.offsetHeight) }
+  for(const e of document.querySelectorAll('.bbar')){ const r=e.getBoundingClientRect(); if(!r.height) continue; if(getComputedStyle(e).position!=='fixed') continue; bot=Math.max(bot,r.height) }   /* size first: getComputedStyle is slow in test DOMs */
+  return {top,bot,nav} }
+let padQ=0;
+function padNow(){ padQ=0; const {top,bot,nav}=pads(), st=document.documentElement.style; st.scrollPaddingTop=top?Math.round(top+8)+'px':''; st.scrollPaddingBottom=bot?Math.round(bot+8)+'px':'';
+  /* the pinned board itself (or a square on it) scrolled into view goes just under the tab row, not under the padding: its
+     scroll-margin takes the padding back (trainview.css) */
+  st.setProperty('--pinback',top>nav?Math.round(nav-top-8)+'px':'0px') }
+function padLater(){ if(!padQ) padQ=requestAnimationFrame(padNow) }
+if(typeof window!=='undefined'&&typeof document!=='undefined'){
+  addEventListener('resize',padLater); addEventListener('hashchange',()=>setTimeout(padLater,80)); addEventListener('load',padLater);
+  if(window.MutationObserver) new MutationObserver(padLater).observe(document.documentElement,{attributes:true,attributeFilter:['class']});
+  if(window.ResizeObserver){ const ro=new ResizeObserver(padLater); const watch=()=>{ for(const e of document.querySelectorAll('.tvpin,[data-pinpad],.bbar')) if(!e.__tvro){ e.__tvro=1; ro.observe(e) } }; padLater.watch=watch; addEventListener('load',watch); addEventListener('hashchange',()=>setTimeout(watch,80)) } }
 /* true where the pinned layout is on (the page scrolls under the board; boxes with their own scrollbars are opened up) */
 function pinned(){ return !!(window.matchMedia&&matchMedia('(orientation:portrait) and (max-width:1099.98px)').matches) }
-window.TV={esc,chips,onChip,rate,row,dots,head,session,fitBoard,pick,onPick,bar,pin,pinned};
+window.TV={esc,chips,onChip,rate,row,dots,head,session,fitBoard,pick,onPick,bar,pin,pinned,pads,safeTop,repad:padLater};
 })();
