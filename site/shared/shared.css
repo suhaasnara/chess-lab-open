@@ -150,11 +150,11 @@ html.navhid nav.tabs{transform:translateY(calc(-100% - env(safe-area-inset-top,0
 .vtree .vtree{margin:1px 0 2px 2px}
 .vtree.vshut{display:none}
 .vinl{font-style:italic}.vinl .vmv{font-weight:500}.vinl .vpar{font-style:normal}
-.vfold{display:inline-grid;place-items:center;box-sizing:border-box;width:16px;height:16px;padding:0;margin:0 4px 0 1px;vertical-align:-2px;
+.vfold{display:inline-grid;place-items:center;box-sizing:border-box;width:16px;height:16px;padding:0;margin:0 4px 0 1px;vertical-align:middle;position:relative;top:-1px;
   border:1px solid var(--tree);border-radius:3px;background:var(--band);color:var(--muted);font:700 13px/1 var(--sans);cursor:pointer;font-style:normal}
 .vfold::before{content:'\2212'}.vfold.shut::before{content:'+'}
 .vfold:hover{color:var(--ink);border-color:var(--muted)}.vfold:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
-@media (hover:none) and (pointer:coarse){.vfold{width:24px;height:24px;margin:0 6px 0 2px;vertical-align:-6px}}   /* layout rule 3: 24 px in text */
+@media (hover:none) and (pointer:coarse){.vfold{width:24px;height:24px;margin:0 6px 0 2px}}   /* layout rule 3: 24 px in text */
 .vfg{white-space:nowrap}   /* ⊟ never wraps away from its move */
 .rd-flow .vtree.rd-tree{margin:-4px 0 10px 4px}
 .rd-flow .vrow.vline.rd-sl{display:block}   /* a stacked row (the inline rule above is for a single short line) */
