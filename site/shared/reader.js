@@ -71,7 +71,8 @@ window.Reader=(()=>{
     if(o.lead){ notes(o.lead.note); side(lay(fens[0],[],texts(fens[0],o.lead)),null) }
     main.forEach((san,i)=>{ const m=o.lines[i]||{}, p=fens[i].split(' '), white=p[1]==='w', n=+p[5]||1;
       const lab=(white?n+'.':fresh?n+'…':'')+san+(m.marks||''), L=lay(fens[i],main.slice(0,i),texts(fens[i],m));
-      P.push(`${L.stacked?VarLine.fold(fens[i+1]):''}<button type="button" class="vmv rd-mm" data-vp="${esc(main.slice(0,i+1).join(' '))}">${esc(lab)}</button>`); fresh=false;
+      const mb=`<button type="button" class="vmv rd-mm" data-vp="${esc(main.slice(0,i+1).join(' '))}">${esc(lab)}</button>`;
+      P.push(L.stacked?`<span class="vfg">${VarLine.fold(fens[i+1])}${mb}</span>`:mb); fresh=false;
       notes(m.note,i);
       side(L,fens[i+1]) });
     para(); notes(o.after,-1);

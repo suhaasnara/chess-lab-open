@@ -155,7 +155,9 @@ html.navhid nav.tabs{transform:translateY(calc(-100% - env(safe-area-inset-top,0
 .vfold::before{content:'\2212'}.vfold.shut::before{content:'+'}
 .vfold:hover{color:var(--ink);border-color:var(--muted)}.vfold:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
 @media (hover:none) and (pointer:coarse){.vfold{width:24px;height:24px;margin:0 6px 0 2px;vertical-align:-6px}}   /* layout rule 3: 24 px in text */
+.vfg{white-space:nowrap}   /* ⊟ never wraps away from its move */
 .rd-flow .vtree.rd-tree{margin:-4px 0 10px 4px}
+.rd-flow .vrow.vline.rd-sl{display:block}   /* a stacked row (the inline rule above is for a single short line) */
 .rd-flow .rd-tree .vrow{color:var(--side)}
 .rd-flow .vline.rd-sl.vinl .vmv{font-weight:500}
 /* ‹ › step buttons beside a page's main button (v95: Calculation, the opening trainer on phones): 44 px on touch */

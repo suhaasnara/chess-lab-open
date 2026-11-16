@@ -136,7 +136,7 @@ window.VarLine=(()=>{
       if(flat){ run.forEach(g=>parts.push(par('(')+' '+lay(g,true)+' '+par(')'))); continue }
       if(run.length===1&&!deep(run[0])){ parts.push(`<span class="vinl">${par('(')}${lay(run[0])}${par(')')}</span>`); continue }
       let key=null;   // the move these lines replace: the last move before them (none after prose)
-      for(let k=parts.length-1;k>=0;k--){ const p=parts[k]; if(typeof p!=='string') break; if(/^<button type="button" class="vmv"/.test(p)){ const m=/data-vk="([^"]*)"/.exec(p); key=m?m[1]:null; if(key) parts[k]=fold(key,true)+p; break } if(/class="vtext"/.test(p)) break }
+      for(let k=parts.length-1;k>=0;k--){ const p=parts[k]; if(typeof p!=='string') break; if(/^<button type="button" class="vmv"/.test(p)){ const m=/data-vk="([^"]*)"/.exec(p); key=m?m[1]:null; if(key) parts[k]=`<span class="vfg">${fold(key,true)}${p}</span>`; break } if(/class="vtext"/.test(p)) break }
       parts.push(block(run.map(g=>`<span class="vrow">${lay(g)}</span>`),key)) }
     return parts.join(' ') }
   const unesc=s=>String(s).replace(/&quot;/g,'"').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&');
