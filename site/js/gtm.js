@@ -212,7 +212,7 @@ function drawGraph(){
 let NAV=null;   // the arrow keys through the lines (set up with the keys)
 function noteHtml(n,fen,prefix,after){
   if(!n) return '';
-  const v=(n.v||[]).map(x=>VarLine.wrap(fen,x,prefix)).join('');
+  const v=VarLine.stack(fen,n.v,prefix,after&&after.fen);   // v115: the side lines in one block, stacked (Lichess's move list)
   return `<div class="gnote">${n.t?`<p>${VarLine.prose(n.t,{fen,prefix},after||null)}</p>`:''}${v}</div>`;   // moves written in the note are buttons too
 }
 function renderMoves(){

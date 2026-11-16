@@ -8,7 +8,12 @@
                                     prefix + its own moves (data-vp, space-separated SAN).
    VarLine.path(el)                 the SAN path of a clicked move button (or null): the host plays it from its start.
    VarLine.mark(root, path)         marks the button whose path is `path` (array of SAN) as current; returns it.
-   VarLine.wrap(fen, text, prefix)  html() inside <div class="vline">( … )</div>, the block the hosts put under a move.
+   VarLine.stack(fen, texts, prefix, key)  a move's side lines stacked under it (v115, Lichess's move list): one row each,
+                                    joined by a thin elbow line on the left; key = the FEN after that move, which pairs the
+                                    block with VarLine.fold(key), the ⊟ / ⊞ the host puts before the move.
+   VarLine.wrap(fen, text, prefix)  stack() of one side line (the block the hosts put under a move).
+   VarLine.html lays brackets out the same way: a single short one stays inline in brackets and italics (.vinl), more (or
+   one with its own brackets) are stacked (.vtree > .vrow) with a ⊟ before the move they replace.
    VarLine.prose(text, before, after)  a note written in prose with moves in it: the moves become buttons, the rest stays
                                     plain text. before/after = {fen, prefix} around the move the note is on.
    VarLine.kids(root, path, main)   the moves that can follow `path` (array of SAN), Lichess order: the main line's move first
@@ -37,7 +42,7 @@ window.VarLine=(()=>{
   const NUM=/^(\d+)(\.{1,3}|…)?$/;                 // a move number on its own: "27.", "27...", "27…", "27"
   const NUMMOVE=/^(\d+)(\.{1,3}|…)(.+)$/;          // a numbered move: "27.f4", "27...gxf4", "27…gxf4"
   const SIGN=/^(?:[=∞⩲⩱±∓□⨀N]|\+[-−–]|[-−–]\+|\+\/[-−–=]|[-−–=]\/\+|\+=|=\+|\$\d+|1-0|0-1|1\/2-1\/2|½-½|\*)$/;
-  function html(fen,text,prefix){
+  function html(fen,text,prefix,flat){
     const out=[]; let start;
     try{ start=new Chess(fen||undefined) }catch(e){ return esc(text) }
     /* a line: its positions (stops: fen, path, and the chain of stops that leads there, from the line's start through the
@@ -67,7 +72,7 @@ window.VarLine=(()=>{
       out.push(push(m,white,mv,mk)+esc(tail)); return true };   // the word's own punctuation stays ("13.Re1, the main line")
     function push(m,white,mv,mk){ cur.path.push(m.san); const st={fen:cur.g.fen(),path:cur.path.slice()}; cur.stops.push(st); st.chain=cur.stops.slice(); cur.all.push(st);
       const label=(white?mv+'.':cur.fresh?mv+'…':'')+m.san+mk; cur.fresh=false; cur.skip=null;
-      return `<button type="button" class="vmv" data-vp="${esc(cur.path.join(' '))}">${esc(label)}</button>` }
+      return `<button type="button" class="vmv" data-vp="${esc(cur.path.join(' '))}" data-vd="${stack.length}" data-vk="${esc(cur.g.fen())}">${esc(label)}</button>` }
     /* "playing Bc5 14.Re1", "Ng4 Black exploits … 9.Nxc6": a move left as text after prose is played after all when the
        numbered move that follows only fits after it */
     function revive(n,black,core){ const k=cur.skip; if(!k||k.at!==cur.stops.length) return false;
@@ -83,9 +88,9 @@ window.VarLine=(()=>{
       if(num&&(t==='('||t===')'||t[0]==='{')){ put(num.t); num=null }   // a number before a bracket or a note is text ("Moscow 1937)")
       if(t[0]===''){ put(t.slice(1)+')','vnote'); cur.fresh=true; return }
       if(t[0]==='{'){ const c=t.slice(1,-1).trim(); if(c) put(c,'vnote'); cur.fresh=true; num=null; return }
-      if(t==='('){ stack.push(cur); out.push('<span class="vpar">(</span>');
+      if(t==='('){ stack.push(cur); out.push(OPEN);
         const pool=cur.stops.slice(); cur=line(pool.slice(0,Math.max(1,pool.length-1)),cur.all); num=null; return }
-      if(t===')'){ if(stack.length){ out.push('<span class="vpar">)</span>'); cur=stack.pop(); cur.fresh=true } else put(t); num=null; return }
+      if(t===')'){ if(stack.length){ out.push(CLOSE); cur=stack.pop(); cur.fresh=true } else put(t); num=null; return }
       let m=NUM.exec(t);
       if(m){ if(num) put(num.t); num={n:+m[1],black:!!m[2]&&m[2]!=='.',t}; return }
       if(num&&/^(\.{2,3}|…)$/.test(t)){ num.black=true; num.t+=' '+t; return }
@@ -97,8 +102,8 @@ window.VarLine=(()=>{
       put(t,'vtext'); cur.need=true; cur.fresh=true;   // prose: the line goes on only at a numbered move
     });
     if(num) put(num.t);
-    while(stack.length){ out.push('<span class="vpar">)</span>'); stack.pop() }
-    return out.join(' ');
+    while(stack.length){ out.push(CLOSE); stack.pop() }
+    return lay(tree(out),flat);
   }
   /* A note in prose ("11...Bd6?! 12.f4 Ne4 13.Nxe4 favours White", "If 12.f4 there would have followed c5 13.e3"): the moves
      become buttons as in a side line, the prose stays ordinary text (no brackets, no muted words). The note sits on a move:
@@ -109,20 +114,67 @@ window.VarLine=(()=>{
     let root=before; const m=t.match(/(?:^|[\s(])(\d+)(\.{3}|…|\.)\s?(?=[KQRBNa-hO0])/);
     if(m&&after&&after.fen){ const n=+m[1], blk=m[2]!=='.', fit=f=>{ const p=f.split(' '); return +p[5]===n&&(p[1]==='b')===blk };
       if(!fit(before.fen)&&fit(after.fen)) root=after }
-    let h=html(root.fen,t,root.prefix);
+    let h=html(root.fen,t,root.prefix,true);
     h=h.replace(/<span class="(?:vdead(?: vill)?|vtext|vnote)">([^<]*)<\/span>/g,'$1').replace(/<span class="vpar">\(<\/span> ?/g,'(').replace(/ ?<span class="vpar">\)<\/span>/g,')');
     return h.replace(/ ([,.;:!?])(?=\s|$)/g,'$1') }
-  const wrap=(fen,text,prefix)=>`<div class="vline"><span class="vpar">(</span>${html(fen,text,prefix)}<span class="vpar">)</span></div>`;
+  /* ---------- the move tree (v115, Lichess's move list): where lines branch ----------
+     Brackets at one point of a line are laid out as Lichess does: one short side line with no brackets of its own stays
+     inline, in brackets and italics ("(6...Nf6 7.Ne5)"); two or more, or one with side lines of its own, are stacked under
+     the move they replace, each on its own row, joined on the left by a thin elbow line, and the line goes on under them on
+     a row of its own. The move they replace gets a small ⊟ that folds them away (⊞ brings them back); a fold is kept per
+     position (VarLine.fold / stack key = the FEN after that move) while the page is open, and the move shown on the board
+     is never left inside a folded block (mark, nav). flat = the old one-paragraph layout (prose notes). */
+  const OPEN={o:1}, CLOSE={c:1}, SHUT=new Set();
+  function tree(out){ const root=[], st=[root];
+    for(const x of out){ if(x===OPEN){ const g=[]; st[st.length-1].push({g}); st.push(g) } else if(x===CLOSE){ if(st.length>1) st.pop() } else st[st.length-1].push(x) }
+    return root }
+  const deep=g=>g.some(x=>x&&x.g);
+  const par=c=>`<span class="vpar">${c}</span>`;
+  const lay=(seq,flat)=>parts(seq,flat).join(' ');
+  /* a bracket never ends a line apart from its first move (or starts one with its closing bracket alone) */
+  const bracket=g=>{ const q=parts(g); if(!q.length) return `<span class="vinl">${par('(')}${par(')')}</span>`;
+    if(q.length===1) return `<span class="vinl"><span class="vfg">${par('(')}${q[0]}${par(')')}</span></span>`;
+    return `<span class="vinl"><span class="vfg">${par('(')}${q[0]}</span> ${q.slice(1,-1).concat('').join(' ')}<span class="vfg">${q[q.length-1]}${par(')')}</span></span>` };
+  function parts(seq,flat){ const parts=[]; let i=0;
+    while(i<seq.length){ const x=seq[i]; if(!(x&&x.g)){ parts.push(x); i++; continue }
+      const run=[]; while(i<seq.length&&seq[i]&&seq[i].g) run.push(seq[i++].g);
+      if(flat){ run.forEach(g=>parts.push(par('(')+' '+lay(g,true)+' '+par(')'))); continue }
+      if(run.length===1&&!deep(run[0])){ parts.push(bracket(run[0])); continue }
+      let key=null;   // the move these lines replace: the last move before them (none after prose)
+      for(let k=parts.length-1;k>=0;k--){ const p=parts[k]; if(typeof p!=='string') break; if(/^<button type="button" class="vmv"/.test(p)){ const m=/data-vk="([^"]*)"/.exec(p); key=m?m[1]:null; if(key) parts[k]=`<span class="vfg">${fold(key,true)}${p}</span>`; break } if(/class="vtext"/.test(p)) break }
+      parts.push(block(run.map(g=>`<span class="vrow">${lay(g)}</span>`),key)) }
+    return parts }
+  const unesc=s=>String(s).replace(/&quot;/g,'"').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&');
+  /* fold(key): the ⊟ / ⊞ before a move whose side lines are stacked; key = the FEN after that move (escaped or not) */
+  function fold(key,escd){ const k=escd?unesc(key):key, shut=SHUT.has(k);
+    return `<button type="button" class="vfold${shut?' shut':''}" data-vfold="${esc(k)}" aria-expanded="${!shut}" aria-label="${shut?'Show':'Hide'} the side lines here" title="${shut?'Show':'Hide'} the side lines here"></button>` }
+  function block(rows,key,cls){ const k=key==null?null:unesc(key);
+    return `<span class="vtree${cls?' '+cls:''}${k!=null&&SHUT.has(k)?' vshut':''}"${k!=null?` data-vfor="${esc(k)}"`:''}>${rows.join('')}</span>` }
+  /* stack(fen, texts, prefix, key): a move's side lines (as the book wrote them), stacked under it, one row each (each row
+     a .vline box for the keys); key = the FEN after the move they replace, to pair them with fold(key) */
+  function stack(fen,list,prefix,key){ const rows=(list||[]).filter(t=>t&&String(t).trim()).map(t=>`<span class="vrow vline">${html(fen,t,prefix)}</span>`);
+    return rows.length?block(rows,key,'vstack'):'' }
+  const wrap=(fen,text,prefix)=>stack(fen,[text],prefix);
+  function setShut(k,shut){ if(shut) SHUT.add(k); else SHUT.delete(k);
+    if(typeof document==='undefined') return;
+    document.querySelectorAll('.vtree[data-vfor]').forEach(t=>{ if(t.dataset.vfor===k) t.classList.toggle('vshut',shut) });
+    document.querySelectorAll('.vfold[data-vfold]').forEach(b=>{ if(b.dataset.vfold!==k) return; b.classList.toggle('shut',shut); b.setAttribute('aria-expanded',String(!shut));
+      const l=(shut?'Show':'Hide')+' the side lines here'; b.setAttribute('aria-label',l); b.title=l }) }
+  /* a move about to be shown (current, or picked with ↓ ↑) is never inside a folded block */
+  function reveal(el){ for(let t=el&&el.closest&&el.closest('.vtree.vshut');t;t=t.parentElement&&t.parentElement.closest('.vtree.vshut')) if(t.dataset.vfor) setShut(t.dataset.vfor,false); else t.classList.remove('vshut') }
+  if(typeof document!=='undefined') document.addEventListener('click',e=>{ const b=e.target&&e.target.closest&&e.target.closest('.vfold[data-vfold]'); if(!b) return;
+    e.preventDefault(); e.stopPropagation(); setShut(b.dataset.vfold,!SHUT.has(b.dataset.vfold)) },true);
   function path(el){ const b=el&&el.closest&&el.closest('.vmv[data-vp]'); return b?b.dataset.vp.split(' ').filter(Boolean):null }
   function mark(root,p){ if(!root) return null; const k=p&&p.length?p.join(' '):null; let hit=null;
     root.querySelectorAll('.vmv.cur').forEach(b=>b.classList.remove('cur'));
     if(k) root.querySelectorAll('.vmv[data-vp]').forEach(b=>{ if(!hit&&b.dataset.vp===k){ b.classList.add('cur'); hit=b } });
+    if(hit) reveal(hit);
     return hit }
   /* ---------- keyboard: the tree of lines ---------- */
   const same=(a,b)=>a.length===b.length&&a.every((x,i)=>x===b[i]);
   const pre=(p,m)=>p.length<=m.length&&p.every((x,i)=>x===m[i]);
   /* how deep in brackets a button sits inside its .vline (0 = the line itself) */
-  function depth(b){ const box=b.closest('.vline'); if(!box) return 0; let d=0;
+  function depth(b){ if(b.dataset&&b.dataset.vd!=null) return +b.dataset.vd; const box=b.closest('.vline'); if(!box) return 0; let d=0;
     for(const n of box.querySelectorAll('.vpar,.vmv')){ if(n===b) break; if(n.classList.contains('vpar')) d+=n.textContent==='('?1:-1 } return d }
   function kids(root,p,main){ p=p||[]; main=main||[]; const out=[], seen=new Set();
     if(pre(p,main)&&main.length>p.length){ const q=main.slice(0,p.length+1); out.push({path:q,el:null}); seen.add(q.join(' ')) }
@@ -171,7 +223,7 @@ window.VarLine=(()=>{
     function paint(){ const r=o.root&&o.root(); if(r) r.querySelectorAll('.vpick').forEach(b=>b.classList.remove('vpick'));
       document.querySelectorAll('.vpick').forEach(b=>b.classList.remove('vpick'));
       const c=node(); if(!c||!cyc||at!==c.join(' ')) return; const ks=list(c), x=ks[sel]; if(!x) return;
-      const el=x.el||(o.mainEl&&o.mainEl(c.length)); if(el){ el.classList.add('vpick'); show(el) } }
+      const el=x.el||(o.mainEl&&o.mainEl(c.length)); if(el){ reveal(el); el.classList.add('vpick'); show(el) } }
     function pick(dir){ const c=node(); if(!c) return false; const ks=list(c); if(ks.length<2) return;
       const k=c.join(' '); if(at!==k){ at=k; sel=0 } sel=(sel+dir+ks.length)%ks.length; cyc=true; paint() }
     function right(e){ if(o.active&&!o.active()) return false; const c=node(); if(!c) return o.right?o.right(e):false; const ks=list(c), k=c.join(' ');
@@ -184,5 +236,5 @@ window.VarLine=(()=>{
       ArrowRight:[o.rightLabel||'Forward a move (the picked line where lines branch)',right],
       ArrowDown:['Where lines branch: pick the next line',()=>{ if(o.active&&!o.active()) return false; pick(1) }],
       ArrowUp:['Where lines branch: pick the line before',()=>{ if(o.active&&!o.active()) return false; pick(-1) }]}} }
-  return {html,wrap,prose,path,mark,kids,nav,follow,clicked,covered,floor};
+  return {html,wrap,stack,fold,reveal,prose,path,mark,kids,nav,follow,clicked,covered,floor};
 })();

@@ -1587,6 +1587,19 @@ section('t52: side lines on the board (shared/varline.js), numbered puzzles, who
   const P=t=>V.path(bs.find(b=>b.textContent===t)).join(' ');
   assert(P('2…d5')==='x e4 e5 f4 d5'&&P('3.Nf3')==='x e4 e5 f4 exf4 Nf3'&&P('2…Nc6')==='x e4 e5 Nf3 Nc6','nested lines start from the position before the move they replace; paths carry the prefix');
   assert(box.querySelector('.vnote').textContent==='good'&&/±/.test(box.textContent),'notes and evaluation signs stay as text');
+  // v115 the move tree (Lichess's move list): one short bracket inline in italics; more (or nested ones) stacked under the move, ⊟ folds them
+  assert(box.querySelectorAll('.vtree.vstack > .vrow.vline').length===1&&box.querySelector('.vinl')&&/2…d5/.test(box.querySelector('.vinl').textContent),'one bracket with no brackets of its own stays inline (2...d5)');
+  const tb=w.document.createElement('div'); w.document.body.appendChild(tb);
+  tb.innerHTML=V.html(undefined,'1.e4 d5 2.exd5 Qxd5 3.Nc3 Qa5 4.d4 Bf5 5.Nf3 (5.Bd2 e6 6.Bc4 Bb4 (6...c6 7.g4)) (5.Bc4) c6 6.Bc4 e6 (6...Nf6 7.Ne5) 7.Bd2');
+  const tr=tb.querySelector('.vtree'), rows=tr?[...tr.children]:[];
+  assert(rows.length===2&&rows.every(r=>r.classList.contains('vrow'))&&/^5\.Bd2 e6 6\.Bc4 Bb4/.test(rows[0].textContent.trim())&&/^5\.Bc4$/.test(rows[1].textContent.trim()),'two side lines at 5.Nf3 are stacked, one row each');
+  assert(rows[0].querySelector('.vinl')&&/6…c6 7\.g4/.test(rows[0].querySelector('.vinl').textContent),'a short bracket inside a stacked row stays inline');
+  assert(tb.querySelectorAll(':scope > .vinl').length===1&&/6…Nf6 7\.Ne5/.test(tb.querySelector(':scope > .vinl').textContent),'(6...Nf6 7.Ne5) on the main line stays inline');
+  const fb=tb.querySelector('.vfold'); assert(fb&&fb.nextElementSibling&&fb.nextElementSibling.textContent==='5.Nf3','⊟ sits before the move the stacked lines replace');
+  fb.click(); assert(tr.classList.contains('vshut')&&fb.getAttribute('aria-expanded')==='false','⊟ folds the stacked lines');
+  V.mark(tb,['e4','d5','exd5','Qxd5','Nc3','Qa5','d4','Bf5','Bc4']); assert(!tr.classList.contains('vshut'),'the move shown is never left inside a folded block');
+  assert(V.prose('If 5.Bd2 (5.Bc4) e6',{fen:undefined,prefix:[]},null).indexOf('vtree')<0,'notes in prose keep their flat brackets');
+  tb.remove();
   const bad=w.document.createElement('div'); bad.innerHTML=V.html(undefined,'1.e4 e5 2.Ke3 Nf6 3.Nf3');
   assert(bad.querySelectorAll('.vmv').length===2&&bad.querySelectorAll('.vdead').length===3,'an illegal move and the rest of its line stay plain text');
   const pv=(h,t)=>{ const b=w.document.createElement('div'); b.innerHTML=h; const x=[...b.querySelectorAll('.vmv')].find(e=>e.textContent===t); return x?V.path(x).join(' '):null };
