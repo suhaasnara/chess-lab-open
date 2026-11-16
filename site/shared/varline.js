@@ -130,15 +130,20 @@ window.VarLine=(()=>{
     return root }
   const deep=g=>g.some(x=>x&&x.g);
   const par=c=>`<span class="vpar">${c}</span>`;
-  function lay(seq,flat){ const parts=[]; let i=0;
+  const lay=(seq,flat)=>parts(seq,flat).join(' ');
+  /* a bracket never ends a line apart from its first move (or starts one with its closing bracket alone) */
+  const bracket=g=>{ const q=parts(g); if(!q.length) return `<span class="vinl">${par('(')}${par(')')}</span>`;
+    if(q.length===1) return `<span class="vinl"><span class="vfg">${par('(')}${q[0]}${par(')')}</span></span>`;
+    return `<span class="vinl"><span class="vfg">${par('(')}${q[0]}</span> ${q.slice(1,-1).concat('').join(' ')}<span class="vfg">${q[q.length-1]}${par(')')}</span></span>` };
+  function parts(seq,flat){ const parts=[]; let i=0;
     while(i<seq.length){ const x=seq[i]; if(!(x&&x.g)){ parts.push(x); i++; continue }
       const run=[]; while(i<seq.length&&seq[i]&&seq[i].g) run.push(seq[i++].g);
       if(flat){ run.forEach(g=>parts.push(par('(')+' '+lay(g,true)+' '+par(')'))); continue }
-      if(run.length===1&&!deep(run[0])){ parts.push(`<span class="vinl">${par('(')}${lay(run[0])}${par(')')}</span>`); continue }
+      if(run.length===1&&!deep(run[0])){ parts.push(bracket(run[0])); continue }
       let key=null;   // the move these lines replace: the last move before them (none after prose)
       for(let k=parts.length-1;k>=0;k--){ const p=parts[k]; if(typeof p!=='string') break; if(/^<button type="button" class="vmv"/.test(p)){ const m=/data-vk="([^"]*)"/.exec(p); key=m?m[1]:null; if(key) parts[k]=`<span class="vfg">${fold(key,true)}${p}</span>`; break } if(/class="vtext"/.test(p)) break }
       parts.push(block(run.map(g=>`<span class="vrow">${lay(g)}</span>`),key)) }
-    return parts.join(' ') }
+    return parts }
   const unesc=s=>String(s).replace(/&quot;/g,'"').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&');
   /* fold(key): the ⊟ / ⊞ before a move whose side lines are stacked; key = the FEN after that move (escaped or not) */
   function fold(key,escd){ const k=escd?unesc(key):key, shut=SHUT.has(k);
