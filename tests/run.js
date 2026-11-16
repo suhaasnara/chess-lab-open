@@ -2457,6 +2457,8 @@ section('t74: Analyze — the engine’s first choice is never a mistake; drills
   assert(dm.className.includes('bad')&&/Find something better/.test(dm.textContent)&&w.Store.get('adrills')[1].best==='a2a3','an older drill that is a real mistake still refuses the game move, and now stores the best move');
 }
 
+await require('./native')(H);   /* the iPhone and Apple Watch app layer (shared/native.js, js/native.js) */
+
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));
 process.exit(H.failures?1:0);
 })().catch(e=>{ console.error('Test run crashed:',e); process.exit(1) });

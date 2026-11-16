@@ -11,6 +11,10 @@ let board=null, LIB=null, endbar=null;
 const S={cur:null,start:null,g:null,line:[],sub:false,t0:0,tick:null,len:'all',lo:null,hi:null,view:0,busy:false,st:'all'};
 const STS=[['all','All'],['unsolved','Unsolved'],['missed','Missed or partly'],['solved','Solved']];
 const prog=()=>Store.get('calc-progress')||{};
+/* A result: the best score is kept and the tries counted. Also how a result from the Apple Watch is recorded (js/native.js),
+   with the time it was solved there. */
+function record(id,score,secs,at){ const p=prog(), prev=p[id];
+  p[id]={score:Math.max(score,prev?prev.score:0),t:at||Date.now(),secs:Math.max(0,Math.round(+secs||0)),tries:(prev?prev.tries:0)+1}; Store.put('calc-progress',p) }
 const mine=z=>Math.floor(z.moves.length/2);                 /* the solver's moves (the first move is the setup) */
 const LENS=[['all','Any length'],['4','4 moves'],['5','5 moves'],['6','6+ moves']];
 const HARD=[['0','All'],['2200','2200+'],['2400','2400+'],['2600','2600+']];
@@ -107,7 +111,7 @@ async function submit(){
   else{ score=Math.max(0.5,k/sol.length); tone=k>=sol.length-1?'good':'warn'; head=`You saw ${k} of ${sol.length} plies.` }
   S.sub=true; clearInterval(S.tick);
   const secs=Math.round((Date.now()-S.t0)/1000);
-  const p=prog(); const prev=p[z.id]; p[z.id]={score:Math.max(score,prev?prev.score:0),t:Date.now(),secs,tries:(prev?prev.tries:0)+1}; Store.put('calc-progress',p);
+  record(z.id,score,secs); window.Native&&Native.verdict(tone);   /* the app's tap or buzz */
   const ss=sanLine(S.start,sol);
   status(tone,head,`${fmt(secs)} · the solution is below; step through it with ← →.`);
   endbar.show(tone==='bad'?'bad':score>=1?'good':'warn',`${head} ${Math.round(score*100)}% · ${fmt(secs)}`,'Next exercise');
@@ -162,5 +166,5 @@ function ensure(){
     .then(j=>{ LIB=j; renderList() }).catch(()=>{ LIB=[]; renderList() });
   return libP;
 }
-window.CalcTab={ensure,init,load,lobby,userMove,undo,reset,submit,next,get state(){return S},get lib(){return LIB}};
+window.CalcTab={ensure,init,load,lobby,userMove,undo,reset,submit,next,record,get state(){return S},get lib(){return LIB}};
 })();

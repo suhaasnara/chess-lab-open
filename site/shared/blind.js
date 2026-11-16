@@ -104,14 +104,7 @@ window.BlindTactics=(()=>{
     const rating=()=>{ const r=st.get('blind-rating')||{}; return {r:r.r||R0,n:r.n||0,hist:r.hist||[]} };
     function score(ok){
       if(S.scored||!S.cur) return; S.scored=true;
-      const p=prog(), id=S.cur.id, before=p[id], rec=Object.assign({n:0,ok:false,okN:0,t:0},before||{});
-      rec.n++; rec.ok=ok; rec.okN=ok?(rec.okN||0)+1:0; rec.t=Date.now();
-      if(ok) rec.h=hp(); if(S.assisted) rec.a=1; else delete rec.a;
-      p[id]=rec; st.put('blind-progress',p);
-      if(!before&&S.cur.rating){   /* first try at each puzzle counts */
-        const rt=rating(), K=rt.n<30?32:16, E=1/(1+Math.pow(10,(S.cur.rating-rt.r)/400));
-        rt.r=Math.round(rt.r+K*((ok?1:0)-E)); rt.n++; rt.hist=rt.hist.concat([{t:Date.now(),r:rt.r}]).slice(-500);
-        st.put('blind-rating',rt) }
+      record(st,S.cur,ok,{h:hp(),assisted:S.assisted});
       if(S.cfg.auto) autoStep(ok&&!S.assisted);
       renderRate(); site.onResult&&site.onResult();
     }
@@ -324,9 +317,25 @@ window.BlindTactics=(()=>{
     return {show:show_,get state(){ return S },load,submit,clickSquare,peek,giveUp,next,filtered,summary,parse:t=>S.real&&parse(S.real,t),
       get board(){ return board }, get lib(){ return S.lib }};
   }
+  /* Record a result in a site's store {get, put}: the puzzle's progress and, on the first try at it, the Blind rating.
+     o = {h: hidden plies, assisted: Peek was used, at: when it was solved (default now)}. Used by the screen and for a
+     result from the Apple Watch (the public app); a result older than the puzzle's last try (it reached this phone late)
+     only adds to the count, so it never overwrites the newer review state. */
+  function record(st,z,ok,o){
+    o=o||{}; const at=o.at||Date.now();
+    const p=st.get('blind-progress')||{}, id=z.id, before=p[id], rec=Object.assign({n:0,ok:false,okN:0,t:0},before||{});
+    rec.n++;
+    if(!before||at>=before.t){ rec.ok=ok; rec.okN=ok?(rec.okN||0)+1:0; rec.t=at;
+      if(ok&&o.h) rec.h=o.h; if(o.assisted) rec.a=1; else delete rec.a }
+    p[id]=rec; st.put('blind-progress',p);
+    if(!before&&z.rating){   /* first try at each puzzle counts */
+      const r=st.get('blind-rating')||{}, rt={r:r.r||R0,n:r.n||0,hist:r.hist||[]}, K=rt.n<30?32:16, E=1/(1+Math.pow(10,(z.rating-rt.r)/400));
+      rt.r=Math.round(rt.r+K*((ok?1:0)-E)); rt.n++; rt.hist=rt.hist.concat([{t:at,r:rt.r}]).slice(-500);
+      st.put('blind-rating',rt) }
+    return rec }
   /* The Progress tile on both sites: BlindTactics.stats(progress, rating) -> {solved, tried, rating (null before the first
      rated puzzle), rated, avgPlies (hidden plies of the solved puzzles, on average), due} */
   function stats(p,r){ const v=Object.values(p||{}), ok=v.filter(x=>x&&x.ok), hs=ok.map(x=>x.h).filter(Boolean); r=r||{};
     return {tried:v.length,solved:ok.length,rating:r.n?r.r:null,rated:r.n||0,avgPlies:hs.length?Math.round(hs.reduce((a,b)=>a+b,0)/hs.length*10)/10:null,due:v.filter(due).length} }
-  return {mount,parse,stats,DEF};
+  return {mount,parse,stats,record,DEF};
 })();

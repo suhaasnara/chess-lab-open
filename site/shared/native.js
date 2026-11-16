@@ -1,0 +1,251 @@
+/* Shared. Home: chess-lab-open/site/shared/ (MIT). The iPhone and Apple Watch app around this site (the public app,
+   suhaasnara/chess-lab-open-app; design in its docs/01-design.md) runs the site inside a native shell (Capacitor).
+
+   How the page and the app meet: inside the app, Capacitor puts window.Capacitor.Plugins on the page, one entry per
+   native plugin (Haptics, LocalNotifications, Filesystem, WatchBridge). A call like Plugins.Haptics.impact() crosses
+   from JavaScript into Swift and back as a Promise. Everywhere else (any browser) Native.app is false and every function
+   here does nothing, so the website is unchanged.
+
+   This file is the generic machinery; each site registers its own parts (Open: js/native.js):
+     Due.add(key, at => how many items are due at time `at`)        counters for the review reminder (read-only)
+     WatchSets.add(type, {apply(result), state()})                  the sets on the Apple Watch: how a result from the
+                                                                    watch is recorded, and what the watch should know
+     Native.start(site)                                             names, storage and backup hooks (see start())
+   Nothing here writes progress itself: results are recorded by each section's own code (WatchSets.apply). */
+'use strict';
+window.Due={ src:{},
+  add(k,f){ this.src[k]=f },
+  count(at){ const o={}; for(const k in this.src){ try{ o[k]=Math.max(0,+this.src[k](at)||0) }catch(e){ o[k]=0 } } return o },
+  day(at){ const d=new Date(at); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0') },
+  sod(at){ return new Date(at).setHours(0,0,0,0) },
+  /* the review rule of Drills, Blunder check, Endgames and Blind tactics: a miss is due from the next day; a solve
+     comes back 3, 7, then 21 days after the last try */
+  spaced(r,at){ const REVIEW=[3,7,21]; return !!r&&(r.ok?at-r.t>=REVIEW[Math.min(REVIEW.length-1,Math.max(1,r.okN||1)-1)]*864e5:r.t<Due.sod(at)) }
+};
+
+window.WatchSets={ src:{}, add(k,o){ this.src[k]=o } };
+
+window.Native=(()=>{
+  const cap=window.Capacitor, P=(cap&&cap.Plugins)||{};
+  const app=!!(cap&&typeof cap.isNativePlatform==='function'&&cap.isNativePlatform());
+  let site=null, cfg=null;
+  const DEF={haptics:true,remind:true,time:'19:00',asked:false,welcomed:false};
+  const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const save=()=>{ try{ localStorage.setItem(site.cfgKey,JSON.stringify(cfg)) }catch(e){} };
+  const clock=at=>new Date(at).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+  const plural=(n,a,b)=>n+' '+(n===1?a:b);
+
+  /* ---- haptics: a light tap for a right move, iOS's error buzz for a wrong one, a firmer tap for "right, but" ---- */
+  let lastBuzz=0;
+  function verdict(tone){
+    if(!app||!cfg||!cfg.haptics||!P.Haptics) return;
+    const now=Date.now(); if(now-lastBuzz<250) return; lastBuzz=now;   // one move, one buzz (a flash covers two squares)
+    try{
+      if(tone==='good') P.Haptics.impact({style:'LIGHT'});
+      else if(tone==='bad') P.Haptics.notification({type:'ERROR'});
+      else if(tone==='warn') P.Haptics.impact({style:'MEDIUM'});
+    }catch(e){}
+  }
+
+  /* ---- the review reminder: a local notification at the chosen time on each of the next 7 days with something due.
+     iOS keeps the scheduled notifications; no server. The plan is redone whenever the app is opened or left. ---- */
+  const IDS=[7100,7101,7102,7103,7104,7105,7106], TEST=7199;
+  /* the message for the counts at a time: {total, title, body, hash (the page a tap opens)} */
+  function message(c){
+    const parts=site.reminder.map(p=>[p,c[p.k]||0]).filter(x=>x[1]>0), total=parts.reduce((s,x)=>s+x[1],0);
+    const top=parts.slice().sort((a,b)=>b[1]-a[1])[0];
+    return {total,title:plural(total,'review due','reviews due'),body:parts.map(([p,n])=>plural(n,p.one,p.many)).join(' · '),hash:top?top[0].hash:'#today'};
+  }
+  const atOn=(d,time)=>{ const [h,m]=String(time||'19:00').split(':').map(Number), x=new Date(); x.setDate(x.getDate()+d); x.setHours(h||0,m||0,0,0); return x.getTime() };
+  /* iOS asks the user once; after that the answer is 'granted' or 'denied' (changeable only in the iPhone's Settings) */
+  async function permission(ask){
+    if(!app||!P.LocalNotifications) return 'unavailable';
+    try{ let p=await P.LocalNotifications.checkPermissions(); if(p.display==='prompt'||p.display==='prompt-with-rationale'){ if(!ask) return 'prompt'; p=await P.LocalNotifications.requestPermissions() } return p.display }catch(e){ return 'unavailable' }
+  }
+  let next=null, perm='unknown';
+  async function plan(){
+    if(!app||!P.LocalNotifications) return;
+    const LN=P.LocalNotifications;
+    try{ await LN.cancel({notifications:IDS.map(id=>({id}))}) }catch(e){}
+    next=null; perm=await permission(false);
+    if(!cfg.remind||perm!=='granted'){ render(); return }
+    const now=Date.now(), list=[];
+    for(let d=0;d<IDS.length;d++){ const at=atOn(d,cfg.time); if(at<now+60e3) continue;
+      const m=message(Due.count(at)); if(!m.total) continue;
+      list.push({id:IDS[d],title:m.title,body:m.body,schedule:{at:new Date(at)},extra:{hash:m.hash}});
+      if(!next) next={at,m} }
+    if(list.length) try{ await LN.schedule({notifications:list}) }catch(e){}
+    render();
+  }
+  let timer=0; const soon=(ms=1500)=>{ clearTimeout(timer); timer=setTimeout(plan,ms) };
+  async function test(){
+    if(await permission(true)!=='granted'){ perm='denied'; render(); return }
+    const m=message(Due.count(Date.now()));
+    try{ await P.LocalNotifications.schedule({notifications:[{id:TEST,title:m.total?m.title:site.name,body:(m.total?m.body:'Nothing is due right now.')+' (a test)',schedule:{at:new Date(Date.now()+5000)},extra:{hash:m.hash}}]}) }catch(e){}
+  }
+
+  /* ---- the Apple Watch (docs/01-design.md §2.3). The watch keeps its own progress and sends each result; the app's
+     WatchBridge plugin keeps them in a file until this page has recorded them. Delivery is "at least once" (the watch
+     sends again what isn't confirmed), recording is "exactly once": every result has an id (rid), and the ids already
+     recorded are kept in the progress store (key watch-applied), so a result that arrives twice is recorded once, and
+     the list travels with the export and the backup. Then a state goes back: the merged progress, the ratings and the
+     recorded ids, so the watch can drop what is confirmed and show the same numbers as the phone. ---- */
+  const WB=P.WatchBridge, LEDGER=5000;
+  let wbusy=false, wagain=false, wstate=null, wlast=null;
+  async function buildState(){
+    const st={kind:'state',v:2,made:Date.now(),applied:(site.store.get('watch-applied')||[]).slice(-LEDGER),recs:{}};
+    for(const k in WatchSets.src){ try{ const s=await WatchSets.src[k].state(); if(s){ const {recs,...rest}=s; if(recs) st.recs[k]=recs; Object.assign(st,rest) } }catch(e){ console.error('[native] watch state',k,e) } }
+    return st }
+  async function watchSync(){
+    if(!app||!WB) return; if(wbusy){ wagain=true; return } wbusy=true;
+    try{
+      wstate=await WB.status();
+      const res=((await WB.getPending())||{}).results||[];
+      const done=site.store.get('watch-applied')||[], seen=new Set(done), ack=[]; let n=0;
+      for(const r of res.slice().sort((a,b)=>(a.at||0)-(b.at||0))){            // oldest first, as they were solved
+        if(!r||!r.rid) continue;
+        if(!seen.has(r.rid)){ const s=WatchSets.src[r.type]; if(!s) continue;   // a type this site doesn't know stays pending
+          try{ await s.apply(r) }catch(e){ console.error('[native] watch result',r,e); continue }   // tried again next time
+          seen.add(r.rid); done.push(r.rid); n++ }
+        ack.push(r.rid) }
+      if(n) site.store.put('watch-applied',done.slice(-LEDGER));
+      if(ack.length) await WB.ack({rids:ack});
+      let sent=false;
+      if(wstate&&wstate.paired&&wstate.installed){ const r=await WB.sendState({json:JSON.stringify(await buildState())}); sent=!!(r&&r.sent) }
+      wlast={at:Date.now(),recorded:n,sent,recAt:n?Date.now():(wlast&&wlast.recAt)||null,recN:n||(wlast&&wlast.recN)||0};
+      if(n){ dirty=true; soon(2000) }
+    }catch(e){ console.error('[native] watch sync',e) }
+    finally{ wbusy=false; render(); if(wagain){ wagain=false; setTimeout(watchSync,1000) } }
+  }
+  function watchLine(){
+    if(!WB) return '';
+    const s=wstate, l=wlast;
+    const st=!s?'Checking…':!s.paired?'No Apple Watch is paired with this iPhone.':!s.installed?`${esc(site.name)} isn’t on your Apple Watch yet: install it from the Watch app on this iPhone.`
+      :[l&&l.recN?`Recorded ${plural(l.recN,'result','results')} from the watch at ${clock(l.recAt)}.`:'',l&&l.sent?`Sent your progress at ${clock(l.at)}.`:'Ready.'].filter(Boolean).join(' ');
+    return `<div class="setrow"><div><div class="setname">Apple Watch</div><div class="note" id="ap-watch">${st}</div></div>
+      <div><button type="button" class="btn sm" id="ap-wsync">Sync now</button></div></div>` }
+
+  /* ---- the backup (docs/01-design.md §2.6): iOS may clear a web view's storage when the phone is short of space, so
+     after each session the whole progress export is written to the app's Documents folder, which shows in the Files app
+     (On My iPhone → the app) and goes into the phone's own backups. Never written while the progress is empty, so an
+     emptied store can't overwrite a good backup. ---- */
+  const FS=P.Filesystem, DOCS='DOCUMENTS';
+  let dirty=false, lastBackup=0, backupAt=null, offered=false;
+  const backupName=()=>site.name+' backup.json';
+  async function backup(force){
+    if(!app||!FS||site.isEmpty()||offered) return false;
+    if(!force&&(!dirty||Date.now()-lastBackup<60e3)) return false;
+    try{ await FS.writeFile({path:backupName(),data:JSON.stringify(site.exportAll()),directory:DOCS,encoding:'utf8'});
+      dirty=false; lastBackup=Date.now(); backupAt=lastBackup; render(); return true }catch(e){ console.error('[native] backup',e); return false }
+  }
+  async function readBackup(){
+    if(!FS) return null;
+    try{ const r=await FS.readFile({path:backupName(),directory:DOCS,encoding:'utf8'}); return JSON.parse(r.data) }catch(e){ return null }
+  }
+  /* at start: an empty store and a backup on disk -> offer to restore it (sketch P4). "Start fresh" keeps the old backup
+     under a dated name instead of letting the next backup overwrite it. */
+  async function offerRestore(){
+    if(!site.isEmpty()) return;
+    const b=await readBackup(); if(!b) return;
+    offered=true;
+    const when=b._t?new Date(b._t):null;
+    sheet(`<h2>Restore your progress?</h2><p>Your progress on this iPhone is empty, but there is a backup${when?` from ${esc(when.toLocaleDateString([], {weekday:'short',day:'numeric',month:'short'}))}, ${esc(clock(when))}`:''} (${esc(site.describe(b))}).</p>`,
+      [['Restore it','restore'],['Start fresh','fresh']],async a=>{
+        if(a==='restore'){ try{ site.importAll(b); offered=false; api.reloadPage() }catch(e){ offered=false; alertSheet('That backup could not be read.') } return }
+        const stamp=(b._t||new Date().toISOString()).slice(0,10);
+        try{ await FS.rename({from:backupName(),to:`${site.name} backup (before ${stamp}).json`,directory:DOCS,toDirectory:DOCS}) }catch(e){}
+        offered=false });
+  }
+
+  /* ---- sheets: the first-launch card, the reminder question, the restore offer (in the app only) ---- */
+  function sheet(html,buttons,done){
+    const m=document.createElement('div'); m.className='modal'; m.id='app-sheet'; m.setAttribute('role','dialog'); m.setAttribute('aria-modal','true');
+    m.innerHTML=`<div class="card">${html}<div class="btns" style="margin-top:14px">${buttons.map(([l,a],i)=>`<button type="button" class="btn${i?'':' primary'}" data-a="${a}">${esc(l)}</button>`).join('')}</div></div>`;
+    m.addEventListener('click',e=>{ const b=e.target.closest('button[data-a]'); if(!b) return; m.remove(); done&&done(b.dataset.a) });
+    document.body.appendChild(m); const f=m.querySelector('button'); if(f) f.focus();
+    return m }
+  const alertSheet=t=>sheet(`<p>${esc(t)}</p>`,[['OK','ok']]);
+  function welcome(){
+    if(cfg.welcomed) return; cfg.welcomed=true; save();
+    sheet(`<h2>Welcome to ${esc(site.name)}</h2><ul style="padding-left:18px;margin:8px 0">${site.welcome.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`,[['Get started','ok']]) }
+  /* the notification permission is asked in context, once: after the first few results (or when the reminder is turned
+     on in Settings), never at launch */
+  let changes=0;
+  function changed(){
+    dirty=true; changes++;
+    if(changes===3&&!cfg.asked&&cfg.remind&&!document.getElementById('app-sheet')) setTimeout(askReminder,1500) }
+  async function askReminder(){
+    if(cfg.asked||document.getElementById('app-sheet')) return;
+    if(await permission(false)!=='prompt'){ cfg.asked=true; save(); soon(0); return }
+    sheet(`<p>Want a reminder at ${esc(clockOf(cfg.time))} on days when reviews are due?</p>`,[['Remind me','yes'],['Not now','no']],async a=>{
+      cfg.asked=true; if(a==='yes') perm=await permission(true); else cfg.remind=false; save(); render(); soon(0) }) }
+  const clockOf=t=>{ const [h,m]=String(t).split(':').map(Number), d=new Date(); d.setHours(h||0,m||0,0,0); return clock(d) };
+
+  /* ---- the Settings card (only in the app; sketch P2) ---- */
+  const fmt=at=>{ const d=new Date(at), days=Math.round((Due.sod(at)-Due.sod(Date.now()))/864e5);
+    return (days===0?'today':days===1?'tomorrow':d.toLocaleDateString([], {weekday:'long'}))+' at '+clock(at) };
+  function render(){
+    const box=document.getElementById('appbox'); if(!box||!app||!site) return; box.hidden=false;
+    const seg=(k,opts)=>`<div class="seg" role="group" aria-labelledby="ap-${k}">${opts.map(([v,l])=>`<button type="button" data-ak="${k}" data-v='${JSON.stringify(v)}' aria-pressed="${cfg[k]===v}">${l}</button>`).join('')}</div>`;
+    const state=!cfg.remind?'Off.':perm==='denied'?`iOS has notifications off for ${esc(site.name)}: turn them on in the iPhone’s Settings → Notifications.`:perm!=='granted'?'You’ll be asked to allow notifications.'
+      :next?`Next: ${fmt(next.at)}. ${esc(next.m.title)}: ${esc(next.m.body)}.`:'Nothing comes due in the next 7 days, so no reminder is set.';
+    box.innerHTML=`<h2>iPhone app</h2><p class="note">These stay on this phone.</p>
+      <div class="setrow"><div><div class="setname" id="ap-haptics">Vibrate on right and wrong moves</div><div class="note">A light tap for a right move, a buzz for a wrong one.</div></div>${seg('haptics',[[true,'On'],[false,'Off']])}</div>
+      <div class="setrow"><div><div class="setname" id="ap-remind">Review reminder</div><div class="note" id="ap-state">${state}</div></div>
+        <div>${seg('remind',[[true,'On'],[false,'Off']])}<input type="time" id="ap-time" value="${esc(cfg.time)}" aria-label="Reminder time" style="margin-top:8px;border:1px solid var(--line);border-radius:var(--radius);padding:7px 9px;background:var(--white);color:inherit;font:inherit"${cfg.remind?'':' disabled'}></div></div>
+      <div class="btns" style="margin-top:12px"><button type="button" class="btn" id="ap-test">Send a test reminder in 5 seconds</button></div>
+      ${watchLine()}
+      ${FS?`<div class="setrow"><div><div class="setname">Backup</div><div class="note" id="ap-backup">${backupAt?`Saved to Files at ${clock(backupAt)}.`:'Saved to Files after each session (On My iPhone → '+esc(site.name)+').'}</div></div>
+        <div class="btns"><button type="button" class="btn sm" id="ap-bnow">Back up now</button><button type="button" class="btn sm" id="ap-brestore">Restore from a backup…</button></div></div>`:''}
+      ${site.about?`<p class="note" style="margin-top:12px"><a href="${esc(site.about)}">About, privacy and licences</a></p>`:''}`;
+  }
+  function pickBackup(){
+    const f=document.createElement('input'); f.type='file'; f.accept='application/json,.json';
+    f.onchange=()=>{ const x=f.files&&f.files[0]; if(!x) return; x.text().then(t=>{ const n=site.importAll(JSON.parse(t)); alertSheet(`Restored ${n} entries.`); dirty=true; soon(0) }).catch(()=>alertSheet('That file is not a progress backup.')) };
+    f.click() }
+  function wire(){
+    const box=document.getElementById('appbox'); if(!box) return;
+    box.addEventListener('click',async e=>{
+      const b=e.target.closest('button[data-ak]');
+      if(b){ cfg[b.dataset.ak]=JSON.parse(b.dataset.v); save(); if(b.dataset.ak==='haptics'&&cfg.haptics){ lastBuzz=0; verdict('good') }
+        if(b.dataset.ak==='remind'&&cfg.remind){ cfg.asked=true; save(); perm=await permission(true) } render(); soon(0); return }
+      if(e.target.id==='ap-test') test();
+      if(e.target.id==='ap-wsync') watchSync();
+      if(e.target.id==='ap-bnow') backup(true);
+      if(e.target.id==='ap-brestore') pickBackup() });
+    box.addEventListener('change',e=>{ if(e.target.id==='ap-time'&&/^\d\d:\d\d$/.test(e.target.value)){ cfg.time=e.target.value; save(); soon(0) } });
+  }
+
+  /* site = {
+       name        the app's name ('Think Ahead')
+       cfgKey      localStorage key for these device settings (not part of the progress export: they are about this phone)
+       store       {get(key), put(key, value)}: the progress store (the ledger of recorded watch results lives there)
+       exportAll() -> the progress export; importAll(obj) -> entries restored; isEmpty() -> no progress yet;
+       describe(export) -> a short summary for the restore offer ('512 puzzles, 3 repertoires')
+       reminder    [{k: a Due key, one, many, hash}]: the parts of the reminder, in order
+       welcome     the first-launch card's lines
+       about       the link to the About page (optional) } */
+  function start(s){
+    site=s; cfg=Object.assign({},DEF);
+    try{ Object.assign(cfg,JSON.parse(localStorage.getItem(site.cfgKey)||'{}')) }catch(e){}
+    if(!app) return;
+    document.documentElement.classList.add('in-app');
+    const go=()=>{
+      wire(); render();
+      /* a tap on a reminder opens the page it names (iOS keeps the tap until this listener is added: a cold start works) */
+      try{ P.LocalNotifications&&P.LocalNotifications.addListener('localNotificationActionPerformed',a=>{ const h=a&&a.notification&&a.notification.extra&&a.notification.extra.hash; if(h&&/^#[a-z]+$/.test(h)) location.hash=h }) }catch(e){}
+      offerRestore().then(()=>{ if(!offered) welcome() });
+      setTimeout(plan,3000);
+      /* leaving the app (a session ends): back up and redo the reminder plan; coming back: redo it a little later */
+      document.addEventListener('visibilitychange',()=>{ if(document.hidden){ clearTimeout(timer); backup(); plan() } else soon(5000) });
+      if(WB){ let wt=0; const wsoon=ms=>{ clearTimeout(wt); wt=setTimeout(watchSync,ms) };
+        setTimeout(watchSync,4000);
+        document.addEventListener('visibilitychange',()=>{ if(!document.hidden) wsoon(3000) });
+        try{ WB.addListener('results',()=>wsoon(1000)) }catch(e){} }
+    };
+    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go();
+  }
+  const api={app,start,verdict,plan,message,watchSync,buildState,backup,changed,askReminder,get cfg(){ return Object.assign({},cfg) },
+    reloadPage:()=>location.reload()};   /* replaceable in tests (jsdom can't reload) */
+  return api;
+})();

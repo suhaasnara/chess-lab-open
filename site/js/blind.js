@@ -9,7 +9,9 @@ function init(){
     load:()=>fetch(Site.url('blind')).then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json() }),
     store:{get:k=>Store.get(k),put:(k,v)=>Store.put(k,v)},
     settings:{get:()=>Settings.get('blind'),set:v=>Settings.set('blind',v)},
-    onResult:()=>{ if(document.body.dataset.view==='progress') ProgressTab.render() }});
+    onResult:()=>{ if(document.body.dataset.view==='progress') ProgressTab.render();
+      /* the app's tap or buzz for the result just recorded (shared/native.js; nothing on the website) */
+      const L=Object.values(Store.get('blind-progress')||{}).filter(r=>r&&r.t).sort((a,b)=>b.t-a.t)[0]; if(L&&Date.now()-L.t<5000) window.Native&&Native.verdict(L.ok?'good':'bad') }});
 }
 window.BlindTab={init,show:()=>T&&T.show(),get api(){ return T }};
 })();
