@@ -138,6 +138,26 @@ html.navhid nav.tabs{transform:translateY(calc(-100% - env(safe-area-inset-top,0
 .vmv:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
 .vpick{outline:2px solid var(--blue);outline-offset:1px;border-radius:3px}   /* ↓ ↑: the move → plays where lines branch */
 .vnote{color:var(--muted);font-style:italic}.vpar,.vdead{color:var(--muted)}
+/* v115 the move tree, as Lichess's move list (varline.js lay/stack/fold, reader.js flow): side lines stacked under the move
+   they replace, one row each, joined on the left by a thin elbow line; a single short one inline in brackets and italics */
+.vtree{display:block;margin:2px 0 4px 5px}
+.vtree.vstack{margin:3px 0 4px 3px;font-size:.86rem;line-height:1.75;color:var(--muted)}
+.vrow{display:block;position:relative;padding-left:14px;margin:0}
+.vrow.vline{margin:0;font-size:inherit}
+.vrow::before{content:'';position:absolute;left:0;top:0;bottom:0;border-left:1px solid var(--tree)}
+.vrow:last-child::before{bottom:auto;height:.875em}
+.vrow::after{content:'';position:absolute;left:0;top:.875em;width:9px;border-top:1px solid var(--tree)}
+.vtree .vtree{margin:1px 0 2px 2px}
+.vtree.vshut{display:none}
+.vinl{font-style:italic}.vinl .vmv{font-weight:500}.vinl .vpar{font-style:normal}
+.vfold{display:inline-grid;place-items:center;box-sizing:border-box;width:16px;height:16px;padding:0;margin:0 4px 0 1px;vertical-align:-2px;
+  border:1px solid var(--tree);border-radius:3px;background:var(--band);color:var(--muted);font:700 13px/1 var(--sans);cursor:pointer;font-style:normal}
+.vfold::before{content:'\2212'}.vfold.shut::before{content:'+'}
+.vfold:hover{color:var(--ink);border-color:var(--muted)}.vfold:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+@media (hover:none) and (pointer:coarse){.vfold{width:24px;height:24px;margin:0 6px 0 2px;vertical-align:-6px}}   /* layout rule 3: 24 px in text */
+.rd-flow .vtree.rd-tree{margin:-4px 0 10px 4px}
+.rd-flow .rd-tree .vrow{color:var(--side)}
+.rd-flow .vline.rd-sl.vinl .vmv{font-weight:500}
 /* ‹ › step buttons beside a page's main button (v95: Calculation, the opening trainer on phones): 44 px on touch */
 .btn.navbtn{min-width:44px;font-size:1.6rem;line-height:1;padding:4px 10px 6px;justify-content:center}   /* 13 Nov: 1.6rem, the ‹ › glyphs read small at 1.3rem */
 .btn.navbtn kbd{display:none}

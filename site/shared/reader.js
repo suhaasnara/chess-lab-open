@@ -19,7 +19,8 @@
 
    Layout (Nov 2026, v95): the board is pinned at the top and never scrolls away; underneath, the moves flow as text,
    "28.Ng1!! gxf5 29.gxf5 Kf8 30.Ng6+ …", the main line bold in the text colour, the notes as paragraphs between, and
-   side lines inline in their own colour (purple), with their own notes and nested lines, the book's wording kept
+   side lines in their own colour (purple), with their own notes and nested lines, the book's wording kept; since v115
+   laid out as Lichess's move list (a short one inline in brackets and italics, more stacked under the move with ⊟)
    (shared/varline.js reads text lines; moves given as data are written out as text and read the same way).
    Every move is a button: tapping one shows that position. The current move is highlighted and kept in view.
    A fixed bottom bar above the home indicator: ‹ far left, › far right (44 px+), Flip, "↩ Main line" (only while on a
@@ -58,14 +59,21 @@ window.Reader=(()=>{
     /* the notes' own moves are buttons too (VarLine.prose: from the position the note is about) */
     const notes=(t,i)=>{ const s=String(t||'').trim(); if(!s) return; para(); const b={fen:fens[i==null?0:i],prefix:main.slice(0,i==null?0:i)}, a=i==null?null:{fen:fens[i+1],prefix:main.slice(0,i+1)};
       s.split(/\n{2,}/).forEach(x=>{ x=x.trim(); if(x) out.push(`<p class="rd-note">${i===-1?esc(x):VarLine.prose(x,b,a)}</p>`) }); fresh=true };
-    const side=(fen,prefix,texts)=>{ for(const t of texts){ if(!t||!String(t).trim()) continue; P.push(`<span class="vline rd-sl"><span class="vpar">(</span>${VarLine.html(fen,t,prefix)}<span class="vpar">)</span></span>`); fresh=true } };
+    /* v115 side lines, as Lichess's move list: one short line with no brackets of its own stays inline, in brackets and
+       italics; more, or one with its own side lines, are stacked under the move (one row each, a thin elbow line on the
+       left, ⊟ before the move folds them) and the main line goes on in a new paragraph under them */
+    const lay=(fen,prefix,ts)=>{ const hs=ts.filter(t=>t&&String(t).trim()).map(t=>VarLine.html(fen,t,prefix));
+      return {hs,stacked:hs.length>1||(hs.length===1&&/class="(?:vpar|vtree)/.test(hs[0]))} };
+    const side=(L,key)=>{ if(!L.hs.length) return;
+      if(!L.stacked){ P.push(`<span class="vline rd-sl vinl"><span class="vpar">(</span>${L.hs[0]}<span class="vpar">)</span></span>`); fresh=true; return }
+      para(); out.push(`<span class="vtree rd-tree${key&&VarLine.fold(key).includes(' shut')?' vshut':''}"${key?` data-vfor="${esc(key)}"`:''}>${L.hs.map(h=>`<span class="vrow vline rd-sl">${h}</span>`).join('')}</span>`); fresh=true };
     const texts=(fen,m)=>[...(m.vtext||[]),...(m.vars||[]).map(v=>toText(fen,v))];
-    if(o.lead){ notes(o.lead.note); side(fens[0],[],texts(fens[0],o.lead)) }
+    if(o.lead){ notes(o.lead.note); side(lay(fens[0],[],texts(fens[0],o.lead)),null) }
     main.forEach((san,i)=>{ const m=o.lines[i]||{}, p=fens[i].split(' '), white=p[1]==='w', n=+p[5]||1;
-      const lab=(white?n+'.':fresh?n+'…':'')+san+(m.marks||'');
-      P.push(`<button type="button" class="vmv rd-mm" data-vp="${esc(main.slice(0,i+1).join(' '))}">${esc(lab)}</button>`); fresh=false;
+      const lab=(white?n+'.':fresh?n+'…':'')+san+(m.marks||''), L=lay(fens[i],main.slice(0,i),texts(fens[i],m));
+      P.push(`${L.stacked?VarLine.fold(fens[i+1]):''}<button type="button" class="vmv rd-mm" data-vp="${esc(main.slice(0,i+1).join(' '))}">${esc(lab)}</button>`); fresh=false;
       notes(m.note,i);
-      side(fens[i],main.slice(0,i),texts(fens[i],m)) });
+      side(L,fens[i+1]) });
     para(); notes(o.after,-1);
     if(!main.length&&!out.length) out.push('<p class="note">No moves.</p>');
     return out.join('') }
@@ -84,9 +92,9 @@ window.Reader=(()=>{
     const {g,last}=gameAt(R.path), k=R.path.length;
     Board.draw(R.board,g,{orient:R.orient,last,role:'gridcell'}); if(window.BoardFX) BoardFX.after(R.board,last,{silent:true});
     const m=onMain()&&k?R.lines[k-1]:null; if(window.Shapes) Shapes.auto(R.board,m&&m.shapes||'');
-    const cur=VarLine.mark(R.flow,R.path);
+    const cur=VarLine.mark(R.flow,R.path);   // (opens a folded block the move is in)
     R.flow.querySelectorAll('.vpick').forEach(b=>b.classList.remove('vpick'));
-    if(R.pick&&R.pick.at===R.path.join(' ')){ const x=kids()[R.pick.sel]; const k=x&&x.path.join(' '), el=x&&(x.el||[...R.flow.querySelectorAll('.rd-mm')].find(b=>b.dataset.vp===k)); if(el){ el.classList.add('vpick'); if(scroll) show(el) } }
+    if(R.pick&&R.pick.at===R.path.join(' ')){ const x=kids()[R.pick.sel]; const k=x&&x.path.join(' '), el=x&&(x.el||[...R.flow.querySelectorAll('.rd-mm')].find(b=>b.dataset.vp===k)); if(el){ if(VarLine.reveal) VarLine.reveal(el); el.classList.add('vpick'); if(scroll) show(el) } }
     else if(scroll){ if(cur) show(cur); else if(!k) R.notes.scrollTop=0 }
     const om=onMain();
     R.el.classList.toggle('rd-inside',!om);
