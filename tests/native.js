@@ -122,6 +122,18 @@ module.exports=async function(H){
     await w.Native.watchSync();
     assert(!calls(log,'WB','sendState').length&&/isn’t on your Apple Watch/.test(w.document.getElementById('ap-watch').textContent),'no watch app installed: nothing is sent, and the card says how to install it'); }
 
+  section('About and privacy (#about)');
+  { const {w}=await makePage(); const d=w.document;
+    w.location.hash='#about'; await sleep(200);
+    const s=d.getElementById('about');
+    assert(!s.hidden&&/Nothing is collected/.test(s.textContent)&&/Lichess tablebase/.test(s.textContent)&&/GPL-3.0/.test(s.textContent),'#about shows the privacy policy and the licences');
+    assert([...s.querySelectorAll('.app-only')].every(e=>e.hidden),'… on the website the parts about the app stay hidden (the app is not out yet)');
+    assert(d.querySelector('#x-menu a[href="#about"]'),'Extra lists About and privacy');
+    assert(d.querySelector('footer a[href="#about"]'),'… and the footer links to it'); }
+  { const log=[]; const {w}=await makePage({beforeLoad:fakeApp(log,{localStorage:{'clo-app':JSON.stringify({welcomed:true,asked:true})}})}); const d=w.document;
+    assert([...d.querySelectorAll('#about .app-only')].every(e=>!e.hidden)&&/chess-lab-open-app/.test(d.getElementById('about').textContent),'in the app the About page also covers the app: Files backup, the watch, reminders, the app’s source');
+    assert(d.querySelector('#appbox a[href="#about"]'),'… and the app’s Settings card links to it'); }
+
   section('app layer: the backup and the restore offer');
   { const log=[]; const {w}=await makePage({beforeLoad:fakeApp(log,{localStorage:{'clo-app':JSON.stringify({welcomed:true,asked:true})}})});
     await sleep(100);

@@ -642,6 +642,54 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
   </div>
 </section>
 
+<!-- ================= About: privacy, licences, source ================= -->
+<section id="about" hidden>
+  <div class="card about" style="max-width:760px">
+    <h2>About Chess Lab Open</h2>
+    <p>A free chess trainer: openings, tactics, calculation, endgames and your own games. No account, no ads, no tracking.
+       The code is open: <a href="https://github.com/suhaasnara/chess-lab-open">github.com/suhaasnara/chess-lab-open</a> (MIT).</p>
+    <p class="app-only" hidden>This app is free software under the GPL-3.0; its source is at
+       <a href="https://github.com/suhaasnara/chess-lab-open-app">github.com/suhaasnara/chess-lab-open-app</a>.</p>
+
+    <h3 id="privacy">Privacy</h3>
+    <p class="note" style="margin-top:0">Last updated 16 November 2026.</p>
+    <p><b>Nothing is collected.</b> There is no server, no account, no analytics and no advertising. Your progress
+       (puzzles, drills, ratings, repertoires, settings) is kept only on your device, in this browser’s storage<span class="app-only" hidden>, in the app,
+       and on your Apple Watch</span>. You can export or import it on the Progress page; clearing this site’s data in your browser deletes it<span class="app-only" hidden> (in the app: deleting the app, and its backup in Files)</span>.</p>
+    <p>A few features ask another website for something, only when you use them, straight from your device:</p>
+    <ul>
+      <li><b>Analyze my games</b> and <b>Players</b>: the username you type goes to Lichess or Chess.com, to fetch that player’s public games.</li>
+      <li><b>Openings → import a study</b>: the study link goes to Lichess.</li>
+      <li><b>Endgames</b>: a position goes to the Lichess tablebase, to find the best move.</li>
+      <li><b>Play → Review on Lichess</b>: the game goes to Lichess, which opens it for analysis.</li>
+      <li><b>Watch → Get title</b>: the video link goes to YouTube, for its title. Videos and links open on YouTube or Lichess.</li>
+    </ul>
+    <p>Those sites see what they receive and your IP address, under their own privacy policies
+       (<a href="https://lichess.org/privacy">Lichess</a>, <a href="https://www.chess.com/legal/privacy">Chess.com</a>,
+       <a href="https://policies.google.com/privacy">YouTube</a>). This website is hosted on GitHub Pages, which logs visits like any web host
+       (<a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub’s privacy statement</a>).</p>
+    <div class="app-only" hidden>
+      <p><b>In the iPhone and Apple Watch app</b> everything above also holds, and the app sends nothing anywhere else. On top of it:</p>
+      <ul>
+        <li>The app saves a copy of your progress in its own folder in the Files app (“On My iPhone”), so it is included in your phone’s backups. Only you can see it.</li>
+        <li>The Apple Watch app keeps its own progress on the watch and exchanges results directly with your iPhone, through Apple’s watch connection. Nothing goes through a server.</li>
+        <li>Review reminders are notifications your iPhone schedules for itself; nothing is sent to send them.</li>
+      </ul>
+    </div>
+    <p>Questions about privacy: <a href="https://github.com/suhaasnara/chess-lab-open/issues">open an issue on GitHub</a> (it is public, so please don’t include anything private).</p>
+
+    <h3>Licences and thanks</h3>
+    <ul>
+      <li>Engine: <a href="https://stockfishchess.org">Stockfish 18</a>, GPL-3.0 (<a href="https://github.com/official-stockfish/Stockfish">source</a>).</li>
+      <li>Moves and rules: chess.js 0.10.3, BSD-2-Clause.</li>
+      <li>Pieces: cburnett (Colin M.L. Burnett), GPLv2+. Board: Lichess maple, AGPLv3+.</li>
+      <li>Puzzles, opening books and opening names: the <a href="https://database.lichess.org/">Lichess open database</a> and the <a href="https://database.nikonoel.fr/">Lichess Elite Database</a>, CC0. Endgames: the Lichess tablebase. Thank you, Lichess.</li>
+      <li>Fonts: Libre Caslon Text and Source Sans 3, SIL Open Font License.</li>
+    </ul>
+    <p class="note">The full list, with every source: <a href="https://github.com/suhaasnara/chess-lab-open/blob/main/CREDITS.md">CREDITS.md</a>.</p>
+  </div>
+</section>
+
 <!-- ================= Settings ================= -->
 <section id="settings" hidden>
   <div class="setwrap tvset">
@@ -666,6 +714,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
     Chess Lab Open &mdash; MIT-licensed code by <a href="https://suhaasnarayanan.com/chess">Suhaas Narayanan</a>.
     Pieces: cburnett (GPLv2+) &middot; board: Lichess maple (AGPLv3+) &middot; puzzles &amp; evals: Lichess (CC0) &middot;
     engine: Stockfish (GPL-3.0) &middot; <a href="https://github.com/suhaasnara/chess-lab-open">source &amp; credits</a> &middot;
+    <a href="#about">about &amp; privacy</a> &middot;
     <button class="linkbtn" id="help-foot" type="button">How Chess Lab Open works</button>.
   </div>
 </footer>

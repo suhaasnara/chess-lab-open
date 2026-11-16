@@ -12,7 +12,7 @@ section('t1: page loads, routes, board renders');
   const {w}=await makePage();
   { const d=w.document, main=[...d.querySelectorAll('nav.tabs .inner > a:not(.settab)')].map(a=>a.dataset.view), ex=[...d.querySelectorAll('#x-menu a:not(.xset):not(.ph-x)')].map(a=>a.dataset.view);
     assert(main.join()==='today,openings,drills,tactics,analyze,progress','main row: Today, Openings, Drills, Tactics, Analyze, Progress');
-    assert(ex.length===8&&['blind','guess','calc','endgames','watch','play','players','blundercheck'].every(v=>ex.includes(v)),'Extra holds the other eight (Blunder check since the pack import, Blind tactics since 12 Nov 2026)');
+    assert(ex.length===9&&['blind','guess','calc','endgames','watch','play','players','blundercheck','about'].every(v=>ex.includes(v)),'Extra holds the other nine (Blunder check since the pack import, Blind tactics since 12 Nov 2026, About and privacy since 16 Nov 2026)');
     assert(d.querySelector('nav.tabs a.settab[href="#settings"]'),'Settings at the right');
     assert(d.querySelector('nav.tabs .inner > a.ph-x[data-view="analyze"]')&&d.querySelector('#x-menu a.ph-x[data-view="analyze"]'),'Analyze moves into Extra on phones');
     const xb=d.getElementById('x-btn'), xm=d.getElementById('x-menu'); assert(xm.hidden,'Extra menu starts closed');

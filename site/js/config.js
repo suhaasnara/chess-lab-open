@@ -10,7 +10,8 @@ Site.define({
       ['blundercheck','Blunder check','Your blunders from Analyze my games: spot the threat, then your move','Puzzles'],
       ['guess','Guess the move','Master games and your own, move by move','Study and play'],['endgames','Endgames','Textbook endings against perfect defence','Study and play'],
       ['play','Play','Games against Stockfish, blindfold','Study and play'],['watch','Watch','Your video library: place, notes, bookmarks','Study and play'],
-      ['players','Players','Any Lichess or Chess.com player: openings, pre-round sheet','Opponents']]},
+      ['players','Players','Any Lichess or Chess.com player: openings, pre-round sheet','Opponents'],
+      ['about','About and privacy','What leaves your device (nothing, unless you ask), licences, source','About']]},
   pieces:'cburnett',   /* GPLv2+ (CREDITS.md); style.css draws assets/pieces/cburnett */
   data:{
     tactics:'data/tactics.json', blind:'data/blind.json', calc:'data/calc.json', endgames:'data/endgames.json',

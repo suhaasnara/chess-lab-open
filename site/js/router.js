@@ -1,8 +1,8 @@
 /* Chess Lab Open — router: which section is on screen (#openings, #tactics, ...). */
 'use strict';
 (function(){
-const VIEWS=['today','openings','tactics','blind','calc','endgames','analyze','drills','play','guess','players','watch','blundercheck','game','progress','settings'];
-const TITLES={today:'Today',openings:'Openings',tactics:'Tactics',blind:'Blind tactics',calc:'Calculation',endgames:'Endgames',analyze:'Analyze my games',drills:'Drills',play:'Play',guess:'Guess the move',players:'Players',watch:'Watch',blundercheck:'Blunder check',game:'A game you analyzed',progress:'Progress',settings:'Settings'};
+const VIEWS=['today','openings','tactics','blind','calc','endgames','analyze','drills','play','guess','players','watch','blundercheck','game','progress','settings','about'];
+const TITLES={today:'Today',openings:'Openings',tactics:'Tactics',blind:'Blind tactics',calc:'Calculation',endgames:'Endgames',analyze:'Analyze my games',drills:'Drills',play:'Play',guess:'Guess the move',players:'Players',watch:'Watch',blundercheck:'Blunder check',game:'A game you analyzed',progress:'Progress',settings:'Settings',about:'About and privacy'};
 /* The header (shared/nav.js): the same main row and Extra menu as the private Chess Lab, plus Analyze my games. */
 Nav.mount(document.getElementById('tabs'),SITE.tabs);   /* js/config.js */
 /* The bottom bar on phones and iPads (14 Nov 2026; shared/trainview.js TV.bar, as on the private site): every board page's

@@ -56,12 +56,14 @@ Native.start({
     {k:'endgames',one:'endgame',many:'endgames',hash:'#endgames'},{k:'blundercheck',one:'Blunder check',many:'Blunder checks',hash:'#blundercheck'}],
   welcome:['Everything works offline.','Your progress stays on this iPhone (and your Apple Watch) and is backed up in Files.',
     'Nothing is sent anywhere, except what you fetch yourself: your games from Lichess or Chess.com.'],
+  about:'#about',
 });
 
 /* in the app only: every board's right / wrong flash also taps or buzzes (Openings, Tactics, Drills, Endgames, Blunder
    check, Guess the move all judge moves through board.flash), and any change to progress counts toward "a session" (the
    backup when the app is left, and the one-time reminder question) */
 if(Native.app){
+  document.querySelectorAll('.app-only').forEach(e=>{ e.hidden=false });   /* the About page's parts about the app */
   const mb=window.makeBoard;
   window.makeBoard=function(el,opts){ const b=mb(el,opts), f=b.flash;
     b.flash=function(squares,tone){ Native.verdict(tone); return f.apply(this,arguments) }; return b };
