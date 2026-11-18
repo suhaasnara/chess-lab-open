@@ -35,4 +35,12 @@ module.exports=async H=>{
     assert(box&&box.querySelector('a[href="#about"]'),'the app\'s Settings card links to About, privacy and licences');
     assert(/github\.com\/suhaasnara\/chess-lab-open-app/.test(d.getElementById('ab-source').innerHTML)&&/GPL-3\.0-or-later/.test(d.getElementById('ab-licences').textContent),'… where the app\'s source and licence are named');
   }
+
+  section('t79: the top safe area (the app, a site saved to the home screen)');
+  { const css=fs.readFileSync(path.join(H.SITE,'style.css'),'utf8');
+    assert(/body\{padding-top:env\(safe-area-inset-top,0px\)\}/.test(css),'the page starts below the status bar where it is drawn under it (0 in a browser tab)');
+    assert(/body::before\{[^}]*position:fixed;top:0[^}]*height:env\(safe-area-inset-top,0px\)[^}]*pointer-events:none/.test(css),'… and a strip covers the status bar while the page scrolls under it, without catching taps');
+    const shared=fs.readFileSync(path.join(H.SITE,'shared','shared.css'),'utf8');
+    assert(/nav\.tabs\{position:sticky;top:env\(safe-area-inset-top,0px\)/.test(shared),'the tab row sticks just below it');
+  }
 };
