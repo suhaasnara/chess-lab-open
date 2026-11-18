@@ -145,7 +145,7 @@ function makeBoard(el,opts={}){
     set(game,o={}){ B.game=game; if(o.last!==undefined) B.last=o.last; if(o.orient) B.orient=o.orient; B.sel=null; if(!o.keepHint){B.hint=null;B.hintTo=null} B.locked=!!o.locked; render() },
     setHint(sq,to){ B.hint=sq||null; B.hintTo=to||null; render() },
     flip(){ B.orient=B.orient==='w'?'b':'w'; render() },
-    flash(squares,tone){ (squares||[]).filter(Boolean).forEach(sq=>{ const q=el.querySelector(`.sq[data-sq="${sq}"]`); if(!q) return; q.classList.remove('flash-good','flash-bad'); void q.offsetWidth; q.classList.add('flash-'+tone); setTimeout(()=>q.classList.remove('flash-'+tone),900) }) },
+    flash(squares,tone){ const list=(squares||[]).filter(Boolean); list.forEach((sq,i)=>{ const q=el.querySelector(`.sq[data-sq="${sq}"]`); if(!q) return; q.classList.remove('flash-good','flash-bad','flash-to'); void q.offsetWidth; q.classList.add('flash-'+tone); if(i===list.length-1) q.classList.add('flash-to'); setTimeout(()=>q.classList.remove('flash-'+tone,'flash-to'),900) }) },   // the last square (the move's destination) also gets the ✓ / ✗ badge
     get orient(){ return B.orient }, set orient(v){ B.orient=v; render() },
     render
   };

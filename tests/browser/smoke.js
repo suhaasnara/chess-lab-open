@@ -97,7 +97,7 @@ async function waitFor(page,fn,arg,ms=20000){ try{ await page.waitForFunction(fn
     await rightDrag('pl-board','d2','d4'); await sleep(100);
     check('Arrows: a right-drag draws an arrow',await page.evaluate(()=>{ const s=document.querySelector('#pl-board>svg.shapes'); return !!(s&&s.querySelector('line,polygon')) }));
     await rightDrag('pl-board','c2','c2',['Shift']); await sleep(100);
-    check('Arrows: a right-click with Shift draws a red circle',await page.evaluate(()=>{ const s=document.querySelector('#pl-board>svg.shapes circle'); return !!s&&/c2410c/i.test(s.getAttribute('stroke')) }));
+    check('Arrows: a right-click with Shift draws a red circle',await page.evaluate(()=>{ const s=document.querySelector('#pl-board>svg.shapes circle'); return !!s&&/882020/i.test(s.getAttribute('stroke')) }));
     const ctxPrevented=await page.evaluate(()=>{ const e=new MouseEvent('contextmenu',{bubbles:true,cancelable:true}); document.querySelector('#pl-board .sq').dispatchEvent(e); return e.defaultPrevented });
     check('Arrows: no context menu on the board',ctxPrevented);
     const a=await center('pl-board','h3'); await page.mouse.click(a[0],a[1]); await sleep(100);

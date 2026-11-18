@@ -6,7 +6,7 @@
    box in between would bring double-tap zoom back for what is inside it. */
 :where(html,html *){touch-action:manipulation}
 /* ? = the keys on this page (shared/keys.js) */
-#keys-overlay{position:fixed;inset:0;background:rgba(19,40,74,.45);display:grid;place-items:center;z-index:80;padding:16px}
+#keys-overlay{position:fixed;inset:0;background:var(--scrim);display:grid;place-items:center;z-index:80;padding:16px}
 #keys-overlay .card{background:var(--white);color:var(--ink);border-radius:var(--radius);padding:16px 18px;max-width:440px;width:100%;max-height:calc(100vh - 32px);overflow:auto;box-shadow:0 8px 30px rgba(0,0,0,.25)}
 #keys-overlay h2{margin:0 0 6px;font:700 20px/1.2 var(--serif);color:var(--head)}
 .keystable{border-collapse:collapse;margin:8px 0}.keystable td{padding:4px 10px 4px 0;vertical-align:top}
@@ -19,7 +19,7 @@
 .needs-net p{margin:4px 0}
 /* Dropdowns that match the site (native behaviour kept, so phones still get their own picker). Site rules after this win. */
 select{-webkit-appearance:none;appearance:none;background:var(--white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%23889' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 10px center/11px 8px;
-  border:1px solid var(--line);border-radius:var(--radius);padding:7px 30px 7px 10px;color:var(--ink);font:inherit;min-height:36px;cursor:pointer;max-width:100%}
+  border:1px solid var(--border-strong);border-radius:var(--radius);padding:7px 30px 7px 10px;color:var(--ink);font:inherit;min-height:36px;cursor:pointer;max-width:100%}
 select:hover{border-color:var(--muted)}
 select:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
 select[multiple]{background-image:none;padding-right:10px}
@@ -180,7 +180,7 @@ html.navhid nav.tabs{transform:translateY(calc(-100% - env(safe-area-inset-top,0
 .bl .bl-task{display:inline-block;font-family:var(--sans);font-weight:700;color:var(--head);margin:0 6px 0 2px}
 .bl .bl-you{font-weight:700;color:var(--good);margin-right:2px}.bl .bl-opp{color:var(--ink);margin-right:2px}
 .bl .bl-form{display:flex;gap:6px;margin:0}
-.bl .bl-form input{flex:1;min-width:0;border:1px solid var(--line);border-radius:var(--radius);padding:7px 10px;font:inherit;font-size:16px;background:var(--white);color:var(--ink)}
+.bl .bl-form input{flex:1;min-width:0;border:1px solid var(--border-strong);border-radius:var(--radius);padding:7px 10px;font:inherit;font-size:16px;background:var(--white);color:var(--ink)}
 .bl .bl-form input:focus{border-color:var(--blue);outline:none;box-shadow:0 0 0 3px var(--callout)}
 .bl .bl-lab{display:flex;align-items:center;gap:2px}.bl .bl-lab .qhelp{letter-spacing:0}
 /* 15 Nov 2026: phones and tablets solve on the board; the typed-move box (and its keyboard) is for laptops, and its help is behind the "?" */
@@ -205,20 +205,20 @@ html.navhid nav.tabs{transform:translateY(calc(-100% - env(safe-area-inset-top,0
 /* The result of an exercise (board.js endBanner; 17 Nov 2026, was a coloured bar with a Next button over the board).
    Nothing is drawn over the board: it gets a thin outline in the result's colour, and where the side panel is not beside
    the board (phones and narrow windows, up to 860 px) one slim strip sits directly under it with the result text. Wider
-   screens leave the message to the side panel's status card. Success is the calm dark green (--ok-*, theme.css); a miss
+   screens leave the message to the side panel's status card. Success is the soft panel with a 4 px edge in --success (theme.css; the same shape as .status.good); a miss
    and a loss use the same soft colours as their status cards. A site that shows results only in its status card hides
    .endbar (Chess Lab: head.html). */
 .boardbox{position:relative}
-.boardbox.end-good .board{box-shadow:0 0 0 3px var(--ok-line)}
+.boardbox.end-good .board{box-shadow:0 0 0 3px var(--success)}
 .boardbox.end-warn .board{box-shadow:0 0 0 3px var(--warn)}
 .boardbox.end-bad .board{box-shadow:0 0 0 3px var(--bad)}
 .endbar{display:none}
 @media (max-width:860px){
   .endbar:not([hidden]){display:flex;align-items:center;gap:8px;margin-top:6px;padding:7px 12px;border-radius:var(--radius);
     font-size:.92rem;font-weight:600;line-height:1.35;min-height:34px;box-sizing:border-box;background:var(--callout);color:var(--head)}
-  .end-good .endbar{background:var(--ok-bg);color:var(--ok-text)}
-  .end-warn .endbar{background:var(--warn-soft);color:var(--warn)}
-  .end-bad .endbar{background:var(--bad-soft);color:var(--bad)}
+  .end-good .endbar{background:var(--success-soft);color:var(--success);box-shadow:inset 4px 0 0 var(--success)}
+  .end-warn .endbar{background:var(--warn-soft);color:var(--warn);box-shadow:inset 4px 0 0 var(--warn)}
+  .end-bad .endbar{background:var(--error-soft);color:var(--error);box-shadow:inset 4px 0 0 var(--error)}
   .endbar .endtext{min-width:0;overflow-wrap:anywhere}
 }
 
@@ -237,3 +237,18 @@ html.navhid nav.tabs{transform:translateY(calc(-100% - env(safe-area-inset-top,0
   .qhelp{position:relative}
   .qhelp::after{content:"";position:absolute;inset:-9px}
 }
+/* Right / wrong on the board (colour direction A, 18 Nov 2026; both sites): a teal or orange wash over the move's squares,
+   and on its destination a ✓ / ✗ badge, so the verdict never rests on colour alone (WCAG 1.4.1). Teal against orange
+   differs in lightness too, so it stays apart for colour-blind eyes. board.js flash() marks the last square .flash-to. */
+.sq.flash-good::before,.sq.flash-bad::before{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;animation:sqflash .9s ease-out forwards}
+.sq.flash-good::before{background:var(--sq-good)}
+.sq.flash-bad::before{background:var(--sq-bad)}
+.sq.flash-to.flash-good::after,.sq.flash-to.flash-bad::after{position:absolute;top:3%;right:3%;z-index:4;width:34%;height:34%;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font:700 clamp(9px,2.2vmin,16px)/1 var(--sans);color:#fff;
+  box-shadow:0 0 0 1.5px rgba(255,255,255,.9);pointer-events:none;animation:sqflash .9s ease-in forwards}
+.sq.flash-to.flash-good::after{content:"\2713";background:var(--mark-good)}
+.sq.flash-to.flash-bad::after{content:"\2715";background:var(--mark-bad)}
+@keyframes sqflash{0%,55%{opacity:1}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.sq.flash-good::before,.sq.flash-bad::before,.sq.flash-to::after{animation:none;opacity:.85}}
+.sq.hint::before{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 4px var(--sq-hint);z-index:3;pointer-events:none}
+.sq.hintto::before{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 4px var(--mark-good);z-index:3;pointer-events:none}

@@ -8,7 +8,7 @@
    Drawn on an SVG laid over the board; a MutationObserver puts it back after each redraw. Squares are read from
    data-sq, so either orientation works. Touch screens have no right click: there, only a PGN's shapes show. */
 window.Shapes=(()=>{
-  const NS='http://www.w3.org/2000/svg', COL={G:'#15803d',R:'#c2410c',B:'#1d4ed8',Y:'#ca8a04'};
+  const NS='http://www.w3.org/2000/svg', COL={G:'#15781B',R:'#882020',B:'#003088',Y:'#e68f00'};   // Lichess's own arrow brushes (chessground state.ts)
   const st=new WeakMap(), S=el=>{ let o=st.get(el); if(!o){ o={user:[],auto:[],sig:null,asig:null,tmp:null}; st.set(el,o) } return o };
   const parse=s=>String(s||'').split(/[\s,]+/).map(t=>{ const m=t.match(/^([GRBY])([a-h][1-8])([a-h][1-8])?$/); return m?{c:m[1],a:m[2],b:m[3]&&m[3]!==m[2]?m[3]:null}:null }).filter(Boolean);
   const sigOf=el=>{ const a=[]; el.querySelectorAll('.sq').forEach(q=>{ const p=q.querySelector('.pc'); if(p) a.push(q.dataset.sq+p.className) }); return a.sort().join('|') };

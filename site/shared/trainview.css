@@ -50,7 +50,7 @@ body[data-size="large"] .boardwrap{max-width:min(760px,100%)}
 /* Search box over the list (Drills) */
 .tv .vh{position:absolute;left:0;top:0;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .tv .osearch{margin:0 0 8px}
-.tv .osearch input{width:100%;border:1px solid var(--line);border-radius:var(--radius);padding:7px 10px 7px 32px;font-size:.9rem;background:var(--white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23536175' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-3.5-3.5'/%3E%3C/svg%3E") no-repeat 10px 50%}
+.tv .osearch input{width:100%;border:1px solid var(--border-strong);border-radius:var(--radius);padding:7px 10px 7px 32px;font-size:.9rem;background:var(--white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23536175' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-3.5-3.5'/%3E%3C/svg%3E") no-repeat 10px 50%}
 .tv .osearch input:focus{border-color:var(--blue);outline:none;box-shadow:0 0 0 3px var(--callout)}
 
 /* The navy session bar (Today) and the small cards under it */
@@ -96,7 +96,7 @@ body[data-view="progress"] main.inner{padding-top:14px}
 .tvlobby .tvstats td,.tvlobby .tvstats th{padding:4px 8px;font-size:.84rem}
 .tvlobby .tvstats .num{text-align:right}
 .tvlobby .drill{padding:9px 12px}
-.tvlobby .evalchip.ok,.tv3 .evalchip.ok{background:var(--ok-bg);color:var(--ok-text)}.tvlobby .evalchip.part,.tv3 .evalchip.part{background:var(--warn);color:var(--on-navy)}.tvlobby .evalchip.bad,.tv3 .evalchip.bad{background:var(--bad);color:var(--on-navy)}
+.tvlobby .evalchip.ok,.tv3 .evalchip.ok{background:var(--success-soft);color:var(--success)}.tvlobby .evalchip.part,.tv3 .evalchip.part{background:var(--warn-soft);color:var(--warn)}.tvlobby .evalchip.bad,.tv3 .evalchip.bad{background:var(--error-soft);color:var(--error)}
 @media (max-width:860px){.tvlobby{grid-template-columns:minmax(0,1fr)}}
 
 /* Three columns (Calculation, Guess the move): the exercise, its verdict and Back | the board | your work and the
@@ -129,8 +129,8 @@ body[data-view="progress"] main.inner{padding-top:14px}
 /* Watch: one row of filters (view, kind, state, topic, search), then Add a video, then the library. Chess Lab's #wa-mod values. */
 .tvwatch .wafilters{display:flex;flex-direction:row;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
 .tvwatch .wafilters .chips{padding-left:0}
-.tvwatch .wafilters select{border:1px solid var(--line);border-radius:6px;padding:6px 8px;background:var(--white);color:var(--ink);font:inherit;font-size:.86rem;max-width:200px}
-.tvwatch .wasearch{flex:1 1 180px;min-width:150px;margin:0}.tvwatch .wasearch input{width:100%;border:1px solid var(--line);border-radius:var(--radius);padding:7px 10px;font-size:.9rem;background:var(--white);color:var(--ink)}
+.tvwatch .wafilters select{border:1px solid var(--border-strong);border-radius:6px;padding:6px 8px;background:var(--white);color:var(--ink);font:inherit;font-size:.86rem;max-width:200px}
+.tvwatch .wasearch{flex:1 1 180px;min-width:150px;margin:0}.tvwatch .wasearch input{width:100%;border:1px solid var(--border-strong);border-radius:var(--radius);padding:7px 10px;font-size:.9rem;background:var(--white);color:var(--ink)}
 .tvwatch .waadd{margin-bottom:12px}.tvwatch .waadd summary{cursor:pointer;font-weight:600;color:var(--head)}
 .tvwatch #wa-count{margin:0 0 6px}
 body[data-view="play"] main.inner{max-width:1200px}body[data-view="calc"] main.inner{max-width:1440px}
