@@ -36,11 +36,12 @@ const PGN=`[White "Key, Test"]
   const st=()=>page.evaluate(()=>{ const S=GtmTab.state; return {view:S.view,vr:S.vr?S.vr.path.slice(0,S.vr.at).join(' '):null,
     pick:(()=>{ const b=document.querySelector('#g-moves .vpick'); return b?(b.dataset.vp||'main:'+b.dataset.ply):null })(),
     y:scrollY,act:document.activeElement&&document.activeElement.tagName} });
+  const pickNext=async(sel)=>{ await page.focus(sel); const v=await page.evaluate(s=>{ const e=document.querySelector(s); return e.options[(e.selectedIndex+1)%e.options.length].value },sel); await page.selectOption(sel,v) };
   const press=async(k,n=1)=>{ for(let i=0;i<n;i++){ await page.keyboard.press(k); await sleep(40) } };
 
   // add the game; the side drop-down hands the arrows back after a pick
   await page.click('#g-src input[value="own"]',{force:true}); await sleep(150);
-  await page.click('#g-add'); await page.focus('#g-addside'); await page.keyboard.press('ArrowDown'); await sleep(80);
+  await page.click('#g-add'); await pickNext('#g-addside'); await sleep(80);   // a real pick (fires change); ArrowDown only picks on Linux/Windows, macOS opens the menu
   check('a drop-down loses focus after a pick (the arrows are the board\'s again)',(await st()).act!=='SELECT',(await st()).act);
   await page.fill('#g-addbox',PGN); await page.click('#g-addsave'); await sleep(1500);
   await page.click('#g-show'); await sleep(400);
