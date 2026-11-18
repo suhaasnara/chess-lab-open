@@ -603,7 +603,8 @@ function renderNotes(){
 function renderSide(){
   renderAcct();
   if(!S.op){ $('o-name').textContent='Choose an opening'; return }
-  const names=Book.nameOf(S.fens);
+  const vAt=browsing()?S.browse:S.log.length;   /* the opening's name follows the board when you step back, like the book */
+  const names=Book.nameOf(S.fens.slice(0,vAt+1));
   $('o-name').textContent=S.op.name;
   const st=stats(SID());
   const delta=st.rating-S.startRating;
@@ -684,9 +685,10 @@ function pinFollow(){ if(!pinned()||!S.g) return; const k=(S.lineId||0)+'|'+S.lo
     const top=bw.getBoundingClientRect().bottom, r=t.getBoundingClientRect();
     if(r.top<top+4) scrollBy({top:r.top-top-12}); else if(r.bottom>innerHeight-8) scrollBy({top:Math.min(r.top-top-12,r.bottom-innerHeight+56)}) }) }
 /* step through the line on the board (view only; the board takes moves again at the end) */
-function browse(k){ if(!S.g||!S.log.length) return; S.browse=(k==null||k>=S.log.length)?null:Math.max(0,k); draw(); renderSide(); renderEval(); refreshRedo() }
+function browse(k){ if(!S.g||!S.log.length) return; S.browse=(k==null||k>=S.log.length)?null:Math.max(0,k); draw(); renderSide(); renderBook(); renderEval(); refreshRedo() }
+let bookSeq=0;
 async function renderBook(){
-  const el=$('o-bookrows');
+  const el=$('o-bookrows'), seq=++bookSeq;   /* the book follows the board; a slower lookup for a position you've stepped past is dropped */
   const show=training()||S.phase==='done';
   const lv=oppLevel();
   $('o-booklabel').textContent=lv==='masters'?'Elite book':'Book: '+Book.levelLabel(lv)+' and Elite';
@@ -695,8 +697,8 @@ async function renderBook(){
   const fen=viewPos().g.fen();
   /* with a club level on: that level's moves first, then the elite book's */
   const books=[];
-  if(lv!=='masters'){ const c=await Book.moves(fen,lv); if(c&&!c.demo) books.push([Book.levelLabel(lv),c]) }
-  const e=await Book.moves(fen,'masters'); if(e) books.push([e.demo?'Named lines':Book.levelLabel('masters'),e]);
+  if(lv!=='masters'){ const c=await Book.moves(fen,lv); if(seq!==bookSeq) return; if(c&&!c.demo) books.push([Book.levelLabel(lv),c]) }
+  const e=await Book.moves(fen,'masters'); if(seq!==bookSeq) return; if(e) books.push([e.demo?'Named lines':Book.levelLabel('masters'),e]);
   if(!books.length){ el.innerHTML='<p class="note">No book data for this position.</p>'; return }
   const table=(title,bk)=>`<div class="booksec"><div class="note booktitle">${esc(title)}${bk.total?' · '+bk.total.toLocaleString()+' games':''}</div>`+
     (bk.demo?'<p class="note">No game counts here: named lines only.</p>':'')+

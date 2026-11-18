@@ -835,6 +835,14 @@ section('t27: take backs — openings (not rated again), Play (counted)');
   assert(w.OpeningsTab.state.browse===0&&!$('o-browsenote').hidden,'← browses back through the line');
   await w.OpeningsTab.userMove('g1','f3'); assert(S.log.length===2,'no moves while browsing');
   w.OpeningsTab.browse(null); assert(S.browse===null,'End comes back');
+  /* the book follows the board: ← shows the book for the position on view; a quick ← then End ends on the current one */
+  { const was=w.Settings.get('omode'); $('o-training').click(); await sleep(80);
+    const rows=()=>[...$('o-bookrows').querySelectorAll('.bookrow .mv')].map(x=>x.textContent).join(' ')||$('o-bookrows').textContent.trim();
+    const now=rows(); w.OpeningsTab.browse(0); await sleep(80); const start=rows();
+    assert(now&&start&&start!==now&&/\be4\b/.test(start),'stepping back shows the book for that position: '+start+' (was '+now+')');
+    w.OpeningsTab.browse(1); w.OpeningsTab.browse(null); await sleep(80);
+    const back=rows(); assert(back===now,'a slower lookup for a position stepped past doesn’t overwrite the book: '+back);
+    $(was==='training'?'o-training':'o-rated').click(); await sleep(20) }
   /* Play */
   w.SharedEngine.play=async()=>'e7e5';
   w.location.hash='#play'; await sleep(20);
