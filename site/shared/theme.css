@@ -16,13 +16,17 @@
   --head:var(--navy); --on-navy:#ffffff; --blue-bg:var(--blue); --chart:var(--navy); --heroBg:var(--navy);
   --lv1:#c9d8ee; --lv2:#8fb0dc; --lv3:#3f6fae; --shadow:rgba(19,40,74,.22);
   --side:#6a3d9a; --side-soft:#efe7f8;   /* side lines in the reader (Chessable's purple) */
+  /* Success (17 Nov 2026): one calm dark green for every "right / solved" state, in place of the bright green:
+     --ok-bg a dark green panel (the result strip under a board, a good status card, a success chip), --ok-text the softer
+     green written on it, --ok-line the board's outline when a line or puzzle ends well. The same in both themes. */
+  --ok-bg:#1d3a2c; --ok-text:#b5dcc4; --ok-line:#2f6249;
 }
 /* Dark: the same names with dark values (also under Match device when the device is dark). */
 :root[data-theme="dark"]{color-scheme:dark;--navy:#2b4f86;--head:#dfe7f3;--ink:#e2e7ee;--muted:#9eabbd;--blue:#8db4ea;--blue-bg:#3a66a8;--blue-on-navy:#b9d0f2;
   --band:#111924;--callout:#1d2a3c;--line:#2b3a50;--white:#182331;--tree:#4a5d78;--brass:#c4a26a;--brass-light:#d8bd8c;--brass-text:#d2b27a;
-  --good:#4cbb85;--good-soft:#15332a;--warn:#d6a94e;--warn-soft:#382d16;--bad:#ea766b;--bad-soft:#3b1f1d;--chart:#8db4ea;--heroBg:#0c1420;
+  --good:#86c4a0;--good-soft:#15332a;--warn:#d6a94e;--warn-soft:#382d16;--bad:#ea766b;--bad-soft:#3b1f1d;--chart:#8db4ea;--heroBg:#0c1420;
   --lv1:#22385a;--lv2:#2f5287;--lv3:#5b86c4;--shadow:rgba(0,0,0,.5);--side:#c6a6ef;--side-soft:#2c2140}
 @media (prefers-color-scheme:dark){:root[data-theme="auto"]{color-scheme:dark;--navy:#2b4f86;--head:#dfe7f3;--ink:#e2e7ee;--muted:#9eabbd;--blue:#8db4ea;--blue-bg:#3a66a8;--blue-on-navy:#b9d0f2;
   --band:#111924;--callout:#1d2a3c;--line:#2b3a50;--white:#182331;--tree:#4a5d78;--brass:#c4a26a;--brass-light:#d8bd8c;--brass-text:#d2b27a;
-  --good:#4cbb85;--good-soft:#15332a;--warn:#d6a94e;--warn-soft:#382d16;--bad:#ea766b;--bad-soft:#3b1f1d;--chart:#8db4ea;--heroBg:#0c1420;
+  --good:#86c4a0;--good-soft:#15332a;--warn:#d6a94e;--warn-soft:#382d16;--bad:#ea766b;--bad-soft:#3b1f1d;--chart:#8db4ea;--heroBg:#0c1420;
   --lv1:#22385a;--lv2:#2f5287;--lv3:#5b86c4;--shadow:rgba(0,0,0,.5);--side:#c6a6ef;--side-soft:#2c2140}}

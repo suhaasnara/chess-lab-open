@@ -211,7 +211,7 @@ function newLine(review){
   const redo=S.redoNext||null; S.redoNext=null; S.redo=redo; if(redo) review=null;
   S.review=review&&review.key?review:null;
   S.lineId++;
-  $('o-endbar').hidden=true; $('o-endretry').hidden=true; $('o-boardbox').classList.remove('end-good','end-warn');
+  $('o-endbar').hidden=true; $('o-boardbox').classList.remove('end-good','end-warn');
   S.g=new Chess(startFen()); S.phase='await'; S.busy=false; S.outBook=0; S.log=[]; S.userMoves=0; S.misses=[]; S.scored=[]; S.hintStage=0; S.repDone=new Set(); S.fens=[S.g.fen()]; S.endMsg=''; S.browse=null; S.oppPicks=[]; S.tb=null; S.finalEv=null; S.orientSet=false;
   S.startRating=stats(SID()).rating;
   if(!S.op.rep) SharedEngine.start();   /* presets, custom positions, Anything as White/Black: off-book moves are checked by Stockfish (a repertoire answers from your file) */
@@ -246,7 +246,7 @@ const notAvoided=(xs,u)=>{ const av=redoAvoid(); if(!av) return xs; const k=xs.f
 function firstMiss(){ const b=redoBase(); return (S.misses||[]).find(m=>m.at!=null&&m.at>=b&&m.at<S.log.length)||null }
 function retryMiss(){ const m=canRedo()&&firstMiss(); if(!m) return false; S.browse=null; return redoLine(m.at) }
 const redoLabel=()=>browsing()&&redoFrom()>redoBase()?'Redo from here':'Redo line';
-function refreshRedo(){ document.querySelectorAll('[data-redo]').forEach(b=>{ b.textContent=redoLabel()+(b.dataset.redo==='k'?' (D)':''); b.disabled=!canRedo() }) }
+function refreshRedo(){ document.querySelectorAll('[data-redo]').forEach(b=>{ (b.querySelector('.lbl')||b).textContent=redoLabel()+(b.dataset.redo==='k'?' (D)':''); b.disabled=!canRedo() }) }
 function viewPos(){ if(!browsing()) return {g:S.g,last:lastMove(S.g)}; const g=new Chess(S.fens[S.browse]); return {g,last:lastMove(g)} }
 function draw(){
   const v=viewPos();
@@ -522,25 +522,17 @@ function endLine(msg){
   if(show==='all'&&inacc.length) missTxt+=`<br>${inacc.length} half-credit move${inacc.length>1?'s':''} (rare or off book but playable): ${inacc.map(x=>esc(x.san)).join(', ')}`;
   if(show==='none') missTxt=S.misses.length?`<br>${S.misses.length} miss${S.misses.length>1?'es':''}.`:'';
   status(S.misses.length?'warn':'good',`${msg}${training()?'':` · ${delta>=0?'+':''}${delta} rating`}`,'');
-  $('o-status').innerHTML+=missTxt+'<span id="o-sfinfo"></span>';
+  $('o-status').innerHTML+=missTxt.replace(/^<br>/,'')+'<span id="o-sfinfo"></span>';   /* the heading is a block already */
   if(S.op.rep){ const sk=new Set(skipList(S.op.id).map(x=>x.k)); const opp=S.log.filter(x=>x.who==='opp'&&repMovesAt(x.before).length>1&&!sk.has(posId(normKey(x.before))+'|'+x.uci));
     if(opp.length){ const d=document.createElement('div'); d.className='note skiprow'; d.innerHTML='Never play this reply again: '+opp.map(x=>`<button type="button" class="btn sm" data-skip="${esc(posId(normKey(x.before))+'|'+x.uci)}" data-san="${esc(x.san)}">${esc(x.san)}</button>`).join(' ');
       d.addEventListener('click',e=>{ const b=e.target.closest('[data-skip]'); if(!b) return; const l=skipList(S.op.id); l.push({k:b.dataset.skip,san:b.dataset.san}); Store.put('oskip-'+S.op.id,l); b.disabled=true; b.textContent+=' — skipped' });
       $('o-status').appendChild(d) } }
-  const nx=document.createElement('button'); nx.className='btn primary endnext'; nx.textContent=H?'Next in session (N)':'Next line (N)';
-  nx.addEventListener('click',()=>H?H.next():newLine()); $('o-status').appendChild(nx);
-  const rd=document.createElement('button'); rd.className='btn endredo'; rd.type='button'; rd.dataset.redo='k'; rd.title='Play this line again: the opponent repeats his replies while you repeat your moves. Use ← or the move list to redo from a later move.';
-  rd.addEventListener('click',()=>redoLine()); $('o-status').appendChild(rd); refreshRedo();
-  if(firstMiss()){ const rt=document.createElement('button'); rt.className='btn endredo endretry'; rt.type='button'; rt.dataset.retry='k';
-    rt.title='Play the line again from the position of your first miss. Nothing is rated again.';
-    rt.textContent=(new Set(S.misses.map(x=>x.at)).size>1?'Retry from 1st miss':'Retry the miss')+' (Y)'; rt.addEventListener('click',retryMiss); $('o-status').appendChild(rt) }
-  /* a banner on the board itself, so the end of the line is obvious on a phone */
+  /* 17 Nov 2026: each action has one home, the button row under the board (Next line, and Redo / Retry the miss, which join
+     it when a line ends; tools() shows them). The end card and the strip under the board carry only the message. */
   const box=$('o-boardbox'); box.classList.remove('end-good','end-warn'); box.classList.add(S.misses.length?'end-warn':'end-good');
   $('o-endtext').textContent=(S.misses.length?`${msg} ${S.misses.length} miss${S.misses.length>1?'es':''}`:`${msg} ✓ All right`)+(training()?'':` · ${delta>=0?'+':''}${delta}`);
   $('o-endbar').hidden=false;
-  /* phones (12 Nov 2026): Retry the miss one tap away in the bar on the board, beside Next line and Redo, only after a line
-     with a miss; laptops keep it on the end card only (style.css hides it there) */
-  $('o-endretry').hidden=!(canRedo()&&firstMiss());
+  $('o-endretry').querySelector('.lbl').textContent=new Set(S.misses.map(x=>x.at)).size>1?'Retry from 1st miss':'Retry the miss';
   draw(); renderSide(); renderBook(); renderEval();
   finalEval(S.op.id,S.lineId);
   if(H) H.changed();
@@ -667,6 +659,9 @@ function renderSide(){
   renderNotes(); tools();
 }
 function tools(){
+  /* when the line has ended, Redo (and Retry the miss after a miss) take the places of Hint, End line and Take back */
+  const done=!!(S.g&&S.phase==='done'); $('o-hint').hidden=$('o-endhere').hidden=$('o-back').hidden=done;
+  $('o-endredo').hidden=!done; $('o-endretry').hidden=!(done&&canRedo()&&firstMiss()); refreshRedo();
   const b=$('o-back'); if(b) b.disabled=!canTakeBack();
   const eh=$('o-endhere'); if(eh) eh.disabled=!(S.op&&S.g&&S.phase==='await'&&!S.busy&&S.userMoves>0);
   const n=S.log?S.log.length:0, at=browsing()?S.browse:n;
@@ -850,7 +845,6 @@ function init(){
     addEventListener('pointermove',move); addEventListener('pointerup',up); addEventListener('pointercancel',up);
   });
   $('o-newline').addEventListener('click',()=>H?H.next():newLine());
-  $('o-endnext').addEventListener('click',newLine);
   $('o-endredo').addEventListener('click',()=>redoLine());
   $('o-endretry').addEventListener('click',()=>retryMiss());
   $('o-hint').addEventListener('click',hint);

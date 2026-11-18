@@ -68,7 +68,7 @@ const WATCH=()=>{ const W=window.Worker; window.__workers=0; window.Worker=funct
         side:document.documentElement.scrollWidth>innerWidth+1,box:document.querySelector('#blind input[type=text]').getBoundingClientRect().height} });
     ok(m.fixed&&m.bottom===0&&m.rows===1&&m.min>=44&&!m.side&&m.box>=44,`iPhone SE ${w} px: bottom bar on one row, buttons ${Math.round(m.min)} px, move box ${Math.round(m.box)} px, no sideways scroll`) }
   await pg.screenshot({path:path.join(OUT,'blind-phone-se320.png'),fullPage:true});
-  /* Openings: Retry the miss in the bar on the board, phones only */
+  /* Openings: Retry the miss in the button row (17 Nov 2026; was the bar on the board, phones only) */
   await pg.setViewportSize({width:375,height:667});
   await pg.evaluate(async()=>{ location.hash='#progress'; const $=id=>document.getElementById(id); localStorage.setItem('clo-settings',JSON.stringify(Object.assign(JSON.parse(localStorage.getItem('clo-settings')||'{}'),{omode:'rated',evalCol:false,osfinfo:false})));
     $('o-pgnbox').value='[Event "Rep"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O *'; $('o-repname').value='Retry test'; $('o-repside').value='white'; await OpeningsTab.doImport() });
@@ -81,13 +81,16 @@ const WATCH=()=>{ const W=window.Worker; window.__workers=0; window.Worker=funct
       await pg.evaluate(u=>OpeningsTab.userMove(u.slice(0,2),u.slice(2,4)),u); await sleep(200) } };
   await playLine(2); await until(pg,()=>OpeningsTab.state.phase==='done',8000);
   for(const [w,h] of [[375,667],[320,568]]){ await pg.setViewportSize({width:w,height:h}); await sleep(200);
-    const m=await pg.evaluate(()=>{ const bs=[...document.querySelectorAll('#o-endbar .endbtns .btn')].filter(b=>b.offsetParent); const r=document.getElementById('o-endretry');
-      return {pin:document.querySelector('#openings .otrain').classList.contains('pin'),n:bs.length,retry:!!r.offsetParent,rows:new Set(bs.map(b=>Math.round(b.getBoundingClientRect().top))).size,wrapped:bs.some(b=>b.getBoundingClientRect().height>40),
-        inside:bs.every(b=>b.getBoundingClientRect().right<=document.getElementById('o-endbar').getBoundingClientRect().right+0.5),dims:bs.map(b=>Math.round(b.getBoundingClientRect().width)).join('+')+' in '+Math.round(document.getElementById('o-endbar').getBoundingClientRect().width),side:document.documentElement.scrollWidth>innerWidth+1} });
-    ok(m.retry&&m.n===(m.pin?2:3)&&m.rows===1&&!m.wrapped&&m.inside&&!m.side,`iPhone SE ${w} px: Redo and Retry the miss on one line in the bar, Next line beside them or (pinned board) in the row under it (${JSON.stringify(m)})`) }
-  await pg.locator('#o-boardbox').screenshot({path:path.join(OUT,'openings-endbar-retry-se.png')});
+    /* 17 Nov 2026: the actions live once, in the button row (the bottom bar on phones); the strip under the board has the message only */
+    const m=await pg.evaluate(()=>{ const $=id=>document.getElementById(id), bs=[...document.querySelectorAll('#o-tools .btn')].filter(b=>b.offsetParent&&b.getBoundingClientRect().width>0);
+      const want=['o-endredo','o-endretry','o-newline'].map($), W=document.documentElement.clientWidth, sb=$('o-endbar');
+      return {want:want.every(b=>bs.includes(b)),rows:new Set(bs.map(b=>Math.round(b.getBoundingClientRect().top+b.getBoundingClientRect().height/2))).size,
+        small:bs.filter(b=>b.getBoundingClientRect().height<43.5).map(b=>b.id),inside:bs.every(b=>b.getBoundingClientRect().left>=-0.5&&b.getBoundingClientRect().right<=W+0.5),
+        strip:!!sb.offsetParent&&/miss/.test(sb.textContent)&&!sb.querySelector('button'),dims:bs.map(b=>(b.textContent.trim()||b.id)+':'+Math.round(b.getBoundingClientRect().width)).join(' '),side:document.documentElement.scrollWidth>innerWidth+1} });
+    ok(m.want&&m.rows===1&&!m.small.length&&m.inside&&m.strip&&!m.side,`iPhone SE ${w} px: Redo, Retry the miss and Next line on one line in the bottom bar, the strip under the board with the message only (${JSON.stringify(m)})`) }
+  await pg.screenshot({path:path.join(OUT,'openings-endbar-retry-se.png')});
   await pg.setViewportSize({width:1280,height:860}); await sleep(200);
-  ok(await pg.evaluate(()=>!document.getElementById('o-endretry').offsetParent&&!!document.querySelector('#o-status .endretry, #o-status [data-retry]')),'laptop: not in the bar; the end card keeps Retry the miss');
+  ok(await pg.evaluate(()=>!!document.getElementById('o-endretry').offsetParent&&!document.querySelector('#o-status [data-retry], #o-status [data-redo]')&&!document.getElementById('o-endbar').offsetParent),'laptop: Retry the miss in the row under the board, not on the end card; no strip (the end card says it)');
   await pg.setViewportSize({width:375,height:667}); await sleep(150);
   await pg.click('#o-endretry'); ok(await until(pg,()=>{ const S=OpeningsTab.state; return S.phase==='await'&&S.log.length===2 },5000),'tapping it retries from the miss');
   ok(!errors.length,'no page or console errors'+(errors.length?': '+errors.slice(0,3).join(' | '):''));

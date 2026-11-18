@@ -367,8 +367,8 @@ section('t14: Today — a daily session from your drills, puzzles and openings')
   await w.DrillsTab.userMove('e7','e5'); await sleep(30);
   const dp=w.Store.get('adrills-progress');
   assert(dp['a-4']&&dp['a-4'].ok&&dp['a-4'].tries===1&&/2 of 10 done/.test(head()),'solving it on Today is stored by the Drills code under its own key, and ticks off');
-  assert(w.DrillsTab.state.cur.id==='a-4'&&/Next in session/.test(doc.querySelector('#td-grid .endbar').textContent),'the solved drill stays on the board; its banner says Next in session');
-  doc.querySelector('#td-grid .endbar button').click(); await sleep(30);
+  assert(w.DrillsTab.state.cur.id==='a-4'&&/Solved/.test(doc.querySelector('#td-grid .endbar').textContent)&&!doc.querySelector('#td-grid .endbar button'),'the solved drill stays on the board; the strip under it has the result and no button (17 Nov 2026)');
+  doc.getElementById('td-next').click(); await sleep(30);
   assert(w.DrillsTab.state.cur.id==='a-2'&&w.TodayTab.sel==='drill:a-2','Next in session goes to the next item not done');
   w.TodayTab.next(); w.TodayTab.next(); await sleep(30);
   const pz=w.TacticsTab.state.cur;
@@ -390,7 +390,7 @@ section('t14: Today — a daily session from your drills, puzzles and openings')
   for(const mv of w.OpeningsTab.state.g.moves({verbose:true})){ if(w.OpeningsTab.state.userMoves) break; await w.OpeningsTab.userMove(mv.from,mv.to,mv.promotion); await sleep(10) }
   for(let i=0;i<60&&w.OpeningsTab.state.phase!=='await'&&w.OpeningsTab.state.phase!=='done';i++) await sleep(25);
   const st0=w.OpeningsTab.stats(opId).lines; if(w.OpeningsTab.state.phase!=='done') w.OpeningsTab.endHere(); await sleep(60);
-  assert(w.OpeningsTab.state.phase==='done'&&w.OpeningsTab.stats(opId).lines>=1&&/Next in session/.test(doc.getElementById('o-status').textContent),'ending the line there scores it with the Openings code (stats-<id>); its button says Next in session');
+  assert(w.OpeningsTab.state.phase==='done'&&w.OpeningsTab.stats(opId).lines>=1&&/^Next\b/.test(doc.getElementById('o-newline').textContent)&&!/Next/.test(doc.getElementById('o-status').textContent),'ending the line there scores it with the Openings code (stats-<id>); Next (the row\u2019s one button) goes on in the session');
   w.location.hash='#openings'; await sleep(60);
   assert(doc.getElementById('openings').firstElementChild===doc.querySelector('.otrain')&&doc.getElementById('openings').contains(doc.getElementById('o-setmodal'))&&doc.getElementById('endgames').contains(doc.getElementById('eg-board'))&&w.Keys.view()==='openings','leaving Today puts the trainer, its dialogs and the Endgames panel back where they were');
 }
@@ -485,13 +485,14 @@ section('t17: past the end of the book, Stockfish plays on; the end of a line sh
   assert(S.scored.length>=6&&S.scored.slice(-3).every(x=>x.s===1),'moves as good as Stockfish\u2019s count as right past the book (scores '+S.scored.map(x=>x.s).join(',')+')');
   assert(S.phase==='done'&&/Line complete/.test(S.endMsg),'the line runs to its full length (medium = 8 of your moves): '+S.log.length+' plies');
   const bar=w.document.getElementById('o-endbar');
-  assert(!bar.hidden&&/Line complete/.test(bar.textContent)&&w.document.getElementById('o-boardbox').className.includes('end-'),'a banner on the board shows the line is over');
-  w.document.getElementById('o-endnext').click(); await sleep(50);
-  assert(bar.hidden,'Next line hides the banner');
+  assert(!bar.hidden&&/Line complete/.test(bar.textContent)&&w.document.getElementById('o-boardbox').className.includes('end-'),'the strip under the board shows the line is over');
+  assert(!w.document.getElementById('o-endnext')&&!w.document.querySelector('#o-status .endnext'),'Next line is only in the button row (17 Nov 2026: no copy on the strip or the end card)');
+  w.document.getElementById('o-newline').click(); await sleep(50);
+  assert(bar.hidden,'Next line hides the strip');
   w.Settings.set('olen','long');
 }
 
-section('t18: result banner on every board');
+section('t18: result strip under every board (17 Nov 2026: was a banner on it)');
 {
   const {w}=await makePage({analyse:async()=>[{uci:'e1g1',cp:0.4,mate:null}]});
   for(let i=0;i<40&&!(w.TacticsTab.lib||[]).length;i++) await sleep(100);
@@ -502,8 +503,9 @@ section('t18: result banner on every board');
   w.TacticsTab.load(z); await sleep(20);
   const e=z.moves[w.TacticsTab.state.step]; await w.TacticsTab.userMove(e.slice(0,2),e.slice(2,4),e[4]); await sleep(50);
   assert(!bar('t-board').hidden&&/Solved ✓ first try/.test(bar('t-board').textContent)&&w.document.getElementById('t-board').parentElement.className.includes('end-good'),'Tactics: a clean solve shows a green banner on the board');
-  bar('t-board').querySelector('button').click(); await sleep(30);
-  assert(bar('t-board').hidden&&w.TacticsTab.state.cur!==z,'Tactics: Next puzzle loads another and hides the banner');
+  assert(!bar('t-board').querySelector('button')&&bar('t-board').previousElementSibling===w.document.getElementById('t-board'),'Tactics: the strip sits directly under the board, with no button');
+  w.document.getElementById('t-next').click(); await sleep(30);
+  assert(bar('t-board').hidden&&w.TacticsTab.state.cur!==z,'Tactics: Next (the row) loads another and hides the strip');
   /* Drills */
   const fen='r1bqkb1r/1ppp1ppp/p1n2n2/4p3/B3P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 5';
   w.Store.put('adrills',[{id:'a12345678',fen,played:'Ke2',playedUci:'e1e2',best:'e1g1',drop:0.35,date:'2026-11-01',opp:'O',color:'w'}]);
@@ -1652,7 +1654,7 @@ section('t53: Redo line / Redo from here in the opening trainer');
   const rnd=w.Math.random; w.Math.random=()=>0.9999;
   let got=false; const seen=new Set(); try{ for(let k=0;k<5&&!got;k++){ O.newLine(); await play(); const t=S.log.map(x=>x.san).join(' '); seen.add(t); got=t==='e4 e5 Nf3 d6 d4' } } finally { w.Math.random=rnd }
   assert(got,'played the short side line 2...d6 3.d4 (got: '+[...seen].join(' | ')+')');
-  assert(O.canRedo()&&$('o-status').querySelector('[data-redo]')&&!$('o-endredo').disabled,'Redo offered on the end card and the board banner');
+  assert(O.canRedo()&&!$('o-endredo').hidden&&!$('o-endredo').disabled&&!$('o-status').querySelector('[data-redo]'),'Redo offered once, in the button row (not on the end card)');
   const lines=O.stats(O.SID()).lines;
   /* Redo: the same replies while you repeat your moves; nothing rated again */
   assert(w.Keys.map('openings').d,'D is in the keymap');
@@ -1664,8 +1666,8 @@ section('t53: Redo line / Redo from here in the opening trainer');
   assert(O.stats(O.SID()).lines===lines+1||w.Settings.get('omode')==='rated','the redo is a line played');
   /* Redo from here at 2...: the opponent picks the other reply */
   O.browse(3); await sleep(10);
-  assert(/Redo from here/.test($('o-status').querySelector('[data-redo]').textContent),'label follows the move you look at');
-  $('o-status').querySelector('[data-redo]').click();
+  assert(/Redo from here/.test($('o-endredo').textContent),'label follows the move you look at');
+  $('o-endredo').click();
   for(let t=0;t<60&&S.log.length<4;t++) await sleep(30);
   assert(S.log.slice(0,3).map(x=>x.san).join(' ')==='e4 e5 Nf3'&&S.log[3]&&S.log[3].san==='Nc6','['+S.log.map(x=>x.san).join(' ')+'] Redo from here: played out to 2.Nf3, then 2...Nc6 instead of 2...d6');
   await play();
@@ -1769,11 +1771,11 @@ section('t58: Retry the miss (Y): the line again from your first miss, nothing r
       const u=FILE[ply]; await O.userMove(u.slice(0,2),u.slice(2,4)) }
     for(let t=0;t<80&&S.phase!=='done';t++) await sleep(25) }
   O.newLine(); await play(-1);
-  assert(S.phase==='done'&&!$('o-status').querySelector('[data-retry]'),'no Retry the miss after a line without a miss');
+  assert(S.phase==='done'&&$('o-endretry').hidden,'no Retry the miss after a line without a miss');
   O.newLine(); await play(2);
   assert(S.phase==='done'&&S.misses.length===1&&S.misses[0].at===2,'one miss, at ply 2 ('+JSON.stringify(S.misses.map(m=>m.at))+')');
-  const old=S.log.map(x=>x.san).join(' '), b=$('o-status').querySelector('[data-retry]');
-  assert(b&&/Retry the miss/.test(b.textContent),'the end card offers Retry the miss');
+  const old=S.log.map(x=>x.san).join(' '), b=$('o-endretry');
+  assert(!b.hidden&&/Retry the miss/.test(b.textContent)&&!$('o-status').querySelector('[data-retry]'),'the button row offers Retry the miss (once)');
   assert(w.Keys.map('openings').y,'Y is in the keymap');
   const rating=O.stats(O.SID()).rating;
   b.click(); for(let t=0;t<60&&!(myTurn()&&S.log.length===2);t++) await sleep(25);
@@ -1785,7 +1787,7 @@ section('t58: Retry the miss (Y): the line again from your first miss, nothing r
   O.newLine(); for(let n=0;n<8&&S.phase!=='done';n++){ await waitMine(); if(S.phase==='done') break; const ply=S.g.history().length;
     if(ply===2||ply===4){ await O.userMove('a2','a3'); for(let t=0;t<40&&S.busy;t++) await sleep(25) } const u=FILE[ply]; await O.userMove(u.slice(0,2),u.slice(2,4)) }
   for(let t=0;t<80&&S.phase!=='done';t++) await sleep(25);
-  assert(/Retry from 1st miss/.test(($('o-status').querySelector('[data-retry]')||{}).textContent||''),'two misses: Retry from 1st miss');
+  assert(/Retry from 1st miss/.test($('o-endretry').textContent),'two misses: Retry from 1st miss');
   w.Keys.map('openings').y[1]({});   /* the Y key's action (the page here isn't on the Openings view) */
   for(let t=0;t<60&&!(myTurn()&&S.log.length===2);t++) await sleep(25);
   assert(S.log.length===2&&myTurn(),'Y: back to the first miss');
@@ -1923,13 +1925,12 @@ section('t62: Retry the miss in the bar on the board (phones), only after a line
       const u=FILE[ply]; await O.userMove(u.slice(0,2),u.slice(2,4)) }
     for(let t=0;t<80&&S.phase!=='done';t++) await sleep(25) }
   O.newLine(); await play(-1);
-  assert(S.phase==='done'&&!$('o-endbar').hidden&&$('o-endretry').hidden,'a line without a miss: Next line and Redo in the bar, no Retry');
+  assert(S.phase==='done'&&!$('o-endbar').hidden&&!$('o-endredo').hidden&&$('o-endretry').hidden&&$('o-hint').hidden,'a line without a miss: Redo joins the row (Hint, End line, Take back step aside), no Retry');
   O.newLine(); await sleep(20);
-  assert($('o-endretry').hidden,'hidden again once a new line starts');
+  assert($('o-endretry').hidden&&$('o-endredo').hidden&&!$('o-hint').hidden,'hidden again once a new line starts');
   await play(2);
-  assert(S.phase==='done'&&!$('o-endretry').hidden,'a line with a miss: Retry the miss in the bar, beside Next line and Redo');
-  const css=fs.readFileSync(path.join(H.SITE,'style.css'),'utf8');
-  assert(/@media \(min-width:861px\)\{#o-endretry\{display:none!important\}\}/.test(css),'laptops: not in the bar (the end card keeps it)');
+  assert(S.phase==='done'&&!$('o-endretry').hidden&&$('o-tools').contains($('o-endretry')),'a line with a miss: Retry the miss in the button row, beside Next line and Redo');
+  assert([...w.document.querySelectorAll('#openings button')].filter(b=>/Retry (the|from)/.test(b.textContent)).length===1,'one Retry button on the page');
   $('o-endretry').click(); for(let t=0;t<60&&!(myTurn()&&S.log.length===2);t++) await sleep(25);
   assert(S.log.length===2&&myTurn()&&$('o-endbar').hidden,'the button retries from the miss, as Y does');
 }
