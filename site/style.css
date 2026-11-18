@@ -564,3 +564,11 @@ td.num,th.num{text-align:right;white-space:nowrap}
 /* 17 Nov 2026: Play and the game view have the opening trainer's three columns (setup | board | moves). In one column
    (phones, narrow windows) the board still comes first, as before. */
 @media (max-width:860px){#play .tv3>.boardwrap,#game .tv3>.boardwrap{order:-1}#play .tvleft>.card,#play .side>.card:not(.pmoves){order:1}}
+
+/* About, privacy and licences (#about, 18 Nov 2026): a reading page; the parts about the iPhone and Apple Watch app
+   (class app-only) show only inside it (shared/native.js puts class in-app on <html>) */
+.aboutwrap{max-width:760px;display:grid;gap:16px}
+.aboutwrap h3{font-size:1.05rem;margin:16px 0 4px}
+.aboutwrap ul{padding-left:20px;margin:6px 0}
+.aboutwrap li{margin:4px 0}
+html:not(.in-app) .app-only{display:none}

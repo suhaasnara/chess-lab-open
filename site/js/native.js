@@ -52,6 +52,7 @@ Native.start({
   isEmpty:()=>!hasProgress(Store.exportAll()),
   describe:b=>{ const n=k=>Object.keys((b&&b[k])||{}).length, puz=n('tactics-progress')+n('calc-progress')+n('blind-progress'), dr=((b&&b.adrills)||[]).length;
     return [puz?puz+(puz===1?' puzzle':' puzzles'):'',dr?dr+(dr===1?' drill':' drills'):''].filter(Boolean).join(', ')||'your settings and lists' },
+  about:'#about',
   reminder:[{k:'drills',one:'drill',many:'drills',hash:'#drills'},{k:'blind',one:'Blind tactic',many:'Blind tactics',hash:'#blind'},
     {k:'endgames',one:'endgame',many:'endgames',hash:'#endgames'},{k:'blundercheck',one:'Blunder check',many:'Blunder checks',hash:'#blundercheck'}],
   welcome:['Everything works offline.','Your progress stays on this iPhone (and your Apple Watch) and is backed up in Files.',
