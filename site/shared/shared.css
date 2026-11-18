@@ -252,3 +252,11 @@ html.navhid nav.tabs{transform:translateY(calc(-100% - env(safe-area-inset-top,0
 @media (prefers-reduced-motion:reduce){.sq.flash-good::before,.sq.flash-bad::before,.sq.flash-to::after{animation:none;opacity:.85}}
 .sq.hint::before{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 4px var(--sq-hint);z-index:3;pointer-events:none}
 .sq.hintto::before{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 4px var(--mark-good);z-index:3;pointer-events:none}
+/* Press feedback (19 Nov 2026): a tap shows at once that it landed. Before, buttons had no :active style at all, so on a
+   phone nothing changed until the action finished. A quick press-in (scale .97, a touch darker) and a clear focus ring
+   for the keyboard; no layout shift (transform only). iOS applies :active because nav.js listens for touchstart.
+   Reduce Motion keeps the shade and drops the movement. */
+.btn:not(:disabled),.seg button:not(:disabled){-webkit-tap-highlight-color:transparent;transition:transform .12s ease,filter .12s ease,border-color .15s,background .15s}
+.btn:not(:disabled):active,.seg button:not(:disabled):active{transform:scale(.97);filter:brightness(.92)}
+.btn:focus-visible,.seg button:focus-visible{outline:2px solid var(--accent,var(--blue));outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.btn:not(:disabled),.seg button:not(:disabled){transition:filter .12s ease,border-color .15s,background .15s}.btn:not(:disabled):active,.seg button:not(:disabled):active{transform:none}}
