@@ -9,7 +9,7 @@
        (promo = 'q' when the move promotes; the site may ask which piece). input() -> 'both' | 'click' | 'drag'
        (Settings → Move input on the private site; Open has no setting yet, so 'both').
    makeBoard(el, opts) -> {set(game,{last,orient,locked,keepHint}), setHint(sq,to), flip(), flash(squares,tone), orient, render}
-   endBanner(boardEl, onNext, label) -> {show(tone,text,btn), hide(), shown, text}
+   endBanner(boardEl, onNext, label) -> {show(tone,text), hide(), shown, text}: the result strip under a board
    Board.dragOver(el, e) outlines the square under a dragged piece (e = null clears it).
    Sound.play('move'|'capture') and BoardFX.after(el, last) (slide the piece that just moved, play the sound) read the
    site's Settings: sound (true/false), anim (none/fast/normal/slow). makeBoard runs BoardFX after every redraw. */
@@ -113,22 +113,24 @@ window.BoardFX={ ANIM:{none:0,fast:120,normal:250,slow:500},
     const fl=last.flags||''; if(fl.includes('k')||fl.includes('q')){ const r=last.to[1], k=fl.includes('k'); slide((k?'h':'a')+r,(k?'f':'d')+r) }
   } };
 
-/* A result banner on a board: a coloured frame plus a bar with the result and a Next button, so the end
-   of an exercise is obvious on a phone. Wraps the board in .boardbox (the board re-renders its own
-   children only). Tap the result text to hide the bar and see the whole board. */
+/* The result of an exercise, next to the board (17 Nov 2026: was a bar with a Next button drawn over the board).
+   Wraps the board in .boardbox (the board re-renders its own children only) and puts a slim strip directly under it with
+   the result text only: no button, since the page's own button row (Next, Take back …) is the one home for each action.
+   The strip shows where the side panel is not beside the board (phones, narrow windows: shared.css), and the board gets
+   a thin outline in the result's colour. A site that shows results only in its own status card hides .endbar (Chess Lab).
+   API unchanged: show(tone, text) with tone good / warn / bad, hide(), shown, text; the third argument of show and
+   onNext are kept for callers but no longer draw a button. */
 function endBanner(boardEl,onNext,label){
   let box=boardEl.parentElement;
   if(!box.classList.contains('boardbox')){ box=document.createElement('div'); box.className='boardbox'; boardEl.parentNode.insertBefore(box,boardEl); box.appendChild(boardEl) }
-  const bar=document.createElement('div'); bar.className='endbar'; bar.hidden=true;
-  bar.innerHTML='<span class="endtext" title="Tap to hide"></span><button class="btn sm primary"></button>';
-  box.appendChild(bar);
+  const bar=document.createElement('div'); bar.className='endbar'; bar.hidden=true; bar.setAttribute('role','status');
+  bar.innerHTML='<span class="endtext"></span>';
+  boardEl.insertAdjacentElement('afterend',bar);
   const api={onNext,
-    show(tone,text,btn){ box.classList.remove('end-good','end-warn','end-bad'); box.classList.add('end-'+tone);
-      bar.querySelector('.endtext').textContent=text; bar.querySelector('button').textContent=btn||label||'Next'; bar.hidden=false },
+    show(tone,text){ box.classList.remove('end-good','end-warn','end-bad'); box.classList.add('end-'+tone);
+      bar.querySelector('.endtext').textContent=text; bar.hidden=false },
     hide(){ bar.hidden=true; box.classList.remove('end-good','end-warn','end-bad') },
     get shown(){ return !bar.hidden }, get text(){ return bar.querySelector('.endtext').textContent }};
-  bar.querySelector('button').addEventListener('click',()=>{ api.hide(); api.onNext&&api.onNext() });
-  bar.querySelector('.endtext').addEventListener('click',()=>{ bar.hidden=true });
   return api;
 }
 

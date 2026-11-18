@@ -43,7 +43,8 @@ body[data-view="openings"] main.inner,body[data-view="tactics"] main.inner,body[
 .btn.primary kbd{color:rgba(255,255,255,.8);border-color:rgba(255,255,255,.35)}   /* Chess Lab's: the key hint on a navy button (was 2.3:1) */
 .status{border-radius:var(--radius);padding:11px 14px;font-size:.95rem;background:var(--callout);color:var(--ink)}
 .status strong{display:block;margin-bottom:2px;color:var(--head)}
-.status.good{background:var(--good-soft)}.status.good strong{color:var(--good)}
+/* success: the calm dark green panel with softer green text (17 Nov 2026, theme.css --ok-*; was a pale green card) */
+.status.good{background:var(--ok-bg);color:var(--ok-text)}.status.good strong,.status.good .note,.status.good a{color:var(--ok-text)}
 .status.warn{background:var(--warn-soft)}.status.warn strong{color:var(--warn)}
 .status.bad{background:var(--bad-soft)}.status.bad strong{color:var(--bad)}
 .empty{padding:14px;border:1px dashed var(--line);border-radius:var(--radius);color:var(--muted);font-size:.9rem;background:var(--white)}
@@ -112,6 +113,15 @@ body[data-board="grey"] .board{background:repeating-conic-gradient(#9a9a9a 0 25%
 .evalbar{height:8px;border-radius:4px;background:#2b3442;overflow:hidden;margin-top:10px}
 .evalbar i{display:block;height:100%;background:#f4f1ea;transition:width .4s}
 .boardtools{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center}
+/* 17 Nov 2026: the buttons under a board share the board's width. Even 8 px gaps across and between rows, and every row
+   (a wrapped second row too) runs from the board's left edge to its right edge: word buttons grow to fill, the small icon
+   buttons (‹ › ⌨) keep their size. On phones and iPads the row is the bottom bar instead (trainview.css .bbar). */
+.boardtools{gap:8px;align-items:stretch}
+.boardtools>.btn,.boardtools>.navgrp,.boardtools>.gnav{flex:1 1 auto}
+.boardtools>.btn{text-align:center;white-space:nowrap}
+.boardtools>.btn.icon,.boardtools>.btn.navbtn{flex:0 0 auto;min-width:40px}
+.boardtools>.navgrp,.boardtools>.gnav{display:flex;gap:8px;margin-left:0}.boardtools>:is(.navgrp,.gnav)>.btn{flex:1 1 auto;justify-content:center}
+.boardtools>.evalchip,.boardtools>.note{flex:0 0 auto}
 .moveform{margin-top:12px;display:flex;flex-direction:column;gap:4px}
 .moverow{display:flex;gap:8px}
 .moverow input{flex:1;min-width:0;border:1px solid var(--line);border-radius:var(--radius);padding:8px 11px;font-size:1rem;background:var(--white)}
@@ -130,9 +140,6 @@ body[data-board="grey"] .board{background:repeating-conic-gradient(#9a9a9a 0 25%
 .mtable td:first-child{color:var(--muted);width:2.6em}
 .mtable td.ev{text-align:right;color:var(--muted);width:4em}
 .mtable .ok{color:var(--good);font-weight:600}.mtable .inacc{color:var(--warn);font-weight:600}.mtable .bad{color:var(--bad);font-weight:600}
-.endnext{margin-top:12px;width:100%;display:flex;justify-content:center;align-items:center;padding:10px 14px;font-size:1rem}
-.endredo{margin-top:6px;width:100%;display:flex;justify-content:center;align-items:center}
-.endbar .endbtns{display:flex;gap:6px;flex:none}
 
 /* Explorer */
 .bookrow{display:grid;grid-template-columns:3.4em 1fr 3.4em 5.5em;gap:8px;align-items:center;font-size:.88rem;padding:5px 0;border-bottom:1px solid var(--line)}
@@ -259,13 +266,6 @@ body.welcomed[data-view="today"] .hero{display:none}
 .gmoves .ok{color:var(--good)}.gmoves .inacc{color:var(--warn)}.gmoves .miss{color:var(--bad)}
 .ccfilters .chips+.chips{margin-top:6px}
 
-/* the result banner on a board (endBanner): shared/shared.css since 13 Nov 2026 */
-/* Retry the miss in the bar on the board: phones only (laptops keep it on the end card); the bar's buttons never wrap */
-@media (min-width:861px){#o-endretry{display:none!important}}
-@media (max-width:860px){#o-endbar:has(#o-endretry:not([hidden])){gap:8px;padding:8px 10px;font-size:.9rem}
-  #o-endbar:has(#o-endretry:not([hidden])) .endbtns{flex-wrap:nowrap;gap:4px}#o-endbar:has(#o-endretry:not([hidden])) .btn{padding:6px 8px;white-space:nowrap}}
-@media (max-width:400px){#o-endbar:has(#o-endretry:not([hidden])){flex-wrap:wrap;row-gap:6px;padding:7px 8px}#o-endbar:has(#o-endretry:not([hidden])) #o-endtext{flex:1 1 100%}
-  #o-endbar:has(#o-endretry:not([hidden])) .btn{padding:5px 6px;font-size:.84rem}}
 
 /* first-visit guide */
 .welcome{position:relative;margin-bottom:12px;border-top:3px solid var(--brass)}
@@ -462,7 +462,7 @@ td.num,th.num{text-align:right;white-space:nowrap}
 #openings .otrain.pin #o-hint:disabled,#openings .otrain.pin #o-tools.done>#o-back{display:none}
 #openings .otrain.pin #o-back{font-size:0;min-width:44px}#openings .otrain.pin #o-back::before{content:"↶";font-size:1.15rem}
 #openings .otrain.pin #o-prev{order:9;margin-left:auto}#openings .otrain.pin #o-newline{order:10;padding-inline:12px;white-space:nowrap}#openings .otrain.pin #o-next{order:11}
-#openings .otrain.pin #o-endnext,#openings .otrain.pin #o-readslot{display:none}
+#openings .otrain.pin #o-readslot{display:none}
 #openings .otrain.pin .cnotes{max-height:none;overflow:visible}
 #openings .otrain.pin #o-moveform{max-width:var(--pinb);margin:6px auto 0}
 
@@ -566,3 +566,7 @@ td.num,th.num{text-align:right;white-space:nowrap}
   #pl-setup .seg button,#pl-setup .chip{min-height:40px}
   #a-est .linkbtn{display:inline-block;padding:11px 6px;margin:-6px 0}
 }
+
+/* 17 Nov 2026: Play and the game view have the opening trainer's three columns (setup | board | moves). In one column
+   (phones, narrow windows) the board still comes first, as before. */
+@media (max-width:860px){#play .tv3>.boardwrap,#game .tv3>.boardwrap{order:-1}#play .tvleft>.card,#play .side>.card:not(.pmoves){order:1}}

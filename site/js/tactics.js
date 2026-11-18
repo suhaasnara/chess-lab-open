@@ -13,12 +13,13 @@ function prog(){ return Store.get('tactics-progress')||{} }
 function rating(){ return Store.get('tac-rating')||{r:1500,n:0} }
 function saveResult(id,ok){
   const p=prog(); p[id]={ok,t:Date.now()}; Store.put('tactics-progress',p);
-  const rt=rating(); const pz=LIB.find(x=>x.id===id);
+  const rt=rating(), r0=rt.r; let delta=null; const pz=LIB.find(x=>x.id===id);
   if(pz&&pz.rating){ const K=rt.n<30?32:16; const E=1/(1+Math.pow(10,(pz.rating-rt.r)/400));
     rt.r=Math.round(rt.r+K*((ok?1:0)-E)); rt.n++; Store.put('tac-rating',rt);
-    const h=Store.get('tac-history')||[]; h.push({t:Date.now(),r:rt.r}); Store.put('tac-history',h.slice(-500)) }
+    const h=Store.get('tac-history')||[]; h.push({t:Date.now(),r:rt.r}); Store.put('tac-history',h.slice(-500)); delta=rt.r-r0 }
   renderHeader();
   if(H) H.changed();
+  return delta;   /* the rating change, for the result strip under the board (17 Nov 2026) */
 }
 function renderHeader(){
   const rt=rating(), solved=Object.values(prog()).filter(x=>x.ok).length;
@@ -130,10 +131,10 @@ function userMove(from,to,promo){
   const reply=S.cur.moves[S.step];
   if(!reply||test.in_checkmate()){
     S.solved=true; facts();
-    if(!S.failedFirst&&!S.usedHint) saveResult(S.cur.id,true);
+    const dr=!S.failedFirst&&!S.usedHint?saveResult(S.cur.id,true):null;
     status('good','Solved!',S.failedFirst||S.usedHint?'(no rating: not a clean first try)':'');
     const clean=!S.failedFirst&&!S.usedHint;
-    endbar.show(clean?'good':'warn',clean?'Solved ✓ first try':'Solved, not first try',H?'Next in session':'Next puzzle');
+    endbar.show(clean?'good':'warn',(clean?'Solved ✓ first try':'Solved, not first try')+(dr!=null?` · ${dr>=0?'+':''}${dr}`:''));
     renderL(); return;
   }
   const gen=S.gen;

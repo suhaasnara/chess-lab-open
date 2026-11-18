@@ -202,18 +202,25 @@ html.navhid nav.tabs{transform:translateY(calc(-100% - env(safe-area-inset-top,0
   .tv.bl .boardwrap{max-width:min(100%,720px,max(232px,calc(100vh - 320px)));margin-inline:auto}
 }
 
-/* The result banner on a board (board.js endBanner; moved here from Open's style.css, 13 Nov 2026, so it looks the same
-   wherever it is used). A site that shows results in its own status card instead hides it (Chess Lab: head.html). */
-
+/* The result of an exercise (board.js endBanner; 17 Nov 2026, was a coloured bar with a Next button over the board).
+   Nothing is drawn over the board: it gets a thin outline in the result's colour, and where the side panel is not beside
+   the board (phones and narrow windows, up to 860 px) one slim strip sits directly under it with the result text. Wider
+   screens leave the message to the side panel's status card. Success is the calm dark green (--ok-*, theme.css); a miss
+   and a loss use the same soft colours as their status cards. A site that shows results only in its status card hides
+   .endbar (Chess Lab: head.html). */
 .boardbox{position:relative}
-.boardbox.end-good .board{box-shadow:0 0 0 4px var(--good)}
-.boardbox.end-warn .board{box-shadow:0 0 0 4px var(--warn)}
-.endbar{position:absolute;left:8px;right:8px;bottom:8px;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:10px;
-  padding:10px 12px;border-radius:var(--radius);color:#fff;font-weight:600;font-size:1rem;box-shadow:0 4px 14px rgba(19,40,74,.35)}
-.end-good .endbar{background:var(--good)}.end-warn .endbar{background:var(--warn)}
-.endbar .btn{background:#fff;color:#13284a;border-color:#fff;flex:none}
-.boardbox.end-bad .board{box-shadow:0 0 0 4px var(--bad)}.end-bad .endbar{background:var(--bad)}
-.endbar .endtext{cursor:pointer}
+.boardbox.end-good .board{box-shadow:0 0 0 3px var(--ok-line)}
+.boardbox.end-warn .board{box-shadow:0 0 0 3px var(--warn)}
+.boardbox.end-bad .board{box-shadow:0 0 0 3px var(--bad)}
+.endbar{display:none}
+@media (max-width:860px){
+  .endbar:not([hidden]){display:flex;align-items:center;gap:8px;margin-top:6px;padding:7px 12px;border-radius:var(--radius);
+    font-size:.92rem;font-weight:600;line-height:1.35;min-height:34px;box-sizing:border-box;background:var(--callout);color:var(--head)}
+  .end-good .endbar{background:var(--ok-bg);color:var(--ok-text)}
+  .end-warn .endbar{background:var(--warn-soft);color:var(--warn)}
+  .end-bad .endbar{background:var(--bad-soft);color:var(--bad)}
+  .endbar .endtext{min-width:0;overflow-wrap:anywhere}
+}
 
 /* "↑ Board": back to the page's main view when the board has scrolled mostly out of sight (nav.js, 13 Nov 2026) */
 .mvbtn{position:fixed;right:14px;z-index:35;display:inline-flex;align-items:center;gap:4px;min-height:36px;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:var(--white);color:var(--head);font:600 .86rem/1 inherit;font-family:inherit;box-shadow:0 4px 14px rgba(19,40,74,.18);cursor:pointer}

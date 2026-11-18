@@ -134,12 +134,14 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
       <div class="capline" id="o-capt" hidden></div>
       <div class="boardbox" id="o-boardbox">
         <div class="board" id="o-board" role="group" aria-label="Chess board"></div>
-        <div class="endbar" id="o-endbar" hidden><span id="o-endtext"></span><span class="endbtns"><button class="btn sm primary" id="o-endnext">Next line</button><button class="btn sm" id="o-endredo" data-redo="">Redo line</button><button class="btn sm" id="o-endretry" type="button" title="Play the line again from the position of your first miss (Y). Nothing is rated again." hidden>Retry the miss</button></span></div>
+        <div class="endbar" id="o-endbar" role="status" hidden><span class="endtext" id="o-endtext"></span></div>
       </div>
       <div class="capline" id="o-capb" hidden></div>
       <div class="evalrow" id="o-evalwrap"><div class="evalbar" id="o-evalbar" hidden><i style="width:50%"></i></div><span class="note mono" id="o-evaltxt"></span></div>
       <div class="boardtools" id="o-tools">
         <button class="btn sm primary" id="o-newline">Next line <kbd>N</kbd></button>
+        <button class="btn sm" id="o-endredo" type="button" data-redo="" title="Play this line again: the opponent repeats his replies while you repeat your moves. Use ← or the move list to redo from a later move." hidden><span class="lbl">Redo line</span> <kbd>D</kbd></button>
+        <button class="btn sm" id="o-endretry" type="button" title="Play the line again from the position of your first miss (Y). Nothing is rated again." hidden><span class="lbl">Retry the miss</span> <kbd>Y</kbd></button>
         <button class="btn sm" id="o-hint">Hint <kbd>H</kbd></button>
         <button class="btn sm" id="o-endhere" title="End the line where you are (E). In Rated, only the moves you played are scored." disabled>End line <kbd>E</kbd></button>
         <button class="btn sm" id="o-back" title="Take back your last move and the reply (B). In Rated, that position isn't rated again." disabled>Take back <kbd>B</kbd></button>
@@ -456,7 +458,12 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
 <!-- ================= A game you analyzed (#game?id=&ply=) ================= -->
 <section id="game" hidden>
   <div class="card gvempty" id="gv-empty" hidden></div>
-  <div class="tvplay" id="gv-main">
+  <div class="tv3" id="gv-main">
+    <div class="tvleft">
+      <div id="gv-head"></div>
+      <div class="status" id="gv-status" aria-live="polite"></div>
+      <div class="card gvactions" id="gv-actions" hidden></div>
+    </div>
     <div class="boardwrap" id="gv-wrap">
       <div class="board" id="gv-board" role="group" aria-label="Chess board"></div>
       <div class="boardtools" id="gv-tools">
@@ -467,9 +474,6 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
       </div>
     </div>
     <div class="side">
-      <div id="gv-head"></div>
-      <div class="status" id="gv-status" aria-live="polite"></div>
-      <div class="card gvactions" id="gv-actions" hidden></div>
       <div class="card"><span class="label">Moves</span><div class="movelist gmoves gvmoves" id="gv-moves"></div><p class="note" style="margin:6px 0 0">Marks by the Win% a move lost: ?! 5+, ? 10+, ?? 15+ points. Evals from White’s side.</p></div>
       <div class="card" id="gv-graphcard" hidden><span class="label">Eval graph</span><div class="evgraph gvgraph" id="gv-graph"></div><p class="note">Above the line favours White, below favours Black. Dots: your inaccuracies (amber), mistakes and blunders (red). Tap to go to a move.</p></div>
       <div class="card"><span class="label">The game</span><dl class="facts" id="gv-facts"></dl></div>
@@ -480,7 +484,22 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
 
 <!-- ================= Play ================= -->
 <section id="play" class="idle" hidden>
-  <div class="tvplay">
+  <div class="tv3">
+    <div class="tvleft">
+      <div class="status" id="pl-status" aria-live="polite">Choose a bot and start. Blindfold hides the pieces until the game ends; type moves or tap the squares.</div>
+      <div class="btns"><button class="btn primary" id="pl-new">New game</button><button class="btn" id="pl-flip">Flip <kbd>F</kbd></button></div>
+      <div class="card"><span class="label">Game setup</span>
+        <div id="pl-setup"></div>
+        <div class="vh"><select id="pl-elo" aria-label="Strength">
+            <option value="1400">1400</option><option value="1600">1600</option>
+            <option value="1800" selected>1800</option><option value="2000">2000</option>
+            <option value="2200">2200</option><option value="2400">2400</option>
+            <option value="2600">2600</option><option value="max">Full strength</option>
+          </select><select id="pl-color" aria-label="Your side"><option value="w">White</option><option value="b">Black</option><option value="random">Random</option></select>
+          <input type="checkbox" id="pl-blind" aria-label="Blindfold"></div>
+        <p class="note pnote">Bot ratings are Stockfish’s own scale (held back with its UCI_Elo setting); treat them as rough online-style ratings.</p>
+      </div>
+    </div>
     <div class="boardwrap" id="pl-wrap">
       <div class="board" id="pl-board" role="group" aria-label="Chess board"></div>
       <p class="note" id="pl-strip" style="margin:6px 0 0;min-height:1.2em"></p>
@@ -497,20 +516,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
       </form>
     </div>
     <div class="side">
-      <div class="status" id="pl-status" aria-live="polite">Choose a bot and start. Blindfold hides the pieces until the game ends; type moves or tap the squares.</div>
-      <div class="btns"><button class="btn primary" id="pl-new">New game</button><button class="btn" id="pl-flip">Flip <kbd>F</kbd></button></div>
       <div class="card pmoves"><span class="label">Moves</span><div class="movelist" id="pl-moves"></div></div>
-      <div class="card"><span class="label">Game setup</span>
-        <div id="pl-setup"></div>
-        <div class="vh"><select id="pl-elo" aria-label="Strength">
-            <option value="1400">1400</option><option value="1600">1600</option>
-            <option value="1800" selected>1800</option><option value="2000">2000</option>
-            <option value="2200">2200</option><option value="2400">2400</option>
-            <option value="2600">2600</option><option value="max">Full strength</option>
-          </select><select id="pl-color" aria-label="Your side"><option value="w">White</option><option value="b">Black</option><option value="random">Random</option></select>
-          <input type="checkbox" id="pl-blind" aria-label="Blindfold"></div>
-        <p class="note pnote">Bot ratings are Stockfish’s own scale (held back with its UCI_Elo setting); treat them as rough online-style ratings.</p>
-      </div>
       <div class="card"><span class="label">Your games</span><div id="pl-games" style="margin-top:6px"></div></div>
     </div>
   </div>
@@ -530,7 +536,11 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
     </div>
     <div class="card tvlist"><div class="label" id="g-count"></div><div class="list" id="g-list"></div></div>
   </div>
-  <div class="tvplay" id="g-train" hidden>
+  <div class="tv3" id="g-train" hidden>
+    <div class="tvleft">
+      <div id="g-head"></div>
+      <div class="status" id="g-status" aria-live="polite">Pick a game from the list.</div>
+    </div>
     <div class="boardwrap" id="g-wrap">
       <div class="board" id="g-board" role="group" aria-label="Chess board"></div>
       <div class="boardtools" id="g-tools">
@@ -547,8 +557,6 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
       <div class="card gunder" id="g-graphcard" hidden><span class="label">Eval graph</span><div class="evgraph" id="g-graph"></div><p class="note" id="g-graphnote"></p></div>
     </div>
     <div class="side">
-      <div id="g-head"></div>
-      <div class="status" id="g-status" aria-live="polite">Pick a game from the list.</div>
       <div class="card"><span class="label">Moves and notes</span><div class="movelist gmoves" id="g-moves"></div></div>
       <div class="card"><span class="label">The game</span><dl class="facts" id="g-facts"></dl></div>
       <div class="tablewrap" id="g-tablewrap" hidden><table id="g-table"></table></div>
