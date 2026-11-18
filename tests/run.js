@@ -770,7 +770,7 @@ section('t25: arrows and circles — Shapes, a PGN’s [%cal]/[%csl]');
   Sh.auto(b,'Ge2e4 Yd4'); 
   const svg=b.querySelector(':scope>svg.shapes');
   assert(svg&&svg.querySelectorAll('line').length===1&&svg.querySelectorAll('circle').length===1,'an arrow and a circle are drawn over the board');
-  assert(svg.querySelector('polygon')&&/#15803d/i.test(svg.querySelector('g').getAttribute('fill')),'green arrow with a head');
+  assert(svg.querySelector('polygon')&&/#15781B/i.test(svg.querySelector('g').getAttribute('fill')),'green arrow with a head');
   /* a redraw of the same position keeps them; a new position drops them */
   w.OpeningsTab.state.g&&w.OpeningsTab.state.g.fen();
   const S=w.OpeningsTab.state; const fen0=S.g.fen();
@@ -864,14 +864,18 @@ section('t28: dark mode — a Theme setting that only swaps colour variables');
   assert(sel&&[...sel.options].map(o=>o.value).join()==='auto,light,dark','Settings has Theme: Match device / Light / Dark');
   sel.value='light'; sel.dispatchEvent(new w.Event('change')); assert(w.document.documentElement.dataset.theme==='light','and Light switches back');
   assert(/<script>[^<]*clo-settings[^<]*dataset\.theme/.test(require('fs').readFileSync(require('path').join(H.SITE,'index.html'),'utf8')),'the theme is set before the first paint');
-  /* contrast of the dark palette (WCAG): text on cards and on the page */
+  /* contrast of both palettes (WCAG 2.2, colour direction A): every text colour on the backgrounds it is used on */
   const hex=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255).map(c=>c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4));
   const L=h=>{ const [r,g,b]=hex(h); return 0.2126*r+0.7152*g+0.0722*b }, cr=(a,b)=>{ const x=L(a),y=L(b); return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05) };
-  const v=k=>block.match(new RegExp('--'+k+':(#[0-9a-f]{6})'))[1];
-  const pairs=[['ink','white'],['muted','white'],['head','white'],['blue','white'],['muted','band'],['good','white'],['bad','white'],['warn','white'],['ink','callout'],['ink','good-soft'],['ink','bad-soft'],['brass-text','white']];
-  const low=pairs.filter(([a,b])=>cr(v(a),v(b))<4.5);
-  assert(!low.length,'every dark text colour has 4.5:1 or more on its background'+(low.length?': '+low.map(p=>p.join('/')+' '+cr(v(p[0]),v(p[1])).toFixed(2)).join(', '):''));
-  assert(cr('#ffffff',v('navy'))>=4.5,'white on the dark navy buttons: '+cr('#ffffff',v('navy')).toFixed(2)+':1');
+  const light=css.match(/:root\{([^}]*)\}/)[1];
+  const pairs=[['text','surface'],['text-2','surface'],['text-head','surface'],['accent','surface'],['text-2','bg'],['text-2','surface-2'],['success','surface'],['error','surface'],['warn','surface'],
+    ['text','surface-2'],['success','success-soft'],['warn','warn-soft'],['error','error-soft'],['brass-text','surface'],['on-accent','accent-solid'],['on-error','error']];
+  for(const [name,blk] of [['light',light],['dark',block]]){
+    const v=k=>{ const m=blk.match(new RegExp('--'+k+':(#[0-9a-f]{6})')); if(!m) throw new Error(name+' has no --'+k); return m[1] };
+    const low=pairs.filter(([a,b])=>cr(v(a),v(b))<4.5);
+    assert(!low.length,name+': every text colour has 4.5:1 or more on its background'+(low.length?': '+low.map(p=>p.join('/')+' '+cr(v(p[0]),v(p[1])).toFixed(2)).join(', '):''));
+    assert(cr(v('border-strong'),v('surface'))>=3,name+': form-field edges 3:1 on cards (WCAG 1.4.11): '+cr(v('border-strong'),v('surface')).toFixed(2));
+  }
 }
 
 section('t29: openings list — Arrange, start lines, Statistics, trainer settings, sidelines');

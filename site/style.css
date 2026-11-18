@@ -44,14 +44,15 @@ body[data-view="openings"] main.inner,body[data-view="tactics"] main.inner,body[
 .status{border-radius:var(--radius);padding:11px 14px;font-size:.95rem;background:var(--callout);color:var(--ink)}
 .status strong{display:block;margin-bottom:2px;color:var(--head)}
 /* success: the calm dark green panel with softer green text (17 Nov 2026, theme.css --ok-*; was a pale green card) */
-.status.good{background:var(--ok-bg);color:var(--ok-text)}.status.good strong,.status.good .note,.status.good a{color:var(--ok-text)}
-.status.warn{background:var(--warn-soft)}.status.warn strong{color:var(--warn)}
-.status.bad{background:var(--bad-soft)}.status.bad strong{color:var(--bad)}
+/* one shape for every verdict (colour direction A, as in the private site): a soft panel with a 4 px edge in its colour */
+.status.good{background:var(--success-soft);box-shadow:inset 4px 0 0 var(--success)}.status.good strong{color:var(--success)}
+.status.warn{background:var(--warn-soft);box-shadow:inset 4px 0 0 var(--warn)}.status.warn strong{color:var(--warn)}
+.status.bad{background:var(--error-soft);box-shadow:inset 4px 0 0 var(--error)}.status.bad strong{color:var(--error)}
 .empty{padding:14px;border:1px dashed var(--line);border-radius:var(--radius);color:var(--muted);font-size:.9rem;background:var(--white)}
 .field{display:flex;flex-direction:column;gap:4px;font-size:.9rem}
-.field select,.field input[type=text],.field input[type=number]{min-width:0;border:1px solid var(--line);border-radius:var(--radius);padding:7px 9px;background:var(--white)}
+.field select,.field input[type=text],.field input[type=number]{min-width:0;border:1px solid var(--border-strong);border-radius:var(--radius);padding:7px 9px;background:var(--white)}
 .row2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
-textarea{width:100%;min-height:72px;border:1px solid var(--line);border-radius:var(--radius);padding:8px 10px;font-size:.9rem;background:var(--white);resize:vertical}
+textarea{width:100%;min-height:72px;border:1px solid var(--border-strong);border-radius:var(--radius);padding:8px 10px;font-size:.9rem;background:var(--white);resize:vertical}
 .toggle{display:flex;align-items:center;gap:8px;font-size:.88rem;color:var(--muted);margin-top:8px}
 
 /* Layout: list | board | panel */
@@ -82,17 +83,12 @@ textarea{width:100%;min-height:72px;border:1px solid var(--line);border-radius:v
 /* Board: Lichess maple squares, cburnett pieces, Lichess move highlights */
 .board{display:grid;grid-template-columns:repeat(8,1fr);aspect-ratio:1;max-width:100%;background:url("assets/board/maple.jpg");background-size:100% 100%;user-select:none;-webkit-user-select:none;touch-action:manipulation;box-shadow:0 2px 12px var(--shadow);position:relative}
 .sq{position:relative;cursor:pointer}.board>.sq{aspect-ratio:1;min-width:0}   /* 14 Nov 2026: WebKit leaves a grid's auto rows 0 px tall when the board's height comes from aspect-ratio; each square sizes itself */
-.sq.last{background:rgba(155,199,0,.41)}
-.sq.sel{background:rgba(20,85,30,.5)}
-.sq.hint{background:rgba(20,85,30,.35)}
-.sq.hintto{box-shadow:inset 0 0 0 3px rgba(20,85,30,.8)}
-.sq.tgt::after{content:"";position:absolute;inset:0;background:radial-gradient(rgba(20,85,30,.5) 19%,rgba(0,0,0,0) 20%);pointer-events:none}
-.sq.tgt.cap::after{background:radial-gradient(transparent 0%,transparent 79%,rgba(20,85,0,.3) 80%)}
-.sq.tgt:hover{background:rgba(20,85,30,.3)}
+.sq.last{background:var(--sq-last)}
+.sq.sel{background:var(--sq-sel)}
+.sq.tgt::after{content:"";position:absolute;inset:0;background:radial-gradient(var(--sq-dest) 19%,transparent 20%);pointer-events:none}
+.sq.tgt.cap::after{background:radial-gradient(transparent 0%,transparent 79%,var(--sq-dest-cap) 80%)}
+.sq.tgt:hover{background:var(--sq-dest-hover)}
 .sq.dragover::before{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 3px rgba(255,255,255,.75);z-index:2;pointer-events:none}
-.sq.flash-good{animation:flashg .9s}.sq.flash-bad{animation:flashb .9s}
-@keyframes flashg{0%,60%{box-shadow:inset 0 0 0 4px rgba(30,122,79,.8)}100%{box-shadow:none}}
-@keyframes flashb{0%,60%{box-shadow:inset 0 0 0 4px rgba(176,58,49,.8)}100%{box-shadow:none}}
 .pc{position:absolute;inset:0;background-size:100% 100%;background-repeat:no-repeat;pointer-events:none;z-index:1}
 .pc.wK{background-image:url("assets/pieces/cburnett/wK.svg")}.pc.wQ{background-image:url("assets/pieces/cburnett/wQ.svg")}
 .pc.wR{background-image:url("assets/pieces/cburnett/wR.svg")}.pc.wB{background-image:url("assets/pieces/cburnett/wB.svg")}
@@ -110,8 +106,8 @@ body[data-board="grey"] .board{background:repeating-conic-gradient(#9a9a9a 0 25%
 /* Blindfold: pieces and move dots hidden while the game is on */
 .board.blind .pc{display:none}
 .board.blind .sq.tgt::after{display:none}
-.evalbar{height:8px;border-radius:4px;background:#2b3442;overflow:hidden;margin-top:10px}
-.evalbar i{display:block;height:100%;background:#f4f1ea;transition:width .4s}
+.evalbar{height:8px;border-radius:4px;background:var(--eval-black);overflow:hidden;margin-top:10px}
+.evalbar i{display:block;height:100%;background:var(--eval-white);transition:width .4s}
 .boardtools{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center}
 /* 17 Nov 2026: the buttons under a board share the board's width. Even 8 px gaps across and between rows, and every row
    (a wrapped second row too) runs from the board's left edge to its right edge: word buttons grow to fill, the small icon
@@ -124,7 +120,7 @@ body[data-board="grey"] .board{background:repeating-conic-gradient(#9a9a9a 0 25%
 .boardtools>.evalchip,.boardtools>.note{flex:0 0 auto}
 .moveform{margin-top:12px;display:flex;flex-direction:column;gap:4px}
 .moverow{display:flex;gap:8px}
-.moverow input{flex:1;min-width:0;border:1px solid var(--line);border-radius:var(--radius);padding:8px 11px;font-size:1rem;background:var(--white)}
+.moverow input{flex:1;min-width:0;border:1px solid var(--border-strong);border-radius:var(--radius);padding:8px 11px;font-size:1rem;background:var(--white)}
 .note.err{color:var(--bad);min-height:1.2em;margin:0}
 
 /* Training mode switch */
@@ -147,7 +143,7 @@ body[data-board="grey"] .board{background:repeating-conic-gradient(#9a9a9a 0 25%
 .bookrow .mv{font-weight:600;color:var(--head)}
 .wdl{display:flex;height:9px;border-radius:2px;overflow:hidden;border:1px solid var(--line)}
 .wdl i{display:block;height:100%}
-.wdl .w{background:#ffffff}.wdl .d{background:#a7b2c2}.wdl .b{background:#2b3442}
+.wdl .w{background:#ffffff}.wdl .d{background:var(--eval-draw)}.wdl .b{background:var(--eval-black)}
 
 /* Stats / tables */
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:20px}
@@ -186,7 +182,7 @@ tr:last-child td{border-bottom:0}
 .delta{font-weight:600}.delta.up{color:var(--good)}.delta.down{color:var(--bad)}
 
 /* Settings / modal */
-.modal{position:fixed;inset:0;background:rgba(19,40,74,.45);display:grid;place-items:center;z-index:60;padding:16px}
+.modal{position:fixed;inset:0;background:var(--scrim);display:grid;place-items:center;z-index:60;padding:16px}
 .modal .card{width:min(520px,100%);max-height:85vh;overflow:auto}
 .setrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
 .setrow:last-child{border-bottom:0}
@@ -279,7 +275,7 @@ body.welcomed[data-view="today"] .hero{display:none}
 /* Progress charts (single series each; site navy line/bars, recessive grid, one-hue activity scale) */
 .pcharts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:12px;margin-bottom:16px}
 .pchead{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.pchead select{max-width:60%;font:inherit;font-size:.85rem;padding:3px 6px;border:1px solid var(--line);border-radius:var(--radius);background:var(--white)}
+.pchead select{max-width:60%;font:inherit;font-size:.85rem;padding:3px 6px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--white)}
 .pchart{margin-top:8px}.pchart svg{display:block;width:100%;height:auto}
 .pchart .grid{stroke:var(--line);stroke-width:1}
 .pchart .axis{fill:var(--muted);font-size:11px;font-family:var(--sans)}
@@ -478,17 +474,17 @@ td.num,th.num{text-align:right;white-space:nowrap}
 .adrop{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:12px;padding:12px;border:1px dashed var(--line);border-radius:var(--radius);background:var(--band)}
 #a-form.adragging .adrop{border-color:var(--blue);background:var(--callout)}
 .astudy{display:flex;gap:6px;flex:1 1 260px;min-width:0}
-.astudy input{flex:1;min-width:0;border:1px solid var(--line);border-radius:var(--radius);padding:6px 9px;background:var(--white);color:var(--ink)}
+.astudy input{flex:1;min-width:0;border:1px solid var(--border-strong);border-radius:var(--radius);padding:6px 9px;background:var(--white);color:var(--ink)}
 #a-files{margin-top:10px;max-width:760px}
 .afhead,.afile{display:grid;grid-template-columns:minmax(0,1fr) 72px minmax(150px,auto) 40px;gap:8px 12px;align-items:center;padding:7px 10px}
 .afhead{background:var(--navy);color:var(--on-navy);font-size:.82rem;font-weight:600;border-radius:var(--radius) var(--radius) 0 0}
 .afile{border:1px solid var(--line);border-top:0;background:var(--white)}
 .afile:last-child{border-radius:0 0 var(--radius) var(--radius)}
 .afname{overflow-wrap:anywhere;font-size:.9rem}.afn .note{display:none}
-.afile select{border:1px solid var(--line);border-radius:var(--radius);padding:5px 7px;background:var(--white);color:var(--ink);font-size:.88rem}
+.afile select{border:1px solid var(--border-strong);border-radius:var(--radius);padding:5px 7px;background:var(--white);color:var(--ink);font-size:.88rem}
 @media (max-width:560px){.afhead{display:none}.afile{grid-template-columns:minmax(0,1fr) auto;border-top:1px solid var(--line);margin-top:6px;border-radius:var(--radius)}.afile .afname{grid-column:1/-1}.afn{text-align:left}.afn .note{display:inline}.afile select{grid-column:1;grid-row:3;width:100%}.afile .btn{grid-column:2;grid-row:3}}
 .aalias{flex-basis:100%;margin-top:4px}.aalias .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
-.acheckcard{margin-top:10px;border-left:3px solid var(--warn,#c80)}.acheck{margin-top:6px;line-height:1.45}
+.acheckcard{margin-top:10px;border-left:3px solid var(--warn)}.acheck{margin-top:6px;line-height:1.45}
 .amore{flex-basis:100%;margin-top:2px}.amore summary{cursor:pointer}.amore .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 #a-pgnwho{margin-top:10px}
 #a-pgnnames{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
@@ -503,7 +499,7 @@ td.num,th.num{text-align:right;white-space:nowrap}
 .afilters{margin:0 0 14px;padding:12px 14px}
 .afrow{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end}
 .afl{display:flex;flex-direction:column;gap:4px;font-size:.8rem;font-weight:600;color:var(--muted)}
-.afl select,.afl input{border:1px solid var(--line);border-radius:var(--radius);padding:6px 8px;background:var(--white);color:var(--ink);font-size:.88rem}
+.afl select,.afl input{border:1px solid var(--border-strong);border-radius:var(--radius);padding:6px 8px;background:var(--white);color:var(--ink);font-size:.88rem}
 .afl .seg button{padding:6px 10px}
 .afrange{display:flex;align-items:center;gap:4px}.afrange input{width:78px}
 .afcount{margin:10px 0 0}
@@ -511,10 +507,8 @@ td.num,th.num{text-align:right;white-space:nowrap}
 .awdl{display:flex;gap:2px;height:6px;margin-top:5px;max-width:200px;border-radius:2px;overflow:hidden}
 .awdl i{display:block;height:100%;min-width:2px}
 .awdl .w,.achart .cw,.alegend i.cw{background:var(--good);fill:var(--good)}
-.awdl .d,.achart .cd,.alegend i.cd{background:#9aa5b4;fill:#9aa5b4}
+.awdl .d,.achart .cd,.alegend i.cd{background:var(--eval-draw);fill:var(--eval-draw)}
 .awdl .l,.achart .cl,.alegend i.cl{background:var(--bad);fill:var(--bad)}
-:root[data-theme="dark"] .awdl .d,:root[data-theme="dark"] .achart .cd,:root[data-theme="dark"] .alegend i.cd{background:#6b7787;fill:#6b7787}
-@media (prefers-color-scheme:dark){:root[data-theme="auto"] .awdl .d,:root[data-theme="auto"] .achart .cd,:root[data-theme="auto"] .alegend i.cd{background:#6b7787;fill:#6b7787}}
 .ares td,.aops td,.aq td{vertical-align:top}
 @media (min-width:641px){.repgrid .card.wide .ares th:first-child,.repgrid .card.wide .ares td:first-child,.repgrid .card.wide .aops th:first-child,.repgrid .card.wide .aops td:first-child{width:28%}}
 #a-report .repgrid{align-items:stretch}
@@ -554,7 +548,7 @@ td.num,th.num{text-align:right;white-space:nowrap}
 .aset{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px 14px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-size:.88rem}
 .aset>span:first-child{overflow-wrap:anywhere}
 .asetbtns{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
-.btn.danger{background:var(--bad);border-color:var(--bad);color:#fff}
+.btn.danger{background:var(--error);border-color:var(--error);color:var(--on-error)}
 @media (max-width:560px){.aset{grid-template-columns:1fr auto}.asetbtns{grid-column:1/-1;justify-content:flex-start}}
 
 /* Phones, 14 Nov 2026 (audit Q4, Q9): before a game starts Play shows the board, the status and New game, not Hint /
