@@ -2476,6 +2476,7 @@ section('t74: Analyze — the engine’s first choice is never a mistake; drills
 }
 
 await require('./native')(H);   /* the iPhone and Apple Watch app layer (shared/native.js, js/native.js) */
+await require('./watchsets')(H);   /* the Apple Watch sets for the app (tools/build_watch_sets.js) */
 
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));
 process.exit(H.failures?1:0);

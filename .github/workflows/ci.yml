@@ -18,6 +18,24 @@ jobs:
       - name: Headless tests
         run: cd tests && npm ci --no-audit --no-fund && npm test
 
+  # The Apple Watch sets for the public app (suhaasnara/chess-lab-open-app), as a downloadable artifact: the three sets
+  # (shipped in the app) and the test fixture (only for the watch's Swift tests). Nothing here deploys.
+  watch-sets:
+    needs: guard-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build the sets and the fixture
+        run: node tools/build_watch_sets.js --out build/watch-sets --fixture build/watch-sets-fixture.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: watch-sets
+          path: build/
+          retention-days: 30
+
   deploy:
     needs: guard-and-test
     if: github.ref == 'refs/heads/main'
