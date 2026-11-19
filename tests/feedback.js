@@ -21,7 +21,8 @@ module.exports=async H=>{
     const cur=rows.find(x=>x.getAttribute('aria-current')==='true');
     assert(!cur||!cur.classList.contains('lm-hide'),'the current puzzle is never hidden');
     const css=read('shared/trainview.css');
-    assert(/\.tv \.list,\.tv \.list\.long,\.tv \.list\.longest\{max-height:none;min-height:0;overflow:visible\}/.test(css),'on phones the list is no longer a 300 px scrolling box');
+    assert(/\.tv \.list,\.tv \.list\.long,\.tv \.list\.longest\{max-height:none;min-height:0\}/.test(css),'on phones the list is no longer a 300 px scrolling box');
+    assert(!/\.list[^{}]*\{[^}]*overflow:visible/.test(css),'… and keeps overflow:auto: overflow:visible on a long list hung WebKit on Linux at 320 px (19 Nov 2026)');
   }
   { const {w}=await makePage(); await w.TacticsTab.ensure(); await sleep(100);
     const list=w.document.getElementById('t-list');

@@ -73,7 +73,9 @@ body[data-size="large"] .boardwrap{max-width:min(760px,100%)}
 /* Narrower windows: the coach card goes under the board; phones: one column, the board first */
 @media (max-width:1180px){.tv,.grid.tv{grid-template-columns:minmax(0,280px) minmax(0,1fr)}.tv .panel{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:860px){.tv,.grid.tv{grid-template-columns:minmax(0,1fr)!important}.tv>div:first-child{order:2}.tv>.panel{order:1}
-  .tv .list,.tv .list.long,.tv .list.longest{max-height:none;min-height:0;overflow:visible}   /* 18 Nov 2026: part of the page, not a box */
+  .tv .list,.tv .list.long,.tv .list.longest{max-height:none;min-height:0}   /* 18 Nov 2026: part of the page, not a box (no height
+     limit, so it never scrolls); 19 Nov 2026: overflow stays auto, since overflow:visible on the long list hung WebKit on Linux
+     at 320 px (the private Chess Lab's Drills page never finished loading) */
   .tv .list>.lm-hide{display:none!important}
   .tv .lmore{display:block;width:100%;margin-top:8px}}
 
