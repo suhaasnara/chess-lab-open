@@ -120,5 +120,26 @@ if(typeof window!=='undefined'&&typeof document!=='undefined'){
   if(window.ResizeObserver){ const ro=new ResizeObserver(padLater); const watch=()=>{ for(const e of document.querySelectorAll('.tvpin,[data-pinpad],.bbar')) if(!e.__tvro){ e.__tvro=1; ro.observe(e) } }; padLater.watch=watch; addEventListener('load',watch); addEventListener('hashchange',()=>setTimeout(watch,80)) } }
 /* true where the pinned layout is on (the page scrolls under the board; boxes with their own scrollbars are opened up) */
 function pinned(){ return !!(window.matchMedia&&matchMedia('(orientation:portrait) and (max-width:1099.98px)').matches) }
-window.TV={esc,chips,onChip,rate,row,dots,head,session,fitBoard,pick,onPick,bar,pin,pinned,pads,safeTop,repad:padLater};
+/* Lists on phones (18 Nov 2026): a list is part of the page, not a short scrolling box that cut off mid-row; it shows
+   LIST_STEP rows and a "Show more" button under it adds the next ones. The current row is always shown. Laptops and
+   wider windows keep the whole list in its own scrolling column. Every .tv list gets this, whichever page made it. */
+const LIST_STEP=20, LISTQ=window.matchMedia?matchMedia('(max-width:860px)'):null;
+function listMore(list){
+  if(list.__more) return; list.__more=true; let limit=LIST_STEP;
+  const b=document.createElement('button'); b.type='button'; b.className='btn sm lmore'; b.hidden=true;
+  list.insertAdjacentElement('afterend',b);
+  const apply=()=>{ const on=!!(LISTQ&&LISTQ.matches); let n=0, hid=0;
+    for(const x of list.children){ if(x.matches('.empty')) continue;
+      const hide=on&&n>=limit&&x.getAttribute('aria-current')!=='true'; x.classList.toggle('lm-hide',hide); if(hide) hid++; n++ }
+    b.hidden=!hid; if(hid) b.textContent=`Show more (${hid.toLocaleString()} more)`; };
+  b.addEventListener('click',()=>{ limit+=LIST_STEP; apply() });
+  new MutationObserver(apply).observe(list,{childList:true});
+  if(LISTQ&&LISTQ.addEventListener) LISTQ.addEventListener('change',apply);
+  apply();
+}
+function moreLists(){ document.querySelectorAll('.tv .list').forEach(listMore) }
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',moreLists); else moreLists();
+addEventListener('hashchange',()=>setTimeout(moreLists,50));   /* pages that build their list when first opened (Blind tactics) */
+
+window.TV={moreLists,esc,chips,onChip,rate,row,dots,head,session,fitBoard,pick,onPick,bar,pin,pinned,pads,safeTop,repad:padLater};
 })();

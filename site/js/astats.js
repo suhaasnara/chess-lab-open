@@ -275,10 +275,13 @@ window.AStats=(()=>{
         <span>${esc(m.san)} <span class="note">vs ${esc(oppName(m.game))}</span></span>
         <span class="pill ${m.drop>=0.3?'bad':'warn'}" title="Win%, from your side">${WinPct.change(m.before,m.drop,m.game.color)}</span>
         ${links(m.game,m.ply)}</div>`).join('')||`<p class="note">${rows.length?'None found. Clean play!':'Waiting for analyzed games.'}</p>`}</div></div>`;
-    return `${head}${bar}
+    /* 18 Nov 2026: the drills card right under the heading and its source line, above the filters: saving drills is
+       the most useful thing to do with a report, and it was easy to miss further down */
+    return `${head}
+      ${ctx.save(mistakes,toPunish,final,rows)}
+      ${bar}
       <p class="lead note">Your results, mistakes and the positions worth drilling, from your own games.</p>
       ${tiles}
-      ${ctx.save(mistakes,toPunish,final,rows)}
       ${Yearly.section(yearly)}
       <div class="repgrid">
         ${results}

@@ -485,7 +485,8 @@ section('t17: past the end of the book, Stockfish plays on; the end of a line sh
   assert(S.scored.length>=6&&S.scored.slice(-3).every(x=>x.s===1),'moves as good as Stockfish\u2019s count as right past the book (scores '+S.scored.map(x=>x.s).join(',')+')');
   assert(S.phase==='done'&&/Line complete/.test(S.endMsg),'the line runs to its full length (medium = 8 of your moves): '+S.log.length+' plies');
   const bar=w.document.getElementById('o-endbar');
-  assert(!bar.hidden&&/Line complete/.test(bar.textContent)&&w.document.getElementById('o-boardbox').className.includes('end-'),'the strip under the board shows the line is over');
+  assert(!bar.hidden&&/^(✓|\d+ miss)/.test(bar.textContent.trim())&&!/Line complete/.test(bar.textContent)&&w.document.getElementById('o-boardbox').className.includes('end-'),'the strip under the board shows the line is over: the outcome and the rating only (18 Nov 2026)');
+  assert(/Line complete/.test(w.document.getElementById('o-status').textContent),'… and the card under it says the rest');
   assert(!w.document.getElementById('o-endnext')&&!w.document.querySelector('#o-status .endnext'),'Next line is only in the button row (17 Nov 2026: no copy on the strip or the end card)');
   w.document.getElementById('o-newline').click(); await sleep(50);
   assert(bar.hidden,'Next line hides the strip');
@@ -2484,7 +2485,8 @@ section('t74: Analyze — the engine’s first choice is never a mistake; drills
 }
 
 await require('./native')(H);   /* the iPhone and Apple Watch app layer (shared/native.js, js/native.js) */
-await require('./about')(H);   /* About, privacy and licences (#about) */
+await require('./about')(H);
+await require('./feedback')(H);   /* the 18 Nov 2026 phone feedback */   /* About, privacy and licences (#about) */
 await require('./watchsets')(H);   /* the Apple Watch sets for the app (tools/build_watch_sets.js) */
 
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));

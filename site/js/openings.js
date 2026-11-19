@@ -530,7 +530,9 @@ function endLine(msg){
   /* 17 Nov 2026: each action has one home, the button row under the board (Next line, and Redo / Retry the miss, which join
      it when a line ends; tools() shows them). The end card and the strip under the board carry only the message. */
   const box=$('o-boardbox'); box.classList.remove('end-good','end-warn'); box.classList.add(S.misses.length?'end-warn':'end-good');
-  $('o-endtext').textContent=(S.misses.length?`${msg} ${S.misses.length} miss${S.misses.length>1?'es':''}`:`${msg} ✓ All right`)+(training()?'':` · ${delta>=0?'+':''}${delta}`);
+  /* 18 Nov 2026: the strip carries only the outcome and the rating change; the card under the board says the rest (it
+     used to repeat the card's "Line ended here" word for word) */
+  $('o-endtext').textContent=(S.misses.length?`${S.misses.length} miss${S.misses.length>1?'es':''}`:'✓')+(training()?'':` ${S.misses.length?'· ':''}${delta>=0?'+':''}${delta}`);
   $('o-endbar').hidden=false;
   $('o-endretry').querySelector('.lbl').textContent=new Set(S.misses.map(x=>x.at)).size>1?'Retry from 1st miss':'Retry the miss';
   draw(); renderSide(); renderBook(); renderEval();
