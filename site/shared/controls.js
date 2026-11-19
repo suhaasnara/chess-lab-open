@@ -14,7 +14,7 @@ window.Controls=(()=>{
       <div class="rng-track"><span class="rng-fill"></span><input type="range" class="rng-lo" min="${o.min}" max="${o.max}" step="${st}" aria-labelledby="${id}" aria-label="From">
       <input type="range" class="rng-hi" min="${o.min}" max="${o.max}" step="${st}" aria-labelledby="${id}" aria-label="To"></div></div>`;
     const lo=el.querySelector('.rng-lo'), hi=el.querySelector('.rng-hi'), val=el.querySelector('.rng-val'), fill=el.querySelector('.rng-fill');
-    const paint=()=>{ const a=+lo.value, b=+hi.value, span=o.max-o.min; val.textContent=a<=o.min&&b>=o.max?'any':`${a}–${b}`;
+    const paint=()=>{ const a=+lo.value, b=+hi.value, span=o.max-o.min; val.textContent=a<=o.min&&b>=o.max?'Any':`${a}–${b}`;
       fill.style.left=((a-o.min)/span*100)+'%'; fill.style.right=((o.max-b)/span*100)+'%' };
     const fix=which=>{ if(+lo.value>+hi.value){ if(which==='lo') hi.value=lo.value; else lo.value=hi.value } paint() };
     lo.addEventListener('input',()=>fix('lo')); hi.addEventListener('input',()=>fix('hi'));

@@ -50,6 +50,9 @@ jobs:
       - name: The 14 Nov 2026 phone fixes in ${{ matrix.browser }} (the bottom bar on phones and iPads, the pinned board, the reader's bar)
         if: ${{ !github.event.inputs.base }}
         run: cd tests/browser && node phonefix.js ${{ matrix.browser }} out/${{ matrix.browser }}/phonefix
+      - name: The 19 Nov 2026 finish pass on phones in ${{ matrix.browser }} (every page at iPhone size; overflow, overlap, squeezed or clipped text, capitals)
+        if: ${{ !github.event.inputs.base }}
+        run: cd tests/browser && node polish.js ${{ matrix.browser }} out/${{ matrix.browser }}/polish
       - name: Screenshots and summary
         if: always()
         uses: actions/upload-artifact@v4

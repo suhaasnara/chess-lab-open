@@ -131,7 +131,7 @@ function listMore(list){
   const apply=()=>{ const on=!!(LISTQ&&LISTQ.matches); let n=0, hid=0;
     for(const x of list.children){ if(x.matches('.empty')) continue;
       const hide=on&&n>=limit&&x.getAttribute('aria-current')!=='true'; x.classList.toggle('lm-hide',hide); if(hide) hid++; n++ }
-    b.hidden=!hid; if(hid) b.textContent=`Show more (${hid.toLocaleString()} more)`; };
+    b.hidden=!hid; if(hid) b.textContent=`Show ${hid.toLocaleString()} more`; };
   b.addEventListener('click',()=>{ limit+=LIST_STEP; apply() });
   new MutationObserver(apply).observe(list,{childList:true});
   if(LISTQ&&LISTQ.addEventListener) LISTQ.addEventListener('change',apply);

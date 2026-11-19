@@ -79,7 +79,7 @@ function renderFilters(){
 }
 function renderL(){
   const el=$('t-list'), p=prog(), list=daily(filtered());
-  $('t-listlabel').textContent=`${list.length.toLocaleString()} puzzle${list.length===1?'':'s'}${list.length>200?' · first 200 shown':''} · Next picks the next one`;
+  $('t-listlabel').textContent=`${list.length.toLocaleString()} puzzle${list.length===1?'':'s'}${list.length>200?' · showing the first 200':''}`;
   el.innerHTML=list.slice(0,200).map(z=>{ const st=p[z.id];
     return TV.row({badge:z.rating||'—',title:esc(Puzzles.title(z.id,themeName(z.motif),!!st,Puzzles.num(LIB,z.id))),meta:z.op?esc(opName(z.op)):'Lichess',
       right:TV.dots([[st?(st.ok?'good':'bad'):'','Puzzle']]),current:!!(S.cur&&S.cur.id===z.id),data:{id:z.id}}) }).join('');
@@ -121,7 +121,7 @@ function userMove(from,to,promo){
   if(!hit&&!test.in_checkmate()){
     if(S.step===(S.cur.pre!==false?1:0)&&!S.failedFirst&&!S.usedHint){ S.failedFirst=true; saveResult(S.cur.id,false); facts() }
     board.flash([from,to],'bad');
-    status('bad',`${m.san} isn’t it.`,'Try again, or use Hint (H).');
+    status('bad',`${m.san} isn’t it.`,'Try again, or press Hint.');
     return;
   }
   S.g.move({from,to,promotion:promo||'q'});
@@ -147,7 +147,7 @@ function hint(){
   if(!S.cur||S.solved) return;
   const exp=expected(); if(!exp) return;
   if(!S.usedHint&&!S.failedFirst){ S.usedHint=true; saveResult(S.cur.id,false) }
-  if(S.hintStage===0){ S.hintStage=1; board.setHint(exp.slice(0,2)); status('warn','Hint: this piece moves.','H again shows the move.') }
+  if(S.hintStage===0){ S.hintStage=1; board.setHint(exp.slice(0,2)); status('warn','Hint: this piece moves.','Press Hint again to see the move.') }
   else{ board.setHint(exp.slice(0,2),exp.slice(2,4)); status('warn','Answer: '+sanOf(S.g.fen(),exp),'') }
 }
 /* As in Chess Lab, the page opens on the first puzzle of the list (nothing is counted until a move is made) */

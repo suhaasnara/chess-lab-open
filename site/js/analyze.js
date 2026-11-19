@@ -313,7 +313,7 @@ function updateEstimate(){
     const P=pliesToAnalyse(m);
     if(!P){ t.textContent=''; continue }
     if(!P.online&&!P.games){ t.textContent=P.ready?'nothing to do: every game already has evals':''; continue }
-    if(!BENCH){ if(benching||FILES.length) t.textContent='measuring this device…'; else t.innerHTML='<button type="button" class="linkbtn" data-bench>estimate the time</button>'; continue }
+    if(!BENCH){ if(benching||FILES.length) t.textContent='Measuring this device…'; else t.innerHTML='<button type="button" class="linkbtn" data-bench>Estimate the time</button>'; continue }
     t.textContent=`≈ ${fmtDur(P.plies*BENCH[m]*CAL[m]+P.bc*2*BCF[m]*BENCH[m])}${P.online?' for 25 games without stored evals':` for ${P.games} game${P.games===1?'':'s'}`}`;
     t.title='Includes Blunder check (two searches for each of your biggest blunders, up to '+BCMAX+') after the games.' }
   /* the engine is measured only once there are games to analyse (or when asked): it downloads the engine */
@@ -331,7 +331,7 @@ async function run(site,user,blitz){
     if(site==='pgn'){
       if(!FILES.length) throw new Error('Choose your PGN file first.');
       const me=[].concat(user), M=merged(), nm=FILES.length===1?FILES[0].name:`${FILES.length} files`;
-      note(`Checking the moves of ${M.games.length} games in ${nm}…`,true); prog(0);
+      note(`Checking the moves of ${Help.n(M.games.length,'game')} in ${nm}…`,true); prog(0);
       const r=await PgnFile.toGamesAsync({games:M.games},me,(d,n)=>{ prog(d/n); note(`Checking the moves: ${d} of ${n} games in ${nm}…`,true) }); games=r.games.slice().reverse();   // newest first: recent results appear first
       const sk=r.skipped, skip=skipText(sk); LASTSKIP=sk.byFile; LASTCHECKS=PgnFile.checks(r.games); renderFiles();
       fileNote=`${games.length} of your games in ${nm}${skip?` (left out: ${skip})`:''}${M.dupes?`; ${M.dupes} game${M.dupes===1?'':'s'} found in two files counted once`:''}.`;
@@ -349,7 +349,7 @@ async function run(site,user,blitz){
     const engPlies=needEngine.slice(0,nEng).reduce((a,g)=>a+g.moves.length,0);
     const how=`${m==='deep'?'Deep':'Standard'} analysis, depth ${DEPTH[m]}`;
     note(site==='pgn'?`${fileNote} ${games.length-needEngine.length} already have evals${nEng?`; Stockfish is analyzing the other ${nEng} in your browser (${how}). You can stop any time: what is done is kept, and running it again carries on.`:'.'}`
-      :`${games.length} games.${nEng?` ${nEng} without stored evals — analyzing with Stockfish in your browser (${how}), this takes a while…`:''}`,true);
+      :`${Help.n(games.length,'game')}.${nEng?` ${nEng} without stored evals — analyzing with Stockfish in your browser (${how}), this takes a while…`:''}`,true);
     stopReq=false; if($('a-stop')) $('a-stop').hidden=!nEng;
     const rows=[], t0=Date.now(); let doneP=0, drawn=0, tick=Date.now();
     for(let i=0;i<games.length&&!stopReq;i++){
@@ -493,7 +493,7 @@ function saveCard(mistakes,toPunish,final,rows){
   const can=final&&(nm||np||nb);
   const what=[nm+np?`${nm+np} drill${nm+np===1?'':'s'}`:'',nb?`${nb} blunder check${nb===1?'':'s'}`:''].filter(Boolean).join(' and ');
   return `<div class="card asave"><div class="asavehead"><div><span class="label">Drills from these games${Help.q('A drill is the position before one of your costly moves: find a better move, judged by Stockfish. Punish drills are positions where your opponent erred and you didn’t make them pay. They go to the Drills tab (and Today) and come back until you solve them. A blunder check is one of your blunders asked the other way round: first spot what your opponent threatens, then find your move (Extra → Blunder check).')}</span>
-    <p class="note">${can?`${nm?`Your ${nm} costliest move${nm===1?'':'s'}`:''}${np?`${nm?', plus ':''}${np} position${np===1?'':'s'} where your opponent erred and you didn’t make them pay`:''}${nm+np?'. Train them in Drills.':''}${nb?` ${nb} of your blunders as blunder checks: spot the threat first, then your move.`:''}`:final?'No costly moves found in these games: nothing to save.':'Drills can be saved when the analysis finishes (or after Stop).'}</p></div>
+    <p class="note">${can?`${nm?(nm===1?'Your costliest move':`Your ${nm} costliest moves`):''}${np?`${nm?', plus ':''}${np} position${np===1?'':'s'} where your opponent erred and you didn’t make them pay`:''}${nm+np?(nm+np===1?'. Train it in Drills.':'. Train them in Drills.'):''}${nb?` ${nb} of your blunders as blunder checks: spot the threat first, then your move.`:''}`:final?'No costly moves found in these games: nothing to save.':'Drills can be saved when the analysis finishes (or after Stop).'}</p></div>
     ${can?`<button class="btn primary" id="a-savedrills">Save ${what}</button>`:''}</div>${setsHtml()}</div>`;
 }
 /* Before a drill is saved its position is searched again, deeper and with three lines (14 Nov 2026, audit item 2):
@@ -590,7 +590,7 @@ async function readFiles(list){
   for(const f of fs){ try{ note(`Reading ${f.name}…`,true); await new Promise(r=>setTimeout(r,20)); addFile(await f.text(),f.name) }catch(e){ bad.push(String(e.message||e)) } }
   LASTSKIP=null; LASTCHECKS=null; renderFiles();
   const n=FILES.reduce((a,f)=>a+f.parsed.games.length,0);
-  note(bad.length?bad.join(' '):`${n} games in ${FILES.length} file${FILES.length===1?'':'s'}. Check which name is you, then press Analyze.`);
+  note(bad.length?bad.join(' '):`${Help.n(n,'game')} in ${FILES.length} file${FILES.length===1?'':'s'}. Check which name is you, then press Analyze.`);
 }
 function srcUI(){ const f=$('a-site').value==='pgn'; document.querySelectorAll('#analyze [data-src]').forEach(e=>{ e.hidden=(e.dataset.src==='pgn')!==f }); if($('a-checks')) $('a-checks').hidden=!f||!(LASTCHECKS&&LASTCHECKS.length);
   $('a-pgnwho').hidden=!(f&&FILES.length); $('a-files').hidden=!(f&&FILES.length); $('a-go').textContent=f?'Analyze':'Fetch & analyze'; updateEstimate() }

@@ -26,6 +26,15 @@ window.Help=(()=>{
   addEventListener('scroll',()=>{ if(openFor) closeAll() },{passive:true,capture:true});
   addEventListener('resize',()=>{ if(openFor) closeAll() });
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeAll() });
+  /* 19 Nov 2026: the "?" never sits alone at the start of a line. Each one is wrapped, with the word before it, in a span
+     that does not break (a word joiner alone is not enough in Safari: it still breaks before a button). */
+  const glue=b=>{ if(b.dataset.glued) return; b.dataset.glued='1'; const t=b.previousSibling;
+    if(!t||t.nodeType!==3) return; const m=t.textContent.match(/\S+\s*$/); if(!m) return;
+    const tail=t.splitText(t.textContent.length-m[0].length), w=document.createElement('span'); w.className='qglue';
+    b.parentNode.insertBefore(w,tail); w.appendChild(tail); w.appendChild(b) };
+  const glueIn=root=>{ if(root.nodeType!==1) return; if(root.classList.contains('qhelp')) glue(root); root.querySelectorAll('.qhelp').forEach(glue) };
+  const start=()=>{ glueIn(document.body); new MutationObserver(ms=>{ for(const m of ms) for(const x of m.addedNodes) glueIn(x) }).observe(document.body,{childList:true,subtree:true}) };
+  if(document.body) start(); else document.addEventListener('DOMContentLoaded',start);
   const n=(k,one,many)=>`${k} ${k===1?one:(many||one+'s')}`;
   return {q,closeAll,n};
 })();

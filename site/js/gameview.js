@@ -104,8 +104,8 @@ function moveText(i){ const m=S.marks[i], who=mover(i)===S.game.color?'you':'you
 function status(){
   const p=S.p, el=$('gv-status'), ev=p>0&&S.evs&&S.evs[p-1]!=null?S.evs[p-1]:null;
   let h;
-  if(S.focus!=null&&p===S.focus) h=`<strong>The moment: move ${no(p)}</strong>In the game: ${moveText(p)}. → plays it.`;
-  else if(p===0) h=`<strong>Start of the game.</strong>→ steps through the moves; tap any move or the graph.`;
+  if(S.focus!=null&&p===S.focus) h=`<strong>The moment: move ${no(p)}</strong>In the game: ${moveText(p)}. Press › to see it played.`;
+  else if(p===0) h=`<strong>Start of the game.</strong>Press › to step through the moves, or tap any move or the graph.`;
   else h=`<strong>After ${no(p-1)}${esc(S.sans[p-1])}</strong>${moveText(p-1)}.`;
   const m=S.focus!=null&&p===S.focus?S.marks[p]:p>0?S.marks[p-1]:null;
   el.className='status'+(m&&m.kind==='blun'||m&&m.kind==='mist'?' bad':m&&m.kind==='inacc'?' warn':'');

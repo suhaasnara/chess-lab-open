@@ -15,7 +15,7 @@ module.exports=async H=>{
     const t=s.textContent.replace(/\s+/g,' ');
     assert(/We collect nothing/.test(t)&&/no accounts, no analytics, no ads, no tracking and no cookies/.test(t),'the privacy policy says plainly that nothing is collected');
     assert(/In effect since \d+ \w+ 20\d\d/.test(t),'… and when it took effect');
-    for(const [part,lic] of [['Stockfish','GPL-3.0'],['chess.js','BSD-2-Clause'],['cburnett','GPLv2+'],['maple','AGPL-3.0+'],['Lichess puzzles','CC0'],['fonts','SIL Open Font License']]){
+    for(const [part,lic] of [['Stockfish','GPL-3.0'],['chess.js','BSD-2-Clause'],['cburnett','GPLv2+'],['Maple board','AGPL-3.0+'],['Lichess puzzles','CC0'],['fonts','SIL Open Font License']]){
       const row=[...s.querySelectorAll('#ab-licences tr')].find(r=>r.textContent.includes(part));
       assert(row&&row.textContent.includes(lic),`licence row: ${part}, ${lic}`) }
     assert(d.querySelector('footer a[href="#about"]')&&d.querySelector('#settings a[href="#about"]'),'linked from the footer and from Settings');

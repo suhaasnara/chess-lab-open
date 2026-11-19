@@ -12,9 +12,9 @@
 .keystable{border-collapse:collapse;margin:8px 0}.keystable td{padding:4px 10px 4px 0;vertical-align:top}
 .keystable kbd{display:inline-block;min-width:2.2em;text-align:center;padding:1px 6px;border:1px solid var(--line);border-radius:4px;font:600 12px/1.6 var(--sans);background:var(--band)}
 /* "?" help beside a stat (shared/help.js) */
-.qhelp{display:inline-grid;place-items:center;width:18px;height:18px;margin-left:4px;padding:0;border:1px solid var(--line);border-radius:50%;background:var(--white);color:var(--muted);font:600 11px/1 var(--sans);cursor:help;vertical-align:middle}
+.qglue{white-space:nowrap}.qhelp{display:inline-grid;place-items:center;width:18px;height:18px;margin-left:4px;padding:0;border:1px solid var(--line);border-radius:50%;background:var(--white);color:var(--muted);font:600 11px/1 var(--sans);cursor:help;vertical-align:middle}
 .qhelp:hover,.qhelp:focus-visible{color:var(--head);border-color:var(--muted)}
-.qpop{position:fixed;z-index:1000;display:block;margin:0;padding:8px 10px;max-width:320px;background:var(--callout);color:var(--ink);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 6px 20px rgba(0,0,0,.18);font:400 13px/1.4 var(--sans);letter-spacing:0;text-transform:none;text-align:left;white-space:normal}
+.qpop{position:fixed;z-index:1000;display:block;margin:0;padding:8px 10px;max-width:320px;background:var(--white);color:var(--ink);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 6px 20px rgba(0,0,0,.18);font:400 13px/1.4 var(--sans);letter-spacing:0;text-transform:none;text-align:left;white-space:normal}
 /* "needs internet" card (shared/net.js) */
 .needs-net p{margin:4px 0}
 /* Dropdowns that match the site (native behaviour kept, so phones still get their own picker). Site rules after this win. */

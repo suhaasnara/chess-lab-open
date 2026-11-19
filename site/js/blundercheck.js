@@ -39,6 +39,7 @@ function render(){
   if(!L.length) el.innerHTML='<p class="empty">No positions yet. Run <a href="#analyze"><b>Analyze my games</b></a>: after the games, it finds the threat you missed in each of your biggest blunders. Save them with your drills and they come here.</p>';
   else if(!shown.length) el.innerHTML='<p class="empty">Nothing here: every position is done for now. Solved ones come back after 3, 7 and 21 days.</p>';
   for(const id of ['bc-next','bc-show']) $(id).disabled=!L.length;
+  $('blundercheck').classList.toggle('nodata',!L.length&&!S.cur);   /* 19 Nov 2026: no positions yet, so no empty board and no buttons that do nothing */
   if(!S.cur){ $('bc-head').innerHTML=''; $('bc-reveal').innerHTML=''; $('bc-lichess').hidden=true }
 }
 function open(d){
@@ -75,7 +76,7 @@ function move(f,t,p){
       say('good',`✓ ${esc(m.san)}${m.san!==d.threat?` (and ${esc(d.threat)} is the strongest)`:''}.`,'That’s the danger.');
       S.firstTry=true; const id=d.id; timer=setTimeout(()=>{ if(S.cur&&S.cur.id===id&&S.phase==='threat') toMove() },1300);
     } else { S.firstTry=false; S.okThreat=false; board.set(new Chess(d.null),{last:null}); board.flash([f,t],'bad');
-      say('bad',`✗ ${esc(sanOf(d.null,u))} isn’t it.`,'Look for what they gain if you ignore them. Try again, or Show the threat.') }
+      say('bad',`✗ ${esc(sanOf(d.null,u))} isn’t it.`,'Look for what they gain if you ignore them. Try again, or press Show the threat.') }
     return;
   }
   const good=d.goods.some(x=>x.slice(0,4)===u.slice(0,4)), game=d.playedUci.slice(0,4)===u.slice(0,4);

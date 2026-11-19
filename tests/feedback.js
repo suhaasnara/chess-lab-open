@@ -15,7 +15,7 @@ module.exports=async H=>{
     const list=d.getElementById('t-list'), rows=[...list.children], shown=rows.filter(x=>!x.classList.contains('lm-hide'));
     const more=list.nextElementSibling;
     assert(rows.length>40&&shown.length<=21&&shown.length>=20,`the Tactics list shows 20 of ${rows.length} rows (and the current one)`);
-    assert(more&&more.classList.contains('lmore')&&!more.hidden&&/Show more \(\d/.test(more.textContent),'… with "Show more" under it, saying how many are left');
+    assert(more&&more.classList.contains('lmore')&&!more.hidden&&/^Show [\d,]+ more$/.test(more.textContent.trim()),'… with "Show more" under it, saying how many are left');
     more.click();
     assert(rows.filter(x=>!x.classList.contains('lm-hide')).length>=40,'… which adds the next 20');
     const cur=rows.find(x=>x.getAttribute('aria-current')==='true');

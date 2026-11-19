@@ -125,6 +125,7 @@ function render(){
   renderList();
   const v=$('p-view'), sh=$('p-sheet'); sh.hidden=!S.sheet; $('p-grid').hidden=S.sheet;
   const p=S.pid&&pdata(S.pid);
+  $('p-grid').classList.toggle('intro',!p);   /* phones: the intro reads first (19 Nov 2026: it sat under the empty list) */
   if(!p){ v.innerHTML='<div class="boardwrap"><div class="card"><span class="label">Players</span><h2>Scout an opponent</h2><p class="note">Add a player to see what they play with White and Black, browse their moves on a board, train against their openings and print a pre-round sheet.</p></div></div><div class="side"></div>'; if(S.board) S.board=null; return }
   if(S.sheet){ sh.innerHTML=sheetHtml(p); return }
   const rw=record(p,'w'), rb=record(p,'b'), col=S.color, G=gamesOf(p), span=G.length?`${esc(G[G.length-1].d)} to ${esc(G[0].d)}`:'no games in this window';

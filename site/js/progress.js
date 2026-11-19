@@ -65,6 +65,7 @@ function charts(withStats){
   const ops=withStats.filter(x=>x.st.history.length).sort((a,b)=>b.st.lines-a.st.lines);
   sel.innerHTML=ops.map(({o})=>`<option value="${esc(o.id)}">${esc(o.name)}</option>`).join('')||'<option value="">—</option>';
   if(ops.some(x=>x.o.id===cur)) sel.value=cur;
+  sel.hidden=!ops.length;
   const pick=ops.find(x=>x.o.id===sel.value);
   lineChart($('p-opchart'),pick?pick.st.history.map(h=>[h.t,h.r]):[],{empty:'Train a few lines in Rated mode to see your opening rating move.',label:'rating'});
   { const n=(rating().n||0); lineChart($('p-tacchart'),n>=TAC_MIN?(Store.get('tac-history')||[]).map(h=>[h.t,h.r]):[],{empty:`Solve ${TAC_MIN} puzzles (first try counts) to see your puzzle rating${n?` — ${n} so far`:''}.`,label:'puzzle rating'}) }
@@ -87,7 +88,7 @@ function render(){
     <div class="stat"><b>${withStats.reduce((a,x)=>a+x.st.lines,0)}</b><span class="note">opening line${withStats.reduce((a,x)=>a+x.st.lines,0)===1?'':'s'} trained</span></div>
     <div class="stat"><b>${tac.n>=TAC_MIN?tac.r:'–'}</b><span class="note">puzzle rating (${tac.n>=TAC_MIN?Help.n(tac.n,'rated puzzle'):`after ${TAC_MIN} rated puzzles; ${tac.n} so far`})${Help.q('Elo against each puzzle’s Lichess rating, first try only. It shows once you have solved or missed '+TAC_MIN+' puzzles, so one lucky puzzle can’t set it.')}</span></div>
     <div class="stat"><b>${tsolved}</b><span class="note">${tsolved===1?'puzzle':'puzzles'} solved</span></div>
-    ${(()=>{ const b=BlindTactics.stats(Store.get('blind-progress'),Store.get('blind-rating')); return `<div class="stat"><b>${b.rating==null?'–':b.rating}</b><span class="note">Blind rating · ${b.solved} solved${b.avgPlies?` · ${b.avgPlies} hidden plies on average`:''}${Help.q('Blind tactics (Extra): Elo against each puzzle’s Lichess rating, first try only; a peek counts as a miss. The average is over the puzzles you solved, at the number of hidden plies you had set.')}</span></div>` })()}
+    ${(()=>{ const b=BlindTactics.stats(Store.get('blind-progress'),Store.get('blind-rating')); return `<div class="stat"><b>${b.rating==null?'–':b.rating}</b><span class="note">blind rating · ${b.solved} solved${b.avgPlies?` · ${b.avgPlies} hidden plies on average`:''}${Help.q('Blind tactics (Extra): Elo against each puzzle’s Lichess rating, first try only; a peek counts as a miss. The average is over the puzzles you solved, at the number of hidden plies you had set.')}</span></div>` })()}
     <div class="stat"><b>${Object.values(dp).filter(x=>x.ok).length} / ${dr.length}</b><span class="note">game drills solved</span></div>
     ${bcs.length?`<div class="stat"><b>${bcs.filter(d=>bp[d.id]&&bp[d.id].ok).length} / ${bcs.length}</b><span class="note">blunder checks passed (<a href="#blundercheck">Blunder check</a>)${Help.q('Passed: both steps right on the first try (the threat, then your move). A passed position comes back after 3, 7 and 21 days.')}</span></div>`:''}
     <div class="stat"><b>${eg.solved} / ${eg.total||'–'}</b><span class="note">endgames solved</span></div>`;

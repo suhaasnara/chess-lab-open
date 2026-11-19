@@ -38,7 +38,7 @@ function init(){
   for(const r of ROWS) if(!order.some(x=>x[1]===r)) order.push([null,r]);
   for(const [group,r] of order){
     if(group){ const h=document.createElement('h3'); h.className='setgroup'; h.textContent=group; el.appendChild(h) }
-    const row=document.createElement('div'); row.className='setrow';
+    const row=document.createElement('div'); row.className='setrow'+(r.k==='shapeColor'?' mouseonly':'');
     const sel=document.createElement('select');
     for(const [v,name] of r.opts){ const o=document.createElement('option'); o.value=v; o.textContent=name; sel.appendChild(o) }
     sel.value=String(Settings.get(r.k));

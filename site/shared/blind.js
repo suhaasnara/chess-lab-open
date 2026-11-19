@@ -153,11 +153,11 @@ window.BlindTactics=(()=>{
     const ordered=()=>{ const p=prog(), l=daily(filtered()); return l.filter(z=>p[z.id]&&due(p[z.id])).concat(l.filter(z=>!p[z.id]),l.filter(z=>p[z.id]&&!due(p[z.id]))) };
     function renderList(){
       const el=q('list'), p=prog(), list=ordered();
-      q('listlabel').textContent=`${list.length.toLocaleString()} puzzle${list.length===1?'':'s'}${list.length>200?' · first 200 shown':''} · Next picks the next one`;
+      q('listlabel').textContent=`${list.length.toLocaleString()} puzzle${list.length===1?'':'s'}${list.length>200?' · showing the first 200':''}`;
       el.classList.toggle('isempty',!list.length);
       el.innerHTML=list.length?list.slice(0,200).map(z=>{ const r=p[z.id], done=!!r&&!(S.cur&&S.cur.id===z.id&&!S.solved&&!S.gaveUp);   /* the puzzle on the board: no theme until this try ends */
         return TV.row({badge:z.rating,title:esc(Puzzles.title(z.id,themeName(z.motif),done,Puzzles.num(S.lib,z.id))),
-          meta:[r&&due(r)?'<span class="tag info">review</span>':'',r&&r.a?'peeked':''].filter(Boolean).join(' · ')||(r?'done':'not tried'),   /* 14 Nov: never how many moves the solution has (that is part of the puzzle) */
+          meta:[r&&due(r)?'<span class="tag info">Review</span>':'',r&&r.a?'Peeked':''].filter(Boolean).join(' · ')||(r?'Done':'Not tried'),   /* 14 Nov: never how many moves the solution has (that is part of the puzzle) */
           right:TV.dots([[r?(r.ok?'good':'bad'):'','Puzzle']]),current:!!(S.cur&&S.cur.id===z.id),data:{id:z.id}}) }).join('')
         :'<p class="empty">No puzzles match. Widen the rating range, pick Any solution length, or Any status.</p>';
     }
@@ -283,7 +283,7 @@ window.BlindTactics=(()=>{
       S.gaveUp=true; const z=S.cur;
       const sans=[], g=new Chess(S.puzzleFen); for(const u of z.sol){ const m=g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||undefined}); if(m) sans.push(m.san) }
       S.log=sans.map((san,i)=>({san,you:i%2===0})); renderLine(); renderHead(); renderList();
-      say('bad','The solution: '+sans.join(' '),' Playing the hidden moves and the solution on the board (← → to step).');
+      say('bad','The solution: '+sans.join(' '),' The hidden moves and the solution play on the board.');
       endbar.show('bad','Given up','Next puzzle'); q('peek').disabled=q('giveup').disabled=true;
       replay(true); return true;
     }
