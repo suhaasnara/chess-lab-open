@@ -43,7 +43,8 @@ const BAR=`(sel,want)=>{ const out=[]; const host=document.querySelector(sel); c
   if(tops.size>1) out.push('buttons on '+tops.size+' lines');
   for(let i=0;i<vis.length;i++) for(let j=i+1;j<vis.length;j++){ const a=vis[i].getBoundingClientRect(), b=vis[j].getBoundingClientRect(); if(a.left<b.right-1&&b.left<a.right-1&&a.top<b.bottom-1&&b.top<a.bottom-1) out.push('overlap: '+vis[i].textContent.trim()+' / '+vis[j].textContent.trim()) }
   const filled=vis.filter(b=>b.classList.contains('primary')&&!b.disabled); if(filled.length>1) out.push(filled.length+' filled buttons');
-  const hosts=[host,...host.querySelectorAll('.bbar-host')].filter(h=>h.classList.contains('bbar-host')), pad=Math.max(0,...hosts.map(h=>parseFloat(getComputedStyle(h).paddingBottom)||0)); if(pad<r.height-8) out.push('page has no room under it ('+pad+' < '+Math.round(r.height)+')');
+  /* 18 Nov 2026: the room may be at the end of the page (body), so the footer clears the bar too */
+  const hosts=[host,...host.querySelectorAll('.bbar-host')].filter(h=>h.classList.contains('bbar-host')), pad=Math.max(0,parseFloat(getComputedStyle(document.body).paddingBottom)||0,...hosts.map(h=>parseFloat(getComputedStyle(h).paddingBottom)||0)); if(pad<r.height-8) out.push('page has no room under it ('+pad+' < '+Math.round(r.height)+')');
   return {problems:out,n:vis.length,fixed:true} }`;
 
 /* this site's pages: [name, hash, section, how to get a position on the board] */
