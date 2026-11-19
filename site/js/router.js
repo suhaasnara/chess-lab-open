@@ -14,7 +14,7 @@ TV.bar('#t-tools',{primary:'#t-next',more:['#t-lichess'],host:'#tactics'});
 TV.bar('#d-tools',{primary:'#d-next',more:['#d-lichess'],host:'#drills'});
 TV.bar('#bc-tools',{primary:'#bc-next',more:['#bc-lichess'],host:'#blundercheck'});
 TV.bar('#cc-tools',{prev:'#cc-prev',next:'#cc-fwd',primary:['#cc-submit','#cc-next'],note:'#cc-step',more:['#cc-reset','#cc-flip','#cc-lichess'],host:'#calc'});
-TV.bar('#g-tools',{prev:'#g-prev',next:'#g-next',primary:'#g-nextgame',inner:'#g-nav',note:'#g-score',more:['#g-restart','#g-flip','#g-show'],host:'#guess'});
+TV.bar('#g-tools',{prev:'#g-prev',next:'#g-next',primary:'#g-nextgame',inner:'#g-nav',note:'#g-score',more:['#g-restart','#g-flip'],host:'#guess'});   /* Read the game stays in the bar (18 Nov 2026) */
 /* Phones and upright iPads: the board stays under the tab row while the status, moves and notes scroll beneath it (TV.pin) */
 TV.pin('#cc-train','#cc-wrap'); TV.pin('#g-train','#g-wrap');
 /* the section on screen: shared/router.js with this site's views; the rest is this site's own work for each view */

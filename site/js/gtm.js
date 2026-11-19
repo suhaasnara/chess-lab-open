@@ -9,7 +9,7 @@
 (function(){
 let board=null, INDEX=null, endbar=null;
 const S={src:null,game:null,g:null,ply:0,pts:0,got:0,missed:0,alsoGood:0,done:false,busy:false,hintStage:0,rows:[],answered:false,view:null,read:false};
-/* view: the ply shown while reading the finished game (null = the live game); read: "Show the game" (no guessing, no score) */
+/* view: the ply shown while reading the finished game (null = the live game); read: "Read the game" (no guessing, no score) */
 
 function results(){ return Store.get('gtm-results')||{} }
 function saveResult(){ const r=results(); r[S.game.id]={pts:S.pts,max:S.game.maxpts,t:Date.now()}; Store.put('gtm-results',r) }
@@ -207,7 +207,7 @@ function drawGraph(){
 }
 /* The game so far (never past the current move): your moves marked ✓ (game move) / ≈ (just as good) / ✗ (missed), "book" for theory.
    Annotated games (game.notes {ply: {t: text, v: [side lines]}}, game.intro) show each move's note right after it, side lines
-   folded. Once the game is over (or "Show the game"), every move can be clicked, and ← → Home End step through it. */
+   folded. Once the game is over (or "Read the game"), every move can be clicked, and ← → Home End step through it. */
 /* side lines: each move a button (shared/varline.js), played from the position before the move it replaces (fen) */
 let NAV=null;   // the arrow keys through the lines (set up with the keys)
 function noteHtml(n,fen,prefix,after){
@@ -275,7 +275,7 @@ function readTools(){
   $('g-hint').hidden=on; backBtn();
   if(on){ $('g-prev').disabled=!S.vr&&S.view<=0; $('g-next').disabled=S.vr?S.vr.at>=S.vr.path.length:S.view>=g.moves.length }
 }
-/* "Show the game": skip the guessing and read the annotated game from the start (no score is saved) */
+/* "Read the game": skip the guessing and read the annotated game from the start (no score is saved) */
 function showGame(){
   const g=S.game; if(!g||S.done) return;
   S.gen++; S.read=true; S.done=true; S.busy=false;

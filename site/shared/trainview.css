@@ -73,7 +73,9 @@ body[data-size="large"] .boardwrap{max-width:min(760px,100%)}
 /* Narrower windows: the coach card goes under the board; phones: one column, the board first */
 @media (max-width:1180px){.tv,.grid.tv{grid-template-columns:minmax(0,280px) minmax(0,1fr)}.tv .panel{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:860px){.tv,.grid.tv{grid-template-columns:minmax(0,1fr)!important}.tv>div:first-child{order:2}.tv>.panel{order:1}
-  .tv .list,.tv .list.long,.tv .list.longest{max-height:300px;min-height:0}}
+  .tv .list,.tv .list.long,.tv .list.longest{max-height:none;min-height:0;overflow:visible}   /* 18 Nov 2026: part of the page, not a box */
+  .tv .list>.lm-hide{display:none!important}
+  .tv .lmore{display:block;width:100%;margin-top:8px}}
 
 /* Report pages (Progress): a title with its controls at the right, a one-paragraph summary, tiles, then sections */
 .report{margin-bottom:28px}
@@ -253,7 +255,9 @@ th.num{text-align:right}
   .bbar.bbar [data-t="more"]{display:none!important}   /* a page's own "more" toggle (the opening trainer's): the bar's ⋯ replaces it */
   .bbar.bbar.bb-open .bb-x:not([hidden]){display:inline-flex!important;flex:1 1 auto!important;margin-bottom:6px!important;border-color:var(--line);background:var(--white);padding:4px 12px!important}
   .bbar.bbar .bb-note{order:30!important;flex:0 0 100%;text-align:center;font-size:.78rem;color:var(--muted);background:none;border:0;padding:0 0 4px;white-space:normal}
-  .bbar-host{padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))!important}
+  /* the room for the fixed bar goes at the very end of the page (18 Nov 2026), so whatever follows the page (a site's
+     footer) is never under the bar either; it used to be the page's own bottom padding */
+  body:has(.bbar-host:not([hidden])){padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))!important}
 }
 @media (orientation:portrait) and (max-width:1099.98px),(orientation:landscape) and (max-height:499.98px){.bbar.bbar .btn.rd-open{display:inline-flex!important}}
 /* 17 Nov 2026: only where the row is the bar (the touch layouts above); this block used to reach laptops' button rows too */
