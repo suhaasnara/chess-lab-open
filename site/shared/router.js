@@ -32,7 +32,9 @@ window.Router=(()=>{
       /* the browser runs the callback at its next frame; if it doesn't draw one soon (a page it isn't painting), draw
          the tab anyway after 300 ms, once. Each run draws the tab the address names by then, so a late one never brings back an older tab */
       let done=false; const run=()=>{ if(done) return; done=true; const p=parse(location.hash); if(p.name!==shown) apply(p.name,p.view) };
-      try{ document.startViewTransition(run); setTimeout(run,300); return }catch(e){}
+      try{ const vt=document.startViewTransition(run);
+        for(const p of [vt.ready,vt.finished,vt.updateCallbackDone]) if(p&&p.catch) p.catch(()=>{});   /* a newer change skips this fade: the browser rejects these, harmlessly */
+        setTimeout(run,300); return }catch(e){}
     }
     apply(name,view);
   }
