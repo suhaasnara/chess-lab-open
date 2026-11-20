@@ -132,6 +132,58 @@ window.AStats=(()=>{
     return {ply:Math.min(g.moves.length,f.length-1),me:null,move:null,deep:true};   /* still in book after 24 plies */
   }
 
+  /* ---------- your prep: where your games leave your imported repertoires (20 Nov 2026, the kit's "Your prep in your
+     games" for Open) ----------
+     Every game is walked through all your imported repertoires of its colour together, as one answer key (transpositions
+     count: positions, not move orders). It stops at the first position none of them holds, or at the first move none of
+     them has there: `you` (your move; your very first move outside them all is `other`: you chose another opening),
+     `opp` (the opponent's move), or `end` (the files have nothing after the last prepared move). No engine needed. */
+  let PREPS=null, PREPKEY='';
+  function preps(){ const idx=Store.get('reps-index')||[], key=JSON.stringify(idx);
+    if(key!==PREPKEY){ PREPKEY=key; PREPS=idx.map(r=>{ const d=Store.get('rep-'+r.id), m=new Map();
+      if(d&&d.pos) for(const k in d.pos) m.set(k,String(d.pos[k]).split(' ').filter(Boolean));
+      return {id:r.id,name:r.name||'Repertoire',col:r.side==='black'?'b':'w',m} }).filter(r=>r.m.size) }
+    return PREPS }
+  const sanOf=(fen,uci)=>{ try{ const m=new Chess(fen).move({from:uci.slice(0,2),to:uci.slice(2,4),promotion:uci[4]||undefined}); return m?m.san:uci }catch(e){ return uci } };
+  function prepOf(g,R=preps()){
+    const mine=R.filter(r=>r.col===g.color); if(!mine.length) return null;
+    const c=new Chess(); let ply=0, ran=0, last=null;
+    for(;ply<g.moves.length;ply++){
+      const fen=c.fen(), k=posId(normKey(fen)), hold=mine.filter(r=>r.m.has(k));
+      if(!hold.length) break;
+      const m=c.move(g.moves[ply],{sloppy:true}); if(!m) return null;
+      const uci=m.from+m.to+(m.promotion||''), ok=hold.filter(r=>r.m.get(k).includes(uci));
+      if(!ok.length){ const me=(ply%2===0?'w':'b')===g.color;
+        if(me&&ran===0&&ply<2) return {who:'other',ply};
+        return {who:me?'you':'opp',ply,move:Math.floor(ply/2)+1,fen,san:m.san,k,rep:hold[0],
+          prep:[...new Set(hold.flatMap(r=>r.m.get(k)))].map(u=>sanOf(fen,u))} }
+      ran++; last=ok[0];
+    }
+    return ran?{who:'end',ply,move:Math.floor(ply/2)+1,rep:last}:null;
+  }
+  function prepCard(all){
+    const R=preps();
+    if(!R.length) return `<div class="card"><span class="label">Your prep in your games</span><p class="note">Import your repertoire in Openings (your own PGN or a Lichess study) to see where these games leave it: your moves, and the opponents' replies you haven't prepared.</p></div>`;
+    const W=all.map(g=>[g,prepOf(g,R)]).filter(([,x])=>x&&x.who!=='other');
+    if(!W.length) return `<div class="card"><span class="label">Your prep in your games</span><p class="note">None of these games reached your imported repertoires.</p></div>`;
+    const you=W.filter(([,x])=>x.who==='you'), opp=W.filter(([,x])=>x.who==='opp'), end=W.filter(([,x])=>x.who==='end');
+    const byRep=new Map(); for(const [,x] of W){ const n=x.rep.name; if(!byRep.has(n)) byRep.set(n,{n:0,you:0,opp:0,end:0}); const o=byRep.get(n); o.n++; o[x.who]++ }
+    /* the same slip in several games is one row: by position and move, newest game first */
+    const group=L=>{ const m=new Map(); for(const [g,x] of L){ const k=x.k+'|'+x.san; if(!m.has(k)) m.set(k,{x,gs:[]}); m.get(k).gs.push(g) }
+      return [...m.values()].map(o=>(o.gs.sort((a,b)=>(b.ts||0)-(a.ts||0)),o)).sort((a,b)=>b.gs.length-a.gs.length||(b.gs[0].ts||0)-(a.gs[0].ts||0)) };
+    const num=x=>`${x.move}${x.ply%2?'…':'.'}`;
+    const row=(o,mine)=>{ const x=o.x, g=o.gs[0];
+      return `<div class="gamerow"><span class="src">${esc(g.date||'')}</span>
+        <span>${mine?`You played <b>${esc(num(x)+x.san)}</b>, your prep: <b>${esc(x.prep.join(', '))}</b>`:`They played <b>${esc(num(x)+x.san)}</b>, not in your prep`} <span class="note">${esc(x.rep.name)}${o.gs.length>1?` · ${o.gs.length} games`:` · vs ${esc(oppName(g))}`}</span></span>
+        ${links(g,x.ply)}</div>` };
+    const Y=group(you), O=group(opp);
+    return `<div class="card wide"><span class="label">Your prep in your games${q('Each game is walked through your imported repertoires of its colour (Openings → your own PGN or a Lichess study), as one answer key: transpositions count. It stops at the first move none of them has: yours (you left your prep) or the opponent\'s (a reply you haven\'t prepared). A game whose first move is already outside them is another opening and is left out.')}</span>
+      <p class="note">${W.length} game${W.length===1?'':'s'} reached your repertoires: you left your prep first in <b>${you.length}</b>${you.length?` (on average at move ${Math.round(you.reduce((a,[,x])=>a+x.move,0)/you.length)})`:''}, the opponent in <b>${opp.length}</b>, and ${end.length} ran to the end of your files.</p>
+      <div class="tablewrap"><table class="rtable atable"><thead><tr><th>Repertoire</th><th class="num">Games</th><th class="num">You left first</th><th class="num">Opponent left</th><th class="num">To the end</th></tr></thead><tbody>${[...byRep.entries()].sort((a,b)=>b[1].n-a[1].n).map(([n,o])=>`<tr><td>${esc(n)}</td><td class="num" data-l="Games">${o.n}</td><td class="num" data-l="You left first">${o.you}</td><td class="num" data-l="Opponent left">${o.opp}</td><td class="num" data-l="To the end">${o.end}</td></tr>`).join('')}</tbody></table></div>
+      ${Y.length?`<h4 class="ah4">Where you left your prep</h4><div>${Y.slice(0,12).map(o=>row(o,true)).join('')}</div>`:''}
+      ${O.length?`<h4 class="ah4">Replies you haven't prepared</h4><div>${O.slice(0,8).map(o=>row(o,false)).join('')}</div>`:''}</div>`;
+  }
+
   /* ---------- move quality ---------- */
   /* Each of your moves by the Win% it lost (Lichess's Win%, 0–100 from your side). The three worst classes are the
      site's (inaccuracy 5+, mistake 10+, blunder 15+ points); Best is under 1 point lost (the engine's move or one as
@@ -288,6 +340,7 @@ window.AStats=(()=>{
         ${openings}
         ${quality_}
         ${book}
+        ${prepCard(all)}
         ${timeChart(all,rows)}
         ${costly}
       </div>`;
@@ -305,6 +358,6 @@ window.AStats=(()=>{
   function change(e){ const s=e.target.closest('[data-af]'); if(!s) return false;
     let v=s.value; if(s.dataset.af==='rmin'||s.dataset.af==='rmax') v=v===''?'':String(Math.max(0,Math.min(3500,+v||0)));
     F[s.dataset.af]=v; return true }
-  return {render,click,change,filter,quality,leftBook,perfs,perfCell,bandsOf,classOf,
+  return {render,click,change,filter,quality,leftBook,prepOf,perfs,perfCell,bandsOf,classOf,
     get last(){ return last }, get F(){ return F }, set F(v){ F={...F0,...v} }, reset(){ F={...F0}; BANDCOL='all'; OPCOL='w'; OPEN=null }};
 })();
