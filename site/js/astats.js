@@ -142,7 +142,7 @@ window.AStats=(()=>{
   function preps(){ const idx=Store.get('reps-index')||[], key=JSON.stringify(idx);
     if(key!==PREPKEY){ PREPKEY=key; PREPS=idx.map(r=>{ const d=Store.get('rep-'+r.id), m=new Map();
       if(d&&d.pos) for(const k in d.pos) m.set(k,String(d.pos[k]).split(' ').filter(Boolean));
-      return {id:r.id,name:r.name||'Repertoire',col:r.side==='black'?'b':'w',m} }).filter(r=>r.m.size) }
+      return {id:r.id,name:r.name||'Repertoire',col:r.side==='black'?'b':'w',startFen:r.startFen||null,m} }).filter(r=>r.m.size) }
     return PREPS }
   const sanOf=(fen,uci)=>{ try{ const m=new Chess(fen).move({from:uci.slice(0,2),to:uci.slice(2,4),promotion:uci[4]||undefined}); return m?m.san:uci }catch(e){ return uci } };
   function prepOf(g,R=preps()){
@@ -175,7 +175,7 @@ window.AStats=(()=>{
     const row=(o,mine)=>{ const x=o.x, g=o.gs[0];
       return `<div class="gamerow"><span class="src">${esc(g.date||'')}</span>
         <span>${mine?`You played <b>${esc(num(x)+x.san)}</b>, your prep: <b>${esc(x.prep.join(', '))}</b>`:`They played <b>${esc(num(x)+x.san)}</b>, not in your prep`} <span class="note">${esc(x.rep.name)}${o.gs.length>1?` · ${o.gs.length} games`:` · vs ${esc(oppName(g))}`}</span></span>
-        ${links(g,x.ply)}</div>` };
+        ${mine&&!x.rep.startFen?`<button type="button" class="btn sm" data-pprac="${esc(x.rep.id)}" data-pk="${esc(x.k)}" data-ppath="${esc(g.moves.slice(0,x.ply).join(' '))}" title="Add it to this repertoire's review list and play it in Openings">Practise</button>`:'<span></span>'}${links(g,x.ply)}</div>` };
     const Y=group(you), O=group(opp);
     return `<div class="card wide"><span class="label">Your prep in your games${q('Each game is walked through your imported repertoires of its colour (Openings → your own PGN or a Lichess study), as one answer key: transpositions count. It stops at the first move none of them has: yours (you left your prep) or the opponent\'s (a reply you haven\'t prepared). A game whose first move is already outside them is another opening and is left out.')}</span>
       <p class="note">${W.length} game${W.length===1?'':'s'} reached your repertoires: you left your prep first in <b>${you.length}</b>${you.length?` (on average at move ${Math.round(you.reduce((a,[,x])=>a+x.move,0)/you.length)})`:''}, the opponent in <b>${opp.length}</b>, and ${end.length} ran to the end of your files.</p>
@@ -346,8 +346,15 @@ window.AStats=(()=>{
       </div>`;
   }
 
+  /* Practise (20 Nov 2026): the slip goes on its repertoire's review list in Openings (stats-<id>.mistakes, the list
+     "Review mistakes" draws from: found first try, it comes off), then Openings plays it (#openings/review/<id>/<key>) */
+  function practise(b){ const id=b.dataset.pprac, k=b.dataset.pk, path=(b.dataset.ppath||'').split(' ').filter(Boolean);
+    const st=Store.get('stats-'+id)||{}; st.mistakes=Array.isArray(st.mistakes)?st.mistakes:[];
+    if(!st.mistakes.some(m=>m.key===k)){ st.mistakes.push({key:k,path,added:new Date().toISOString().slice(0,10)}); st.mistakes=st.mistakes.slice(-40); Store.put('stats-'+id,st) }
+    location.hash='#openings/review/'+encodeURIComponent(id)+'/'+encodeURIComponent(k) }
   function click(e){
     const t=e.target;
+    const pr=t.closest('[data-pprac]'); if(pr){ practise(pr); return false }
     const c=t.closest('[data-afc]'); if(c){ F.col=c.dataset.afc; return true }
     if(t.closest('[data-afreset]')){ F={...F0}; return true }
     const b=t.closest('[data-bandcol]'); if(b){ BANDCOL=b.dataset.bandcol; return true }
