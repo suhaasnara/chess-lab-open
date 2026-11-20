@@ -45,7 +45,7 @@ function renderL(){
   if(!list.length) el.innerHTML=all.length?'<p class="empty">No drills match these filters.</p>':'<p class="empty">No drills yet. Run <a href="#analyze"><b>Analyze my games</b></a> first and save drills from your mistakes.</p>';
   const none=!all.length&&!S.cur;   /* nothing to train yet: no buttons that do nothing */
   for(const id of ['d-next','d-show','d-hint']) $(id).disabled=none;
-  $('d-lichess').hidden=none; $('d-gamecard').hidden=!S.cur;
+  $('d-lichess').hidden=none; $('d-gamecard').hidden=!S.cur; $('drills').classList.toggle('nodata',none);
   if(!S.cur) $('d-head').innerHTML='';
 }
 function load(d){
@@ -59,12 +59,12 @@ function load(d){
   const goal=playGoal(d);
   $('d-head').innerHTML=TV.head({kicker:`${isPunish(d)?'Punish · ':''}${esc(SITE[d.site]||d.site||'Your game')} · ${esc(d.date||'')}`,
     title:`vs ${esc(d.opp)}`,
-    chips:[d.color==='w'?'White':'Black',`<span class="mono">${fmtW(d.before)}</span>${Help.q('Stockfish’s eval of this position from White’s side, in pawns (+ favors White).')}`,
+    chips:[d.color==='w'?'White':'Black',`<span class="mono">${fmtW(d.before)}</span>${Help.q(Math.abs(d.before)>=50?'Stockfish sees a forced mate here: +M for White, −M for Black.':'Stockfish’s eval of this position from White’s side, in pawns (+ favors White).')}`,
       d.gameBest?'the game move was best':`Win% ${WinPct.change(d.before,d.drop,d.color)} in the game${Help.q(DROP_HELP)}`],
     extra:`<div class="seg mini" role="group" aria-label="Training mode"><button type="button" aria-pressed="true">Find the move</button><button type="button" id="d-playout" aria-pressed="false" title="${goal==='win'?'Continue against Stockfish from this position. You were winning before the slip: convert it.':'Continue against Stockfish from this position. Hold it: a draw or better counts.'}">Play it out: ${goal==='win'?'win it':'hold it'}</button></div>`});
   $('d-playout').addEventListener('click',playOut);
   $('d-facts').innerHTML=`<dt>Date</dt><dd>${esc(d.date)}</dd><dt>Opponent</dt><dd>${esc(d.opp)}</dd>
-    <dt>You played</dt><dd>${esc(d.played)}</dd><dt>Play it out</dt><dd>${playGoal(d)==='win'?'win from here':'don’t lose from here'}${Help.q('The goal comes from the eval before your slip: from +1.5 or better for you it is a win to convert; otherwise hold the position.')}</dd>${gameLinks(d)}`;
+    <dt>You played</dt><dd>${esc(d.played)}</dd><dt>Play it out</dt><dd>${playGoal(d)==='win'?'Win from here':'Don’t lose from here'}${Help.q('The goal comes from the eval before your slip: from +1.5 or better for you it is a win to convert; otherwise hold the position.')}</dd>${gameLinks(d)}`;
   $('d-lichess').href='https://lichess.org/analysis/'+encodeURIComponent(d.fen.replace(/ /g,'_'));
   renderL();
 }
@@ -104,7 +104,7 @@ async function userMove(from,to,promo){
   const drop=wc(bestP)-wc(mineP);
   if(drop<0.1) finish(m,true,`Good: about as strong as ${sanOf(S.g.fen(),a[0].uci)} (best).`);
   else{ board.flash([from,to],'bad'); saveResult(d.id,false);
-    status('bad',`${m.san} still gives away ${WinPct.pts(drop)} points of Win%.`,'Try again, or Show the answer.') }
+    status('bad',`${m.san} still gives away ${WinPct.pts(drop)} points of Win%.`,'Try again, or press Solution.') }
 }
 function finish(m,ok,text){
   S.g.move(m); S.done=true;
@@ -131,7 +131,7 @@ function gameLinks(d){
   const here=d.g&&AGames.has(d.g)?AGames.href(d.g,d.ply,H?'today':'drills'):'';
   const url=d.url&&/^https:\/\/(www\.)?(chess\.com|lichess\.org)\//.test(d.url)?d.url:'';
   if(!here&&!url) return '';
-  return `<dt>Game</dt><dd>${here?`<a href="${esc(here)}" id="d-gamelink">open the game at this move</a>`:''}${here&&url?' · ':''}${url?`<a href="${esc(url)}" target="_blank" rel="noopener">${/lichess/.test(url)?'Lichess':'Chess.com'} ↗</a>`:''}</dd>`;
+  return `<dt>Game</dt><dd>${here?`<a href="${esc(here)}" id="d-gamelink">Open the game at this move</a>`:''}${here&&url?' · ':''}${url?`<a href="${esc(url)}" target="_blank" rel="noopener">${/lichess/.test(url)?'Lichess':'Chess.com'} ↗</a>`:''}</dd>`;
 }
 const playGoal=d=>((d.before||0)*(d.color==='w'?1:-1))>=1.5?'win':'hold';
 const DROP_HELP=WinPct.HELP;
@@ -145,7 +145,7 @@ async function hint(){
   const d=S.cur; if(!d||S.done||S.busy) return;
   let u=d.best; if(!u){ const a=await SharedEngine.analyse(S.g.fen(),DEPTH,1,10000).catch(()=>null); u=a&&a[0]&&a[0].uci } if(!u) return;
   S.hinted=true; S.hintStage=Math.min(2,(S.hintStage||0)+1);
-  if(S.hintStage===1){ board.setHint(u.slice(0,2)); status('warn','Hint: this piece.','Press H again for the move. A hinted drill doesn’t count as solved.') }
+  if(S.hintStage===1){ board.setHint(u.slice(0,2)); status('warn','Hint: this piece.','Press Hint again for the move. A hinted drill doesn’t count as solved.') }
   else { board.setHint(u.slice(0,2),u.slice(2,4)); status('warn','Hint: '+sanOf(S.g.fen(),u),'Play it to finish. It doesn’t count as solved.') }
 }
 function next(){ if(H) return H.next(); const p=prog(); const d=drills().find(x=>!p[x.id]||!p[x.id].ok)||drills()[0]; if(d) load(d) }

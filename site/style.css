@@ -206,7 +206,7 @@ tr:last-child td{border-bottom:0}
 .atable th:not(:first-child),.atable td:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
 .repgrid .card.wide .atable th:first-child,.repgrid .card.wide .atable td:first-child{width:40%}
 .stat b.sm{font-size:1.6rem}
-@media (max-width:560px){.atable{table-layout:auto}.atable th:first-child,.atable td:first-child{width:auto}.atable th,.atable td{padding:8px 8px}}
+@media (max-width:560px){.atable{table-layout:auto}.atable th:first-child,.atable td:first-child,.repgrid .card.wide .atable th:first-child,.repgrid .card.wide .atable td:first-child{width:auto}.atable th,.atable td{padding:8px 8px}}
 .repgrid .mseg{margin-top:8px}
 .gamerow{display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center;padding:7px 10px;border-bottom:1px solid var(--line);font-size:.9rem}
 /* Analyze's costliest moments: date | move vs opponent | Win% | game link, in columns */
@@ -249,7 +249,7 @@ footer .inner{padding-block:18px;font-size:.85rem;color:var(--muted)}
 .watoday .walink{margin-left:auto;white-space:nowrap}
 .watoday .wtrow{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline;padding:4px 0;border-top:1px solid var(--line)}
 .watoday .wtrow:first-of-type{border-top:0}
-.watoday .wtlab{font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--blue);flex:0 0 auto;min-width:86px}
+.watoday .wtlab{font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--blue);flex:0 0 100%}.watoday .wtrow>.note{flex:0 0 100%}
 body.welcomed[data-view="today"] .hero{display:none}
 .tdhead{margin:4px 0 8px;font-size:.95rem}
 .drill.done{opacity:.6}.drill.done .src{color:var(--good)}
@@ -369,6 +369,10 @@ body.welcomed[data-view="today"] .hero{display:none}
   body.print-sheet #players .tv3{display:block}body.print-sheet #p-grid{display:none!important}body.print-sheet .card{border:1px solid #ccc;break-inside:avoid}
   body.print-sheet,body.print-sheet main.inner{background:#fff;color:#000;padding:0}
 }
+/* Drills and Blunder check with nothing saved yet: the list says how to get some; no empty board under it (19 Nov 2026) */
+section.nodata .grid>.panel{display:none}
+@media (hover:none) and (pointer:coarse){.mouseonly{display:none}}   /* right-click settings: no mouse, no row */
+@media (max-width:860px){#p-grid.intro{display:flex;flex-direction:column}#p-grid.intro>#p-view,#p-grid.intro>#p-view>*{order:-1}}
 /* Watch */
 .wawrap{max-width:1100px;margin:0}.waadd summary{cursor:pointer}
 #wa-search{border:1px solid var(--line);border-radius:var(--radius);padding:8px 11px;background:var(--white);width:100%}
@@ -384,6 +388,8 @@ body.welcomed[data-view="today"] .hero{display:none}
 .waprog{display:flex;align-items:center;gap:10px;margin-top:4px}.wst{font-size:.84rem;font-weight:600}.wst.good{color:var(--good)}.wst.warn{color:var(--head)}
 .wbar{flex:0 1 220px;height:5px;border-radius:3px;background:var(--line);overflow:hidden}.wbar i{display:block;height:100%;background:var(--blue-bg)}
 .wabm{margin:4px 0 6px;padding-left:18px}.watags summary{cursor:pointer}
+/* 19 Nov 2026, phones: the buttons go under the title (beside it, three buttons crushed a long title into a word a line) */
+@media (max-width:560px){.warow{grid-template-columns:minmax(0,1fr)}.wabtns{order:0}.wadetail{order:1}}
 a.drill{text-decoration:none}
 /* board display settings */
 body.no-coords .coord{display:none}body.no-last .sq.last{background:none}body.no-dests .sq.tgt::after{display:none}body.no-dests .sq.tgt:hover{background:none}
@@ -563,7 +569,7 @@ td.num,th.num{text-align:right;white-space:nowrap}
 }
 @media (hover:none) and (pointer:coarse) and (max-width:700px){
   #pl-setup .seg button,#pl-setup .chip{min-height:40px}
-  #a-est .linkbtn{display:inline-block;padding:11px 6px;margin:-6px 0}
+  #a-est .linkbtn{display:inline-block;padding:11px 6px;margin:0 -6px}
 }
 
 /* 17 Nov 2026: Play and the game view have the opening trainer's three columns (setup | board | moves). In one column

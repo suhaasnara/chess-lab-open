@@ -34,7 +34,7 @@ function renderList(){
     RNG=Controls.range($('cc-range'),{label:'Puzzle rating',min:lo,max:hi,step:100,lo:S.lo==null?lo:S.lo,hi:S.hi==null?hi:S.hi,onChange:(a,b)=>{ S.lo=a<=lo?null:a; S.hi=b>=hi?null:b; renderList() }}) }
   $('cc-lens').innerHTML=TV.chips('','len',LENS,S.len)+TV.chips('','st',STS,S.st);
   const L=list(), p=prog();
-  $('cc-count').textContent=LIB?Help.n(L.length,'exercise'):'';
+  $('cc-count').textContent=LIB?`${L.length.toLocaleString()} puzzle${L.length===1?'':'s'}`:'';
   $('cc-start').disabled=!L.length; $('cc-start').textContent=L.length?'Start'+(S.st==='all'||S.st==='unsolved'?' · next unsolved':' · first in this list'):'Start';
   const groups=[['4','4 moves'],['5','5 moves'],['6','6+ moves']].map(([k,n])=>{ const xs=(LIB||[]).filter(z=>k==='6'?mine(z)>=6:mine(z)===+k), done=xs.filter(z=>p[z.id]);
     const ok=done.filter(z=>p[z.id].score>=1).length, tn=done.filter(z=>p[z.id].secs), t=tn.reduce((a,z)=>a+p[z.id].secs,0);
@@ -113,7 +113,7 @@ async function submit(){
   const secs=Math.round((Date.now()-S.t0)/1000);
   record(z.id,score,secs); window.Native&&Native.verdict(tone);   /* the app's tap or buzz */
   const ss=sanLine(S.start,sol);
-  status(tone,head,`${fmt(secs)} · the solution is below; step through it with ← →.`);
+  status(tone,head,`${fmt(secs)} · the solution is below; step through it with ‹ ›.`);
   endbar.show(tone==='bad'?'bad':score>=1?'good':'warn',`${head} ${Math.round(score*100)}% · ${fmt(secs)}`,'Next exercise');
   $('cc-line').innerHTML=`<div><span class="label">Your line</span><br>${numbered(S.start,sanLine(S.start,S.line),i=>i<k?'ok':'miss')}</div>
     <div style="margin-top:8px"><span class="label">Solution</span><br><span class="ccsol">${numbered(S.start,ss,i=>i<k?'ok':'',true)}</span></div>`;

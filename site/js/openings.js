@@ -219,7 +219,7 @@ function newLine(review){
     S.tb=new Set(redo.seen); S.redoSeen=redo.seen }
   else { S.redoSeen=null; for(const san of (S.review?S.review.path:(S.op.moves||[]))){ const m=S.g.move(san,{sloppy:true}); if(!m) break; S.log.push({san:m.san,uci:m.from+m.to+(m.promotion||''),who:'book',before:S.fens[S.fens.length-1]}); S.fens.push(S.g.fen()) } }
   draw();
-  if(S.g.turn()!==myColor()) opponentMove(); else status('',S.review?'Review: a position you missed.':redo?'Redo: your move.':'Your move.',S.review?'Find the move you missed before. First try takes it off the list.':redo?'The opponent repeats his replies while you repeat your moves. Play something else where you went off the main line (Hint is H).':'Play your prep. Hint is H.');
+  if(S.g.turn()!==myColor()) opponentMove(); else status('',S.review?'Review: a position you missed.':redo?'Redo: your move.':'Your move.',S.review?'Find the move you missed before. First try takes it off the list.':redo?'The opponent repeats the same replies while you repeat your moves. Play something else where you left the main line.':'Play your prep.');
   renderSide(); renderBook(); renderEval();
 }
 /* Redo this line (D, or the button when a line ends): play the same line again. The opponent repeats last time's replies
@@ -431,8 +431,8 @@ async function userMove(from,to,promo){
       board.flash([from,to],'bad');
       /* Rated: the file's move stays behind Hint (14 Nov 2026, as on the private site: "try again" and the answer in one
          line made the retry pointless). Training names it, as before. */
-      status('bad',`${m.san} isn’t in your repertoire.`,training()?`Try again, or use Hint (H)${file.length?` — your file gives ${file.length>1?file.length+' moves':sanOf(fen,file[0])} here`:''}.`
-        :`Try again${file.length>1?` (your file has ${file.length} moves here)`:''}, or use Hint (H) to see ${file.length>1?'one':'the move'}.`);
+      status('bad',`${m.san} isn’t in your repertoire.`,training()?`Try again, or press Hint${file.length?` — your file gives ${file.length>1?file.length+' moves':sanOf(fen,file[0])} here`:''}.`
+        :`Try again${file.length>1?` (your file has ${file.length} moves here)`:''}, or press Hint to see ${file.length>1?'one':'the move'}.`);
       return;
     }
   }else{
@@ -472,7 +472,7 @@ async function userMove(from,to,promo){
       if(lid!==S.lineId) return;
       S.busy=false; tools();
       board.flash([from,to],'bad');
-      status('bad',verdictText,'Try again, or use Hint (H).');
+      status('bad',verdictText,'Try again, or press Hint.');
       return;
     }
   }
@@ -724,7 +724,7 @@ async function hint(){
     if(!u){ const a=await SharedEngine.analyse(fen,12,1,6000).catch(()=>null); u=a&&a[0]&&a[0].uci } }
   if(!u){ status('warn','No hint here.',''); return }
   if(S.op.rep) repRecord(fen,false);   /* a hint is a miss in the repertoire's record, so the opponent comes back to it (once per position) */
-  if(S.hintStage===0){ S.hintStage=1; board.setHint(u.slice(0,2)); status('warn','Hint: this piece moves.','Hint again (H) shows the move.') }
+  if(S.hintStage===0){ S.hintStage=1; board.setHint(u.slice(0,2)); status('warn','Hint: this piece moves.','Press Hint again to see the move.') }
   else{ board.setHint(u.slice(0,2),u.slice(2,4)); status('warn','Answer: '+sanOf(fen,u),'That move earns no rating now.');
     if(!scoredAt(fen)) S.scored.push({fen,s:0,d:await moveDifficulty(fen),hint:true}) }
 }

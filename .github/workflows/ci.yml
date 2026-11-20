@@ -16,6 +16,10 @@ jobs:
         with:
           node-version: 22
       - name: Headless tests
+        # 19 Nov 2026: the suite keeps every jsdom page it opens and already peaked near Node's default 4 GB heap
+        # (4.58 GB on main); the runner has 16 GB, so give it room instead of failing on the next test added.
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
         run: cd tests && npm ci --no-audit --no-fund && npm test
 
   # The Apple Watch sets for the public app (suhaasnara/chess-lab-open-app), as a downloadable artifact: the three sets

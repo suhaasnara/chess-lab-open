@@ -47,7 +47,7 @@ function render(){
   const chips=(el,key,opts)=>{ $(el).innerHTML=opts.map(([v,l])=>`<button type="button" class="chip" data-k="${key}" data-v="${esc(v)}" aria-pressed="${F[key]===v}">${l}</button>`).join('') };
   chips('wa-kind','kind',[['all','All'],['lecture',`Lectures ${n('lecture')}`],['fun',`Fun ${n('fun')}`]]);
   chips('wa-state','state',[['all','Any'],['new',`Unwatched ${s('new')}`],['progress',`In progress ${s('progress')}`],['watched',`Watched ${s('watched')}`]]);
-  $('wa-topic').innerHTML=`<option value="all">Topic: all</option>`+topics().map(o=>`<option value="${esc(o)}"${F.topic===o?' selected':''}>${esc(o)}</option>`).join('');
+  $('wa-topic').innerHTML=`<option value="all">All topics</option>`+topics().map(o=>`<option value="${esc(o)}"${F.topic===o?' selected':''}>${esc(o)}</option>`).join('');
   $('wa-topics').innerHTML=topics().filter(t=>t!=='—').map(t=>`<option value="${esc(t)}">`).join('');
   $('wa-series').innerHTML=[...new Set(A.map(v=>v.series).filter(Boolean))].map(t=>`<option value="${esc(t)}">`).join('');
   $('wa-view').innerHTML=VIEWS.map(([v,l])=>`<button type="button" class="chip" data-view="${v}" aria-pressed="${VIEW===v}">${l}</button>`).join('');

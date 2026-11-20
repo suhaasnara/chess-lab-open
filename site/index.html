@@ -147,7 +147,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
         <button class="btn sm" id="o-back" title="Take back your last move and the reply (B). In Rated, that position isn't rated again." disabled>Take back <kbd>B</kbd></button>
         <button class="btn sm icon navbtn" id="o-prev" aria-label="Previous move" title="Previous move (←)" disabled>&#8249;</button><button class="btn sm icon navbtn" id="o-next" aria-label="Next move" title="Next move (→)" disabled>&#8250;</button>
         <button class="btn sm" id="o-flip">Flip <kbd>F</kbd></button>
-        <button class="btn sm icon" id="o-type" type="button" aria-pressed="false" aria-controls="o-moveform" title="Type moves instead of dragging" aria-label="Type a move">&#9000;</button>
+        <button class="btn sm" id="o-type" type="button" aria-pressed="false" aria-controls="o-moveform" title="Type moves instead of dragging" aria-label="Type a move">Type a move</button>
         <button class="btn sm icon pinonly" id="o-more" type="button" aria-expanded="false" aria-label="More board tools" title="More: End line, Flip, type a move">&#8943;</button>
       </div>
       <form class="moveform" id="o-moveform" hidden>
@@ -397,7 +397,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
 <section id="drills" hidden>
   <div class="grid tv">
     <div>
-      <div class="osearch" id="d-searchwrap" hidden><label for="d-search" class="vh">Search drills</label><input type="search" id="d-search" placeholder="Search opponent  ( / )" autocomplete="off" spellcheck="false"></div>
+      <div class="osearch" id="d-searchwrap" hidden><label for="d-search" class="vh">Search drills</label><input type="search" id="d-search" placeholder="Search opponent" title="Search opponent (/)" autocomplete="off" spellcheck="false"></div>
       <div class="filters" id="d-filters"><div id="d-kinds"></div><div id="d-states"></div><div id="d-plats"></div></div>
       <div class="label tvlabel" id="d-listlabel"></div>
       <div class="list" id="d-list"></div>
@@ -411,7 +411,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
           <button class="btn sm primary" id="d-next">Next <kbd>N</kbd></button>
           <button class="btn sm" id="d-flip">Flip <kbd>F</kbd></button>
           <button class="btn sm" id="d-hint">Hint <kbd>H</kbd></button>
-          <button class="btn sm" id="d-show">Show the answer</button>
+          <button class="btn sm" id="d-show" title="Show the best move">Solution</button>
           <a class="btn sm" id="d-lichess" target="_blank" rel="noopener">Lichess &#8599;</a>
         </div>
       </div>
@@ -607,11 +607,11 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
     <div class="wafilters">
       <div class="chips" id="wa-view" role="group" aria-label="View"></div><div class="chips" id="wa-kind" role="group" aria-label="Kind"></div><div class="chips" id="wa-state" role="group" aria-label="Watched state"></div>
       <select id="wa-topic" aria-label="Topic"></select>
-      <span class="wasearch"><input type="search" id="wa-search" placeholder="Search videos  ( / )" aria-label="Search videos" autocomplete="off" spellcheck="false"></span>
+      <span class="wasearch"><input type="search" id="wa-search" placeholder="Search videos" title="Search videos (/)" aria-label="Search videos" autocomplete="off" spellcheck="false"></span>
     </div>
     <details class="card waadd" id="wa-addcard">
       <summary>Add a video</summary>
-      <div class="moverow" style="margin-top:8px"><input type="text" id="wa-aurl" placeholder="YouTube link (a &amp;t= position is kept)" aria-label="YouTube link" autocomplete="off" spellcheck="false"><button class="btn sm" id="wa-aget" type="button" title="Ask YouTube for the title and channel">Get title</button></div>
+      <div class="moverow" style="margin-top:8px"><input type="text" id="wa-aurl" placeholder="YouTube link" aria-label="YouTube link" autocomplete="off" spellcheck="false"><button class="btn sm" id="wa-aget" type="button" title="Ask YouTube for the title and channel">Get title</button></div>
       <div class="row2" style="margin-top:8px">
         <label class="field">Title <input type="text" id="wa-atitle"></label>
         <label class="field">Series (a course or playlist) <input type="text" id="wa-aser" list="wa-series" placeholder="optional"></label>
@@ -726,7 +726,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
         <tr><td>Stockfish 18 (the engine)</td><td>GPL-3.0</td></tr>
         <tr><td>chess.js 0.10.3</td><td>BSD-2-Clause</td></tr>
         <tr><td>cburnett pieces (Colin M.L. Burnett, via Lichess)</td><td>GPLv2+</td></tr>
-        <tr><td>maple board (Lichess)</td><td>AGPL-3.0+</td></tr>
+        <tr><td>Maple board (Lichess)</td><td>AGPL-3.0+</td></tr>
         <tr><td>Lichess puzzles, games, opening names and books</td><td>CC0</td></tr>
         <tr><td>Libre Caslon Text and Source Sans 3 (fonts)</td><td>SIL Open Font License</td></tr>
       </tbody>

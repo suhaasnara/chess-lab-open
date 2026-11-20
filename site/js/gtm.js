@@ -32,7 +32,7 @@ function renderList(){
   const nxt=list.find(e=>!res[e.id]);
   $('g-start').disabled=!list.length; $('g-start').textContent=nxt?'Start · next unplayed':'Start · first game';
   $('g-list').innerHTML=list.map(e=>{ const r=res[e.id];
-    return `<button type="button" class="drill" data-id="${esc(e.id)}" aria-current="${!!(S.game&&S.game.id===e.id)}"><span class="evalchip mono">${r?r.pts+'/'+r.max:(yr(e)||'—')}</span><span><div class="opp">${esc(e.title)}</div><div class="meta">${esc(e.meta)}</div></span>`+
+    return `<button type="button" class="drill" data-id="${esc(e.id)}" aria-current="${!!(S.game&&S.game.id===e.id)}"><span class="evalchip mono">${r?r.pts+'/'+r.max:(yr(e)||'—')}</span><span><div class="opp">${esc(e.title)}</div><div class="meta">${esc(e.meta).replace(/\b(1|0)-(0|1)\b|1\/2-1\/2/g,m=>m.replace(/-/g,"\u2011"))}</div></span>`+
       (e.own?`<span class="evalchip gdel" role="button" tabindex="0" data-del="${esc(e.own)}" title="Remove this game" aria-label="Remove ${esc(e.title)}">✕</span>`:'<span></span>')+'</button>' }).join('')
     ||`<p class="note">${S.src==='own'?'No games of yours yet.':INDEX?'No games here.':'Loading the games…'}</p>`;
 }
@@ -152,7 +152,7 @@ function hint(){
   if(!g||S.done||S.busy||S.read) return;
   const mover=S.ply%2===0?'w':'b'; if(mover!==g.winner) return;
   const gm=new Chess(S.g.fen()).move(g.moves[S.ply]); if(!gm) return;
-  if(S.hintStage===0){ S.hintStage=1; board.setHint(gm.from); status('warn','Hint: this piece moves.','H again shows the move — then it earns nothing.') }
+  if(S.hintStage===0){ S.hintStage=1; board.setHint(gm.from); status('warn','Hint: this piece moves.','Press Hint again to see the move (it then earns nothing).') }
   else{
     board.setHint(gm.from,gm.to); status('warn','It was '+g.moves[S.ply]+'.','No points for this one.');
     if(S.retry===S.ply) S.retry=null;
@@ -280,7 +280,7 @@ function showGame(){
   const g=S.game; if(!g||S.done) return;
   S.gen++; S.read=true; S.done=true; S.busy=false;
   if(endbar) endbar.hide();
-  status('','Reading the game.',`← → (or the arrows under the board) step through the moves${g.notes&&Object.keys(g.notes).length?' and the notes':''}. No score is kept; Restart game plays it as a quiz.`);
+  status('','Reading the game.',`‹ and › under the board step through the moves${g.notes&&Object.keys(g.notes).length?' and the notes':''}. No score is kept; Restart game plays it as a quiz.`);
   drawGraph(); renderScore(); viewAt(0);
 }
 function renderScore(){

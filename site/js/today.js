@@ -86,7 +86,7 @@ function preview(it){
   }catch(e){ return {g:new Chess(),orient:'w'} }
 }
 function badge(it){
-  if(it.kind==='drill') return {b:(v=>v==null?'D':(v>0?'+':v<0?'−':'')+Math.abs(v).toFixed(1))(it.obj.before),t:'Eval from White’s side'};
+  if(it.kind==='drill') return {b:(v=>v==null?'D':Math.abs(v)>=50?(v>0?'+M':'−M'):(v>0?'+':v<0?'−':'')+Math.abs(v).toFixed(1))(it.obj.before),t:'Eval from White’s side'};
   return {b:it.obj.rating||'P',t:'Puzzle rating'};
 }
 /* Show one panel in Today's board column: a tab's (hosted) or Today's own (the empty state). */
@@ -118,17 +118,18 @@ function play(it){
   else { show(null); const p=it?preview(it):{g:new Chess(),orient:'w'}; board.set(p.g,{locked:true,orient:p.orient,last:p.last||null}) }
   for(const b of document.querySelectorAll('#td-list .drill[data-k],#td-cards [data-tdrow]')) b.setAttribute('aria-current',String((b.dataset.k||b.dataset.tdrow)===sel));
 }
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
 function card(label,href,all,rows){ return `<div class="card watoday"><div class="wthead"><span class="label">${label}</span><a class="note walink" href="${href}">${all} →</a></div>${rows}</div>` }
 function cards(list){
   const out=[];
   const wp=window.WatchTab&&WatchTab.plan?WatchTab.plan():[];
-  if(wp.length) out.push(card('Watch','#watch','All videos',wp.map(p=>`<div class="wtrow"><span class="wtlab">${esc(p.label)}</span><a href="${esc(p.url)}" target="_blank" rel="noopener"><b>${esc(p.v.title)}</b></a><span class="note">${esc(p.meta||'opens YouTube')}</span></div>`).join('')));
+  if(wp.length) out.push(card('Watch','#watch','All videos',wp.map(p=>`<div class="wtrow"><span class="wtlab">${esc(p.label)}</span><a href="${esc(p.url)}" target="_blank" rel="noopener"><b>${esc(p.v.title)}</b></a><span class="note">${esc(cap(p.meta||'Opens on YouTube'))}</span></div>`).join('')));
   const eg=list.find(x=>x.kind==='endgame');
   if(eg){ const seen=!!((Store.get('endgame-progress')||{})[eg.id]);
     out.push(card('Endgame','#endgames','All endgames',`<div class="wtrow" data-tdrow="${esc(keyOf(eg))}"><span class="wtlab">${eg.done?'Done ✓':seen?'Review':'New'}</span><a href="#today" data-td="${esc(keyOf(eg))}"><b>${esc(eg.obj.title)}</b></a><span class="note">${eg.obj.goal==='win'?'Win it':'Hold the draw'} against perfect defence</span></div>`)) }
   const op=list.find(x=>x.kind==='opening');
   if(op){ const st=OpeningsTab.stats(op.id);
-    out.push(card('Opening line','#openings','All openings',`<div class="wtrow" data-tdrow="${esc(keyOf(op))}"><span class="wtlab">${op.done?'Done ✓':st.lines?'Rating '+st.rating:'New'}</span><a href="#today" data-td="${esc(keyOf(op))}"><b>${esc(op.obj.name)}</b></a><span class="note">${st.lines?'your lowest-rated opening · '+Help.n(st.lines,'line'):'one line against real Lichess games'}</span></div>`)) }
+    out.push(card('Opening line','#openings','All openings',`<div class="wtrow" data-tdrow="${esc(keyOf(op))}"><span class="wtlab">${op.done?'Done ✓':st.lines?'Rating '+st.rating:'New'}</span><a href="#today" data-td="${esc(keyOf(op))}"><b>${esc(op.obj.name)}</b></a><span class="note">${st.lines?'Your lowest-rated opening · '+Help.n(st.lines,'line'):'One line against real Lichess games'}</span></div>`)) }
   return out.join('');
 }
 /* render(): Today opened (the first item not done goes on the board, as in Chess Lab); refresh(): a result came in (the

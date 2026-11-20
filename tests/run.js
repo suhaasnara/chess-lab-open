@@ -2046,7 +2046,7 @@ section('t60: Blind tactics — the stored set replays, filters, first-try scori
   assert(T.filtered().length>=1&&T.filtered().every(z=>!w.Store.get('blind-progress')[z.id].ok),'Missed lists the misses');
   /* Progress tile; export */
   w.location.hash='#progress'; await sleep(60);
-  assert(/Blind rating/.test($('p-stats').textContent)&&/1 solved/.test($('p-stats').textContent)&&/8 hidden plies on average/.test($('p-stats').textContent),'Progress tile: Blind rating, solved, average hidden plies');
+  assert(/blind rating/i.test($('p-stats').textContent)&&/1 solved/.test($('p-stats').textContent)&&/8 hidden plies on average/.test($('p-stats').textContent),'Progress tile: Blind rating, solved, average hidden plies');
   const ex=w.Store.exportAll();
   assert(ex['blind-progress']&&ex['blind-rating'],'both keys are in the progress export');
   assert(started===0,'no engine started anywhere on the way');
@@ -2216,7 +2216,7 @@ section('t68: Analyze — Save drills near the top; saved sets: remove one set, 
   A.clearFiles(); A.addFiles([[OTB10.pgn,'club.pgn']]); $('a-site').value='pgn'; $('a-site').dispatchEvent(new w.Event('change'));
   w.Store.del('pgn-evals'); $('a-go').click(); await sleep(300); while(A.running) await sleep(50);
   const rep=$('a-report'), card=rep.querySelector('.asave');
-  assert(card&&rep.innerHTML.indexOf('class="card asave"')<rep.innerHTML.indexOf('<span class="label">Results'),'Save drills sits above the results');
+  assert(card&&rep.innerHTML.indexOf('class="card asave"')<rep.innerHTML.search(/<span class="label">(<span class="qglue">)?Results/),'Save drills sits above the results');
   const sets0=A.drillSets();
   assert(sets0.length===2&&sets0.every(s=>s.old)&&!sets0.some(s=>/pack/i.test(s.label)),'older drills are grouped by source (OTB, Lichess); a pack’s drills are not offered');
   $('a-savedrills').click(); await sleep(400);
