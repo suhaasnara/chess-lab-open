@@ -2487,7 +2487,8 @@ section('t74: Analyze — the engine’s first choice is never a mistake; drills
 await require('./native')(H);   /* the iPhone and Apple Watch app layer (shared/native.js, js/native.js) */
 await require('./about')(H);
 await require('./feedback')(H);   /* the 18 Nov 2026 phone feedback */   /* About, privacy and licences (#about) */
-await require('./watchsets')(H);   /* the Apple Watch sets for the app (tools/build_watch_sets.js) */
+await require('./watchsets')(H);
+await require('./prep')(H);   /* Analyze: your prep in your games (imported repertoires) */   /* the Apple Watch sets for the app (tools/build_watch_sets.js) */
 
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));
 process.exit(H.failures?1:0);
