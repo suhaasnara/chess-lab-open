@@ -870,6 +870,12 @@ function init(){
   $('o-npcancel').addEventListener('click',()=>{ $('o-newmodal').hidden=true; if(location.hash==='#openings/new') history.replaceState(null,'','#openings') });
   $('o-newmodal').addEventListener('click',e=>{ if(e.target.id==='o-newmodal') $('o-npcancel').click() });
   const hashNew=()=>{ if(location.hash==='#openings/new') openNew() }; addEventListener('hashchange',hashNew); setTimeout(hashNew,0);
+  /* #openings/review/<id>/<key> (Analyze's Practise, 20 Nov 2026): that opening, then that position from its review list */
+  const hashReview=()=>{ const m=location.hash.match(/^#openings\/review\/([^/]+)\/([^/?]+)$/); if(!m) return;
+    const id=decodeURIComponent(m[1]), k=decodeURIComponent(m[2]); history.replaceState(null,'','#openings');
+    if(!openings().some(o=>o.id===id)) return; selectOpening(id);
+    const r=(stats(SID()).mistakes||[]).find(x=>x.key===k); if(r) newLine(r) };
+  addEventListener('hashchange',hashReview); setTimeout(hashReview,0);
   $('o-statsbtn').addEventListener('click',openStats);
   $('o-gear').addEventListener('click',openSettings);
   $('o-repsave').addEventListener('click',doImport);

@@ -5,7 +5,7 @@
 module.exports=async H=>{
   const {makePage,sleep,assert,section}=H;
 
-  section('t81: Analyze, your prep in your games (imported repertoires)');
+  section('t82: Analyze, your prep in your games (imported repertoires)');
   { const {w}=await makePage(); await sleep(30);
     const A=w.AStats, S=w.Store, pid=f=>w.posId(w.normKey(f));
     /* a White repertoire: 1.e4 e5 2.Nf3 Nc6 3.Bb5, and 1.e4 c5 2.Nf3 (both sides' moves, by position) */
@@ -33,6 +33,18 @@ module.exports=async H=>{
     assert(/Your prep in your games/.test(html)&&/reached your repertoires: you left your prep first in <b>2<\/b>/.test(html)&&/the opponent in <b>1<\/b>/.test(html),'the card counts 3 games (another opening left out): you 2, opponent 1');
     assert(/You played <b>3\.Bc4<\/b>, your prep: <b>Bb5<\/b>/.test(html)&&/2 games/.test(html),'the same slip in two games is one row');
     assert(/They played <b>1…e6<\/b>/.test(html),'an unprepared reply is listed');
+    /* Practise: the slip goes on the repertoire's review list, and Openings plays it from there */
+    S.put('rep-rw',{pos}); S.put('reps-index',[{id:'rw',name:'My 1.e4',side:'white'}]);
+    const box=w.document.getElementById('a-report'); box.innerHTML=html;
+    const pb=box.querySelector('[data-pprac]'); assert(pb&&pb.dataset.pprac==='rw'&&pb.dataset.ppath==='e4 e5 Nf3 Nc6','a Practise button on your slip, with the moves before it');
+    pb.click(); await sleep(150);
+    const ms=(S.get('stats-rw')||{}).mistakes||[];
+    assert(ms.length===1&&ms[0].path.join(' ')==='e4 e5 Nf3 Nc6','the slip is on the repertoire\'s review list');
+    const st=w.OpeningsTab.state;
+    assert(w.location.hash==='#openings'&&st.op&&st.op.id==='rw'&&st.review&&st.g.history().join(' ')==='e4 e5 Nf3 Nc6'&&st.g.turn()==='w','Openings opens that repertoire at the slip, your move, as a review');
+    pb.click(); await sleep(100);
+    assert(((S.get('stats-rw')||{}).mistakes||[]).length===1,'pressing it again adds nothing twice');
+    w.location.hash='#analyze'; await sleep(50);
     S.put('reps-index',[]);
     const none=A.render({user:'me',site:'pgn',rows:[],allGames:[G(['e4'])],total:1,final:true,files:[],yearly:()=>null,save:()=>''});
     assert(/Import your repertoire in Openings/.test(none),'no repertoire: says how to get one');
