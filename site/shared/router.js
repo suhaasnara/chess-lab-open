@@ -7,10 +7,15 @@
        title:    v => 'document title' | null,                   // optional
        scrollTop: true,                                          // a new view starts at the top (the first load too)
        onShow:   (name, {changed, first}) => {}                  // the site's own work for that view (render, start the engine ...)
+       fade:     false,                                          // optional: no crossfade between tabs (on by default)
      })
    A hash is read up to '?' and '/' ("#analyze?u=name", "#openings/new"), unless a prefix matches. Elements of every other
    view are hidden; elements shared by several views (one module showing several tabs) stay shown for each of them.
-   Router.current() = the name on screen; Router.route() re-applies the current hash. */
+   Router.current() = the name on screen; Router.route() re-applies the current hash.
+   Smooth tab changes (20 Nov 2026): moving to another tab crossfades (about 0.16 s) with the browser's View Transitions
+   (Safari 18+, Chrome 111+); the tab row stays put (shared.css). Not on the first load, not when re-applying the same
+   tab, not with Reduce Motion, not where the browser lacks it: there the change is instant, as before. The new tab is
+   drawn inside the transition's callback, a frame after the hash changes (300 ms at most). */
 window.Router=(()=>{
   let C=null, shown=null, first=true;
   const ids=x=>Array.isArray(x)?x:[x];
@@ -20,8 +25,19 @@ window.Router=(()=>{
     let name=raw.split('/')[0]; if(!C.views[name]) name=C.fallback;
     return {name,view:C.views[name].view||name};
   }
+  const calm=()=>!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
   function route(){
-    const {name,view}=parse(location.hash), V=C.views[name];
+    const {name,view}=parse(location.hash);
+    if(shown!==null&&shown!==name&&C.fade!==false&&document.startViewTransition&&!document.hidden&&!calm()){
+      /* the browser runs the callback at its next frame; if it doesn't draw one soon (a page it isn't painting), draw
+         the tab anyway after 300 ms, once. Each run draws the tab the address names by then, so a late one never brings back an older tab */
+      let done=false; const run=()=>{ if(done) return; done=true; const p=parse(location.hash); if(p.name!==shown) apply(p.name,p.view) };
+      try{ document.startViewTransition(run); setTimeout(run,300); return }catch(e){}
+    }
+    apply(name,view);
+  }
+  function apply(name,view){
+    const V=C.views[name];
     const changed=shown!==null&&shown!==name, wasFirst=first; shown=name; first=false;
     document.body.dataset.view=view;
     if(C.title){ const t=C.title(name); if(t!=null) document.title=t }
