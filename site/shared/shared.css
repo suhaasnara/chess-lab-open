@@ -260,3 +260,10 @@ html.navhid nav.tabs{transform:translateY(calc(-100% - env(safe-area-inset-top,0
 .btn:not(:disabled):active,.seg button:not(:disabled):active{transform:scale(.97);filter:brightness(.92)}
 .btn:focus-visible,.seg button:focus-visible{outline:2px solid var(--accent,var(--blue));outline-offset:2px}
 @media (prefers-reduced-motion:reduce){.btn:not(:disabled),.seg button:not(:disabled){transition:filter .12s ease,border-color .15s,background .15s}.btn:not(:disabled):active,.seg button:not(:disabled):active{transform:none}}
+
+/* Smooth tab changes (router.js, View Transitions, 20 Nov 2026): a short crossfade of the page; the tab row is its own
+   layer so it stays in place while only its marked tab changes. Reduce Motion: no animation (router.js skips it too). */
+nav.tabs{view-transition-name:tabs}
+::view-transition-old(root),::view-transition-new(root){animation-duration:.16s}
+::view-transition-group(tabs){animation-duration:.16s}
+@media (prefers-reduced-motion:reduce){::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}}

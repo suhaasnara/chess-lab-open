@@ -49,7 +49,8 @@ const WATCH=()=>{ const W=window.Worker; window.__workers=0; window.Worker=funct
   const s2=await S(); ok(s2.id!==s.id,'N: the next puzzle');
   await pg.focus('#blind input[type=text]'); await pg.keyboard.type('p'); await sleep(100);
   ok(!(await S()).assisted&&await pg.inputValue('#blind input[type=text]')==='p','P while typing goes into the box, no peek');
-  await pg.keyboard.press('Escape'); await pg.keyboard.press('Backspace'); await pg.keyboard.press('p'); await sleep(250);
+  /* clear the box while it still has focus: after Esc, WebKit takes Backspace as Back and leaves the page (20 Nov 2026) */
+  await pg.keyboard.press('Backspace'); await pg.keyboard.press('Escape'); await pg.keyboard.press('p'); await sleep(250);
   const peeked=await pg.evaluate(()=>{ const s=BlindTab.api.state, g=new Chess(s.real.fen()); return [...document.querySelectorAll('#blind .board .sq')].every(q=>{ const p=g.get(q.dataset.sq), pc=q.querySelector('.pc'); return p?!!pc&&pc.classList.contains(p.color+p.type.toUpperCase()):!pc }) });
   ok((await S()).assisted&&peeked,'Esc, then P: the board shows the real position, the puzzle is assisted');
   await sleep(2200); ok(!(await pg.evaluate(()=>document.querySelector('#blind .board').classList.contains('bl-peek'))),'… and goes back after 2 s');
