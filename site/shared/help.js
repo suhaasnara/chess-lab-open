@@ -1,4 +1,4 @@
-/* Shared (Chess Lab and Chess Lab Open). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
+/* Shared (Chess Lab and Think Ahead). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
    A small "?" beside a stat or eval that explains it in one sentence: hover shows it (title), a tap or click opens it
    under the "?" (phones have no hover), a second tap, Escape or a tap elsewhere closes it.
    Help.q(text) -> HTML for the "?" (text is plain; it is escaped here).

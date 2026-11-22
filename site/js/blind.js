@@ -1,4 +1,4 @@
-/* Chess Lab Open — Blind tactics (Extra): the shared screen (shared/blind.js) on this site's storage.
+/* Think Ahead — Blind tactics (Extra): the shared screen (shared/blind.js) on this site's storage.
    Progress in localStorage: blind-progress {id: {n, ok, okN, t, h, a}} and blind-rating {r, n, hist} (in the progress
    export like every key); settings: Settings 'blind' {lo, hi, plies, len, status}. Data: data/blind.json (CC0). */
 'use strict';

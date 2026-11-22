@@ -1,4 +1,4 @@
-/* Chess Lab Open — Calculation: see the whole line before you play it.
+/* Think Ahead — Calculation: see the whole line before you play it.
    Exercises: data/calc.json, hard long Lichess puzzles (CC0, rating 2200+, 4+ moves for the solver,
    built by tools/pick_calc.py); without it, the long puzzles in data/tactics.json.
    You enter the full line on a free board (both sides' moves), against a running clock, then Submit.

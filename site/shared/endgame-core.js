@@ -1,4 +1,4 @@
-/* Shared (Chess Lab and Chess Lab Open). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
+/* Shared (Chess Lab and Think Ahead). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
    Endgames graded by the Lichess tablebase. Needs chess.js. Everything is on window.EndgameCore.
 
    A tablebase answer (tablebase.lichess.ovh/standard?fen=) lists the moves of the side to move; each move's `category`

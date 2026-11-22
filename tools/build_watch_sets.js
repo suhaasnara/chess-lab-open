@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* Chess Lab Open — the Apple Watch sets for the public app (suhaasnara/chess-lab-open-app, docs/01-design.md §2.1, §2.4).
+/* Think Ahead — the Apple Watch sets for the public app (suhaasnara/chess-lab-open-app, docs/01-design.md §2.1, §2.4).
 
    Turns three of this site's puzzle files into the sets the watch app carries, with chess.js (site/vendor/chess.js), so
    the watch never has to turn moves into text:

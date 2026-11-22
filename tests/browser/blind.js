@@ -1,4 +1,4 @@
-/* Chess Lab Open — Blind tactics and Retry the miss on phones, in a real browser (Playwright), Firefox and Chromium.
+/* Think Ahead — Blind tactics and Retry the miss on phones, in a real browser (Playwright), Firefox and Chromium.
      node tests/browser/blind.js <firefox|chromium> [outDir]      (CHROME=<path> runs a local Chrome as chromium)
    Blind tactics: a move typed in the box (real key presses, Enter) and one by clicking two squares are read in the hidden
    position while the board stays put; P peeks for 2 s and marks the puzzle assisted; G gives up; no shortcut fires while

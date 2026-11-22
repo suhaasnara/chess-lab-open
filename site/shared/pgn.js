@@ -1,4 +1,4 @@
-/* Shared (Chess Lab and Chess Lab Open). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
+/* Shared (Chess Lab and Think Ahead). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
    PGN reading and position ids. Needs only chess.js (0.10.x API) and TextEncoder. Everything is on window.PGN; each
    site keeps its own names for these (e.g. `function posId(k){ return PGN.posId(k) }`), so no global is declared twice.
 

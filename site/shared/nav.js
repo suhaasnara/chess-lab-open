@@ -1,4 +1,4 @@
-/* Shared (Chess Lab and Chess Lab Open). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
+/* Shared (Chess Lab and Think Ahead). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
    The header's tab row: a few main tabs, an Extra drop-down for the rest, Settings at the right (inside Extra on phones).
      Nav.mount(navEl, {main:[[view,label,phoneDescription?],...], extra:[[view,label,description],...]})
    A main tab given a description moves into the Extra menu on phones (so the row never overlaps).

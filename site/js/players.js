@@ -1,4 +1,4 @@
-/* Chess Lab Open — Players: what an opponent plays, from their public online games.
+/* Think Ahead — Players: what an opponent plays, from their public online games.
    Type a Lichess or Chess.com username: their recent games are fetched by your browser from the public API
    (no account, nothing uploaded) and kept on this device. You get what they play with each colour, an explorer of
    their moves, "Train vs" in the opening trainer (the opponent plays their moves while their games go, then the

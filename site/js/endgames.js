@@ -1,4 +1,4 @@
-/* Chess Lab Open — Endgames: textbook endings played out against perfect defence.
+/* Think Ahead — Endgames: textbook endings played out against perfect defence.
    Positions and goals: data/endgames.json (tools/endgame_positions.json, checked against the Lichess
    tablebase by tools/build_endgames.py, with a stored tree of best moves and replies).
    Every move you make is graded by the tablebase: best, still winning (slower), or throws the result.

@@ -1,4 +1,4 @@
-/* Chess Lab Open — shared helpers: settings, storage, position ids, winning chances,
+/* Think Ahead — shared helpers: settings, storage, position ids, winning chances,
    the Stockfish worker and the board component.
    Code by Suhaas Narayanan (with Claude), MIT. Engine: Stockfish (GPL-3.0), see sf/Copying.txt. */
 'use strict';

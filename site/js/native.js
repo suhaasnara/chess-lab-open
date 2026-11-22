@@ -1,4 +1,4 @@
-/* Chess Lab Open — its parts of the iPhone and Apple Watch app (the machinery: shared/native.js). On the website
+/* Think Ahead — its parts of the iPhone and Apple Watch app (the machinery: shared/native.js). On the website
    Native.app is false and nothing below changes anything: no board, store or page is touched.
 
    Reminder counters (read only): Drills, Blunder check, Endgames and Blind tactics, the four sections with a review

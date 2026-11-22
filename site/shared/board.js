@@ -1,4 +1,4 @@
-/* Shared (Chess Lab and Chess Lab Open). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
+/* Shared (Chess Lab and Think Ahead). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
    The board: squares drawn from a chess.js game, tap-or-drag input, and the makeBoard component built from them.
    Needs only chess.js (0.10.x API) and CSS for .board/.sq/.pc (each site styles its own pieces: Open ships cburnett,
    the private site alpha). Arrows and circles are shared/shapes.js; they find the board by its .sq[data-sq] squares.

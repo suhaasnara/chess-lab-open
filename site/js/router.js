@@ -1,4 +1,4 @@
-/* Chess Lab Open — router: which section is on screen (#openings, #tactics, ...). */
+/* Think Ahead — router: which section is on screen (#openings, #tactics, ...). */
 'use strict';
 (function(){
 const VIEWS=['today','openings','tactics','blind','calc','endgames','analyze','drills','play','guess','players','watch','blundercheck','game','progress','settings','about'];

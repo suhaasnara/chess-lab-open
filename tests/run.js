@@ -1,5 +1,5 @@
 const crypto=require('crypto');
-/* Chess Lab Open — headless tests (jsdom), run with: npm test */
+/* Think Ahead — headless tests (jsdom), run with: npm test */
 'use strict';
 const H=require('./harness');
 const {makePage,sleep,assert,section}=H;

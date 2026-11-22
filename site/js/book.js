@@ -1,4 +1,4 @@
-/* Chess Lab Open — the opening book. No accounts, no live API: every book ships with the site.
+/* Think Ahead — the opening book. No accounts, no live API: every book ships with the site.
    Sources, in order:
    1. Static books built from CC0 Lichess data by .github/workflows/build-books.yml:
       data/masters.json  — the Lichess Elite Database (2500+ vs 2300+ games), tools/build_masters.py

@@ -1,4 +1,4 @@
-/* Chess Lab Open — Analyze my games.
+/* Think Ahead — Analyze my games.
    Fetches your recent rapid + classical games from the Lichess or Chess.com public API, or reads your own PGN files,
    entirely in your browser. Lichess games reuse Lichess's server analysis where present (CC0); anything without stored
    evals is analyzed by Stockfish in your browser (Standard or Deep). Output: a report card (js/astats.js draws its

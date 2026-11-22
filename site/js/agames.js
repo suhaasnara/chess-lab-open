@@ -1,4 +1,4 @@
-/* Chess Lab Open — the games you analyzed, kept in this browser (13 Nov 2026).
+/* Think Ahead — the games you analyzed, kept in this browser (13 Nov 2026).
    Analyze my games used to forget its games when the page closed (only Stockfish's evals stayed, in pgn-evals), so a
    drill or a costly moment could only link out to Lichess or Chess.com, and an over-the-board game nowhere. Now every
    game of the last run is kept, compactly, with the report's settings, so that:

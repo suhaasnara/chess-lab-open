@@ -1,4 +1,4 @@
-/* Chess Lab Open — Play vs Stockfish at a chosen strength, with a blindfold option.
+/* Think Ahead — Play vs Stockfish at a chosen strength, with a blindfold option.
    Limited strength uses the engine's own UCI_LimitStrength / UCI_Elo (its scale,
    1320–3190); the limit is switched off right after each move so analysis stays
    full strength. Blindfold: no pieces, no move dots; moves by typing or tapping;

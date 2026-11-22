@@ -1,4 +1,4 @@
-/* Shared (Chess Lab and Chess Lab Open). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
+/* Shared (Chess Lab and Think Ahead). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
    Styles for the shared components, using only the theme's colour variables (shared/theme.css). */
 /* 15 Nov 2026 (his phone review): quick taps on ‹ › zoomed the page in on iPhones (Safari's double-tap zoom, also on a
    dimmed button). manipulation keeps scrolling and pinch zoom and drops only double-tap zoom. :where() has no weight,

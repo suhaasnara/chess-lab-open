@@ -1,4 +1,4 @@
-/* Shared (Chess Lab and Chess Lab Open). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
+/* Shared (Chess Lab and Think Ahead). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
    The opening trainer's rules that don't depend on where the data comes from. Pure functions on plain data; each site
    looks up its own books and repertoires and passes the numbers in. Everything is on window.TrainerCore.
 

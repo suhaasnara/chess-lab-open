@@ -1,4 +1,4 @@
-/* Chess Lab Open — Today: a short daily session built from your own progress.
+/* Think Ahead — Today: a short daily session built from your own progress.
    Up to 3 drills from your games (new first, then misses, then spaced reviews at 3 / 7 / 21 days),
    5 puzzles near your puzzle rating, one endgame (new ones in order, then reviews), and one opening line (your lowest-rated opening, else a preset).
    The plan is fixed for the day once made; items tick off as you do them in their own tabs.

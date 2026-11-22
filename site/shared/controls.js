@@ -1,4 +1,4 @@
-/* Shared (Chess Lab and Chess Lab Open). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
+/* Shared (Chess Lab and Think Ahead). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
    Two small filter controls.
    Controls.range(el, {min, max, step, lo, hi, label, onChange(lo, hi)})   a two-handle slider (two range inputs over one
      track; keyboard and touch work as on any range input). Returns {set(lo, hi), get()}.

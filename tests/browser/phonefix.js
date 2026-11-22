@@ -1,4 +1,4 @@
-/* Chess Lab Open — the 14 Nov 2026 phone fixes, checked in a real browser (Playwright; Firefox, Chromium and WebKit in CI).
+/* Think Ahead — the 14 Nov 2026 phone fixes, checked in a real browser (Playwright; Firefox, Chromium and WebKit in CI).
      node tests/browser/phonefix.js <firefox|chromium|webkit> [outDir]        CHROME=<path>: a local Chrome
    1  The bottom bar (shared/trainview.js TV.bar): on a phone and an upright iPad every board page's buttons are one bar
       fixed to the bottom of the screen, ‹ in the far left corner and › in the far right one, every button at least 44 px,

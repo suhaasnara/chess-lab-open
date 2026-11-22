@@ -1,4 +1,4 @@
-/* Shared (Chess Lab and Chess Lab Open). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
+/* Shared (Chess Lab and Think Ahead). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
    Needs nothing from either site: only boards made of .board > .sq[data-sq] (> .pc). */
 /* ---------- Arrows and circles, Lichess style, on every board ----------
    Right-click a square for a circle, right-drag to another square for an arrow: plain = green (Settings can change it), Shift = red,

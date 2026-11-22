@@ -1,4 +1,4 @@
-/* Shared (Chess Lab and Chess Lab Open). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
+/* Shared (Chess Lab and Think Ahead). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
    One keymap for the whole site. Each tab registers what the standard keys do there; one listener dispatches.
 
      ← →   step through the moves (every notation list)      Home / End   first / last position

@@ -1,4 +1,4 @@
-/* Chess Lab Open — tactics from the Lichess puzzle database (CC0).
+/* Think Ahead — tactics from the Lichess puzzle database (CC0).
    The solver gets a puzzle rating: Elo against the puzzle's Lichess rating,
    first attempt only (a hint counts as a miss); K = 32 for the first 30 puzzles, then 16. */
 'use strict';

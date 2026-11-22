@@ -1,4 +1,4 @@
-/* Chess Lab Open — the game view (#game?id=<game id>&ply=<move index>&from=<view>), 13 Nov 2026.
+/* Think Ahead — the game view (#game?id=<game id>&ply=<move index>&from=<view>), 13 Nov 2026.
    Any game you analyzed (js/agames.js keeps them), opened at a move: from the report's games and costliest moments,
    a drill's or a blunder check's "The game", and Today through the Drills panel. Over-the-board PGN games too, which
    had nowhere to link before.
