@@ -1,4 +1,4 @@
-/* Chess Lab Open — the mobile reader in a real browser (Playwright): iPhone 15 portrait + landscape and iPhone SE,
+/* Think Ahead — the mobile reader in a real browser (Playwright): iPhone 15 portrait + landscape and iPhone SE,
    in each place (Guess the move, Calculation, Endgames, Openings notes), plus iPad mini and iPad to confirm the
    desktop layout (no Read button). Screenshots for review.  node tests/browser/reader.js <firefox|chromium> [outDir] */
 'use strict';

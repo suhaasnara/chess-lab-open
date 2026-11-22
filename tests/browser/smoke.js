@@ -1,4 +1,4 @@
-/* Chess Lab Open — real-browser smoke test (Playwright), run in CI on Firefox and Chromium.
+/* Think Ahead — real-browser smoke test (Playwright), run in CI on Firefox and Chromium.
      node tests/browser/smoke.js <firefox|chromium> [outDir]
    Serves site/ from a local static server, opens every tab, plays a move on every board with the
    real mouse (clicks and a drag), checks that Stockfish answers, draws an arrow with a right-drag,

@@ -1,5 +1,5 @@
 {
- "about": "Endgame trainer positions for Chess Lab Open: standard textbook endings, set up by hand. goal: win | draw (for the side to move). end: mate = finish with checkmate; convert = any capture or promotion that keeps the win also counts; hold:N = keep the draw for N of your moves. tools/build_endgames.py checks every goal against the Lichess tablebase. rev: bump it to force a rebuild of an unchanged position (rev 2 = rebuilt with keep_material, 6 Nov 2026).",
+ "about": "Endgame trainer positions for Think Ahead: standard textbook endings, set up by hand. goal: win | draw (for the side to move). end: mate = finish with checkmate; convert = any capture or promotion that keeps the win also counts; hold:N = keep the draw for N of your moves. tools/build_endgames.py checks every goal against the Lichess tablebase. rev: bump it to force a rebuild of an unchanged position (rev 2 = rebuilt with keep_material, 6 Nov 2026).",
  "groups": [
   [
    "mates",

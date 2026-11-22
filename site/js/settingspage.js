@@ -1,4 +1,4 @@
-/* Chess Lab Open — Settings page. */
+/* Think Ahead — Settings page. */
 'use strict';
 (function(){
 const ROWS=[

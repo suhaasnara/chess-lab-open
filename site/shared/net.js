@@ -1,4 +1,4 @@
-/* Shared (Chess Lab and Chess Lab Open). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
+/* Shared (Chess Lab and Think Ahead). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
    Everything that needs the internet: Lichess studies, the Lichess tablebase, and a clear "needs internet" state.
    Pages that may not fetch from other addresses (a claude.ai artifact frame) get the same clear state, with where the
    feature does work, instead of failing silently.

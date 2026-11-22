@@ -1,4 +1,4 @@
-/* Chess Lab Open — the engine downloads only where it is used (11 Nov 2026). Real browser, a new visitor.
+/* Think Ahead — the engine downloads only where it is used (11 Nov 2026). Real browser, a new visitor.
      node tests/browser/engine.js <firefox|chromium>      (CHROME=<path> uses a local Chrome for chromium)
    1. Drilling an imported repertoire with the eval bar off never starts Stockfish: no worker, no .wasm served.
    2. Today, where you land: reading the page never starts it; the first touch of a board does.

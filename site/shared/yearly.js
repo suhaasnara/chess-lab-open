@@ -1,4 +1,4 @@
-/* Shared (Chess Lab and Chess Lab Open). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
+/* Shared (Chess Lab and Think Ahead). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
    Year by year on a report card. One row per year (games, score, conversion, saves, each with the change from the year
    before), then one line per RATING POOL that year (OTB classical, Chess.com blitz, Lichess rapid ...): the pool's games
    and score, the opponents' average and median rating, the performance rating, and the player's rating at the start and

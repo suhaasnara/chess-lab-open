@@ -1,4 +1,4 @@
-/* Chess Lab Open — your own PGN file as a source for Analyze my games (over-the-board games, or any export).
+/* Think Ahead — your own PGN file as a source for Analyze my games (over-the-board games, or any export).
    Everything happens in this browser: the file is read here and never uploaded.
 
    PgnFile.parse(text)        -> {games:[{h (headers), sans (main line), evals (pawns, White's side, per ply, or null)}], skipped}

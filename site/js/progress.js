@@ -1,4 +1,4 @@
-/* Chess Lab Open — Progress: totals, per-opening table, export/import. */
+/* Think Ahead — Progress: totals, per-opening table, export/import. */
 'use strict';
 (function(){
 /* ---------- charts: inline SVG, one series each (no legend needed; the card title names it).
@@ -109,7 +109,7 @@ function init(){
   $('p-export').addEventListener('click',()=>{
     const blob=new Blob([JSON.stringify(Store.exportAll(),null,1)],{type:'application/json'});
     const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-    a.download='chess-lab-open-progress-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
+    a.download='think-ahead-progress-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
     setTimeout(()=>URL.revokeObjectURL(a.href),5000);
   });
   $('p-import').addEventListener('click',()=>$('p-file').click());

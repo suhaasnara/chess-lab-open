@@ -1,4 +1,4 @@
-/* Shared (Chess Lab and Chess Lab Open). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
+/* Shared (Chess Lab and Think Ahead). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
    One Stockfish worker for the whole app, with a watchdog and a result cache. Each site passes its own list of builds
    (where its Stockfish files are served from), best first:
 

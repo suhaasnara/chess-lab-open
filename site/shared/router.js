@@ -1,4 +1,4 @@
-/* Shared (Chess Lab and Chess Lab Open). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
+/* Shared (Chess Lab and Think Ahead). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
    The page router: which section is on screen for the address's #hash. Each site passes its own table of views.
      Router.start({
        views:    {name: {el: 'id' | ['id', ...],  view?: 'body data-view' (default name),  nav?: 'tab to mark' (default name)}},

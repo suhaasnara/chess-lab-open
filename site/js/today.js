@@ -1,4 +1,4 @@
-/* Chess Lab Open — Today: a short daily session built from your own progress.
+/* Think Ahead — Today: a short daily session built from your own progress.
    Up to 3 drills from your games (new first, then misses, then spaced reviews at 3 / 7 / 21 days),
    5 puzzles near your puzzle rating, one endgame (new ones in order, then reviews), and one opening line (your lowest-rated opening, else a preset).
    The plan is fixed for the day once made; items tick off as you do them in their own tabs.
@@ -181,7 +181,7 @@ function welcome(show){
   const el=$('welcome'); if(!el) return;
   let seen=false; try{ seen=localStorage.getItem('clo-welcome')==='seen'||hasProgress() }catch(e){}
   el.hidden=show===true?false:seen;
-  const more=$('welcome-more'); if(more) more.open=show===true;   /* asked for ("How Chess Lab Open works"): the whole list; a first visit: three lines and two buttons */
+  const more=$('welcome-more'); if(more) more.open=show===true;   /* asked for ("How Think Ahead works"): the whole list; a first visit: three lines and two buttons */
   /* returning visitors get Chess Lab's board page (no big header on Today); the guide brings it back */
   document.body.classList.toggle('welcomed',el.hidden);
 }

@@ -1,4 +1,4 @@
-/* Chess Lab Open — the opening trainer.
+/* Think Ahead — the opening trainer.
    Presets train you against the elite book (or a club band: the Opponent slider);
    imported repertoires (your own PGN or a Lichess study) are the answer key, and the opponent plays
    your prepared replies, weighted by how often they are played (the "Sidelines in repertoires" setting).

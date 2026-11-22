@@ -1,4 +1,4 @@
-/* Shared (Chess Lab and Chess Lab Open). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
+/* Shared (Chess Lab and Think Ahead). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
    The reader: step through annotated moves on a phone or an iPad held upright (course notes, game notes, solutions),
    Chessable's Read mode. Built once; each place passes its moves. Shown on phones (portrait under 600 px wide,
    landscape under 500 px tall) and iPads in portrait (under 1100 px wide); landscape iPads and desktops keep their own

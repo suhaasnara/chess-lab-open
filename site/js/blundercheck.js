@@ -1,4 +1,4 @@
-/* Chess Lab Open — Blunder check (Extra → Blunder check), the private Chess Lab's bc.js on Open's Store, board and keys.
+/* Think Ahead — Blunder check (Extra → Blunder check), the private Chess Lab's bc.js on Open's Store, board and keys.
    Positions come from Analyze my games (Store abc, saved with your drills; since 13 Nov 2026, the private kit's
    tools/blundercheck rule run in the browser: js/analyze.js findBlunderChecks; a Chess Lab pack's positions, from before
    packs were retired, were moved there by Store.migrate): your move there dropped your Win% by 15+ points from 30%+. Step 1, the question you skipped: what does your opponent

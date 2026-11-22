@@ -1,4 +1,7 @@
-# Chess Lab Open (public)
+# Chess Lab Open (public), shown to visitors as "Think Ahead"
+
+Since 22 Nov 2026 the site's visible name is **Think Ahead** (same as the iPhone app; not final until App Store Connect
+accepts it). The repo, the URL path `/chess-lab-open/`, storage keys and the backup format keep the old name.
 
 `~/chess-lab-open`, remote `github.com/suhaasnara/chess-lab-open` (**public**). Published by GitHub Pages at
 https://suhaasnarayanan.com/chess-lab-open/. This is the open-source (MIT), bring-your-own-data version of Suhaas's

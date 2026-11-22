@@ -1,4 +1,4 @@
-/* Chess Lab Open — the report card of Analyze my games: filters, stats and charts (14 Nov 2026).
+/* Think Ahead — the report card of Analyze my games: filters, stats and charts (14 Nov 2026).
    Every stat follows the filters at the top (colour, time control, period, opponent rating, rated or not, rating system,
    file). Results need no engine and use every game; mistakes, accuracy and move quality use the analyzed games.
    Ratings are only compared inside one pool (rating system + time control): a performance rating is never a blend of a

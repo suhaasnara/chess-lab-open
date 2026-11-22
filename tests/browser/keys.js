@@ -1,4 +1,4 @@
-/* Chess Lab Open — the arrow keys through side lines, pressed for real (Playwright keyboard.press), in Firefox and Chromium.
+/* Think Ahead — the arrow keys through side lines, pressed for real (Playwright keyboard.press), in Firefox and Chromium.
      node tests/browser/keys.js <firefox|chromium>
    Guess the move with your own PGN that has side lines (one nested): click the board once, then only keys:
    ← → along the game, ↓ ↑ cycle the three moves at a branch (two side lines + the game's move), → into a side line and

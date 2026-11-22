@@ -1,4 +1,4 @@
-/* Shared theme (Chess Lab and Chess Lab Open): every colour of the chess site's look (suhaasnarayanan.com/chess), light,
+/* Shared theme (Chess Lab and Think Ahead): every colour of the chess site's look (suhaasnarayanan.com/chess), light,
    dark, and "auto" (= match the device). Pages set <html data-theme> to light / dark / auto; only these variables change
    between themes, so CSS uses them, never literal colours.
    Home: chess-lab-open/site/shared/ (MIT). The private kit pulls a pinned copy; edit it here, never there.

@@ -1,4 +1,4 @@
-/* Chess Lab Open — router: which section is on screen (#openings, #tactics, ...). */
+/* Think Ahead — router: which section is on screen (#openings, #tactics, ...). */
 'use strict';
 (function(){
 const VIEWS=['today','openings','tactics','blind','calc','endgames','analyze','drills','play','guess','players','watch','blundercheck','game','progress','settings','about'];
@@ -28,7 +28,7 @@ const ENGINE_FIRST=['drills','play','guess','calc'];
 function engineFor(v){ if(ENGINE_FIRST.includes(v)) SharedEngine.start() }
 document.addEventListener('pointerdown',e=>{ const b=e.target.closest&&e.target.closest('#today .board'); if(b&&!b.closest('#o-board')) SharedEngine.start() },true);
 function onShow(v){
-  const h=$('view-title'); if(h){ h.textContent=v==='today'?'':'Chess Lab Open: '+TITLES[v]; h.hidden=v==='today' }
+  const h=$('view-title'); if(h){ h.textContent=v==='today'?'':'Think Ahead: '+TITLES[v]; h.hidden=v==='today' }
   engineFor(v);
   if(v==='calc') CalcTab.ensure();
   if(v==='blind') BlindTab.show();   /* the set (about 1 MB) loads on first use; no engine on this tab */
@@ -59,5 +59,5 @@ document.addEventListener('click',e=>{   /* capture phase: the list re-renders o
 },true);
 OpeningsTab.init(); TacticsTab.init(); BlindTab.init(); CalcTab.init(); EndgamesTab.init(); TodayTab.init(); AnalyzeTab.init(); DrillsTab.init(); PlayTab.init(); GtmTab.init(); PlayersTab.init(); WatchTab.init(); BlunderCheckTab.init(); GameView.init(); ProgressTab.init(); SettingsTab.init();
 Router.start({views:Object.fromEntries(VIEWS.map(v=>[v,v==='game'?{el:v,nav:'analyze'}:{el:v}])),fallback:'today',scrollTop:true,onShow,
-  title:v=>v==='today'?'Chess Lab Open':TITLES[v]+' · Chess Lab Open'});
+  title:v=>v==='today'?'Think Ahead':TITLES[v]+' · Think Ahead'});
 })();

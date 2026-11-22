@@ -1,4 +1,4 @@
-/* Chess Lab Open — Watch: your own chess video library.
+/* Think Ahead — Watch: your own chess video library.
    Paste YouTube links; each video keeps your position, watched state, notes (timestamps become links) and
    bookmarks, grouped by series. No player on the page and no embeds: every video is a deep link to YouTube at your
    saved position (&t=), and the page never contacts YouTube unless you press "Get title". Everything lives in this

@@ -1,4 +1,4 @@
-/* Chess Lab Open — Guess the move: instructive games played from the winner's side.
+/* Think Ahead — Guess the move: instructive games played from the winner's side.
    Scoring data is precomputed (MultiPV 3, depth 14, the private kit's rule):
    2 pts = key move, 1 = other, 0 = forced; a guess within 0.1 winning chances of the
    game move ("alts", or judged live by Stockfish) counts as "just as good" (1 pt).

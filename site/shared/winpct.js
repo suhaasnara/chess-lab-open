@@ -1,4 +1,4 @@
-/* Shared (Chess Lab and Chess Lab Open). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
+/* Shared (Chess Lab and Think Ahead). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
    Win%: how both sites put a Stockfish eval into words, the way Lichess does (https://lichess.org/page/accuracy):
      Win% = 50 + 50 * (2 / (1 + exp(-0.00368208 * centipawns)) - 1)
    The grading code keeps working on Lichess's -1..1 "winning chances" (wc), where Lichess's own thresholds are

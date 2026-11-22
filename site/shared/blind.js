@@ -1,10 +1,10 @@
-/* Shared (Chess Lab and Chess Lab Open). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
+/* Shared (Chess Lab and Think Ahead). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
    Blind tactics (12 Nov 2026), after listudy's blind tactics, with a rating range: the board shows the position N plies
    before a Lichess puzzle, the hidden moves are listed under it, and you solve without the board moving. On listudy every
    tactic ends in a simple motif, so more hidden plies only means visualizing a two-mover; a rating range makes the tactic
    itself hard as well.
 
-   Data: blind.json (Chess Lab Open's tools/pick_blind.py, CC0 Lichess puzzles and their games): [{id: 'bt-'+Lichess id,
+   Data: blind.json (chess-lab-open's tools/pick_blind.py, CC0 Lichess puzzles and their games): [{id: 'bt-'+Lichess id,
    rating, fen (16 plies before the puzzle position), hidden: [16 SAN; the last is the opponent's move that sets the
    puzzle], sol: [UCI: your move, the reply, ...], themes, motif}]. Loaded on first use.
 

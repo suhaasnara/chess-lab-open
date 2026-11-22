@@ -1,4 +1,4 @@
-/* Chess Lab Open — the 14 Nov 2026 audit's own steps, replayed in a real browser (Playwright; Firefox and Chromium in CI).
+/* Think Ahead — the 14 Nov 2026 audit's own steps, replayed in a real browser (Playwright; Firefox and Chromium in CI).
      node tests/browser/audit.js <firefox|chromium|webkit> [outDir]        CHROME=<path>: a local Chrome
    Each block is one audit item, done the way the audit found it, with the real Stockfish where the item needs it:
      1  Endgames: the "best play" line of every basic mate ends in mate; the mating move is graded best (a tick).

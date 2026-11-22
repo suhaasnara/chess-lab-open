@@ -1,4 +1,4 @@
-/* Chess Lab Open — the finish pass on phones (19 Nov 2026): every page, in the states a visitor sees, at an iPhone's size,
+/* Think Ahead — the finish pass on phones (19 Nov 2026): every page, in the states a visitor sees, at an iPhone's size,
    with checks a person would otherwise make by eye.
      node tests/browser/polish.js <webkit|chromium|firefox> [outDir] [--seed]
    --seed analyzes a published game (data/gtm/game8.json) with the real Stockfish and adds a video, then keeps that browser

@@ -1,4 +1,4 @@
-/* Shared (Chess Lab and Chess Lab Open). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
+/* Shared (Chess Lab and Think Ahead). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
    Puzzle titles that don't give the idea away (Today, Tactics, Calculation): by default a neutral id; the theme shows
    once the puzzle is done (solved, missed or revealed), or always with Settings → "Show theme in title" (ptheme).
    Puzzles.title(id, theme, done, n) -> text ("Puzzle n" when the caller passes the puzzle's number, else the id);

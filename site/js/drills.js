@@ -1,4 +1,4 @@
-/* Chess Lab Open — drills from your own analyzed games: the position before your
+/* Think Ahead — drills from your own analyzed games: the position before your
    mistake; find a better move. Judged against Stockfish (within 0.1 winning chances
    of the best line counts, the kit's rule). Drill ids: 'a' + sha1(fen|playedUci)[:8]. */
 'use strict';

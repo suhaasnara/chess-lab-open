@@ -1,6 +1,6 @@
 # Credits and licenses
 
-Chess Lab Open's own code (everything not listed below) is MIT, © 2026 Suhaas
+Think Ahead's own website code (everything not listed below) is MIT, © 2026 Suhaas
 Narayanan — see [LICENSE](LICENSE).
 
 ## Engine

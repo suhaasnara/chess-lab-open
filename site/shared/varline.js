@@ -1,4 +1,4 @@
-/* Shared (Chess Lab and Chess Lab Open). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
+/* Shared (Chess Lab and Think Ahead). Home: chess-lab-open/site/shared/ (MIT); the private kit pulls a pinned copy.
    Side lines you can click through on the board (Guess the move, Calculation, a drill's best line …), Lichess-study style.
 
    VarLine.html(fen, text, prefix)  a side line written as text, played from fen, as HTML: every legal move is a button,
