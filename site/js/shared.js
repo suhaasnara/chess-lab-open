@@ -37,7 +37,7 @@ window.Store=(()=>{
   const del=k=>{ try{ localStorage.removeItem(PRE+k) }catch(e){} };
   const keys=()=>{ const out=[]; try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.startsWith(PRE)) out.push(k.slice(PRE.length)) } }catch(e){} return out };
   const exportAll=()=>{ const o={_app:'chess-lab-open',_v:1,_t:new Date().toISOString()}; for(const k of keys()) o[k]=get(k); return o };
-  const importAll=o=>{ if(!o||o._app!=='chess-lab-open') throw new Error('Not a Chess Lab Open export.');
+  const importAll=o=>{ if(!o||o._app!=='chess-lab-open') throw new Error('Not a Think Ahead export.');
     let n=0; for(const k in o){ if(k[0]==='_') continue; put(k,o[k]); n++ } migrate(); return n };   /* an old export can hold a pack's keys */
   /* put that says whether it worked (false when this browser's storage is full) */
   const tryPut=(k,v)=>{ try{ localStorage.setItem(PRE+k,JSON.stringify(v)); return true }catch(e){ return false } };

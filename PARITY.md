@@ -1,6 +1,6 @@
-# Chess Lab Open and the private Chess Lab: what matches, what differs, and the plan
+# Think Ahead (Chess Lab Open) and the private Chess Lab: what matches, what differs, and the plan
 
-Chess Lab Open is the public version of Suhaas's private training site, Chess Lab. The two should feel like the
+Chess Lab Open (shown to visitors as **Think Ahead** since 22 Nov 2026; "Open" below means this site) is the public version of Suhaas's private training site, Chess Lab. The two should feel like the
 same tool. The only intended difference is the data: the private site is built around his own games, course PGNs,
 calculation books and opponents, and none of that can be published. Everything that works on open data, or on the
 visitor's own data, belongs in both.

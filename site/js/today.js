@@ -181,7 +181,7 @@ function welcome(show){
   const el=$('welcome'); if(!el) return;
   let seen=false; try{ seen=localStorage.getItem('clo-welcome')==='seen'||hasProgress() }catch(e){}
   el.hidden=show===true?false:seen;
-  const more=$('welcome-more'); if(more) more.open=show===true;   /* asked for ("How Chess Lab Open works"): the whole list; a first visit: three lines and two buttons */
+  const more=$('welcome-more'); if(more) more.open=show===true;   /* asked for ("How Think Ahead works"): the whole list; a first visit: three lines and two buttons */
   /* returning visitors get Chess Lab's board page (no big header on Today); the guide brings it back */
   document.body.classList.toggle('welcomed',el.hidden);
 }

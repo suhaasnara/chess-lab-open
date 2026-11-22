@@ -547,7 +547,7 @@ section('t19: first-visit guide and link preview');
   { const d=w.document, more=d.getElementById('welcome-more');
     assert(more&&!more.open&&more.querySelectorAll('li').length>=6&&!el.querySelector(':scope > ul'),'the long list is folded away behind "How it works"');
     assert(d.getElementById('welcome-go').getAttribute('href')==='#analyze'&&/Just try a puzzle/.test(d.getElementById('welcome-try').textContent)&&el.querySelector('.welcomelead').textContent.length<200,'the card: a short lead, Analyze my games, Just try a puzzle');
-    d.getElementById('td-help').click(); assert(more.open,'"How Chess Lab Open works" opens the whole list') ; more.open=false }
+    d.getElementById('td-help').click(); assert(more.open,'"How Think Ahead works" opens the whole list') ; more.open=false }
   w.document.getElementById('welcome-ok').click();
   assert(el.hidden&&w.localStorage.getItem('clo-welcome')==='seen','Got it hides it and remembers');
   w.document.getElementById('help-open').click(); await sleep(60);
@@ -559,7 +559,7 @@ section('t19: first-visit guide and link preview');
   assert(w.localStorage.getItem('clo-welcome')===null,'(nothing written: it is worked out from their progress)');
   const meta=n=>{ const m=w.document.querySelector(`meta[property="${n}"],meta[name="${n}"]`); return m&&m.content };
   assert(/^https:\/\/suhaasnarayanan\.com\/chess-lab-open\/assets\/og\.jpg$/.test(meta('og:image'))&&fs.existsSync(path.join(H.SITE,'assets','og.jpg')),'og:image points at the preview image, which exists');
-  assert(meta('twitter:card')==='summary_large_image'&&/Chess Lab Open/.test(meta('og:title')),'Open Graph and Twitter tags are set');
+  assert(meta('twitter:card')==='summary_large_image'&&/Think Ahead/.test(meta('og:title')),'Open Graph and Twitter tags are set');
 }
 
 section('t20: Progress charts');

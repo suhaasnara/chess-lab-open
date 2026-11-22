@@ -1,4 +1,4 @@
-# Chess Lab Open
+# Think Ahead
 
 An open-source, bring-your-own-data chess trainer by
 [Suhaas Narayanan](https://suhaasnarayanan.com/chess)
@@ -8,6 +8,9 @@ It is the public version of his private training site, Chess Lab, with none of
 the private data: everything here runs on open databases and on games you fetch
 yourself from your own accounts, entirely in your browser. No server, no
 accounts, no uploads: progress lives in localStorage with JSON export/import.
+
+It was called Chess Lab Open until November 2026. The repository name and the web address
+(https://suhaasnarayanan.com/chess-lab-open/) stay the same, so links and saved progress keep working.
 
 ## What it does
 
@@ -158,7 +161,7 @@ node reader.js chromium    # the phone reader on iPhone 15 / SE sizes, and no re
 node keys.js firefox       # the arrow keys through side lines (← → ↓ ↑), pressed for real
 ```
 
-The code both Chess Lab sites run lives in `site/shared/` (see PARITY.md); the private kit pulls a pinned copy.
+The code this site and the private Chess Lab both run lives in `site/shared/` (see PARITY.md); the private kit pulls a pinned copy.
 
 CI also runs `tools/privacy_guard.py`, which fails the build if anything from
 the private kit (course filenames, personal PGNs, opponent names) ever shows up

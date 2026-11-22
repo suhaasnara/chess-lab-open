@@ -152,7 +152,7 @@ async function hint(){
   else { board.setHint(u.slice(0,2),u.slice(2,4)); status('warn','Hint: '+sanOf(S.g.fen(),u),`Hints this game: ${S.hints}.`) }
 }
 const numbered=(fen,sans)=>{ const t=(fen||'x w - - 0 1').split(' '); let n=+t[5]||1, w=t[1]!=='b'; return sans.map((s,i)=>{ const x=w?n+'. '+s:(i===0?n+'... '+s:s); if(!w) n++; w=!w; return x }).join(' ') };
-function pgn(){ const d=new Date(); const tags=[['Event','Chess Lab Open: Play'],['Site','Chess Lab Open'],['Date',d.toISOString().slice(0,10).replace(/-/g,'.')],
+function pgn(){ const d=new Date(); const tags=[['Event','Think Ahead: Play'],['Site','Think Ahead'],['Date',d.toISOString().slice(0,10).replace(/-/g,'.')],
     ['White',S.me==='w'?'Me':'Stockfish '+S.elo],['Black',S.me==='b'?'Me':'Stockfish '+S.elo],['Result',S.result||'*']].concat(S.start?[['SetUp','1'],['FEN',S.start]]:[]);
   return tags.map(([k,v])=>`[${k} "${v}"]`).join('\n')+'\n\n'+numbered(S.start,S.moves)+' '+(S.result||'*') }
 async function reviewLichess(){ const r=await Net.review(pgn()); if(!r.ok) status('warn','Lichess import didn’t work here.',(r.copied?'The PGN is copied: paste it on the page that opened. ':'Copy the PGN below and paste it on lichess.org/paste. ')+r.why) }

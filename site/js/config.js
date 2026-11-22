@@ -2,7 +2,7 @@
    The private Chess Lab has its own (same shape); the shared code reads whichever site it is running on. */
 'use strict';
 Site.define({
-  id:'open', name:'Chess Lab Open',
+  id:'open', name:'Think Ahead',
   tabs:{
     main:[['today','Today'],['openings','Openings'],['drills','Drills'],['tactics','Tactics'],['analyze','Analyze my games','Report card and drills from your own games'],['progress','Progress']],
     extra:[   /* grouped, two columns (shared nav.js, 13 Nov 2026) */
