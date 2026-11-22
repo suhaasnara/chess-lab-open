@@ -55,7 +55,7 @@ Native.start({
   about:'#about',
   reminder:[{k:'drills',one:'drill',many:'drills',hash:'#drills'},{k:'blind',one:'Blind tactic',many:'Blind tactics',hash:'#blind'},
     {k:'endgames',one:'endgame',many:'endgames',hash:'#endgames'},{k:'blundercheck',one:'Blunder check',many:'Blunder checks',hash:'#blundercheck'}],
-  welcome:['Everything works offline.','Your progress stays on this iPhone (and your Apple Watch) and is backed up in Files.',
+  welcome:d=>['Everything works offline.',`Your progress stays on this ${d.name}${d.watch?' (and your Apple Watch)':''} and is backed up in Files.`,
     'Nothing is sent anywhere, except what you fetch yourself: your games from Lichess or Chess.com.'],
 });
 

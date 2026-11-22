@@ -884,7 +884,7 @@ function init(){
   $('o-studyurl').addEventListener('keydown',e=>{ if(e.key==='Enter') fetchStudy() });
   $('o-repcancel').addEventListener('click',()=>{ $('o-importmodal').hidden=true });
   $('o-pgnfile').addEventListener('change',async e=>{ const f=e.target.files&&e.target.files[0]; if(!f) return;
-    if(f.size>8e6){ $('o-reperr').textContent='That file is over 8 MB: too big to keep in this browser.'; return }
+    if(f.size>8e6){ $('o-reperr').textContent='That file is over 8 MB: too big to keep on this device.'; return }
     $('o-pgnbox').value=await f.text(); if(!$('o-repname').value.trim()) $('o-repname').value=f.name.replace(/\.pgn$/i,'').slice(0,60);
     $('o-reperr').textContent=`Read ${f.name}. Check the name and side, then Import.`; e.target.value='' });
   /* settings modal: every control writes its setting at once */

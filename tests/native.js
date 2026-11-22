@@ -35,7 +35,8 @@ module.exports=async function(H){
     assert(w.Native.app===false&&d.getElementById('appbox').hidden,'outside the app: Native.app is false and the iPhone app card stays hidden');
     assert(!/changed/.test(String(w.Store.put))&&!/verdict/.test(String(w.makeBoard)),'… Store.put and makeBoard are the site’s own (nothing wrapped)');
     await sleep(300); assert(!d.getElementById('app-sheet')&&!d.documentElement.classList.contains('in-app'),'… no card over the page, no in-app class');
-    w.Native.verdict('good'); assert(true,'… Native.verdict does nothing (no plugin, no error)'); }
+    w.Native.verdict('good'); assert(true,'… Native.verdict does nothing (no plugin, no error)');
+    assert(w.SharedEngine.sources.length===3&&/unpkg/.test(w.SharedEngine.sources[1]),'… the website keeps its engine fallbacks (unpkg, cdnjs)'); }
 
   section('app layer: first launch, Settings card, the reminder asked in context');
   { const log=[]; const {w}=await makePage({beforeLoad:fakeApp(log)}); const d=w.document;
@@ -47,6 +48,7 @@ module.exports=async function(H){
     const box=d.getElementById('appbox');
     assert(!box.hidden&&/iPhone app/.test(box.textContent)&&/Apple Watch/.test(box.textContent)&&/Backup/.test(box.textContent),'Settings shows the iPhone app card: vibration, reminder, Apple Watch, backup');
     assert(d.documentElement.classList.contains('in-app'),'… and the page knows it is in the app');
+    assert(JSON.stringify(w.SharedEngine.sources)==='["Stockfish 18 lite"]','in the app only the bundled Stockfish is used: no code is ever downloaded (App Review 2.5.2)');
     await sleep(3300);
     assert(calls(log,'LN','request').length===0&&calls(log,'LN','check').length>0,'no notification prompt at launch (only a check)');
     w.Store.put('tactics-progress',{a:{ok:true,t:Date.now()}}); w.Store.put('tactics-progress',{a:{ok:true,t:Date.now()}}); w.Store.put('tac-rating',{r:1510,n:1});
@@ -145,4 +147,29 @@ module.exports=async function(H){
     await sleep(150); const sh=w.document.getElementById('app-sheet'); let reloaded=false; w.Native.reloadPage=()=>{ reloaded=true };
     sh.querySelector('button[data-a="restore"]').click(); await sleep(50);
     assert(w.Store.get('tactics-progress').a.ok===true&&reloaded,'Restore it brings the progress back and reloads the page'); }
+
+  section('app layer: on an iPad (22 Nov 2026)');
+  { const pad={device:'pad',supported:false,paired:false,installed:false};
+    const log=[]; const {w}=await makePage({beforeLoad:fakeApp(log,{watch:pad})}); const d=w.document;
+    await sleep(150);
+    const sh=d.getElementById('app-sheet');
+    assert(sh&&/stays on this iPad and is backed up/.test(sh.textContent)&&!/Apple Watch|iPhone/.test(sh.textContent),'the welcome card says iPad, with no Apple Watch and no iPhone');
+    sh.querySelector('button').click();
+    const box=d.getElementById('appbox'), t=box.textContent;
+    assert(/iPad app/.test(t)&&/stay on this iPad/.test(t)&&!/iPhone/.test(t),'Settings: the iPad app card, never “iPhone”');
+    assert(!/Apple Watch/.test(t)&&!d.getElementById('ap-wsync'),'… no Apple Watch row (an iPad can’t pair one)');
+    assert(!/Vibrate/.test(t)&&!d.getElementById('ap-haptics'),'… no vibration row (no Taptic Engine)');
+    assert(/On My iPad → Think Ahead/.test(t),'… the backup is in Files under On My iPad');
+    assert(w.Native.device==='pad'&&d.documentElement.classList.contains('on-ipad'),'… and the page knows it is on an iPad');
+    const b=w.makeBoard(d.createElement('div'),{}); b.flash(['e2','e4'],'good'); b.flash(['e7','e5'],'bad');
+    assert(!calls(log,'Haptics').length,'… a right or wrong move doesn’t call the haptics plugin'); }
+  { const backup=JSON.stringify({_app:'chess-lab-open',_v:1,_t:'2026-11-16T21:42:00.000Z','tactics-progress':{a:{ok:true,t:1}}});
+    const log=[]; const {w}=await makePage({beforeLoad:fakeApp(log,{watch:{device:'pad',supported:false},files:{'Think Ahead backup.json':backup},localStorage:{'clo-app':JSON.stringify({welcomed:true,asked:true})}})});
+    await sleep(150); const sh=w.document.getElementById('app-sheet');
+    assert(sh&&/progress on this iPad is empty/.test(sh.textContent),'the restore offer on an iPad says “this iPad”'); }
+  { const log=[]; const {w}=await makePage({beforeLoad:fakeApp(log,{watch:{device:'phone',supported:true,paired:true,installed:true}})}); const d=w.document;
+    await sleep(150); const sh=d.getElementById('app-sheet');
+    assert(sh&&/stays on this iPhone \(and your Apple Watch\)/.test(sh.textContent),'an iPhone (device: phone) keeps the iPhone wording');
+    sh.querySelector('button').click(); const t=d.getElementById('appbox').textContent;
+    assert(/iPhone app/.test(t)&&/Apple Watch/.test(t)&&/Vibrate/.test(t)&&/On My iPhone/.test(t)&&w.Native.device==='phone','… and its card keeps the watch, vibration and On My iPhone'); }
 };

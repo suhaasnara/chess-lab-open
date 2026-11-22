@@ -158,7 +158,7 @@ body[data-view="guess"] main.inner{max-width:1200px}   /* 17 Nov 2026: the same 
 /* Settings: groups of rows with segmented buttons | a preview board. Chess Lab's .setwrap values. */
 .tvset.setwrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,300px);gap:20px;align-items:start;max-width:1000px}
 .tvset .setgroup{font-size:1.15rem;margin:22px 0 2px}
-.tvset .setrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 18px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.tvset .setrow{display:grid;grid-template-columns:minmax(min(220px,100%),1fr) minmax(0,max-content);gap:6px 18px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}   /* the label keeps 220px; a long choice row wraps instead of crushing it (iPad widths, 22 Nov 2026) */
 .tvset .setrow:last-child{border-bottom:0}
 .tvset .setname{font-weight:600;color:var(--head)}
 .tvset .setrow .seg{display:inline-flex;flex-wrap:wrap}

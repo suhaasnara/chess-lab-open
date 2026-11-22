@@ -2378,7 +2378,7 @@ section('t73: the games you analyzed are kept (js/agames.js): every drill and co
   assert(w.document.body.dataset.view==='drills'&&w.DrillsTab.state.cur&&w.DrillsTab.state.cur.fen===BC1.real,'Train this drill opens it in Drills');
   /* a game that isn't kept */
   w.location.hash='#game?id=nope'; await sleep(60);
-  assert(!$('gv-empty').hidden&&$('gv-main').hidden&&/isn’t kept in this browser/.test($('gv-empty').textContent),'an unknown game: a plain explanation, no broken board');
+  assert(!$('gv-empty').hidden&&$('gv-main').hidden&&/isn’t kept on this device/.test($('gv-empty').textContent),'an unknown game: a plain explanation, no broken board');
 
   /* a reload: the report comes back from the kept games, no fetch and no engine */
   const saved={}; for(let i=0;i<w.localStorage.length;i++){ const k=w.localStorage.key(i); saved[k]=w.localStorage.getItem(k) }

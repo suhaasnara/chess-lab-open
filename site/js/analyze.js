@@ -348,8 +348,8 @@ async function run(site,user,blitz){
     const needEngine=games.filter(g=>!g.analysis&&!evCache.get(g.id,m)), nEng=Math.min(needEngine.length,budget.games);
     const engPlies=needEngine.slice(0,nEng).reduce((a,g)=>a+g.moves.length,0);
     const how=`${m==='deep'?'Deep':'Standard'} analysis, depth ${DEPTH[m]}`;
-    note(site==='pgn'?`${fileNote} ${games.length-needEngine.length} already have evals${nEng?`; Stockfish is analyzing the other ${nEng} in your browser (${how}). You can stop any time: what is done is kept, and running it again carries on.`:'.'}`
-      :`${Help.n(games.length,'game')}.${nEng?` ${nEng} without stored evals — analyzing with Stockfish in your browser (${how}), this takes a while…`:''}`,true);
+    note(site==='pgn'?`${fileNote} ${games.length-needEngine.length} already have evals${nEng?`; Stockfish is analyzing the other ${nEng} on your device (${how}). You can stop any time: what is done is kept, and running it again carries on.`:'.'}`
+      :`${Help.n(games.length,'game')}.${nEng?` ${nEng} without stored evals — analyzing with Stockfish on your device (${how}), this takes a while…`:''}`,true);
     stopReq=false; if($('a-stop')) $('a-stop').hidden=!nEng;
     const rows=[], t0=Date.now(); let doneP=0, drawn=0, tick=Date.now();
     for(let i=0;i<games.length&&!stopReq;i++){

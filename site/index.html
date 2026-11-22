@@ -36,7 +36,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
   <div class="inner">
     <h1>Think Ahead</h1>
     <p>A free, open-source chess trainer: openings against real games, tactics, calculation, and drills from your own
-       Lichess or Chess.com games. It all runs in your browser; nothing is uploaded.
+       Lichess or Chess.com games. It all runs on your device; nothing is uploaded.
        By <a href="https://suhaasnarayanan.com/chess">Suhaas Narayanan</a>
        (<a href="https://www.chess.com/member/CoachSuhaas">CoachSuhaas</a> on Chess.com,
        <a href="https://lichess.org/@/suhaasn">suhaasn</a> on Lichess). <button class="linkbtn herohelp" id="help-open">How it works</button></p>
@@ -65,7 +65,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
         <li><b><a href="#players">Players</a>:</b> type an opponent’s username to see what they play, train against their openings and print a pre-round sheet. <b><a href="#watch">Watch</a>:</b> your own video library, with your place, notes and bookmarks.</li>
         <li><b><a href="#tactics">Tactics</a>, <a href="#calc">Calculation</a>, <a href="#endgames">Endgames</a>, <a href="#play">Play</a> and <a href="#guess">Guess the move</a></b> (add your own games too) for everything else.</li>
         <li><b>On every board:</b> right-click or right-drag for circles and arrows (Shift red, Alt or Ctrl blue). Settings → Theme switches to dark.</li>
-        <li><b>Private by design:</b> no account, nothing uploaded. Your progress stays in this browser (Progress → Export to move it).</li>
+        <li><b>Private by design:</b> no account, nothing uploaded. Your progress stays on this device (Progress → Export to move it).</li>
       </ul>
       <div class="btns" style="margin-top:10px"><button class="btn" id="welcome-ok" type="button">Got it</button></div>
       </details>
@@ -179,7 +179,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
     <div class="card">
       <h2>Import a repertoire</h2>
       <p class="note">Paste a PGN of your repertoire (Lichess study, Chessable course export, or any PGN with variations), or the link to a public or unlisted Lichess study (every chapter is imported).
-         It is parsed in your browser and stored only on this device.</p>
+         It is read and stored only on this device.</p>
       <div class="moverow" style="margin:0 0 8px"><input type="text" id="o-studyurl" placeholder="Or a Lichess study link: https://lichess.org/study/…" aria-label="Lichess study link">
         <button class="btn" id="o-studyget">Fetch</button></div>
       <textarea id="o-pgnbox" rows="8" placeholder="[Event &quot;...&quot;]&#10;&#10;1. e4 e5 2. Nf3 ..."></textarea>
@@ -219,7 +219,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
     <div class="card">
       <div class="mhead"><h2 id="o-settitle">Trainer settings</h2><button class="btn sm" id="o-setclose" aria-label="Close">Close ✕</button></div>
       <div id="o-setbody"></div>
-      <div class="btns" style="margin-top:12px"><button class="btn sm" id="o-setreset">Reset to default</button><span class="note">Changes apply at once and stay in this browser.</span></div>
+      <div class="btns" style="margin-top:12px"><button class="btn sm" id="o-setreset">Reset to default</button><span class="note">Changes apply at once and stay on this device.</span></div>
     </div>
   </div>
   <div class="modal" id="o-statsmodal" hidden role="dialog" aria-modal="true" aria-labelledby="o-statstitle">
@@ -352,12 +352,12 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
   <div class="card" id="a-form">
     <h2>Analyze my games</h2>
     <p class="note" data-src="online">Fetches your recent rapid and classical games straight from the Lichess or Chess.com public API
-       &mdash; in your browser; nothing is uploaded anywhere. Lichess games reuse Lichess&rsquo;s own server analysis where
+       &mdash; on your device; nothing is uploaded anywhere. Lichess games reuse Lichess&rsquo;s own server analysis where
        it exists; Chess.com has no stored evals, so the last <span id="a-capnote">25</span> games are analyzed with
-       Stockfish in your browser instead (slower).</p>
+       Stockfish on your device instead (slower).</p>
     <p class="note" data-src="pgn" hidden>Your own PGN files &mdash; over-the-board games from a tournament database, ChessBase, Lichess
-       study exports (a study holds 64 chapters, so add as many as you need) or anything else. They are read in this browser
-       and never uploaded. Results are ready at once; Stockfish then analyzes every game without evals in your browser. You
+       study exports (a study holds 64 chapters, so add as many as you need) or anything else. They are read on this device
+       and never uploaded. Results are ready at once; Stockfish then analyzes every game without evals on your device. You
        can stop and carry on later: finished games are kept.</p>
     <div class="row2 aform">
       <label class="field">Source
@@ -377,7 +377,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
       <div class="chips" id="a-pgnnames"></div>
       <select id="a-pgnname" hidden aria-hidden="true" tabindex="-1"></select></div>
     <div class="card acheckcard" id="a-checks" hidden></div>
-    <p class="note" data-src="online">Blitz adds many games; Lichess rarely has stored evals for them, so at most 25 games are analyzed by Stockfish in your browser (the bar shows progress). Results by colour and by rating use every game fetched.</p>
+    <p class="note" data-src="online">Blitz adds many games; Lichess rarely has stored evals for them, so at most 25 games are analyzed by Stockfish on your device (the bar shows progress). Results by colour and by rating use every game fetched.</p>
     <fieldset class="amode" id="a-est"><legend>Analysis</legend>
       <label class="amopt"><input type="radio" name="a-mode" value="standard" checked><span><b>Standard</b> <span class="note">depth 11 · quick</span><span class="note aest" id="a-est-standard"></span></span></label>
       <label class="amopt"><input type="radio" name="a-mode" value="deep"><span><b>Deep</b> <span class="note">depth 16 · more accurate, takes longer</span><span class="note aest" id="a-est-deep"></span></span></label>
@@ -419,7 +419,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
         <div id="d-head"></div>
         <div class="status" id="d-status" aria-live="polite">Pick a drill from the list.</div>
         <div class="card" id="d-gamecard"><span class="label">The game</span><dl class="facts" id="d-facts"></dl></div>
-        <p class="note dfoot">Evals are from White's side: + favors White, − favors Black. Live engine: Stockfish in your browser.</p>
+        <p class="note dfoot">Evals are from White's side: + favors White, − favors Black. Live engine: Stockfish on your device.</p>
       </div>
     </div>
   </div>
@@ -567,7 +567,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
     <div class="card">
       <h2 id="g-addtitle">Add your own game</h2>
       <p class="note">Paste a PGN (one game or several) or choose a file. Notes in braces, side lines in brackets, move marks (!, ?, $1 …) and Lichess arrows are kept.
-         It is read in your browser and stored only on this device.</p>
+         It is read and stored only on this device.</p>
       <textarea id="g-addbox" rows="8" placeholder="[White &quot;Me&quot;]&#10;[Black &quot;A friend&quot;]&#10;[Result &quot;1-0&quot;]&#10;&#10;1. e4 e5 2. Nf3 {the plan} Nc6 …"></textarea>
       <div class="row2" style="margin-top:8px">
         <label class="field">Guess the moves of
@@ -591,7 +591,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
         </div>
         <div class="chips" id="p-speeds" style="margin-top:8px;gap:12px"></div>
         <div class="btns" style="margin-top:10px"><button class="btn primary" id="p-go" type="submit">Fetch their games</button><span class="note" id="p-err" role="status"></span></div>
-        <p class="note" style="margin:8px 0 0">Their last 200 public games are fetched by your browser from the site’s public API and kept only on this device.</p>
+        <p class="note" style="margin:8px 0 0">Their last 200 public games are fetched by this device from the site’s public API and kept only here.</p>
       </form>
       <div class="label tvlabel" id="p-listlabel" style="margin-top:4px">Players</div>
       <div class="list" id="p-list"></div>
@@ -623,7 +623,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
       </div>
       <datalist id="wa-topics"></datalist><datalist id="wa-series"></datalist>
       <div class="btns" style="margin-top:10px"><button class="btn primary" id="wa-asave" type="button">Add to my library</button><span class="note" id="wa-aerr" role="status"></span></div>
-      <p class="note" style="margin:8px 0 0">No videos play on this page: each one opens on YouTube at your saved position. Your library, notes and bookmarks stay in this browser.</p>
+      <p class="note" style="margin:8px 0 0">No videos play on this page: each one opens on YouTube at your saved position. Your library, notes and bookmarks stay on this device.</p>
     </details>
     <div class="label" id="wa-count"></div>
     <div id="wa-list" class="walist"></div>
@@ -646,7 +646,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
     </div>
     <h3>By opening</h3>
     <div class="tablewrap"><table id="p-table"></table></div>
-    <p class="note" id="p-note" style="margin-top:12px">Progress lives in this browser only (localStorage). Export it to move devices.</p>
+    <p class="note" id="p-note" style="margin-top:12px">Progress lives only on this device. Export it to move it to another.</p>
   </div>
 </section>
 
@@ -655,7 +655,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
   <div class="setwrap tvset">
   <div class="card">
     <h2>Settings</h2>
-    <p class="note" style="margin:0">Kept in this browser.</p>
+    <p class="note" style="margin:0">Kept on this device.</p>
     <div id="s-rows"></div>
     <p class="note" style="margin-top:14px">Engine: Stockfish 18 (lite, WebAssembly), GPL-3.0 &mdash; served with this site;
        source at <a href="https://github.com/official-stockfish/Stockfish">github.com/official-stockfish/Stockfish</a> and
@@ -676,13 +676,13 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
   <div class="card">
     <h2>About Think Ahead</h2>
     <p>A free, open-source chess trainer: openings against real games, tactics, calculation, blind tactics, endgames, and
-       drills from your own games. It runs entirely in your browser<span class="app-only"> (here, in the app on
-       your iPhone and Apple Watch)</span>. There is no account and no server of ours: the site is a set of files.</p>
+       drills from your own games. It runs entirely on your device: in your browser on the web<span class="app-only">, and here
+       in the app for iPhone, iPad and Apple Watch</span>. There is no account and no server of ours: the site is a set of files.</p>
   </div>
   <div class="card" id="ab-privacy">
     <h2>Privacy</h2>
     <p class="note" style="margin-top:0">In effect since 18 November 2026. This is the privacy policy of Think Ahead: the website and
-       the app for iPhone and Apple Watch.</p>
+       the app for iPhone, iPad and Apple Watch.</p>
     <h3>We collect nothing</h3>
     <p>There are no accounts, no analytics, no ads, no tracking and no cookies of ours. We have no server that receives
        anything from you, so we never see your games, your progress or any other data.</p>
@@ -690,21 +690,21 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
     <ul>
       <li>On the website: in this browser's own storage, on this device only. Progress → Export progress saves it as a file;
           clearing the browser's data deletes it.</li>
-      <li class="app-only">In the iPhone app: on your iPhone, and copied after each session to a backup file in the
-          Files app (On My iPhone → Think Ahead), which goes into your iPhone's own backups. On the Apple Watch: on the
-          watch. The watch and the iPhone exchange your results directly, through Apple's WatchConnectivity; nothing
-          passes through us. Review reminders are scheduled on the iPhone itself. Deleting the app deletes its progress
+      <li class="app-only">In the app on iPhone or iPad: on that device, and copied after each session to a backup file
+          in the Files app (On My iPhone or On My iPad → Think Ahead), which goes into the device's own backups. On the
+          Apple Watch: on the watch. The watch and the iPhone exchange your results directly, through Apple's
+          WatchConnectivity; nothing passes through us. Review reminders are scheduled on the iPhone or iPad itself. Deleting the app deletes its progress
           (and the backup in Files, unless you moved it).</li>
     </ul>
     <h3>What leaves your device, and only when you ask</h3>
     <ul>
-      <li><b>Your games:</b> when you type a username in Analyze my games or Players, your browser asks the public
+      <li><b>Your games:</b> when you type a username in Analyze my games or Players, your device asks the public
           <a href="https://lichess.org/api">Lichess API</a> (lichess.org) or the
           <a href="https://www.chess.com/news/view/published-data-api">Chess.com API</a> (api.chess.com) for that player's games. A Lichess study link you paste is fetched from Lichess the same way.</li>
       <li><b>Endgames:</b> positions off the stored lines are sent to the <a href="https://tablebase.lichess.ovh">Lichess tablebase</a>.</li>
       <li><b>Review on Lichess:</b> sends that game's moves to Lichess to open its analysis board.</li>
       <li><b>Watch:</b> "Get title" asks YouTube (www.youtube.com) for a video's title.</li>
-      <li><b>The engine:</b> Stockfish ships with the site; only if your browser can't run that copy is one fetched from
+      <li><b>The engine:</b> Stockfish ships with the site and the app. On the website only, if your browser can't run that copy, one is fetched from
           unpkg.com or cdnjs.cloudflare.com.</li>
     </ul>
     <p>Those services receive the request from your device (and so its IP address), under their own privacy policies.
@@ -722,7 +722,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
       <thead><tr><th>Part</th><th>Licence</th></tr></thead>
       <tbody>
         <tr><td>Think Ahead's website code</td><td>MIT</td></tr>
-        <tr class="app-only"><td>The Think Ahead app (iPhone and Apple Watch)</td><td>GPL-3.0-or-later</td></tr>
+        <tr class="app-only"><td>The Think Ahead app (iPhone, iPad and Apple Watch)</td><td>GPL-3.0-or-later</td></tr>
         <tr><td>Stockfish 18 (the engine)</td><td>GPL-3.0</td></tr>
         <tr><td>chess.js 0.10.3</td><td>BSD-2-Clause</td></tr>
         <tr><td>cburnett pieces (Colin M.L. Burnett, via Lichess)</td><td>GPLv2+</td></tr>
@@ -737,7 +737,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
   <div class="card" id="ab-source">
     <h2>Source</h2>
     <p>The website: <a href="https://github.com/suhaasnara/chess-lab-open">github.com/suhaasnara/chess-lab-open</a>.</p>
-    <p class="app-only">The iPhone and Apple Watch app: <a href="https://github.com/suhaasnara/chess-lab-open-app">github.com/suhaasnara/chess-lab-open-app</a>.</p>
+    <p class="app-only">The app for iPhone, iPad and Apple Watch: <a href="https://github.com/suhaasnara/chess-lab-open-app">github.com/suhaasnara/chess-lab-open-app</a>.</p>
     <p class="note">Made by <a href="https://suhaasnarayanan.com/chess">Suhaas Narayanan</a>.</p>
   </div>
   </div>
