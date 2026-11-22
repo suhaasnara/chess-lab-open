@@ -604,3 +604,6 @@ th.num{white-space:normal}   /* a heading wraps rather than run into the next on
 .aboutwrap ul{padding-left:20px;margin:6px 0}
 .aboutwrap li{margin:4px 0}
 html:not(.in-app) .app-only{display:none}
+/* Settings in the app on a wide screen (an iPad, 22 Nov 2026): the iPhone / iPad app card goes under the settings in the
+   wide column, not into the 300px preview column beside them */
+@media (min-width:861px){.tvset.setwrap>#appbox{grid-column:1}.tvset.setwrap>.setpreview{grid-column:2;grid-row:1 / span 2}}
