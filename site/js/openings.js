@@ -248,9 +248,9 @@ function retryMiss(){ const m=canRedo()&&firstMiss(); if(!m) return false; S.bro
 const redoLabel=()=>browsing()&&redoFrom()>redoBase()?'Redo from here':'Redo line';
 function refreshRedo(){ document.querySelectorAll('[data-redo]').forEach(b=>{ (b.querySelector('.lbl')||b).textContent=redoLabel()+(b.dataset.redo==='k'?' (D)':''); b.disabled=!canRedo() }) }
 function viewPos(){ if(!browsing()) return {g:S.g,last:lastMove(S.g)}; const g=new Chess(S.fens[S.browse]); return {g,last:lastMove(g)} }
-function draw(){
+function draw(keepHint){
   const v=viewPos();
-  board.set(v.g,{last:v.last,orient:board?.orient&&S.orientSet?board.orient:myColor(),locked:browsing()||S.phase!=='await'});
+  board.set(v.g,{last:v.last,orient:board?.orient&&S.orientSet?board.orient:myColor(),locked:browsing()||S.phase!=='await',keepHint:!!keepHint});
   $('o-board').classList.toggle('browsing',browsing());
   Shapes.auto($('o-board'),noteShapes());
   renderCaptured(v.g);
@@ -428,7 +428,7 @@ async function userMove(from,to,promo){
       if(!scoredAt(fen)) S.scored.push({fen,s:0,d:await moveDifficulty(fen,file),miss:true});
       if(lid!==S.lineId) return;
       S.busy=false; tools();
-      board.flash([from,to],'bad');
+      draw(true); board.flash([from,to],'bad');
       /* Rated: the file's move stays behind Hint (14 Nov 2026, as on the private site: "try again" and the answer in one
          line made the retry pointless). Training names it, as before. */
       status('bad',`${m.san} isn’t in your repertoire.`,training()?`Try again, or press Hint${file.length?` — your file gives ${file.length>1?file.length+' moves':sanOf(fen,file[0])} here`:''}.`
@@ -436,6 +436,7 @@ async function userMove(from,to,promo){
       return;
     }
   }else{
+    board.set(test,{last:m,locked:true,keepHint:true});   /* the move stands on the board while the book (and Stockfish) are asked */
     const bk=await Book.moves(fen,'masters'); if(lid!==S.lineId) return;
     const row=bk&&bk.rows.find(r=>r.uci.slice(0,4)===uci.slice(0,4));
     const minShare=(+Settings.get('oshare')||3)/100;
@@ -471,7 +472,7 @@ async function userMove(from,to,promo){
       if(!scoredAt(fen)) S.scored.push({fen,s:0,d:await moveDifficulty(fen),miss:true});
       if(lid!==S.lineId) return;
       S.busy=false; tools();
-      board.flash([from,to],'bad');
+      draw(true); board.flash([from,to],'bad');
       status('bad',verdictText,'Try again, or press Hint.');
       return;
     }

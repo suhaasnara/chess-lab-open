@@ -74,7 +74,9 @@ window.Board=(()=>{
       if(d.moved){
         const over=document.elementFromPoint(e.clientX,e.clientY); const q=over&&over.closest&&over.closest('.sq'); const to=q&&q.dataset.sq;
         const pr=to?promoOf(st.g,d.from,to):null;
-        if(pr!==null){ st.setSel(null); el._skipAnim=true; onMove(d.from,to,pr); return }
+        /* Redraw before handing the move over: it clears the lifted piece's fade and the selection, which a page that
+           turns the move down (Openings: "loses about 0.6 pawns, try again") would otherwise leave on the board. */
+        if(pr!==null){ st.setSel(null); st.redraw(); el._skipAnim=true; onMove(d.from,to,pr); return }
         st.redraw(); return;
       }
       if(d.wasSel||input()==='drag'){ st.setSel(null); st.redraw() }
