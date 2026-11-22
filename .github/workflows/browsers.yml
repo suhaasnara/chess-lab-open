@@ -53,6 +53,14 @@ jobs:
       - name: The 19 Nov 2026 finish pass on phones in ${{ matrix.browser }} (every page at iPhone size; overflow, overlap, squeezed or clipped text, capitals)
         if: ${{ !github.event.inputs.base }}
         run: cd tests/browser && node polish.js ${{ matrix.browser }} out/${{ matrix.browser }}/polish
+      - name: The same checks at iPad sizes in WebKit (13" portrait and landscape, iPad mini; touch)
+        if: ${{ !github.event.inputs.base && matrix.browser == 'webkit' }}
+        run: |
+          cd tests/browser
+          for s in "1032 1376 ipad13-portrait" "1376 1032 ipad13-landscape" "744 1133 ipad-mini"; do
+            set -- $s; mkdir -p out/webkit/$3; cp out/webkit/polish/state.json out/webkit/$3/
+            TOUCH=1 W=$1 H=$2 node polish.js webkit out/webkit/$3
+          done
       - name: Screenshots and summary
         if: always()
         uses: actions/upload-artifact@v4

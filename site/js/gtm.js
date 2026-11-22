@@ -27,7 +27,7 @@ function renderList(){
   const list=src.find(x=>x[0]===S.src)[3], played=list.filter(e=>res[e.id]).length;
   $('g-count').textContent=`${Help.n(list.length,'game')} · ${played} played`;
   $('g-add').hidden=S.src!=='own';
-  $('g-srcnote').textContent=S.src==='own'?(list.length?'Your games stay in this browser.':'Add a game: paste a PGN with your notes, side lines and arrows, and guess your way through it.'):'';
+  $('g-srcnote').textContent=S.src==='own'?(list.length?'Your games stay on this device.':'Add a game: paste a PGN with your notes, side lines and arrows, and guess your way through it.'):'';
   const yr=e=>(String(e.title+' '+e.meta).match(/\b(1[89]\d\d|20\d\d)\b/)||[])[1];
   const nxt=list.find(e=>!res[e.id]);
   $('g-start').disabled=!list.length; $('g-start').textContent=nxt?'Start · next unplayed':'Start · first game';
@@ -333,7 +333,7 @@ function init(){
 /* ---------- Your own games ---------- */
 function ownGames(){ return Store.get('gtm-own')||[] }
 function ownGame(id){ const o=ownGames().find(x=>x.game.id===id); return o?o.game:null }
-function removeOwn(id){ if(!confirm('Remove this game from this browser?')) return; Store.put('gtm-own',ownGames().filter(x=>x.game.id!==id));
+function removeOwn(id){ if(!confirm('Remove this game from this device?')) return; Store.put('gtm-own',ownGames().filter(x=>x.game.id!==id));
   const r=results(); delete r[id]; Store.put('gtm-results',r); renderList() }
 function openAdd(){ $('g-addmodal').hidden=false; $('g-adderr').textContent=''; $('g-addbox').focus() }
 /* A PGN (one or more games) -> Guess-the-move games: the main line's moves; each move's comment, side lines (as text),

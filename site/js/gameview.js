@@ -57,7 +57,7 @@ function show(){
 }
 function empty(){
   S.id=null; S.game=null; $('gv-main').hidden=true; $('gv-empty').hidden=false;
-  $('gv-empty').innerHTML=`<h2>This game isn’t kept in this browser</h2><p class="note">Games are kept from your last run of <a href="#analyze">Analyze my games</a> and every game a saved drill or blunder check comes from. Analyze your games again (Stockfish’s evals are kept, so nothing is redone) and open it from the report.</p>`;
+  $('gv-empty').innerHTML=`<h2>This game isn’t kept on this device</h2><p class="note">Games are kept from your last run of <a href="#analyze">Analyze my games</a> and every game a saved drill or blunder check comes from. Analyze your games again (Stockfish’s evals are kept, so nothing is redone) and open it from the report.</p>`;
 }
 function head(){
   const g=S.game, opp=g.color==='w'?g.br:g.wr, res=g.result==='1/2-1/2'?'½–½':g.result==='1-0'?'1–0':'0–1';

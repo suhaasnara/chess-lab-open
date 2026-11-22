@@ -118,7 +118,7 @@ function renderList(){
   $('p-listlabel').hidden=!idx.length; $('p-listlabel').textContent=Help.n(idx.length,'player');
   el.innerHTML=idx.length?idx.map(x=>TV.row({badge:x.site==='chesscom'?'C.com':'Li',badgeTitle:x.site==='chesscom'?'Chess.com':'Lichess',title:esc(x.name),
       meta:`${x.n} games · fetched ${new Date(x.t).toISOString().slice(0,10)}`,current:S.pid===x.id,data:{pid:x.id}})).join('')
-    :'<p class="empty">No players yet. Type an opponent’s username above. Their public games are fetched by your browser and kept only on this device.</p>';
+    :'<p class="empty">No players yet. Type an opponent’s username above. Their public games are fetched by this device and kept only here.</p>';
 }
 /* Three columns (shared screens: Chess Lab's Players): the list | their moves on a board with the explorer under it | who they are */
 function render(){
@@ -212,7 +212,7 @@ function init(){
     else if(act==='flip'){ S.board.flip(); S.orientSet=true }
     else if(act==='sheet'){ S.sheet=true; render(); if(document.scrollingElement) document.scrollingElement.scrollTop=0 } else if(act==='unsheet'){ S.sheet=false; render() }
     else if(act==='print'){ document.body.classList.add('print-sheet'); const done=()=>{ document.body.classList.remove('print-sheet'); removeEventListener('afterprint',done) }; addEventListener('afterprint',done); try{ window.print() }catch(_){ done() } }
-    else if(act==='remove'){ if(!confirm('Remove this player and their games from this browser?')) return; Store.del('player-'+S.pid); Store.del('pnote-'+S.pid); for(const k of ['w','b']) Store.del('stats-pl-'+S.pid+'-'+k); Store.put('players-index',index().filter(x=>x.id!==S.pid)); S.pid=null; render() }
+    else if(act==='remove'){ if(!confirm('Remove this player and their games from this device?')) return; Store.del('player-'+S.pid); Store.del('pnote-'+S.pid); for(const k of ['w','b']) Store.del('stats-pl-'+S.pid+'-'+k); Store.put('players-index',index().filter(x=>x.id!==S.pid)); S.pid=null; render() }
     else if(act==='refresh'){ const p=pdata(S.pid); if(!p||S.busy) return; S.busy=true; a.disabled=true; a.textContent='Fetching…';
       try{ await addPlayer(p.site,p.user,p.speeds||['blitz','rapid','classical']); select(p.id) }catch(x){ a.textContent='Could not refresh'; } S.busy=false }
   });

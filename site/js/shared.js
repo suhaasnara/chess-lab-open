@@ -91,14 +91,18 @@ const fmtEval=p=>p==null?'':(p>0?'+':'')+p.toFixed(1);
 
 /* ---------- One Stockfish worker for the whole app (shared/engine.js) ---------- */
 /* The lite WebAssembly build is served with this site (sf/); unpkg and cdnjs are fallbacks
-   for environments that serve the page without its files. */
+   for environments that serve the page without its files. Inside the iPhone and iPad app only the bundled copy is used:
+   an app must not download code (App Review 2.5.2), and the app always has its files (22 Nov 2026). */
 window.SharedEngine=(()=>{
   const HERE=(p=>{ try{ return new URL(p,location.href).href }catch(e){ return p } });
   const SF='https://unpkg.com/stockfish@18.0.8/bin/';
-  return EngineKit.create([
+  const cap=window.Capacitor, inApp=!!(cap&&typeof cap.isNativePlatform==='function'&&cap.isNativePlatform());
+  const all=[
     ['Stockfish 18 lite',HERE('sf/stockfish-18-lite-single.js'),HERE('sf/stockfish-18-lite-single.wasm'),12000],
     ['Stockfish 18 lite (unpkg)',SF+'stockfish-18-lite-single.js',HERE('sf/stockfish-18-lite-single.wasm'),12000],
-    ['Stockfish 10','https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js',null,30000]]);
+    ['Stockfish 10','https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js',null,30000]];
+  const use=inApp?all.slice(0,1):all;
+  const e=EngineKit.create(use); e.sources=use.map(x=>x[0]); return e;
 })();
 
 /* The board (Board.draw / Board.bind, makeBoard, endBanner): shared/board.js. */

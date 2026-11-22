@@ -84,8 +84,10 @@ const SCAN=`()=>{
     if(lastBottom>docEnd-(innerHeight-bt)+1) add('hidden','the bottom bar covers the page end ('+Math.round(lastBottom)+' > '+Math.round(docEnd-(innerHeight-bt))+')') }
   /* text */
   for(const e of top){ const t=(e.tagName==='INPUT'?(e.placeholder||''):(e.innerText||'')).replace(/\\u00a0/g,' ');
+    /* a ? help button's "?" is a button, not the end of a sentence (iPad sizes show table headings with one, 22 Nov 2026) */
+    const tq=e.querySelector&&e.querySelector('.qhelp')?(()=>{ const c=e.cloneNode(true); c.querySelectorAll('.qhelp').forEach(x=>x.remove()); return (c.textContent||'').replace(/\\u00a0/g,' ') })():t;
     if(/^(BUTTON|SUMMARY|LABEL|H1|H2|H3|H4|TH)$/.test(e.tagName)||e.classList.contains('label')||e.classList.contains('chip')){ const s=t.trim().replace(/^[^A-Za-z0-9]+/,''); if(/^[a-z]/.test(s)&&!/^(e\\.g|vs|or|and|of|i\\.e|x|a\\d|[a-h][1-8]|[KQRBN]?[a-h]?x?[a-h][1-8])\\b/.test(s)) add('text','lower-case label '+name(e)) }
-    if(/[.!?]\\s+[a-z]/.test(t)&&!/\\b(e\\.g|i\\.e|vs|etc|approx|min|sec|no)\\.\\s+[a-z]/i.test(t)) add('text','sentence starts lower case in '+name(e)+': …'+(t.match(/.{0,20}[.!?]\\s+[a-z].{0,12}/)||[''])[0]);
+    if(/[.!?]\\s+[a-z]/.test(tq)&&!/\\b(e\\.g|i\\.e|vs|etc|approx|min|sec|no)\\.\\s+[a-z]/i.test(tq)) add('text','sentence starts lower case in '+name(e)+': …'+(tq.match(/.{0,20}[.!?]\\s+[a-z].{0,12}/)||[''])[0]);
     if((e.tagName==='INPUT'||!e.children.length)&&/\\S  +\\S/.test(t)) add('text','double space in '+name(e));
     if(/ ,/.test(t)) add('text','space before comma in '+name(e)) }
   return out }`;
@@ -95,7 +97,8 @@ const SCAN=`()=>{
   const type={chromium,firefox,webkit}[BROWSER]; if(!type) throw new Error('unknown browser '+BROWSER);
   const browser=await type.launch(); const STATE=path.join(OUT,'state.json');
   const errors=[];
-  const ctxOpts=(w,h,state)=>({viewport:{width:w,height:h},colorScheme:'light',...(w<500?{hasTouch:true,isMobile:BROWSER!=='firefox',deviceScaleFactor:2}:{}),...(state&&fs.existsSync(state)?{storageState:state}:{})});
+  /* TOUCH=1: a large touch screen (an iPad: W=1032 H=1376 portrait, W=1376 H=1032 landscape, W=744 H=1133 iPad mini) */
+  const ctxOpts=(w,h,state)=>({viewport:{width:w,height:h},colorScheme:'light',...(w<500?{hasTouch:true,isMobile:BROWSER!=='firefox',deviceScaleFactor:2}:process.env.TOUCH?{hasTouch:true,deviceScaleFactor:2}:{}),...(state&&fs.existsSync(state)?{storageState:state}:{})});
   console.log(`== polish in ${BROWSER} ${browser.version()}`);
 
   /* ---------- seed: an analyzed game and a video ---------- */
@@ -118,7 +121,7 @@ const SCAN=`()=>{
       {id:'aaaaaaaaaaa',title:'Rook endgames you must know',channel:'A channel',topic:'endgames',kind:'lecture',added:Date.now()}]}) });
     await ctx.storageState({path:STATE}); await ctx.close() }
 
-  /* ---------- the phone ---------- */
+  /* ---------- the phone (or the size in W and H) ---------- */
   const W=+process.env.W||393, H=+process.env.H||852;   /* iPhone 15 Pro */
   const ctx=await browser.newContext(ctxOpts(W,H,STATE)); const page=await ctx.newPage();
   page.on('pageerror',e=>errors.push('pageerror: '+(e&&e.message||e)));

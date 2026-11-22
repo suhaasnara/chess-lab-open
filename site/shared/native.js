@@ -29,6 +29,9 @@ window.Native=(()=>{
   const cap=window.Capacitor, P=(cap&&cap.Plugins)||{};
   const app=!!(cap&&typeof cap.isNativePlatform==='function'&&cap.isNativePlatform());
   let site=null, cfg=null;
+  /* the device the app runs on (22 Nov 2026): the app's WatchBridge.status() says "phone" or "pad". Until it answers, and
+     with an older app, this is an iPhone. An iPad has no Apple Watch and no Taptic Engine: those rows are hidden there. */
+  let dev={kind:'phone',name:'iPhone',watch:true,vibrate:true};
   const DEF={haptics:true,remind:true,time:'19:00',asked:false,welcomed:false};
   const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const save=()=>{ try{ localStorage.setItem(site.cfgKey,JSON.stringify(cfg)) }catch(e){} };
@@ -38,7 +41,7 @@ window.Native=(()=>{
   /* ---- haptics: a light tap for a right move, iOS's error buzz for a wrong one, a firmer tap for "right, but" ---- */
   let lastBuzz=0;
   function verdict(tone){
-    if(!app||!cfg||!cfg.haptics||!P.Haptics) return;
+    if(!app||!cfg||!cfg.haptics||!P.Haptics||!dev.vibrate) return;
     const now=Date.now(); if(now-lastBuzz<250) return; lastBuzz=now;   // one move, one buzz (a flash covers two squares)
     try{
       if(tone==='good') P.Haptics.impact({style:'LIGHT'});
@@ -57,7 +60,7 @@ window.Native=(()=>{
     return {total,title:plural(total,'review due','reviews due'),body:parts.map(([p,n])=>plural(n,p.one,p.many)).join(' · '),hash:top?top[0].hash:'#today'};
   }
   const atOn=(d,time)=>{ const [h,m]=String(time||'19:00').split(':').map(Number), x=new Date(); x.setDate(x.getDate()+d); x.setHours(h||0,m||0,0,0); return x.getTime() };
-  /* iOS asks the user once; after that the answer is 'granted' or 'denied' (changeable only in the iPhone's Settings) */
+  /* iOS asks the user once; after that the answer is 'granted' or 'denied' (changeable only in the device's Settings) */
   async function permission(ask){
     if(!app||!P.LocalNotifications) return 'unavailable';
     try{ let p=await P.LocalNotifications.checkPermissions(); if(p.display==='prompt'||p.display==='prompt-with-rationale'){ if(!ask) return 'prompt'; p=await P.LocalNotifications.requestPermissions() } return p.display }catch(e){ return 'unavailable' }
@@ -117,8 +120,14 @@ window.Native=(()=>{
     }catch(e){ console.error('[native] watch sync',e) }
     finally{ wbusy=false; render(); if(wagain){ wagain=false; setTimeout(watchSync,1000) } }
   }
+  /* which device: asked once at start, before the first card names it */
+  async function detect(){
+    if(!WB) return;
+    try{ const s=await WB.status(); if(s) wstate=s;
+      if(s&&s.device==='pad') dev={kind:'pad',name:'iPad',watch:false,vibrate:false} }catch(e){}
+    document.documentElement.classList.toggle('on-ipad',dev.kind==='pad') }
   function watchLine(){
-    if(!WB) return '';
+    if(!WB||!dev.watch||(wstate&&wstate.supported===false)) return '';
     const s=wstate, l=wlast;
     const st=!s?'Checking…':!s.paired?'No Apple Watch is paired with this iPhone.':!s.installed?`${esc(site.name)} isn’t on your Apple Watch yet: install it from the Watch app on this iPhone.`
       :[l&&l.recN?`Recorded ${plural(l.recN,'result','results')} from the watch at ${clock(l.recAt)}.`:'',l&&l.sent?`Sent your progress at ${clock(l.at)}.`:'Ready.'].filter(Boolean).join(' ');
@@ -127,7 +136,7 @@ window.Native=(()=>{
 
   /* ---- the backup (docs/01-design.md §2.6): iOS may clear a web view's storage when the phone is short of space, so
      after each session the whole progress export is written to the app's Documents folder, which shows in the Files app
-     (On My iPhone → the app) and goes into the phone's own backups. Never written while the progress is empty, so an
+     (On My iPhone, or On My iPad → the app) and goes into the device's own backups. Never written while the progress is empty, so an
      emptied store can't overwrite a good backup. ---- */
   const FS=P.Filesystem, DOCS='DOCUMENTS';
   let dirty=false, lastBackup=0, backupAt=null, offered=false;
@@ -149,7 +158,7 @@ window.Native=(()=>{
     const b=await readBackup(); if(!b) return;
     offered=true;
     const when=b._t?new Date(b._t):null;
-    sheet(`<h2>Restore your progress?</h2><p>Your progress on this iPhone is empty, but there is a backup${when?` from ${esc(when.toLocaleDateString([], {weekday:'short',day:'numeric',month:'short'}))}, ${esc(clock(when))}`:''} (${esc(site.describe(b))}).</p>`,
+    sheet(`<h2>Restore your progress?</h2><p>Your progress on this ${dev.name} is empty, but there is a backup${when?` from ${esc(when.toLocaleDateString([], {weekday:'short',day:'numeric',month:'short'}))}, ${esc(clock(when))}`:''} (${esc(site.describe(b))}).</p>`,
       [['Restore it','restore'],['Start fresh','fresh']],async a=>{
         if(a==='restore'){ try{ site.importAll(b); offered=false; api.reloadPage() }catch(e){ offered=false; alertSheet('That backup could not be read.') } return }
         const stamp=(b._t||new Date().toISOString()).slice(0,10);
@@ -167,7 +176,8 @@ window.Native=(()=>{
   const alertSheet=t=>sheet(`<p>${esc(t)}</p>`,[['OK','ok']]);
   function welcome(){
     if(cfg.welcomed) return; cfg.welcomed=true; save();
-    sheet(`<h2>Welcome to ${esc(site.name)}</h2><ul style="padding-left:18px;margin:8px 0">${site.welcome.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`,[['Get started','ok']]) }
+    const lines=typeof site.welcome==='function'?site.welcome(Object.assign({},dev)):site.welcome;
+    sheet(`<h2>Welcome to ${esc(site.name)}</h2><ul style="padding-left:18px;margin:8px 0">${lines.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`,[['Get started','ok']]) }
   /* the notification permission is asked in context, once: after the first few results (or when the reminder is turned
      on in Settings), never at launch */
   let changes=0;
@@ -187,15 +197,15 @@ window.Native=(()=>{
   function render(){
     const box=document.getElementById('appbox'); if(!box||!app||!site) return; box.hidden=false;
     const seg=(k,opts)=>`<div class="seg" role="group" aria-labelledby="ap-${k}">${opts.map(([v,l])=>`<button type="button" data-ak="${k}" data-v='${JSON.stringify(v)}' aria-pressed="${cfg[k]===v}">${l}</button>`).join('')}</div>`;
-    const state=!cfg.remind?'Off.':perm==='denied'?`iOS has notifications off for ${esc(site.name)}: turn them on in the iPhone’s Settings → Notifications.`:perm!=='granted'?'You’ll be asked to allow notifications.'
+    const state=!cfg.remind?'Off.':perm==='denied'?`Notifications are off for ${esc(site.name)}: turn them on in Settings → Notifications → ${esc(site.name)}.`:perm!=='granted'?'You’ll be asked to allow notifications.'
       :next?`Next: ${fmt(next.at)}. ${esc(next.m.title)}: ${esc(next.m.body)}.`:'Nothing comes due in the next 7 days, so no reminder is set.';
-    box.innerHTML=`<h2>iPhone app</h2><p class="note">These stay on this phone.</p>
-      <div class="setrow"><div><div class="setname" id="ap-haptics">Vibrate on right and wrong moves</div><div class="note">A light tap for a right move, a buzz for a wrong one.</div></div>${seg('haptics',[[true,'On'],[false,'Off']])}</div>
+    box.innerHTML=`<h2>${dev.name} app</h2><p class="note">These stay on this ${dev.name}.</p>
+      ${dev.vibrate?`<div class="setrow"><div><div class="setname" id="ap-haptics">Vibrate on right and wrong moves</div><div class="note">A light tap for a right move, a buzz for a wrong one.</div></div>${seg('haptics',[[true,'On'],[false,'Off']])}</div>`:''}
       <div class="setrow"><div><div class="setname" id="ap-remind">Review reminder</div><div class="note" id="ap-state">${state}</div></div>
         <div>${seg('remind',[[true,'On'],[false,'Off']])}<input type="time" id="ap-time" value="${esc(cfg.time)}" aria-label="Reminder time" style="margin-top:8px;border:1px solid var(--line);border-radius:var(--radius);padding:7px 9px;background:var(--white);color:inherit;font:inherit"${cfg.remind?'':' disabled'}></div></div>
       <div class="btns" style="margin-top:12px"><button type="button" class="btn" id="ap-test">Send a test reminder in 5 seconds</button></div>
       ${watchLine()}
-      ${FS?`<div class="setrow"><div><div class="setname">Backup</div><div class="note" id="ap-backup">${backupAt?`Saved to Files at ${clock(backupAt)}.`:'Saved to Files after each session (On My iPhone → '+esc(site.name)+').'}</div></div>
+      ${FS?`<div class="setrow"><div><div class="setname">Backup</div><div class="note" id="ap-backup">${backupAt?`Saved to Files at ${clock(backupAt)}.`:'Saved to Files after each session (On My '+dev.name+' → '+esc(site.name)+').'}</div></div>
         <div class="btns"><button type="button" class="btn sm" id="ap-bnow">Back up now</button><button type="button" class="btn sm" id="ap-brestore">Restore from a backup…</button></div></div>`:''}
       ${site.about?`<p class="note" style="margin-top:12px"><a href="${esc(site.about)}">About, privacy and licences</a></p>`:''}`;
   }
@@ -223,15 +233,16 @@ window.Native=(()=>{
        exportAll() -> the progress export; importAll(obj) -> entries restored; isEmpty() -> no progress yet;
        describe(export) -> a short summary for the restore offer ('512 puzzles, 3 repertoires')
        reminder    [{k: a Due key, one, many, hash}]: the parts of the reminder, in order
-       welcome     the first-launch card's lines
+       welcome     the first-launch card's lines, or a function (device) -> lines; device = {kind: 'phone' | 'pad',
+                   name: 'iPhone' | 'iPad', watch, vibrate}
        about       the link to the About page (optional) } */
   function start(s){
     site=s; cfg=Object.assign({},DEF);
     try{ Object.assign(cfg,JSON.parse(localStorage.getItem(site.cfgKey)||'{}')) }catch(e){}
     if(!app) return;
     document.documentElement.classList.add('in-app');
-    const go=()=>{
-      wire(); render();
+    const go=async()=>{
+      wire(); await detect(); render();
       /* a tap on a reminder opens the page it names (iOS keeps the tap until this listener is added: a cold start works) */
       try{ P.LocalNotifications&&P.LocalNotifications.addListener('localNotificationActionPerformed',a=>{ const h=a&&a.notification&&a.notification.extra&&a.notification.extra.hash; if(h&&/^#[a-z]+$/.test(h)) location.hash=h }) }catch(e){}
       offerRestore().then(()=>{ if(!offered) welcome() });
@@ -246,6 +257,7 @@ window.Native=(()=>{
     if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go();
   }
   const api={app,start,verdict,plan,message,watchSync,buildState,backup,changed,askReminder,get cfg(){ return Object.assign({},cfg) },
+    get device(){ return dev.kind },
     reloadPage:()=>location.reload()};   /* replaceable in tests (jsdom can't reload) */
   return api;
 })();

@@ -429,6 +429,7 @@ body.no-coords .coord{display:none}body.no-last .sq.last{background:none}body.no
 @media (pointer:coarse){#gv-tools .navgrp .btn{min-width:44px;min-height:44px}}
 .tgood{color:var(--good);font-weight:600}.tbad{color:var(--bad);font-weight:600}
 td.num,th.num{text-align:right;white-space:nowrap}
+th.num{white-space:normal}   /* a heading wraps rather than run into the next one in a narrow card (iPad mini, 22 Nov 2026); its ? stays with its last word (.qglue) */
 .repfoot{margin-top:10px;max-width:80ch}
 @media (max-width:640px){
   .rtable thead{display:none}
@@ -439,6 +440,26 @@ td.num,th.num{text-align:right;white-space:nowrap}
   .rtable td[data-l]::before{content:attr(data-l);color:var(--muted);font-size:.8rem;flex:none;margin-right:auto}
   .rtable td:first-child{font-weight:600;margin-bottom:4px}
   .rtable td:last-child:empty{display:none}.rtable td:last-child{padding-top:6px}
+}
+/* tables in a card narrower than a phone screen's switch (above, max-width:640px) but too narrow for six columns: a full-
+   width card on an iPad mini is about 672px (22 Nov 2026). Up to 700px, the same stacked rows as on a phone; from 701 to
+   760px, the table with a narrower name column. Browsers without container queries (iOS 15) keep the plain table. */
+.tablewrap{container-type:inline-size}
+@media (min-width:641px){
+  @container (max-width:700px){
+    .rtable thead{display:none}
+    .rtable,.rtable tbody,.rtable tr,.rtable td{display:block;width:auto}
+    .rtable tr{border-bottom:1px solid var(--line);padding:10px 12px}
+    .rtable td{border:0;padding:2px 0;text-align:left}
+    .rtable td[data-l]{display:flex;gap:6px;justify-content:flex-end;align-items:baseline}
+    .rtable td[data-l]::before{content:attr(data-l);color:var(--muted);font-size:.8rem;flex:none;margin-right:auto}
+    .rtable td:first-child{font-weight:600;margin-bottom:4px}
+    .rtable td:last-child:empty{display:none}.rtable td:last-child{padding-top:6px}
+    .atable th:first-child,.atable td:first-child,.repgrid .card.wide .atable th:first-child,.repgrid .card.wide .atable td:first-child{width:auto}
+  }
+  @container (min-width:701px) and (max-width:760px){
+    .atable th:first-child,.atable td:first-child,.repgrid .card.wide .atable th:first-child,.repgrid .card.wide .atable td:first-child{width:30%}
+  }
 }
 
 /* Openings on phones and upright iPads (js/openings.js applyPin): the board pinned under the tab bar, the moves and your
