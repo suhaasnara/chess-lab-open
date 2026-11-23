@@ -1268,7 +1268,8 @@ section('t41: Openings — Anything vs e4 / d4 / sidelines, Hide and Restore');
   $('s-unhide').click(); assert(O.openings().some(o=>o.id==='preset-italian'),'Restore brings it back');
   /* his recheck (23 Nov 2026): a row of jump buttons, the app's card first while it shows */
   { const nav=$('s-jump'), names=()=>[...nav.querySelectorAll('button')].map(b=>b.textContent);
-    assert(nav&&names().join()==='Look,Board,Moving pieces,Puzzles,Openings,Engine','one jump button per group');
+    const groups=[...w.document.querySelectorAll('#s-rows h3.setgroup')].map(h=>h.textContent);
+    assert(nav&&groups.length>=6&&names().join()===groups.join(),'one jump button per group, in order');
     assert([...nav.querySelectorAll('button')].every(b=>w.document.getElementById(b.dataset.to)),'each points at its group');
     const box=$('appbox'); box.innerHTML='<h2>iPhone app</h2>'; box.hidden=false; await sleep(20);
     assert(names()[0]==='iPhone app'&&nav.querySelector('button').dataset.to==='appbox','the app card comes first once it shows');
