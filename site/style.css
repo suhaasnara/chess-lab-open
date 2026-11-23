@@ -264,6 +264,9 @@ body.welcomed[data-view="today"] .hero{display:none}
 
 /* Guess the move: moves so far */
 .gmoves{position:relative;max-height:min(420px,calc(100vh - 330px));overflow:auto;line-height:1.7}
+.status.crit{background:var(--warn-soft);box-shadow:inset 4px 0 0 var(--brass)}.status.crit strong{color:var(--brass-text)}
+#g-board.crit{outline:3px solid var(--brass);outline-offset:2px}   /* Guess the move: a critical moment (as Blind's peek ring) */
+.gcrit{color:var(--brass-text);font-weight:700}.gcritn{color:var(--brass-text)}.gscored{color:var(--head);font-weight:600}
 .gmoves .ok{color:var(--good)}.gmoves .inacc{color:var(--warn)}.gmoves .miss{color:var(--bad)}
 .ccfilters .chips+.chips{margin-top:6px}
 

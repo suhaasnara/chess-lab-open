@@ -15,6 +15,6 @@ Site.define({
   pieces:'cburnett',   /* GPLv2+ (CREDITS.md); style.css draws assets/pieces/cburnett */
   data:{
     tactics:'data/tactics.json', blind:'data/blind.json', calc:'data/calc.json', endgames:'data/endgames.json',
-    gtmIndex:'data/gtm/index.json', gtm:f=>'data/gtm/'+f,
+    gtmIndex:'data/gtm/index.json', gtmCrit:'data/gtm/critical.json', gtm:f=>'data/gtm/'+f,
   },
 });

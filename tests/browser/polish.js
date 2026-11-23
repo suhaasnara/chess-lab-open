@@ -169,6 +169,11 @@ const SCAN=`()=>{
   await screen('Play, after resigning',async()=>{ await tap('#pl-resign'); await sleep(500) });
   await go('guess',()=>document.querySelector('#g-board')); await screen('Guess the move');
   await screen('Guess the move, a game started',async()=>{ await page.click('#g-start'); await waitFor(page,()=>!document.getElementById('g-train').hidden) });   /* his iPad, 23 Nov 2026: the board under the bar */
+  await screen('Guess the move, a critical moment',async()=>{ await page.evaluate(async()=>{   /* 23 Nov 2026: the brass ring and "take your time" */
+    const crit=await fetch('data/gtm/critical.json').then(r=>r.json()), idx=await fetch('data/gtm/index.json').then(r=>r.json());
+    const e=idx.find(x=>crit[x.id]&&x.set==='masters')||idx.find(x=>crit[x.id]); await GtmTab.load(e.file);
+    const S=GtmTab.state, t=crit[e.id].plies[0]; S.gen++; S.g=new Chess(); for(let i=0;i<t-1;i++) S.g.move(S.game.moves[i]); S.ply=t-1; GtmTab.next() });
+    await waitFor(page,()=>document.getElementById('g-board').classList.contains('crit')) });
   await go('players'); await screen('Players');
   await go('watch'); await screen('Watch');
   await screen('Watch, a series open',async()=>{ await page.evaluate(()=>document.querySelectorAll('#wa-list details').forEach(d=>d.open=true)) });

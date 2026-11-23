@@ -4,13 +4,19 @@
    game move ("alts", or judged live by Stockfish) counts as "just as good" (1 pt).
    Theory plies auto-play. First answer keeps its score.
    Your own games: paste or upload a PGN (notes in braces, side lines in brackets, move marks and Lichess arrows kept);
-   they stay in this browser, every guess after the opening is worth 1 point, and Stockfish judges other moves live. */
+   they stay in this browser, every guess after the opening is worth 1 point, and Stockfish judges other moves live.
+   Critical moments (23 Nov 2026): data/gtm/critical.json lists, by game id, the plies where the player should slow
+   down (tools/pick_critical.py picks them; "hand" entries are Suhaas's own). At one, the board gets a brass ring and the
+   status says so; afterwards the move carries a ★ in the move list, the table and the graph. */
 'use strict';
 (function(){
-let board=null, INDEX=null, endbar=null;
+let board=null, INDEX=null, CRIT=null, endbar=null;
 const S={src:null,game:null,g:null,ply:0,pts:0,got:0,missed:0,alsoGood:0,done:false,busy:false,hintStage:0,rows:[],answered:false,view:null,read:false};
 /* view: the ply shown while reading the finished game (null = the live game); read: "Read the game" (no guessing, no score) */
 
+/* the critical plies of a game (a Set; empty when the game has none or critical.json didn't load) */
+function critOf(g){ const e=g&&!g.own&&CRIT&&CRIT[g.id]; return new Set(e&&Array.isArray(e.plies)?e.plies.map(Number):[]) }
+function critRing(on){ const b=$('g-board'); if(b) b.classList.toggle('crit',!!on) }
 function results(){ return Store.get('gtm-results')||{} }
 function saveResult(){ const r=results(); r[S.game.id]={pts:S.pts,max:S.game.maxpts,t:Date.now()}; Store.put('gtm-results',r) }
 
@@ -32,19 +38,27 @@ function renderList(){
   const nxt=list.find(e=>!res[e.id]);
   $('g-start').disabled=!list.length; $('g-start').textContent=nxt?'Start · next unplayed':'Start · first game';
   $('g-list').innerHTML=list.map(e=>{ const r=res[e.id];
-    return `<button type="button" class="drill" data-id="${esc(e.id)}" aria-current="${!!(S.game&&S.game.id===e.id)}"><span class="evalchip mono">${r?r.pts+'/'+r.max:(yr(e)||'—')}</span><span><div class="opp">${esc(e.title)}</div><div class="meta">${esc(e.meta).replace(/\b(1|0)-(0|1)\b|1\/2-1\/2/g,m=>m.replace(/-/g,"\u2011"))}</div></span>`+
+    return `<button type="button" class="drill" data-id="${esc(e.id)}" aria-current="${!!(S.game&&S.game.id===e.id)}"><span class="evalchip mono">${yr(e)||'—'}</span><span><div class="opp">${esc(e.title)}</div><div class="meta">${metaHtml(e,r)}</div></span>`+
       (e.own?`<span class="evalchip gdel" role="button" tabindex="0" data-del="${esc(e.own)}" title="Remove this game" aria-label="Remove ${esc(e.title)}">✕</span>`:'<span></span>')+'</button>' }).join('')
     ||`<p class="note">${S.src==='own'?'No games of yours yet.':INDEX?'No games here.':'Loading the games…'}</p>`;
 }
+/* a list row's second line: the index's meta, then "2 critical moments", then your score once played ("12 of 43 pts",
+   in place of the bare "43 pts"). 23 Nov 2026: the score used to sit in the year's chip, which read as a date. */
+function metaHtml(e,r){
+  const nb=t=>esc(t).replace(/\b(1|0)-(0|1)\b|1\/2-1\/2/g,m=>m.replace(/-/g,"\u2011"));
+  let meta=String(e.meta||''); const nc=e.own?0:critOf({id:e.id}).size;
+  if(r) meta=/ · \d+ pts$/.test(meta)?meta.replace(/ · \d+ pts$/,''):meta;
+  return nb(meta).replace(/(\d) pts\b/g,'$1\u00a0pts')+(nc?` · <span class="gcritn">★ ${Help.n(nc,'critical moment')}</span>`:'')+(r?` · <b class="gscored">${r.pts} of ${r.max} pts</b>`:'');
+}
 function entry(id){ const own=ownGame(id); if(own) return own; const e=(INDEX||[]).find(x=>x.id===id); return e?e.file:null }
 function showTrain(on){ $('g-lobby').hidden=on; $('g-train').hidden=!on }
-function lobby(){ S.gen=(S.gen||0)+1; S.game=null; if(endbar) endbar.hide(); showTrain(false); renderList(); scrollTo(0,0) }
+function lobby(){ S.gen=(S.gen||0)+1; S.game=null; critRing(false); if(endbar) endbar.hide(); showTrain(false); renderList(); scrollTo(0,0) }
 
 async function load(file){
   const game=typeof file==='object'&&file?deep(file):await fetch(Site.url('gtm',file)).then(r=>r.json()).catch(()=>null);
   if(!game){ status('bad','Could not load the game.',''); return }
   if(endbar) endbar.hide();
-  S.game=game; S.g=new Chess(game.fen||undefined); S.ply=0; S.pts=0; S.got=0; S.missed=0; S.alsoGood=0; S.done=false; S.busy=false; S.hintStage=0; S.rows=[]; S.retry=null; S.view=null; S.vr=null; S.read=false; S.gen=(S.gen||0)+1;
+  S.game=game; S.g=new Chess(game.fen||undefined); S.ply=0; S.pts=0; S.got=0; S.missed=0; S.alsoGood=0; S.done=false; S.busy=false; S.hintStage=0; S.rows=[]; S.retry=null; S.view=null; S.vr=null; S.read=false; S.gen=(S.gen||0)+1; S.crit=critOf(game); critRing(false);
   readTools(); showTrain(true);
   const me=game.winner;
   $('g-head').innerHTML=TV.head({kicker:game.own?'Your game':(INDEX||[]).some(e=>e.id===game.id&&e.set==='masters')?'Master game':'Suhaas’s game',
@@ -56,7 +70,7 @@ async function load(file){
     <dt>Event</dt><dd>${esc(game.event||'—')} · ${esc(game.date)}</dd>
     <dt>Opening</dt><dd>${game.opening?esc(game.opening[1])+' <span class="note">('+esc(game.opening[0])+')</span>':'—'}</dd>
     <dt>Result</dt><dd>${esc(game.result)}</dd>${game.own?'<dt>Scoring</dt><dd>1 point a move after the opening; Stockfish judges other moves</dd>':''}`;
-  status('','Loading the opening…',`You play ${game.own?'':'the winner’s side '}(${me==='w'?'White':'Black'}). The first ${game.theory} plies are known theory and play themselves.`);
+  status('','Loading the opening…',`You play ${game.own?'':'the winner’s side '}(${me==='w'?'White':'Black'}). The first ${game.theory} plies are known theory and play themselves.${S.crit.size?` ★ marks ${S.crit.size===1?'a critical moment':S.crit.size+' critical moments'}: take your time there.`:''}`);
   renderList(); renderScore(); renderMoves();
   playTheory();
 }
@@ -85,8 +99,14 @@ function next(){
   if(mover!==g.winner){ const gen=S.gen; setTimeout(()=>{ if(gen!==S.gen||S.read) return; applyMove(g.moves[S.ply],'opp'); S.ply++; next() },520); return }
   S.answered=false; S.hintStage=0;
   const n=Math.floor(S.ply/2)+1;
-  status('',`Move ${n}: your move.`,'Guess what was played.');
+  askNow(n);
   backBtn();
+}
+/* "your move", or at a critical moment the brass ring and a slower prompt */
+function askNow(n){
+  const c=S.crit&&S.crit.has(S.ply); critRing(c);
+  if(c) status('crit','★ Critical moment: take your time.',`Move ${n}. Look at checks, captures and threats, for you and for them, before you move.`);
+  else status('',`Move ${n}: your move.`,'Guess what was played.');
 }
 /* Take back (B), as on the private site: back to your last guess to try another move. The first answer keeps its
    score: a retry changes no points and no row of the table. Only while it is your move (the reply has been played). */
@@ -99,7 +119,8 @@ function takeBack(){
   S.retry=last.ply; S.hintStage=0; S.tick=(S.tick||0)+1; board.setHint(null);
   const h=S.g.history({verbose:true}), m=h[h.length-1];
   board.set(S.g,{last:m?{from:m.from,to:m.to}:null,orient:board.orient}); renderMoves();
-  status('',`Move ${Math.floor(S.ply/2)+1}: try another move.`,`A retry: your first answer (${last.guess}) is what counts.`);
+  critRing(S.crit&&S.crit.has(S.ply));
+  status(S.crit&&S.crit.has(S.ply)?'crit':'',`Move ${Math.floor(S.ply/2)+1}: try another move.`,`A retry: your first answer (${last.guess}) is what counts.`);
   backBtn();
 }
 function nextGame(){ if(!INDEX||!INDEX.length) return false; const i=INDEX.findIndex(e=>S.game&&e.id===S.game.id); const e=INDEX[(i+1)%INDEX.length]; if(e) load(e.file) }
@@ -115,7 +136,7 @@ async function userMove(from,to,promo){
   const played=S.g.fen(); /* position before */
   const gameMove=new Chess(S.g.fen()).move(g.moves[S.ply]);
   const gameUci=gameMove.from+gameMove.to+(gameMove.promotion||'');
-  S.busy=true;
+  S.busy=true; critRing(false);
   let verdict, earned=0;
   if(uci.slice(0,4)===gameUci.slice(0,4)){
     earned=info.pts; S.got++;
@@ -154,14 +175,14 @@ function hint(){
   const gm=new Chess(S.g.fen()).move(g.moves[S.ply]); if(!gm) return;
   if(S.hintStage===0){ S.hintStage=1; board.setHint(gm.from); status('warn','Hint: this piece moves.','Press Hint again to see the move (it then earns nothing).') }
   else{
-    board.setHint(gm.from,gm.to); status('warn','It was '+g.moves[S.ply]+'.','No points for this one.');
+    board.setHint(gm.from,gm.to); critRing(false); status('warn','It was '+g.moves[S.ply]+'.','No points for this one.');
     if(S.retry===S.ply) S.retry=null;
     else{ S.missed++; S.rows.push({ply:S.ply,n:Math.floor(S.ply/2)+1,game:g.moves[S.ply],guess:'(shown)',earned:0,max:(g.m[String(S.ply)]||{}).pts||1}) }
     applyMove(g.moves[S.ply],'me'); S.ply++; renderScore(); { const tk=S.tick=(S.tick||0)+1; setTimeout(()=>{ if(tk===S.tick) next() },900) }
   }
 }
 function endGame(){
-  S.done=true; saveResult();
+  S.done=true; critRing(false); saveResult();
   const g=S.game;
   const pct=g.maxpts?S.pts/g.maxpts:0;
   endbar.show(pct>=0.8?'good':pct>=0.5?'warn':'bad',`Game over · ${S.pts} of ${g.maxpts} points (${Math.round(pct*100)}%)`,'Next game');
@@ -169,7 +190,7 @@ function endGame(){
     `${S.got} matched · ${S.alsoGood} just as good · ${S.missed} missed.`);
   const t=$('g-table');
   t.innerHTML='<tr><th>#</th><th>Game</th><th>You</th><th>Pts</th></tr>'+
-    S.rows.map(r=>`<tr><td>${r.n}</td><td>${esc(r.game)}</td><td>${esc(r.guess)}</td><td>${r.earned}/${r.max}</td></tr>`).join('');
+    S.rows.map(r=>`<tr><td>${r.n}${S.crit.has(r.ply)?' <span class="gcrit" title="Critical moment">★</span>':''}</td><td>${esc(r.game)}</td><td>${esc(r.guess)}</td><td>${r.earned}/${r.max}</td></tr>`).join('');
   $('g-tablewrap').hidden=false;
   drawGraph(); if(g.own&&!(g.evs||[]).length) ownEvals(g);
   renderList();
@@ -192,6 +213,7 @@ function drawGraph(){
   for(const k in byPly){
     const r=byPly[k], i=+k; if(i>=n) continue;
     const col=r.earned>=r.max&&r.max>0?'var(--good)':r.earned>0?'var(--warn)':(r.max===0?'var(--muted)':'var(--bad)');
+    if(S.crit&&S.crit.has(i)) dots+=`<circle cx="${X(i).toFixed(1)}" cy="${Y(c(i)).toFixed(1)}" r="7" fill="none" stroke="var(--brass)" stroke-width="2"/>`;
     dots+=`<circle cx="${X(i).toFixed(1)}" cy="${Y(c(i)).toFixed(1)}" r="${r.max===2?4.2:3}" fill="${col}" stroke="var(--white)" stroke-width="1"><title>${r.n}${i%2?'…':'.'}${esc(r.game)} (${pawns(ev[i])}) — you: ${esc(r.guess)}, ${r.earned}/${r.max}</title></circle>`;
   }
   const th=g.theory>0?`<rect x="${P}" y="${P}" width="${Math.max(0,X(g.theory-1)-P).toFixed(1)}" height="${H-2*P}" fill="var(--band)"/>`:'';
@@ -202,7 +224,7 @@ function drawGraph(){
     <path d="${line}" fill="none" stroke="var(--chart)" stroke-width="1.6" vector-effect="non-scaling-stroke"/>
     ${dots}</svg>`;
   const fin=ev.filter(v=>Math.abs(v)<9000), lo=fin.length?Math.min(...fin):0, hi=fin.length?Math.max(...fin):0;
-  $('g-graphnote').textContent=`Above the line favours White, below favours Black (engine, depth 20+). Range ${pawns(lo)} to ${pawns(hi)}. Shaded: theory. Dots: your guesses (green full points, amber partial, red missed; bigger = key move).`;
+  $('g-graphnote').textContent=`Above the line favours White, below favours Black (engine, depth 20+). Range ${pawns(lo)} to ${pawns(hi)}. Shaded: theory. Dots: your guesses (green full points, amber partial, red missed; bigger = key move${S.crit&&S.crit.size?'; ringed = critical moment':''}).`;
   $('g-graphcard').hidden=false;
 }
 /* The game so far (never past the current move): your moves marked ✓ (game move) / ≈ (just as good) / ✗ (missed), "book" for theory.
@@ -229,7 +251,7 @@ function renderMoves(){
     if(i<g.theory) mark=mine&&!S.read?' <span class="note">book</span>':'';
     else if(r){ if(r.guess===g.moves[i]){ mark=' ✓'; cls='ok' } else if(r.earned>0){ mark=' ≈'; cls='inacc' } else { mark=' ✗'; cls='miss' } }
     const tag=S.done?'button':'b';
-    const mk=notes[i]&&notes[i].mk?markHtml(notes[i].mk):'';
+    const mk=(notes[i]&&notes[i].mk?markHtml(notes[i].mk):'')+(S.crit&&S.crit.has(i)?'<span class="gcrit" title="Critical moment"> ★</span>':'');
     html+=`<${tag} class="gmv ${cls}${i===cur&&S.done?' cur':''}" data-ply="${i+1}"${S.done?' type="button"':''} title="${r&&r.guess!==g.moves[i]?'you: '+esc(r.guess):''}">${esc(g.moves[i])}${mk}</${tag}>${mark} `;
     if(notes[i]&&(notes[i].t||(notes[i].v||[]).length)) html+=noteHtml(notes[i],vfen[i],g.moves.slice(0,i),vfen[i+1]?{fen:vfen[i+1],prefix:g.moves.slice(0,i+1)}:null);
   }
@@ -278,7 +300,7 @@ function readTools(){
 /* "Read the game": skip the guessing and read the annotated game from the start (no score is saved) */
 function showGame(){
   const g=S.game; if(!g||S.done) return;
-  S.gen++; S.read=true; S.done=true; S.busy=false;
+  S.gen++; S.read=true; S.done=true; S.busy=false; critRing(false);
   if(endbar) endbar.hide();
   status('','Reading the game.',`‹ and › under the board step through the moves${g.notes&&Object.keys(g.notes).length?' and the notes':''}. No score is kept; Restart game plays it as a quiz.`);
   drawGraph(); renderScore(); viewAt(0);
@@ -294,6 +316,8 @@ function init(){
   endbar=endBanner($('g-board'),nextGame,'Next game');
   board.set(new Chess(),{locked:true});
   fetch(Site.url('gtmIndex')).then(r=>r.json()).then(j=>{ INDEX=j; renderList() }).catch(()=>{ INDEX=[]; renderList() });
+  fetch(Site.url('gtmCrit')).then(r=>r.json()).then(j=>{ CRIT=j||{}; renderList();
+    if(S.game&&!S.game.own&&!S.done){ S.crit=critOf(S.game); if(!S.busy&&(S.ply%2===0?'w':'b')===S.game.winner&&S.ply>=S.game.theory) askNow(Math.floor(S.ply/2)+1) } }).catch(()=>{ CRIT={} });
   $('g-src').addEventListener('change',e=>{ if(e.target.name==='g-src'){ S.src=e.target.value; renderList() } });
   $('g-list').addEventListener('click',ev=>{ const d=ev.target.closest('[data-del]'); if(d){ ev.stopPropagation(); removeOwn(d.dataset.del); return }
     const b=ev.target.closest('.drill[data-id]'); if(b){ const f=entry(b.dataset.id); if(f) load(f) } });
@@ -420,5 +444,5 @@ async function ownEvals(g){
   const own=ownGames(), o=own.find(x=>x.game.id===g.id); if(o){ o.game.evs=evs; Store.put('gtm-own',own) }
   if(S.game&&S.game.id===g.id){ S.game.evs=evs; drawGraph() }
 }
-window.GtmTab={init,load,lobby,userMove,hint,takeBack,nextGame,restart,drawGraph,showGame,viewAt,parseGames,addGames,ownGames,get state(){return S}};
+window.GtmTab={init,critOf,next,load,lobby,userMove,hint,takeBack,nextGame,restart,drawGraph,showGame,viewAt,parseGames,addGames,ownGames,get state(){return S}};
 })();
