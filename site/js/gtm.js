@@ -7,7 +7,9 @@
    they stay in this browser, every guess after the opening is worth 1 point, and Stockfish judges other moves live.
    Critical moments (23 Nov 2026): data/gtm/critical.json lists, by game id, the plies where the player should slow
    down (tools/pick_critical.py picks them; "hand" entries are Suhaas's own). At one, the board gets a brass ring and the
-   status says so; afterwards the move carries a ★ in the move list, the table and the graph. */
+   status says so; afterwards the move carries a ★ in the move list, the table and the graph.
+   Tries (23 Nov 2026, his ask): Settings → Guess the move → 1, 2 or 3 tries. A weaker guess with a try left says so
+   without showing the game move and puts the piece back; only the first try scores (later tries go the Take back way). */
 'use strict';
 (function(){
 let board=null, INDEX=null, CRIT=null, endbar=null;
@@ -16,6 +18,7 @@ const S={src:null,game:null,g:null,ply:0,pts:0,got:0,missed:0,alsoGood:0,done:fa
 
 /* the critical plies of a game (a Set; empty when the game has none or critical.json didn't load) */
 function critOf(g){ const e=g&&!g.own&&CRIT&&CRIT[g.id]; return new Set(e&&Array.isArray(e.plies)?e.plies.map(Number):[]) }
+function tries(){ const n=parseInt(Settings.get('gtries'),10); return n>=1&&n<=3?n:1 }
 function critRing(on){ const b=$('g-board'); if(b) b.classList.toggle('crit',!!on) }
 function results(){ return Store.get('gtm-results')||{} }
 function saveResult(){ const r=results(); r[S.game.id]={pts:S.pts,max:S.game.maxpts,t:Date.now()}; Store.put('gtm-results',r) }
@@ -70,7 +73,7 @@ async function load(file){
     <dt>Event</dt><dd>${esc(game.event||'—')} · ${esc(game.date)}</dd>
     <dt>Opening</dt><dd>${game.opening?esc(game.opening[1])+' <span class="note">('+esc(game.opening[0])+')</span>':'—'}</dd>
     <dt>Result</dt><dd>${esc(game.result)}</dd>${game.own?'<dt>Scoring</dt><dd>1 point a move after the opening; Stockfish judges other moves</dd>':''}`;
-  status('','Loading the opening…',`You play ${game.own?'':'the winner’s side '}(${me==='w'?'White':'Black'}). The first ${game.theory} plies are known theory and play themselves.${S.crit.size?` ★ marks ${S.crit.size===1?'a critical moment':S.crit.size+' critical moments'}: take your time there.`:''}`);
+  status('','Loading the opening…',`You play ${game.own?'':'the winner’s side '}(${me==='w'?'White':'Black'}). The first ${game.theory} plies are known theory and play themselves.${tries()>1?` You get ${tries()} tries a move; the first one scores.`:''}${S.crit.size?` ★ marks ${S.crit.size===1?'a critical moment':S.crit.size+' critical moments'}: take your time there.`:''}`);
   renderList(); renderScore(); renderMoves();
   playTheory();
 }
@@ -97,7 +100,7 @@ function next(){
   if(S.ply>=g.moves.length) return endGame();
   const mover=S.ply%2===0?'w':'b';
   if(mover!==g.winner){ const gen=S.gen; setTimeout(()=>{ if(gen!==S.gen||S.read) return; applyMove(g.moves[S.ply],'opp'); S.ply++; next() },520); return }
-  S.answered=false; S.hintStage=0;
+  S.answered=false; S.hintStage=0; S.left=tries()-1;
   const n=Math.floor(S.ply/2)+1;
   askNow(n);
   backBtn();
@@ -116,7 +119,7 @@ function takeBack(){
   if(!canBack()) return false;
   const last=S.rows[S.rows.length-1];
   while(S.ply>last.ply){ S.g.undo(); S.ply-- }
-  S.retry=last.ply; S.hintStage=0; S.tick=(S.tick||0)+1; board.setHint(null);
+  S.retry=last.ply; S.left=0; S.hintStage=0; S.tick=(S.tick||0)+1; board.setHint(null);
   const h=S.g.history({verbose:true}), m=h[h.length-1];
   board.set(S.g,{last:m?{from:m.from,to:m.to}:null,orient:board.orient}); renderMoves();
   critRing(S.crit&&S.crit.has(S.ply));
@@ -160,6 +163,14 @@ async function userMove(from,to,promo){
   if(retry){ const v=verdict[0]; if(uci.slice(0,4)===gameUci.slice(0,4)) S.got--; else if(v==='good') S.alsoGood--; else S.missed--; earned=0 }   /* a retry: nothing is counted again */
   else{ S.pts+=earned;
     S.rows.push({ply:S.ply,n:Math.floor(S.ply/2)+1,game:g.moves[S.ply],guess:m.san,earned,max:info.pts}) }
+  /* a weaker guess with a try left: the piece goes back, the game move stays hidden, and the next try goes the retry way */
+  if(verdict[0]==='warn'&&(S.left||0)>0){
+    S.left--; S.retry=S.ply; S.hintStage=0;
+    const h=S.g.history({verbose:true}), lm=h[h.length-1];
+    board.set(S.g,{last:lm?{from:lm.from,to:lm.to}:null,orient:board.orient}); board.flash([from,to],'bad');
+    critRing(S.crit&&S.crit.has(S.ply));
+    status('warn',`${m.san} isn’t it. Try again.`,`${S.left?S.left+1+' tries left':'Last try'}${retry?'':` · +0 · ${S.pts} points so far`}. Your first try is what scores.`);
+    renderScore(); S.busy=false; backBtn(); return }
   /* the game move is what stays on the board */
   applyMove(g.moves[S.ply],'me'); S.ply++;
   board.flash([gameMove.from,gameMove.to],earned>0?'good':'bad');
