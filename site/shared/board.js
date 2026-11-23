@@ -31,6 +31,7 @@ window.Board=(()=>{
       if(o.hintTo===sq) d.classList.add('hintto');
       const t=legal.find(m=>m.to===sq); if(t){ d.classList.add('tgt'); if(t.captured) d.classList.add('cap') }
       const p=g.get(sq);
+      if(p&&p.color===g.turn()) d.classList.add('mine');
       if(p){ const s=document.createElement('span'); s.className='pc '+p.color+p.type.toUpperCase(); d.appendChild(s); d.setAttribute('aria-label',sq+' '+(p.color==='w'?'white ':'black ')+NAME[p.type]) }
       else d.setAttribute('aria-label',sq);
       if(r===7){ const k=document.createElement('span'); k.className='coord f'; k.textContent=FILES[file]; d.appendChild(k) }
@@ -48,12 +49,12 @@ window.Board=(()=>{
   const promoOf=(g,from,to)=>{ const mv=g.moves({square:from,verbose:true}).find(m=>m.to===to); return mv?(mv.promotion?'q':undefined):null };
   function bind(el,getState,onMove,o={}){
     const input=()=>(o.input&&o.input())||'both';
-    let drag=null;
+    let drag=null; el.classList.add('movable');   // shared.css: a drag that starts on your own piece moves it instead of scrolling
     el.addEventListener('pointerdown',e=>{
       if(e.button!==0) return;   /* right button: arrows and circles (Shapes); middle: nothing */
       const st=getState(); const cell=e.target.closest('.sq'); if(!cell||!st||!st.g||!st.can()) return;
       const sq=cell.dataset.sq, g=st.g, p=g.get(sq);
-      if(st.sel()&&st.sel()!==sq&&input()!=='drag'){ const pr=promoOf(g,st.sel(),sq); if(pr!==null){ const from=st.sel(); st.setSel(null); e.preventDefault(); onMove(from,sq,pr); return } }
+      if(st.sel()&&st.sel()!==sq&&input()!=='drag'){ const pr=promoOf(g,st.sel(),sq); if(pr!==null){ const from=st.sel(); st.setSel(null); st.redraw(); e.preventDefault(); onMove(from,sq,pr); return } }   // redraw first: a turned-down move (a wrong Tactics try) must not leave the old dots
       if(!(p&&p.color===g.turn())){ if(st.sel()){ st.setSel(null); st.redraw() } return }
       e.preventDefault();
       const wasSel=st.sel()===sq, size=cell.getBoundingClientRect().width; st.setSel(sq); st.redraw();   // measure before the redraw replaces the square
@@ -145,7 +146,7 @@ function makeBoard(el,opts={}){
     (f,t,p)=>{ opts.onMove&&opts.onMove(f,t,p) },{input:opts.input||(()=>{ const v=window.Settings&&Settings.get('input'); return v==='tap'?'both':v })});
   return {
     set(game,o={}){ B.game=game; if(o.last!==undefined) B.last=o.last; if(o.orient) B.orient=o.orient; B.sel=null; if(!o.keepHint){B.hint=null;B.hintTo=null} B.locked=!!o.locked; render() },
-    setHint(sq,to){ B.hint=sq||null; B.hintTo=to||null; render() },
+    setHint(sq,to){ B.hint=sq||null; B.hintTo=to||null; B.sel=null; render() },   // a hint drops the piece you had picked up
     flip(){ B.orient=B.orient==='w'?'b':'w'; render() },
     flash(squares,tone){ const list=(squares||[]).filter(Boolean); list.forEach((sq,i)=>{ const q=el.querySelector(`.sq[data-sq="${sq}"]`); if(!q) return; q.classList.remove('flash-good','flash-bad','flash-to'); void q.offsetWidth; q.classList.add('flash-'+tone); if(i===list.length-1) q.classList.add('flash-to'); setTimeout(()=>q.classList.remove('flash-'+tone,'flash-to'),900) }) },   // the last square (the move's destination) also gets the ✓ / ✗ badge
     get orient(){ return B.orient }, set orient(v){ B.orient=v; render() },

@@ -50,7 +50,7 @@ function open(d){
   const url=d.url&&/^https:\/\/(www\.)?(chess\.com|lichess\.org)\//.test(d.url)?d.url:'', inSite=d.g&&AGames.has(d.g)?AGames.href(d.g,d.ply,'blundercheck'):'';
   $('bc-head').innerHTML=TV.head({kicker:`${esc(SITE[d.site]||'')} · ${esc(d.date||'')} · move ${esc(d.moveNo)}${d.strong?' · vs 2200+':''}`,
     title:`vs ${esc(d.opp)}${d.oppElo?` <span class="note mono">${esc(d.oppElo)}</span>`:''}`,
-    chips:[d.color==='white'?'You had White':'You had Black',`Win% ${esc(d.w0)} → ${esc(d.w1)}${Help.q('Your Win% before your move and after it, from your side. '+WinPct.HELP)}`,
+    chips:[d.color==='white'?'You had White':'You had Black',`Win% ${esc(d.w0)} → ${esc(d.w1)}${Help.q('Your Win% before your move and after it. '+WinPct.SHORT,'winpct')}`,
       inSite?`<a href="${esc(inSite)}">open the game</a>`:'',url?`<a href="${esc(url)}" target="_blank" rel="noopener" title="The game on ${/lichess/.test(url)?'Lichess':'Chess.com'}">game ↗</a>`:'']});
   $('bc-lichess').href='https://lichess.org/analysis/'+encodeURIComponent(d.fen.replace(/ /g,'_'))+'?color='+(d.color==='white'?'white':'black'); $('bc-lichess').hidden=false;
   say('',`Step 1: what does ${esc(first(d))} threaten?`,'Play their move, as if they could move again now (it’s really your move).');

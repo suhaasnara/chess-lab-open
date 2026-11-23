@@ -12,7 +12,7 @@ section('t1: page loads, routes, board renders');
   const {w}=await makePage();
   { const d=w.document, main=[...d.querySelectorAll('nav.tabs .inner > a:not(.settab)')].map(a=>a.dataset.view), ex=[...d.querySelectorAll('#x-menu a:not(.xset):not(.ph-x)')].map(a=>a.dataset.view);
     assert(main.join()==='today,openings,drills,tactics,analyze,progress','main row: Today, Openings, Drills, Tactics, Analyze, Progress');
-    assert(ex.length===8&&['blind','guess','calc','endgames','watch','play','players','blundercheck'].every(v=>ex.includes(v)),'Extra holds the other eight (Blunder check since the pack import, Blind tactics since 12 Nov 2026)');
+    assert(ex.length===9&&['blind','guess','calc','endgames','watch','play','players','blundercheck','help'].every(v=>ex.includes(v)),'Extra holds the other nine (Blunder check since the pack import, Blind tactics since 12 Nov 2026, Help since 23 Nov 2026)');
     assert(d.querySelector('nav.tabs a.settab[href="#settings"]'),'Settings at the right');
     assert(d.querySelector('nav.tabs .inner > a.ph-x[data-view="analyze"]')&&d.querySelector('#x-menu a.ph-x[data-view="analyze"]'),'Analyze moves into Extra on phones');
     const xb=d.getElementById('x-btn'), xm=d.getElementById('x-menu'); assert(xm.hidden,'Extra menu starts closed');
@@ -124,6 +124,17 @@ section('t5: tactics — solve, miss, rating');
   await w.TacticsTab.userMove(legal.from,legal.to); await sleep(50);
   const p=w.Store.get('tactics-progress');
   assert(p[z3.id]&&p[z3.id].ok===false,'a wrong first move records a miss');
+  /* 23 Nov 2026 (his device test): a wrong move played by tapping left the old dots on the board, and a hint kept the
+     piece picked up before it */
+  { const z4=lib.find(p=>p.moves.length===2&&![z,z2,z3].includes(p)); w.TacticsTab.load(z4); await sleep(30);
+    const bd=w.document.getElementById('t-board'), g4=w.TacticsTab.state.g, exp4=w.TacticsTab.state.cur.moves[w.TacticsTab.state.step];
+    const bad=g4.moves({verbose:true}).find(m=>(m.from+m.to)!==exp4.slice(0,4));
+    const tap=sq=>{ const c=bd.querySelector(`.sq[data-sq="${sq}"]`); for(const t of ['pointerdown','pointerup']) (t==='pointerdown'?c:bd).dispatchEvent(new w.MouseEvent(t,{bubbles:true,button:0})) };
+    tap(bad.from); const dots=bd.querySelectorAll('.tgt').length; tap(bad.to); await sleep(20);
+    assert(dots>0&&!bd.querySelector('.tgt')&&!bd.querySelector('.sel'),'a wrong move by tapping clears the selection and its dots');
+    assert(bd.classList.contains('movable')&&bd.querySelector(`.sq[data-sq="${bad.from}"]`).classList.contains('mine'),'the squares with your pieces are marked, so a drag from them moves the piece instead of scrolling');
+    tap(bad.from); w.TacticsTab.hint();
+    assert(!bd.querySelector('.sel')&&bd.querySelector('.hint'),'a hint drops the piece you had picked up'); }
 }
 
 section('t6: analyze — mocked Lichess games give a report and drills');

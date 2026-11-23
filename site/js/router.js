@@ -1,8 +1,8 @@
 /* Think Ahead — router: which section is on screen (#openings, #tactics, ...). */
 'use strict';
 (function(){
-const VIEWS=['today','openings','tactics','blind','calc','endgames','analyze','drills','play','guess','players','watch','blundercheck','game','progress','settings','about'];
-const TITLES={today:'Today',openings:'Openings',tactics:'Tactics',blind:'Blind tactics',calc:'Calculation',endgames:'Endgames',analyze:'Analyze my games',drills:'Drills',play:'Play',guess:'Guess the move',players:'Players',watch:'Watch',blundercheck:'Blunder check',game:'A game you analyzed',progress:'Progress',settings:'Settings',about:'About'};
+const VIEWS=['today','openings','tactics','blind','calc','endgames','analyze','drills','play','guess','players','watch','blundercheck','game','progress','settings','help','about'];
+const TITLES={today:'Today',openings:'Openings',tactics:'Tactics',blind:'Blind tactics',calc:'Calculation',endgames:'Endgames',analyze:'Analyze my games',drills:'Drills',play:'Play',guess:'Guess the move',players:'Players',watch:'Watch',blundercheck:'Blunder check',game:'A game you analyzed',progress:'Progress',settings:'Settings',help:'Help',about:'About'};
 /* The header (shared/nav.js): the same main row and Extra menu as the private Chess Lab, plus Analyze my games. */
 Nav.mount(document.getElementById('tabs'),SITE.tabs);   /* js/config.js */
 /* The bottom bar on phones and iPads (14 Nov 2026; shared/trainview.js TV.bar, as on the private site): every board page's
@@ -43,7 +43,12 @@ function onShow(v){
   if(v==='watch') WatchTab.render();
   if(v==='players') PlayersTab.render();
   if(v==='blundercheck') BlunderCheckTab.refresh(true);
+  if(v==='help') openHelp();
 }
+/* #help?winpct opens that answer and brings it into view (a "?" note's "More in Help" link) */
+function openHelp(){ const t=String(location.hash).split('?')[1]; const d=t&&document.getElementById('h-'+t.replace(/[^a-z]/g,'')); if(!d) return;
+  d.open=true; setTimeout(()=>{ const nav=(document.querySelector('.tabs')||{}).offsetHeight||0; scrollTo({top:scrollY+d.getBoundingClientRect().top-nav-12,behavior:'smooth'}) },80) }
+addEventListener('hashchange',()=>{ if(document.body.dataset.view==='help') openHelp() });
 /* Phones and tablets (one column, board on top): picking from the list below brings the board back into view. */
 document.addEventListener('click',e=>{   /* capture phase: the list re-renders on click, so find the section first */
   if(innerWidth>860) return;

@@ -42,7 +42,7 @@ function renderL(){
       meta:`<span class="src">${esc(SITE[d.site]||d.site||'Game')}</span> · ${esc(d.date||'')} · ${d.color==='w'?'W':'B'} · −${WinPct.pts(d.drop)} Win%`,
       right:TV.dots([[st?(st.ok?'good':'bad'):'','Find the move']]),current:!!(S.cur&&S.cur.id===d.id),data:{id:d.id}}) }).join('');
   el.classList.toggle('isempty',!list.length);
-  if(!list.length) el.innerHTML=all.length?'<p class="empty">No drills match these filters.</p>':'<p class="empty">No drills yet. Run <a href="#analyze"><b>Analyze my games</b></a> first and save drills from your mistakes.</p>';
+  if(!list.length) el.innerHTML=all.length?'<p class="empty">No drills match these filters.</p>':'<p class="empty">No drills yet. Run <a href="#analyze"><b>Analyze my games</b></a>, then press <b>Save</b> in its <b>Drills from these games</b> card near the top of the report. <a href="#help?drills">How drills work</a></p>';
   const none=!all.length&&!S.cur;   /* nothing to train yet: no buttons that do nothing */
   for(const id of ['d-next','d-show','d-hint']) $(id).disabled=none;
   $('d-lichess').hidden=none; $('d-gamecard').hidden=!S.cur; $('drills').classList.toggle('nodata',none);
@@ -55,12 +55,12 @@ function load(d){
   if(isPunish(d)&&d.gameBest) status('',`${d.oppMove} was a mistake. Punish it.`,`${S.g.turn()==='w'?'White':'Black'} to move. In the game you played ${d.played}; a deeper look found nothing better.`);
   else if(isPunish(d)) status('',`${d.oppMove} was a mistake. Punish it.`,`${S.g.turn()==='w'?'White':'Black'} to move. In the game you played ${d.played}, which let them off (it gave back ${WinPct.pts(d.drop)} points of Win%).`,DROP_HELP);
   else if(d.gameBest) status('', (S.g.turn()==='w'?'White':'Black')+' to move — find the best move.',`In the game you played ${d.played}. A deeper look found nothing better, so this position was not a mistake.`);
-  else status('', (S.g.turn()==='w'?'White':'Black')+' to move — find a better move.',`In the game you played ${d.played}: Win% ${WinPct.change(d.before,d.drop,d.color)}.`,DROP_HELP);
+  else status('', (S.g.turn()==='w'?'White':'Black')+' to move — find a better move.',`In the game you played ${d.played}: Win% ${bare(d)}.`,DROP_HELP);
   const goal=playGoal(d);
   $('d-head').innerHTML=TV.head({kicker:`${isPunish(d)?'Punish · ':''}${esc(SITE[d.site]||d.site||'Your game')} · ${esc(d.date||'')}`,
     title:`vs ${esc(d.opp)}`,
     chips:[d.color==='w'?'White':'Black',`<span class="mono">${fmtW(d.before)}</span>${Help.q(Math.abs(d.before)>=50?'Stockfish sees a forced mate here: +M for White, −M for Black.':'Stockfish’s eval of this position from White’s side, in pawns (+ favors White).')}`,
-      d.gameBest?'the game move was best':`Win% ${WinPct.change(d.before,d.drop,d.color)} in the game${Help.q(DROP_HELP)}`],
+      d.gameBest?'the game move was best':`In the game: Win% ${bare(d)}${Help.q(DROP_HELP,'winpct')}`],
     extra:`<div class="seg mini" role="group" aria-label="Training mode"><button type="button" aria-pressed="true">Find the move</button><button type="button" id="d-playout" aria-pressed="false" title="${goal==='win'?'Continue against Stockfish from this position. You were winning before the slip: convert it.':'Continue against Stockfish from this position. Hold it: a draw or better counts.'}">Play it out: ${goal==='win'?'win it':'hold it'}</button></div>`});
   $('d-playout').addEventListener('click',playOut);
   $('d-facts').innerHTML=`<dt>Date</dt><dd>${esc(d.date)}</dd><dt>Opponent</dt><dd>${esc(d.opp)}</dd>
@@ -134,7 +134,9 @@ function gameLinks(d){
   return `<dt>Game</dt><dd>${here?`<a href="${esc(here)}" id="d-gamelink">Open the game at this move</a>`:''}${here&&url?' · ':''}${url?`<a href="${esc(url)}" target="_blank" rel="noopener">${/lichess/.test(url)?'Lichess':'Chess.com'} ↗</a>`:''}</dd>`;
 }
 const playGoal=d=>((d.before||0)*(d.color==='w'?1:-1))>=1.5?'win':'hold';
-const DROP_HELP=WinPct.HELP;
+const DROP_HELP=WinPct.SHORT;
+/* 23 Nov 2026 (his device test): "Win% 49% → 3%" read as a pile of symbols; after the word Win% the numbers need no % */
+const bare=d=>WinPct.change(d.before,d.drop,d.color).replace(/%/g,'');
 function playOut(){
   const d=S.cur; if(!d) return;
   location.hash='#play';
@@ -149,7 +151,7 @@ async function hint(){
   else { board.setHint(u.slice(0,2),u.slice(2,4)); status('warn','Hint: '+sanOf(S.g.fen(),u),'Play it to finish. It doesn’t count as solved.') }
 }
 function next(){ if(H) return H.next(); const p=prog(); const d=drills().find(x=>!p[x.id]||!p[x.id].ok)||drills()[0]; if(d) load(d) }
-function status(tone,head,rest,help){ const el=$('d-status'); el.className='status'+(tone?' '+tone:''); el.innerHTML=`<strong>${esc(head)}</strong>${esc(rest||'')}${help?Help.q(help):''}` }
+function status(tone,head,rest,help){ const el=$('d-status'); el.className='status'+(tone?' '+tone:''); el.innerHTML=`<strong>${esc(head)}</strong>${esc(rest||'')}${help?Help.q(help,'winpct'):''}` }
 
 function init(){
   board=makeBoard($('d-board'),{onMove:userMove});
