@@ -55,13 +55,14 @@ function metaHtml(e,r){
 }
 function entry(id){ const own=ownGame(id); if(own) return own; const e=(INDEX||[]).find(x=>x.id===id); return e?e.file:null }
 function showTrain(on){ $('g-lobby').hidden=on; $('g-train').hidden=!on }
-function lobby(){ S.gen=(S.gen||0)+1; S.game=null; critRing(false); if(endbar) endbar.hide(); showTrain(false); renderList(); scrollTo(0,0) }
+function lobby(){ S.gen=(S.gen||0)+1; S.tick=(S.tick||0)+1; S.game=null; critRing(false); if(endbar) endbar.hide(); showTrain(false); renderList(); scrollTo(0,0) }
 
 async function load(file){
   const game=typeof file==='object'&&file?deep(file):await fetch(Site.url('gtm',file)).then(r=>r.json()).catch(()=>null);
   if(!game){ status('bad','Could not load the game.',''); return }
   if(endbar) endbar.hide();
-  S.game=game; S.g=new Chess(game.fen||undefined); S.ply=0; S.pts=0; S.got=0; S.missed=0; S.alsoGood=0; S.done=false; S.busy=false; S.hintStage=0; S.rows=[]; S.retry=null; S.view=null; S.vr=null; S.read=false; S.gen=(S.gen||0)+1; S.crit=critOf(game); critRing(false);
+  S.game=game; S.g=new Chess(game.fen||undefined); S.ply=0; S.pts=0; S.got=0; S.missed=0; S.alsoGood=0; S.done=false; S.busy=false; S.hintStage=0; S.rows=[]; S.retry=null; S.view=null; S.vr=null; S.read=false; S.gen=(S.gen||0)+1; S.tick=(S.tick||0)+1; S.crit=critOf(game);   /* tick: a 'next move' timer left by the game before must not run on this one */
+   critRing(false);
   readTools(); showTrain(true);
   const me=game.winner;
   $('g-head').innerHTML=TV.head({kicker:game.own?'Your game':(INDEX||[]).some(e=>e.id===game.id&&e.set==='masters')?'Master game':'Suhaas’s game',
@@ -140,6 +141,7 @@ async function userMove(from,to,promo){
   const gameMove=new Chess(S.g.fen()).move(g.moves[S.ply]);
   const gameUci=gameMove.from+gameMove.to+(gameMove.promotion||'');
   S.busy=true; critRing(false);
+  const gen=S.gen;   /* the engine check below takes a second or two: another game (or the list, or Read the game) may be opened meanwhile */
   let verdict, earned=0;
   if(uci.slice(0,4)===gameUci.slice(0,4)){
     earned=info.pts; S.got++;
@@ -153,6 +155,7 @@ async function userMove(from,to,promo){
     const t2=new Chess(S.g.fen()); t2.move(g.moves[S.ply]);
     const gev=info.ev!=null?info.ev:(t2.in_checkmate()?9900:await cpAfter(t2.fen()));
     const mineCp=test.in_checkmate()?9900:await cpAfter(test.fen());
+    if(gen!==S.gen) return;   /* the game was left during the check: this guess belongs to nothing now */
     if(gev!=null&&mineCp!=null){
       const drop=wc(gev/100)-wc(mineCp/100);   /* wc takes pawns; ev is stored in centipawns */
       if(drop<=0.1){ earned=Math.min(1,info.pts||1); S.alsoGood++; verdict=['good',`${m.san} is about as good — the game went ${esc(g.moves[S.ply])}.`] }

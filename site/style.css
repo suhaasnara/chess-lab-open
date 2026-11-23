@@ -170,7 +170,7 @@ tr:last-child td{border-bottom:0}
 .oright{grid-area:right;min-width:0;display:flex;flex-direction:column;gap:10px}
 @media (max-width:1180px){.otrain{grid-template-columns:minmax(0,1fr) minmax(0,340px);grid-template-areas:"board pick" "board side" "board right";grid-template-rows:auto auto 1fr}}
 @media (max-width:860px){.otrain{grid-template-columns:minmax(0,1fr);grid-template-areas:"pick" "board" "side" "right";grid-template-rows:none;gap:12px}}
-@media (hover:none) and (pointer:coarse) and (orientation:landscape) and (min-width:1000px) and (max-width:1180px){.otrain{grid-template-columns:minmax(0,240px) minmax(0,1fr) minmax(0,280px);grid-template-areas:"pick board right" "side board right";grid-template-rows:auto 1fr;gap:12px 16px}#td-grid .otrain{grid-template-columns:minmax(0,1fr) minmax(0,250px)}}   /* an iPad on its side: three columns, like the desktop (his recheck, 23 Nov 2026; trainview.css) */
+@media (hover:none) and (pointer:coarse) and (orientation:landscape) and (min-width:1000px) and (max-width:1180px){.otrain{grid-template-columns:minmax(0,240px) minmax(0,1fr) minmax(0,280px);grid-template-areas:"pick board right" "side board right";grid-template-rows:auto 1fr;gap:12px 16px}}   /* an iPad on its side: three columns, like the desktop (his recheck, 23 Nov 2026; trainview.css) */
 .opickbtn{display:grid;grid-template-columns:1fr auto;grid-template-areas:"lab car" "name car";align-items:center;width:100%;text-align:left;background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:8px 12px;cursor:pointer;box-shadow:0 1px 3px rgba(19,40,74,.08);font:inherit;color:inherit}
 .opickbtn:hover,.opickbtn[aria-expanded="true"]{border-color:var(--blue)}
 .opicklab{grid-area:lab;font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
@@ -242,6 +242,7 @@ footer .inner{padding-block:18px;font-size:.85rem;color:var(--muted)}
 #td-grid .otrain{grid-template-columns:minmax(0,1fr) minmax(0,320px);grid-template-areas:"board side" "board right";grid-template-rows:auto 1fr}
 #td-grid .otrain .opick{display:none}
 @media (max-width:1040px){#td-grid .otrain{grid-template-columns:minmax(0,1fr);grid-template-areas:"board" "side" "right";grid-template-rows:none}}
+@media (hover:none) and (pointer:coarse) and (orientation:landscape) and (min-width:1000px) and (max-width:1180px){#td-grid .otrain{grid-template-columns:minmax(0,1fr) minmax(0,250px)}}   /* an iPad on its side: a narrower side column. Here, after the rule above, or that one wins (the same selector, later in the file) */
 #td-cards .wtrow[aria-current="true"]{box-shadow:inset 3px 0 0 var(--navy);padding-left:8px}
 /* Today's cards under the session bar (Endgame, Opening line, Watch): Chess Lab's .watoday values */
 .watoday{margin:10px 0;padding:10px 14px}
@@ -610,6 +611,7 @@ th.num{white-space:normal}   /* a heading wraps rather than run into the next on
 .hq summary{cursor:pointer;font-weight:600;font-size:1.05rem}.hq[open] summary{margin-bottom:6px}.hq p{margin:8px 0}
 .qpop .qmore{white-space:nowrap;font-weight:600}
 html:not(.in-app) .app-only{display:none}
+html.on-ipad #h-watch{display:none}   /* Help's Apple Watch answer: the watch pairs with the iPhone app, and the iPad's card has no watch rows */
 /* Settings in the app on a wide screen (an iPad, 22 Nov 2026): the iPhone / iPad app card goes under the settings in the
    wide column, not into the 300px preview column beside them */
 @media (min-width:861px){.tvset.setwrap>#appbox{grid-column:1}.tvset.setwrap>.setpreview{grid-column:2;grid-row:1 / span 2}}
