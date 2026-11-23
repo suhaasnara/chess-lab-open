@@ -289,6 +289,21 @@ th.num{text-align:right}
   :is(.tv,.tv3,.tvplay,.otrain,.tvcontents)>.boardwrap,.tv .boardwrap{max-width:min(100%,720px,var(--bbroom),var(--bfit,9999px))!important}
   .tvplay{grid-template-columns:minmax(0,min(calc(100% - 362px),var(--bbroom),720px)) minmax(0,340px)}
 }
+/* His recheck (23 Nov 2026): an iPad on its side (1000 to 1180 px wide) gets the desktop's three columns, narrower,
+   instead of board | one long column: the left and right columns share the page's text, so it all fits in one view
+   without scrolling (the board gives up some width for that; it is capped by --bbroom's height anyway).
+   .tv: list | board | panel; .tv3 (and .tvcontents): left | board | side. The opening trainer's own grid: style.css. */
+@media (hover:none) and (pointer:coarse) and (orientation:landscape) and (min-width:1000px) and (max-width:1180px){
+  .tv,.grid.tv{grid-template-columns:minmax(0,270px) minmax(0,1fr);gap:16px}
+  .tv .panel{grid-template-columns:minmax(0,1fr) minmax(0,250px);gap:16px}
+  .tv3{grid-template-columns:minmax(0,240px) minmax(0,1fr) minmax(0,280px);grid-template-rows:none;gap:12px 16px}
+  .tv3>.tvleft,.tv3>.side,.tv3>.tvcontents>.side{display:flex}
+  .tv3>.boardwrap,.tv3>.tvcontents>.boardwrap{grid-column:auto;grid-row:auto}
+  .tv3>.tvleft>*,.tv3>.side>*,.tv3>.tvcontents>.side>*{grid-column:auto}
+  .tv3>.tvleft>.tvback{order:0}
+  :is(.tv,.tv3) .ohtop{align-items:flex-start}:is(.tv,.tv3) .ohtop .label{white-space:normal;line-height:1.45}   /* the narrower side column: a long title wraps, */
+  :is(.tv,.tv3) .ohchips>span{white-space:normal}:is(.tv,.tv3) .rng{min-width:0}   /* so does a long opening name in a chip, and the rating slider fits */
+}
 
 /* ---------- Pinned board (14 Nov 2026): on phones and upright iPads the board stays under the tab row while the page's
    status, notation and notes scroll underneath, as in the opening trainer. TV.pin(section, boardColumn) (trainview.js).

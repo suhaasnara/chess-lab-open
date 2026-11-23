@@ -8,7 +8,7 @@
 /* 23 Nov 2026 (his device test): a drag that started on a piece scrolled the page up or down instead (manipulation lets
    iOS claim a vertical swipe for scrolling, so the piece only moved sideways). On a board you can move on, the squares
    with your own pieces take no touch gestures: the drag is the board's. A swipe from any other square still scrolls. */
-.board.movable .sq.mine{touch-action:none}
+.board.movable .sq.mine,.board.movable .sq.own{touch-action:none}   /* .own: a drag on your piece while the reply is still coming (or played back) doesn't scroll the page either (his recheck, 23 Nov 2026) */
 /* ? = the keys on this page (shared/keys.js) */
 #keys-overlay{position:fixed;inset:0;background:var(--scrim);display:grid;place-items:center;z-index:80;padding:16px}
 #keys-overlay .card{background:var(--white);color:var(--ink);border-radius:var(--radius);padding:16px 18px;max-width:440px;width:100%;max-height:calc(100vh - 32px);overflow:auto;box-shadow:0 8px 30px rgba(0,0,0,.25)}

@@ -135,6 +135,11 @@ section('t5: tactics — solve, miss, rating');
     assert(bd.classList.contains('movable')&&bd.querySelector(`.sq[data-sq="${bad.from}"]`).classList.contains('mine'),'the squares with your pieces are marked, so a drag from them moves the piece instead of scrolling');
     tap(bad.from); w.TacticsTab.hint();
     assert(!bd.querySelector('.sel')&&bd.querySelector('.hint'),'a hint drops the piece you had picked up'); }
+  /* his recheck (23 Nov 2026): while the reply is coming it is not your turn, but a drag on your piece must still not
+     scroll the page, so your side's pieces are marked whoever is to move */
+  { const el=w.document.createElement('div'), g5=new w.Chess(); g5.move('e4'); w.Board.draw(el,g5,{orient:'w'});
+    const at=sq=>el.querySelector(`.sq[data-sq="${sq}"]`).classList;
+    assert(at('e4').contains('own')&&!at('e4').contains('mine')&&at('e7').contains('mine')&&!at('e7').contains('own'),'your pieces are .own off-turn; the side to move stays .mine'); }
 }
 
 section('t6: analyze — mocked Lichess games give a report and drills');
@@ -1261,6 +1266,15 @@ section('t41: Openings — Anything vs e4 / d4 / sidelines, Hide and Restore');
   $('o-hide').click(); await sleep(100); assert(!O.openings().some(o=>o.id==='preset-italian'),'hidden from the list');
   w.SettingsTab.init(); assert(/Italian/.test($('s-hidden').textContent),'Settings lists it');
   $('s-unhide').click(); assert(O.openings().some(o=>o.id==='preset-italian'),'Restore brings it back');
+  /* his recheck (23 Nov 2026): a row of jump buttons, the app's card first while it shows */
+  { const nav=$('s-jump'), names=()=>[...nav.querySelectorAll('button')].map(b=>b.textContent);
+    assert(nav&&names().join()==='Look,Board,Moving pieces,Puzzles,Openings,Engine','one jump button per group');
+    assert([...nav.querySelectorAll('button')].every(b=>w.document.getElementById(b.dataset.to)),'each points at its group');
+    const box=$('appbox'); box.innerHTML='<h2>iPhone app</h2>'; box.hidden=false; await sleep(20);
+    assert(names()[0]==='iPhone app'&&nav.querySelector('button').dataset.to==='appbox','the app card comes first once it shows');
+    box.hidden=true; box.innerHTML=''; await sleep(20); assert(names()[0]==='Look','and goes when it is hidden'); }
+  /* Help: answers in labelled lines (his recheck) */
+  assert(w.document.querySelectorAll('#h-watch .hlist li').length===4&&w.document.querySelectorAll('#h-drills ol li').length===3,'Help answers are split into lines and steps');
 }
 
 section('t42: puzzle titles don’t give the idea away');
