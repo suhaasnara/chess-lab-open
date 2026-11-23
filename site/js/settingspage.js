@@ -37,7 +37,7 @@ function init(){
   const byK=Object.fromEntries(ROWS.map(r=>[r.k,r])), order=GROUPS.flatMap(([g,ks])=>ks.map((k,i)=>[i?null:g,byK[k]])).filter(x=>x[1]);
   for(const r of ROWS) if(!order.some(x=>x[1]===r)) order.push([null,r]);
   for(const [group,r] of order){
-    if(group){ const h=document.createElement('h3'); h.className='setgroup'; h.textContent=group; el.appendChild(h) }
+    if(group){ const h=document.createElement('h3'); h.className='setgroup'; h.id='sg-'+group.toLowerCase().replace(/[^a-z]+/g,'-'); h.textContent=group; el.appendChild(h) }
     const row=document.createElement('div'); row.className='setrow'+(r.k==='shapeColor'?' mouseonly':'');
     const sel=document.createElement('select');
     for(const [v,name] of r.opts){ const o=document.createElement('option'); o.value=v; o.textContent=name; sel.appendChild(o) }
@@ -53,15 +53,31 @@ function init(){
     const box=document.createElement('div'); box.appendChild(seg); box.appendChild(sel);
     row.appendChild(box); el.appendChild(row);
   }
-  hiddenRow();
+  hiddenRow(); jumps();
   if($('s-board')){ prev=makeBoard($('s-board'),{}); preview() }
+}
+/* A row of jump buttons under the title (his recheck, 23 Nov 2026: the app card at the bottom was easy to miss). One per
+   group, and the app's own card (iPhone app / iPad app) first while it shows; it is filled in by shared/native.js after
+   the page is built, so the row follows its hidden attribute. */
+let jumpObs=null;
+function jumps(){
+  const rows=$('s-rows'); if(!rows) return;
+  let nav=document.getElementById('s-jump');
+  if(!nav){ nav=document.createElement('nav'); nav.id='s-jump'; nav.className='setjump'; nav.setAttribute('aria-label','Jump to a group of settings'); rows.parentNode.insertBefore(nav,rows)
+    nav.addEventListener('click',e=>{ const b=e.target.closest('button[data-to]'); const t=b&&document.getElementById(b.dataset.to); if(!t) return;
+      const calm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches; t.scrollIntoView({behavior:calm?'auto':'smooth',block:'start'}) }) }
+  const app=document.getElementById('appbox'), h=app&&!app.hidden&&app.querySelector('h2');
+  const items=(h?[['appbox',h.textContent]]:[]).concat([...rows.querySelectorAll('h3.setgroup')].map(x=>[x.id,x.textContent]));
+  nav.innerHTML=items.map(([id,t])=>`<button type="button" class="btn sm" data-to="${esc(id)}">${esc(t)}</button>`).join('');
+  if(app&&!jumpObs&&window.MutationObserver){ jumpObs=new MutationObserver(()=>{ const now=!app.hidden&&app.querySelector('h2'); if(!!now!==!!nav.querySelector('[data-to="appbox"]')) jumps() });
+    jumpObs.observe(app,{attributes:true,attributeFilter:['hidden'],childList:true}) }
 }
 /* Restore hidden openings (Openings → Hide this opening keeps their progress) */
 function hiddenRow(){ const el=$('s-rows'); let row=document.getElementById('s-hidden'); if(!row){ row=document.createElement('div'); row.className='setrow'; row.id='s-hidden'; el.appendChild(row) }
   const ids=Store.get('ohidden')||[], names=ids.map(id=>(OpeningsTab.PRESETS.find(o=>o.id===id)||{}).name).filter(Boolean);
   row.innerHTML=`<div><div class="setname">Hidden openings</div><div class="note">${names.length?esc(names.join(', ')):'None. Hide one from its panel on the Openings tab.'}</div></div>`+(names.length?'<button type="button" class="btn sm" id="s-unhide">Restore hidden openings</button>':'');
   const b=row.querySelector('#s-unhide'); if(b) b.onclick=()=>{ Store.del('ohidden'); hiddenRow(); if(window.OpeningsTab&&OpeningsTab.renderList) OpeningsTab.renderList() } }
-function refresh(){ hiddenRow(); document.querySelectorAll('#s-rows select[data-k]').forEach(s=>{ s.value=String(Settings.get(s.dataset.k));
+function refresh(){ hiddenRow(); jumps(); document.querySelectorAll('#s-rows select[data-k]').forEach(s=>{ s.value=String(Settings.get(s.dataset.k));
   s.parentNode.querySelectorAll('.seg button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===s.value))) }); preview() }
 window.SettingsTab={init,refresh};
 })();

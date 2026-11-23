@@ -32,6 +32,7 @@ window.Board=(()=>{
       const t=legal.find(m=>m.to===sq); if(t){ d.classList.add('tgt'); if(t.captured) d.classList.add('cap') }
       const p=g.get(sq);
       if(p&&p.color===g.turn()) d.classList.add('mine');
+      if(p&&p.color===orient) d.classList.add('own');   // your side's pieces (the board's bottom side), even while the reply is coming: shared.css
       if(p){ const s=document.createElement('span'); s.className='pc '+p.color+p.type.toUpperCase(); d.appendChild(s); d.setAttribute('aria-label',sq+' '+(p.color==='w'?'white ':'black ')+NAME[p.type]) }
       else d.setAttribute('aria-label',sq);
       if(r===7){ const k=document.createElement('span'); k.className='coord f'; k.textContent=FILES[file]; d.appendChild(k) }
