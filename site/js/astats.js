@@ -25,7 +25,7 @@ window.AStats=(()=>{
   const poolKey=g=>`${sysOf(g)}|${g.speed}`;
   const poolName=k=>{ const [s,sp]=k.split('|'); return `${Perf.LABEL[s]||s} ${(SPEED[sp]||sp||'').toLowerCase()}`.trim() };
   const pct=(a,b)=>b?Math.round(100*a/b):null;
-  const q=t=>Help.q(t);
+  const q=(t,more)=>Help.q(t,more);
 
   /* ---------- filters ---------- */
   const monthsAgo=n=>{ const d=new Date(); d.setMonth(d.getMonth()-n); return d.toISOString().slice(0,10) };
@@ -260,11 +260,11 @@ window.AStats=(()=>{
     const noRows=!rows.length;
     const tiles=`<div class="stats">
       <div class="stat"><b class="sm">${noRows?'—':`${W}–${D}–${L}`}</b><span class="note">wins / draws / losses in ${rows.length} analyzed game${rows.length===1?'':'s'}${final?'':' of '+total+'…'}${q('Results of the games analyzed here, from your side. Results of every game, analyzed or not, are under Results below.')}</span></div>
-      <div class="stat"><b class="sm">${noRows?'—':`${blun} / ${mist} / ${inacc}`}</b><span class="note">your blunders / mistakes / inaccuracies${noRows?'':`, ${(blun/rows.length).toFixed(1)} / ${(mist/rows.length).toFixed(1)} / ${(inacc/rows.length).toFixed(1)} per game`}${q('Each of your moves is judged by how much it dropped your Win%. '+WinPct.HELP)}</span></div>
+      <div class="stat"><b class="sm">${noRows?'—':`${blun} / ${mist} / ${inacc}`}</b><span class="note">your blunders / mistakes / inaccuracies${noRows?'':`, ${(blun/rows.length).toFixed(1)} / ${(mist/rows.length).toFixed(1)} / ${(inacc/rows.length).toFixed(1)} per game`}${q('Each of your moves is judged by how much it dropped your Win%. '+WinPct.SHORT,'winpct')}</span></div>
       <div class="stat"><b>${conv==null?'—':conv+'%'}</b><span class="note">won from +2 (${Help.n(convs.length,'game')})${q('Of the games where you were 2 pawns or more ahead (by the engine), the share you went on to win.')}</span></div>
       <div class="stat"><b>${save==null?'—':save+'%'}</b><span class="note">saved from −2 (${Help.n(saves.length,'game')})${q('Of the games where you were 2 pawns or more behind, the share you drew or won.')}</span></div>
       ${Yearly.tile(yearly)}
-      <div class="stat"><b class="sm">${pun.length?pun.length-toPunish.length+' / '+pun.length:'—'}</b><span class="note">opponents’ mistakes you punished${q("Your opponents' moves that dropped their Win% by 10 points or more (a Lichess mistake), and how many of them you made pay for (your next move kept most of the gain). "+WinPct.HELP)}</span></div>
+      <div class="stat"><b class="sm">${pun.length?pun.length-toPunish.length+' / '+pun.length:'—'}</b><span class="note">opponents’ mistakes you punished${q("Your opponents' moves that dropped their Win% by 10 points or more (a Lichess mistake), and how many of them you made pay for (your next move kept most of the gain). "+WinPct.SHORT,'winpct')}</span></div>
     </div>`;
     /* ---- results ---- */
     const opcol=F.col!=='all'?F.col:OPCOL, bandcol=F.col!=='all'?'all':BANDCOL;   /* a colour filter decides both */
@@ -322,7 +322,7 @@ window.AStats=(()=>{
       <p class="note">Accuracy is Lichess’s per-move accuracy averaged per phase (book moves count in Best).${q('Phases as Lichess divides a game: the middlegame starts when 10 or fewer major and minor pieces are left or a back rank is sparse; the endgame when 6 or fewer are left.')}</p></div>`
       :`<div class="card"><span class="label">Move quality and accuracy</span><p class="note">${final?'No analyzed games match these filters.':'Appears as soon as the first game is analyzed.'}</p></div>`;
     /* ---- costliest moments ---- */
-    const costly=`<div class="card wide"><span class="label">Your costliest moments (${mistakes.length})${q('Your moves that dropped your Win% the most: before the move → after it, from your side. '+WinPct.HELP)}</span>
+    const costly=`<div class="card wide"><span class="label">Your costliest moments (${mistakes.length})${q('Your moves that dropped your Win% the most: before the move → after it, from your side. '+WinPct.SHORT,'winpct')}</span>
       <div style="margin-top:6px">${mistakes.slice(0,10).map(m=>`<div class="gamerow"><span class="src">${esc(m.game.date)}</span>
         <span>${esc(m.san)} <span class="note">vs ${esc(oppName(m.game))}</span></span>
         <span class="pill ${m.drop>=0.3?'bad':'warn'}" title="Win%, from your side">${WinPct.change(m.before,m.drop,m.game.color)}</span>

@@ -57,7 +57,11 @@ window.Native=(()=>{
   function message(c){
     const parts=site.reminder.map(p=>[p,c[p.k]||0]).filter(x=>x[1]>0), total=parts.reduce((s,x)=>s+x[1],0);
     const top=parts.slice().sort((a,b)=>b[1]-a[1])[0];
-    return {total,title:plural(total,'review due','reviews due'),body:parts.map(([p,n])=>plural(n,p.one,p.many)).join(' · '),hash:top?top[0].hash:'#today'};
+    /* 23 Nov 2026 (his device test): written as sentences, not lowercase fragments: "Time for your reviews" /
+       "2 drills, 1 Blind tactic and 1 endgame are due." */
+    const items=parts.map(([p,n])=>plural(n,p.one,p.many));
+    const list=items.length>1?items.slice(0,-1).join(', ')+' and '+items[items.length-1]:(items[0]||'');
+    return {total,title:total===1?'Time for your review':'Time for your reviews',body:total?list+(total===1?' is due.':' are due.'):'',hash:top?top[0].hash:'#today'};
   }
   const atOn=(d,time)=>{ const [h,m]=String(time||'19:00').split(':').map(Number), x=new Date(); x.setDate(x.getDate()+d); x.setHours(h||0,m||0,0,0); return x.getTime() };
   /* iOS asks the user once; after that the answer is 'granted' or 'denied' (changeable only in the device's Settings) */
@@ -84,7 +88,7 @@ window.Native=(()=>{
   async function test(){
     if(await permission(true)!=='granted'){ perm='denied'; render(); return }
     const m=message(Due.count(Date.now()));
-    try{ await P.LocalNotifications.schedule({notifications:[{id:TEST,title:m.total?m.title:site.name,body:(m.total?m.body:'Nothing is due right now.')+' (a test)',schedule:{at:new Date(Date.now()+5000)},extra:{hash:m.hash}}]}) }catch(e){}
+    try{ await P.LocalNotifications.schedule({notifications:[{id:TEST,title:m.total?m.title:site.name,body:(m.total?m.body:'Nothing is due right now.')+' This is a test.',schedule:{at:new Date(Date.now()+5000)},extra:{hash:m.hash}}]}) }catch(e){}
   }
 
   /* ---- the Apple Watch (docs/01-design.md §2.3). The watch keeps its own progress and sends each result; the app's
@@ -211,7 +215,7 @@ window.Native=(()=>{
   }
   function pickBackup(){
     const f=document.createElement('input'); f.type='file'; f.accept='application/json,.json';
-    f.onchange=()=>{ const x=f.files&&f.files[0]; if(!x) return; x.text().then(t=>{ const n=site.importAll(JSON.parse(t)); alertSheet(`Restored ${n} entries.`); dirty=true; soon(0) }).catch(()=>alertSheet('That file is not a progress backup.')) };
+    f.onchange=()=>{ const x=f.files&&f.files[0]; if(!x) return; x.text().then(t=>{ const n=site.importAll(JSON.parse(t)); alertSheet(`Restored ${n} entries.`); dirty=true; soon(0); watchSync() }).catch(()=>alertSheet('That file is not a progress backup.')) };
     f.click() }
   function wire(){
     const box=document.getElementById('appbox'); if(!box) return;
@@ -252,7 +256,8 @@ window.Native=(()=>{
       if(WB){ let wt=0; const wsoon=ms=>{ clearTimeout(wt); wt=setTimeout(watchSync,ms) };
         setTimeout(watchSync,4000);
         document.addEventListener('visibilitychange',()=>{ if(!document.hidden) wsoon(3000) });
-        try{ WB.addListener('results',()=>wsoon(1000)) }catch(e){} }
+        try{ WB.addListener('results',()=>wsoon(1000)) }catch(e){}
+        try{ WB.addListener('watch',a=>{ if(a&&a.installed) wsoon(1000) }) }catch(e){} }   // a watch app just installed: send it the progress (app 23 Nov 2026)
     };
     if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go();
   }

@@ -668,6 +668,56 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
   </div>
 </section>
 
+<!-- Help (23 Nov 2026, his device test): the longer answers, so a "?" beside a number can stay one or two sentences and
+     link here (Help.q(text, topic) -> #help?topic opens that answer). -->
+<section id="help" hidden>
+  <div class="aboutwrap helpwrap">
+  <div class="card">
+    <h2>Help</h2>
+    <p class="note" style="margin:0">How the numbers on the site work. Tap a question to open it.</p>
+  </div>
+  <details class="card hq" id="h-winpct"><summary>What is Win%?</summary>
+    <p>Win% is your chance of winning, worked out from Stockfish’s evaluation the way Lichess does it, and always from your side.
+       An equal position (0.0) is 50%. +1 is about 59%, +2 about 68%, +3 about 75% and +5 about 86%.</p>
+    <p>Each of your moves is judged by how much Win% it gives away: <b>5 points</b> or more is an inaccuracy, <b>10</b> a
+       mistake and <b>15</b> a blunder. A pawn matters most when the game is level: going from +1 to −1 costs 18 points, but
+       +5 to +3 only 11. Below 15% no move can be a blunder, because there aren’t 15 points left to lose.</p>
+    <p class="note">Where you see it: Analyze my games, Drills and Blunder check. Lichess explains it at
+       <a href="https://lichess.org/page/accuracy">lichess.org/page/accuracy</a>.</p>
+  </details>
+  <details class="card hq" id="h-ratings"><summary>How do the ratings work?</summary>
+    <p><b>Tactics</b> and <b>Blind tactics</b>: an Elo rating against each puzzle’s Lichess rating. Only your first try at
+       the first move counts; a hint (or a peek in Blind tactics) counts as a miss. Your rating moves quickly at first
+       (K = 32 for your first 30 puzzles), then settles (K = 16).</p>
+    <p><b>Openings</b>: every line starts at 1800. Each move you find is scored against how hard it was to find: a move
+       masters choose half the time counts as a 2200 find, a rarer one more. The line is rated once, when it ends.</p>
+    <p><b>Calculation</b>: your score is how far your line follows the solution, every move of both sides. A different first
+       move counts if Stockfish finds it as good.</p>
+  </details>
+  <details class="card hq" id="h-drills"><summary>Where do drills come from?</summary>
+    <p>From your own games. In <a href="#analyze">Analyze my games</a>, type your Lichess or Chess.com username and run the
+       report. Near the top of the report, the <b>Drills from these games</b> card has a <b>Save</b> button: press it, and the
+       positions where you went wrong (and the ones where your opponent did and you let it go) become drills in
+       <a href="#drills">Drills</a>. Each save is a set you can remove later from the same card.</p>
+  </details>
+  <details class="card hq" id="h-reviews"><summary>When do puzzles come back for review?</summary>
+    <p>A drill, a Blind tactic or a Blunder check you get wrong comes back the next day. One you get right comes back after
+       3 days, then 7, then 21. <a href="#today">Today</a> puts what is due first.</p>
+  </details>
+  <details class="card hq" id="h-progress"><summary>Where is my progress kept?</summary>
+    <p>Only on this device: there is no account and nothing is uploaded. To move it or keep a copy, use
+       <a href="#progress">Progress</a> → Export<span class="app-only">, or Settings → Back up now in the app (the backup
+       goes to the Files app; copy it to iCloud Drive to keep it if you delete the app)</span>.</p>
+  </details>
+  <details class="card hq app-only" id="h-watch"><summary>How does the Apple Watch sync?</summary>
+    <p>The watch has its own puzzles and keeps its own progress, so it works without the iPhone nearby. Each result you play
+       there is sent to the iPhone; the next time you open Think Ahead on the iPhone it records them and sends your
+       progress back, and the watch shows “Synced”. Settings → the app card shows when that last happened.</p>
+  </details>
+  <p class="note"><a href="#about">About, privacy and licences</a></p>
+  </div>
+</section>
+
 <!-- About, privacy and licences (18 Nov 2026). Also the privacy policy of the iPhone and Apple Watch app, which links here
      (js/native.js about); the parts only about the app have class app-only and show only inside it. Keep it exact:
      every request the site can make is listed under "What leaves your device". -->

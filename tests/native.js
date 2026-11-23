@@ -78,7 +78,9 @@ module.exports=async function(H){
     assert(c.drills===2&&c.blind===1&&c.endgames===1&&c.blundercheck===0,'due now: 2 drills (a miss and a 3-day review; punish drills and deleted drills left out), 1 Blind tactic, 1 endgame');
     assert(w.Due.count(now+3*D).blind===2,'… in three days the other Blind tactic is due too');
     const m=w.Native.message(c);
-    assert(m.title==='4 reviews due'&&m.body==='2 drills · 1 Blind tactic · 1 endgame'&&m.hash==='#drills','the message: "4 reviews due" · "2 drills · 1 Blind tactic · 1 endgame", a tap opens Drills');
+    assert(m.title==='Time for your reviews'&&m.body==='2 drills, 1 Blind tactic and 1 endgame are due.'&&m.hash==='#drills','the message: "Time for your reviews" · "2 drills, 1 Blind tactic and 1 endgame are due.", a tap opens Drills');
+    const m1=w.Native.message({drills:1});
+    assert(m1.title==='Time for your review'&&m1.body==='1 drill is due.','one review: "Time for your review" · "1 drill is due."');
     await w.Native.plan();
     const s=calls(log,'LN','schedule').pop();
     assert(s&&s[2].notifications.length>=1&&s[2].notifications.every(x=>x.id>=7100&&x.id<=7106),'the plan schedules reminders for the coming days'); }

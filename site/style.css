@@ -236,7 +236,7 @@ footer .inner{padding-block:18px;font-size:.85rem;color:var(--muted)}
 .linkbtn{border:0;background:none;padding:0;color:var(--blue);text-decoration:underline;cursor:pointer;font:inherit}
 
 /* Today */
-.tdwrap #welcome{max-width:900px;margin:0 0 16px}
+.tdwrap #welcome{margin:0 0 16px}   /* 23 Nov 2026: as wide as the cards under it (a 900 px cap left it short on an iPad) */
 /* Today hosting the Openings trainer: board | header and moves (the opening comes from Today's card, so no picker) */
 #td-grid .otrain{grid-template-columns:minmax(0,1fr) minmax(0,320px);grid-template-areas:"board side" "board right";grid-template-rows:auto 1fr}
 #td-grid .otrain .opick{display:none}
@@ -603,6 +603,8 @@ th.num{white-space:normal}   /* a heading wraps rather than run into the next on
 .aboutwrap h3{font-size:1.05rem;margin:16px 0 4px}
 .aboutwrap ul{padding-left:20px;margin:6px 0}
 .aboutwrap li{margin:4px 0}
+.hq summary{cursor:pointer;font-weight:600;font-size:1.05rem}.hq[open] summary{margin-bottom:6px}.hq p{margin:8px 0}
+.qpop .qmore{white-space:nowrap;font-weight:600}
 html:not(.in-app) .app-only{display:none}
 /* Settings in the app on a wide screen (an iPad, 22 Nov 2026): the iPhone / iPad app card goes under the settings in the
    wide column, not into the 300px preview column beside them */

@@ -9,7 +9,8 @@
      WinPct.pts(dropWc)             a drop on the -1..1 scale, in Win% points (rounded)
      WinPct.judge(points)           'blunder' | 'mistake' | 'inaccuracy' | ''
      WinPct.change(pawns, dropWc, side)  '59% → 52%' (before the move, after it, from that side)
-     WinPct.HELP                    the one-paragraph explanation every "?" uses; WinPct.URL Lichess's page */
+     WinPct.HELP                    the one-paragraph explanation; WinPct.URL Lichess's page
+     WinPct.SHORT                   two sentences, for a "?" that links to a fuller page (Think Ahead's Help, 23 Nov 2026) */
 'use strict';
 window.WinPct=(()=>{
   const K=0.00368208;
@@ -23,5 +24,6 @@ window.WinPct=(()=>{
     '+3 is 75%, +5 is 86%. A move that drops it by 5 points or more is an inaccuracy, 10 a mistake, 15 a blunder. '+
     'A pawn counts most near equality: +5 to +3 costs 11 points, +1 to −1 costs 18. Below 15% no move can be a '+
     'blunder (there aren’t 15 points left to lose).';
-  return {pct,side,pts,judge,change,HELP,URL:'https://lichess.org/page/accuracy'};
+  const SHORT='Win% is the chance of winning from the engine’s eval, from your side. A move that drops it 5 points is an inaccuracy, 10 a mistake, 15 a blunder.';
+  return {pct,side,pts,judge,change,HELP,SHORT,URL:'https://lichess.org/page/accuracy'};
 })();
