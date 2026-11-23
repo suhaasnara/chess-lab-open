@@ -35,6 +35,12 @@ const waitFor=async(page,fn,arg,ms=20000)=>{ try{ await page.waitForFunction(fn,
 /* Runs in the page. Returns a list of problems on the screen as it is. */
 const SCAN=`()=>{
   const W=document.documentElement.clientWidth, out=[], seen=new Set();
+  /* a board taller than the room between the tab row and the fixed bottom bar can never be seen whole (his iPad, 23 Nov 2026) */
+  { const bar=[...document.querySelectorAll('.bbar')].find(x=>x.getClientRects().length&&getComputedStyle(x).position==='fixed');
+    const nav=document.querySelector('nav.tabs');
+    if(bar&&nav) for(const b of document.querySelectorAll('.board')){ if(!b.getClientRects().length||b.closest('[hidden]')) continue; const h=b.getBoundingClientRect().height;
+      const room=bar.getBoundingClientRect().top-Math.max(0,nav.getBoundingClientRect().bottom);
+      if(h>8&&h>room+1&&!seen.has('board:'+(b.id||''))){ seen.add('board:'+(b.id||'')); out.push('board '+(b.id||'')+' is '+Math.round(h)+' px, only '+Math.round(room)+' px between the tabs and the bottom bar') } } }
   const vis=e=>{ if(!e.getClientRects().length) return false; const cs=getComputedStyle(e); if(cs.visibility==='hidden'||+cs.opacity===0) return false;
     if(e.closest('.vh,.sr-only')) return false;
     for(let p=e;p&&p!==document.body;p=p.parentElement){ if(p.hidden) return false; const c=getComputedStyle(p); if(c.display==='none') return false;
@@ -162,6 +168,7 @@ const SCAN=`()=>{
   await screen('Play, resign asks first',async()=>{ await tap('#pl-resign') },{slices:1});
   await screen('Play, after resigning',async()=>{ await tap('#pl-resign'); await sleep(500) });
   await go('guess',()=>document.querySelector('#g-board')); await screen('Guess the move');
+  await screen('Guess the move, a game started',async()=>{ await page.click('#g-start'); await waitFor(page,()=>!document.getElementById('g-train').hidden) });   /* his iPad, 23 Nov 2026: the board under the bar */
   await go('players'); await screen('Players');
   await go('watch'); await screen('Watch');
   await screen('Watch, a series open',async()=>{ await page.evaluate(()=>document.querySelectorAll('#wa-list details').forEach(d=>d.open=true)) });

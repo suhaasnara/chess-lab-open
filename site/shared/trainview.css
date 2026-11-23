@@ -281,6 +281,15 @@ th.num{text-align:right}
   .bbar.bbar .bb-prev,.bbar.bbar .bb-next{flex:0 0 64px!important;max-width:64px}
 }
 
+/* 23 Nov 2026 (his iPad 9th gen, on its side): on a touch screen in landscape the buttons are the fixed bar at the bottom,
+   so every board's size limit takes off the tab row, the bar (about 88 px) and a margin as well; the old limits
+   (window − 150 to 200 px) only fitted under the 720 px cap of a 13" iPad. --bbroom = the height left for a board. */
+@media (hover:none) and (pointer:coarse) and (orientation:landscape){
+  :root{--bbroom:max(280px,calc(100dvh - env(safe-area-inset-top,0px) - var(--navh,56px) - 88px - env(safe-area-inset-bottom,0px) - 44px))}
+  :is(.tv,.tv3,.tvplay,.otrain,.tvcontents)>.boardwrap,.tv .boardwrap{max-width:min(100%,720px,var(--bbroom),var(--bfit,9999px))!important}
+  .tvplay{grid-template-columns:minmax(0,min(calc(100% - 362px),var(--bbroom),720px)) minmax(0,340px)}
+}
+
 /* ---------- Pinned board (14 Nov 2026): on phones and upright iPads the board stays under the tab row while the page's
    status, notation and notes scroll underneath, as in the opening trainer. TV.pin(section, boardColumn) (trainview.js).
    The board gives up height so that about 220 px of text is always in view between it and the bottom bar. */
