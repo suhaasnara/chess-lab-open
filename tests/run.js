@@ -1403,6 +1403,23 @@ section('t37: shared code (site/shared/) — position ids never change, one PGN 
   const nc6=Object.keys(r.notes).find(k=>/\|b8c6$/.test(k));
   assert(!nc6,'after a null move the line is skipped, and its $1 is not pinned on the move before');
   assert(r.edges.get('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -').join()==='e2e4,d2d4','both first moves, in the order met');
+  /* chapters (23 Nov 2026, roadmap CLR-122): an intro goes on its own chapter's first move, not the previous chapter's
+     last one; a chapter written as one side line "( 1. c4 … )" is read as that line; a moveless chapter's text goes on the
+     next chapter's first move; a comment after a game's result still stays on that game's last move */
+  {
+    const c=w.PGN.read('[Event "a"]\n1. e4 e5 * {after a}\n\n[Event "b"]\n{Intro of b} 1. d4 d5 *\n\n[Event "c"]\n{Intro of c} ( 1. c4 {English} e5 2. Nc3 $1 ) *\n\n[Event "Divider"]\n{Interesting lines} *\n\n[Event "d"]\n{Intro of d} 1. Nf3 *');
+    const S0=w.PGN.posId(w.PGN.normKey('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'));
+    const n=(k)=>c.notes[k]||{text:'',mk:''}, e5=Object.keys(c.notes).find(k=>/\|e7e5$/.test(k)&&c.notes[k].text.includes('after a'));
+    assert(c.games===4&&c.bad===0,'four chapters with moves, nothing illegal');
+    assert(n(S0+'|d2d4').text==='Intro of b'&&e5&&c.notes[e5].text==='after a','an intro goes on its own chapter\'s first move; a comment after the result stays on the last move');
+    assert(n(S0+'|c2c4').text==='Intro of c\n\nEnglish','a chapter written as one side line keeps its intro and its notes');
+    const sq=c.edges.get('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -').join();
+    assert(sq==='e2e4,d2d4,c2c4,g1f3'&&[...c.edges.values()].some(a=>a.includes('b1c3')),'its moves are read ('+sq+')');
+    assert(Object.values(c.notes).some(x=>x.mk==='!'),'its marks are read');
+    assert(n(S0+'|g1f3').text==='Interesting lines\n\nIntro of d','a moveless chapter\'s text goes on the next chapter\'s first move');
+    const v=w.PGN.read('[Event "x"]\n1. e4 (1. d4 d5) (( 1. c4 )) e5 *');
+    assert(v.edges.get('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -').join()==='e2e4,d2d4','other side lines read as before (one that starts inside another before any move is still skipped)');
+  }
   /* trainer core: the rating scale and the reply weighting must not drift (opening ratings are kept per browser) */
   const T=w.TrainerCore, bk=s=>({total:100,rows:[{uci:'e2e4',share:s},{uci:'d2d4',share:1-s}]});
   assert(T.difficulty(bk(0.5),['e2e4'])===2200&&T.difficulty(bk(0.9),['e2e4'])===1818&&T.difficulty(bk(0.1),['e2e4'])===2582,'difficulty: a 50% move is a 2200 find, 90% 1818, 10% 2582');

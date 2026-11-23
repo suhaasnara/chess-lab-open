@@ -13,7 +13,9 @@
        notes: {"<posId>|<uci>": {mk, text, sh}}  marks (!? ⩲ ...), note text, arrows/circles for that move,
        games, bad (moves that were not legal: the rest of that line is skipped), starts: [fen or '' per game] }
      A [FEN "..."] header starts that game there ('' in starts when it has none or it is invalid). A comment before
-     a game's first move (or a variation's) goes to the next move. A null move (-- or Z0) ends its line. */
+     a game's first move (or a variation's) goes to the next move: a chapter's intro is on its own first move, and the
+     text of a chapter with no moves goes on the next chapter's first move. A side line before a game's first move
+     ("( 1. c4 … )", a chapter written as one side line) is read from the game's start. A null move (-- or Z0) ends its line. */
 window.PGN=(()=>{
   function normKey(fen){
     const f=fen.split(' ');
@@ -38,21 +40,28 @@ window.PGN=(()=>{
     const addMark=(k,mk)=>{ const e=note(k); if(!e.mk.includes(mk)) e.mk+=mk };
     const re=new RegExp(TOKEN.source,'g');
     const src=String(text).replace(/^﻿/,'').replace(/\r/g,'');
-    let start=null, g=null, before=null, stack=[], broken=false, inGame=false, lastKey=null, pre='', m;
+    let start=null, g=null, before=null, stack=[], broken=false, inGame=false, lastKey=null, pre='', carry=[], m;
     const begin=()=>{ let ok=false; if(start){ try{ ok=new Chess().validate_fen(start).valid }catch(e){} }
       g=ok?new Chess(start):new Chess(); before=null; stack=[]; broken=false; inGame=true; games++; starts.push(ok?g.fen():''); lastKey=null };
     while((m=re.exec(src))){
       const t=m[0];
-      if(m[1]){ if(inGame){ inGame=false; start=null; pre='' } if(m[1].toLowerCase()==='fen') start=m[2].trim(); continue }
+      /* a header ends the last game's moves: a comment from here on is the next chapter's (lastKey kept "the last move"
+         across a header, so a chapter's intro went on the previous chapter's last move; 1,513 chapters, CLR-122) */
+      if(m[1]){ if(inGame){ inGame=false; start=null; pre=''; carry=[] } lastKey=null; if(m[1].toLowerCase()==='fen') start=m[2].trim(); continue }
       if(t[0]==='{'){ const c=cleanNote(t.slice(1,-1)), sh=shapes(t);
         if(lastKey&&!broken){ if(c) addText(lastKey,c); if(sh){ const e=note(lastKey); e.sh=e.sh?e.sh+' '+sh:sh } }
         else if(c) pre=pre?pre+' '+c:c;
         continue }
       if(t[0]==='$'){ const mk=NAGS[+t.slice(1)]; if(mk&&lastKey&&!broken) addMark(lastKey,mk); continue }
       if(t[0]===';') continue;
-      if(/^(1-0|0-1|1\/2-1\/2|\*)$/.test(t)){ if(inGame){ inGame=false; start=null } pre=''; continue }
+      /* a chapter with no moves keeps its text for the next chapter's first move (it was dropped) */
+      if(/^(1-0|0-1|1\/2-1\/2|\*)$/.test(t)){ if(inGame){ inGame=false; start=null } else if(pre) carry.push(pre); pre=''; continue }
       if(!inGame) begin();
-      if(t==='('){ stack.push({fen:g.fen(),before,broken,lastKey}); if(before){ g=new Chess(before); broken=false } else broken=true; before=null; lastKey=null; pre=''; continue }
+      /* a side line before the game's first move (nothing to be an alternative to) is read from the start, with the intro
+         before it: three course chapters are written entirely this way (it was skipped). One that opens inside another
+         side line before any move is still skipped. */
+      if(t==='('){ const lead=!before&&!broken&&!stack.length; stack.push({fen:g.fen(),before,broken,lastKey});
+        if(before){ g=new Chess(before); broken=false } else if(!lead) broken=true; before=null; lastKey=null; if(!lead) pre=''; continue }
       if(t===')'){ const s=stack.pop(); if(s){ g=new Chess(s.fen); before=s.before; broken=s.broken; lastKey=s.lastKey } pre=''; continue }
       /* marks and NAGs glued on (Nf3$1, O-O+=, Qh7+-) and the ellipsis move number (3…a6) are read too (13 Nov 2026):
          they used to make the move "not legal" and drop the rest of the line */
@@ -71,7 +80,7 @@ window.PGN=(()=>{
       const uci=r.from+r.to+(r.promotion||'');
       add(fb,uci); before=fb;
       lastKey=posId(normKey(fb))+'|'+uci;
-      if(mk) addMark(lastKey,mk); if(pre){ addText(lastKey,pre); pre='' }
+      if(mk) addMark(lastKey,mk); if(carry.length){ for(const c of carry) addText(lastKey,c); carry=[] } if(pre){ addText(lastKey,pre); pre='' }
     }
     for(const k in notes) if(!notes[k].mk&&!notes[k].text&&!notes[k].sh) delete notes[k];
     return {edges,notes,games,bad,starts};
