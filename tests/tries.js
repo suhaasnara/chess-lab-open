@@ -7,7 +7,8 @@ module.exports=async H=>{
 
   section('t85: Guess the move — tries before the move is shown');
   /* the engine rates every other move as much weaker, so a wrong guess is a miss */
-  const {w}=await makePage({analyse:async()=>[{uci:'a2a3',cp:5,mate:null}]});
+  let slow=0;   /* ms the engine takes (the last checks) */
+  const {w}=await makePage({analyse:async()=>{ if(slow) await sleep(slow); return [{uci:'a2a3',cp:5,mate:null}] }});
   await sleep(300);
   const $=id=>w.document.getElementById(id), G=w.GtmTab;
   assert(w.Settings.get('gtries')==='1','one try by default (as before)');
@@ -53,4 +54,27 @@ module.exports=async H=>{
   assert(S.ply===q+1&&$('g-status').textContent.includes(S.game.moves[q]),'out of tries: the game move is shown and played');
   w.Settings.set('gtries','1');
   void gm2;
+
+  /* the pre-TestFlight review (23 Nov 2026): leaving a game must not let its timers or its engine check touch the next one */
+  const errs=[]; w.addEventListener('error',e=>errs.push(String(e.error||e.message)));
+  const inStep=()=>{ const c=new w.Chess(S.game.fen||undefined); for(let i=0;i<S.ply;i++) if(!c.move(S.game.moves[i])) return false; return c.fen()===S.g.fen() };
+  const toMyMove=async()=>{ S.gen++; let k=S.game.theory; while((k%2===0?'w':'b')!==S.game.winner) k++;
+    S.g=new w.Chess(); for(let i=0;i<k-1;i++) S.g.move(S.game.moves[i]); S.ply=k-1; G.next(); await sleep(700) };
+  await G.load(idx[0].file); await sleep(30); await toMyMove();
+  slow=600; const y=wrong(), pending=G.userMove(y.from,y.to,y.promotion); await sleep(100);
+  await G.load(idx[1].file); await pending; await sleep(100);
+  assert(S.game.id===idx[1].id&&S.rows.length===0&&S.missed===0&&S.pts===0,'a guess still being checked when another game opens leaves no row and no count in the new game');
+  await sleep(S.game.theory*340+1600);
+  assert(inStep()&&S.ply>=S.game.theory,'… and the new game plays its opening in step with the board');
+  slow=0;
+  await G.load(idx[0].file); await sleep(30); await toMyMove();
+  const gm3=new w.Chess(S.g.fen()).move(S.game.moves[S.ply]);
+  await G.userMove(gm3.from,gm3.to,gm3.promotion); w.scrollTo=()=>{}; G.lobby(); await sleep(1300);
+  assert(!errs.length,'back to the list right after a guess: the waiting "next move" does nothing'+(errs[0]?' ('+errs[0]+')':''));
+  await G.load(idx[0].file); await sleep(30); await toMyMove();
+  const gm4=new w.Chess(S.g.fen()).move(S.game.moves[S.ply]);
+  await G.userMove(gm4.from,gm4.to,gm4.promotion); const t0=S.tick; G.restart(); await sleep(60);
+  assert(S.tick>t0,'Restart right after a guess cancels the waiting "next move"');
+  await sleep(S.game.theory*340+1600);
+  assert(inStep()&&S.rows.length===0,'… and the restarted game is in step, with nothing counted');
 };
