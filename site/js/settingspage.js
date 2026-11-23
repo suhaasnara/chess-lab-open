@@ -24,10 +24,12 @@ const ROWS=[
    opts:[['realistic','Realistic (as often as played)'],['balanced','Balanced'],['sidelines','Sidelines first']]},
   {k:'oshare',label:'Book move threshold',note:'A preset move below this share of elite games counts as rare (half credit).',
    opts:[['1','1%'],['3','3%'],['5','5%'],['10','10%']]},
+  {k:'gtries',label:'Tries before the move is shown',note:'Guess the move: a weaker guess lets you try again before the game move is shown. Only your first try scores.',
+   opts:[['1','1 (show it at once)'],['2','2'],['3','3']]},
   {k:'sfDepth',label:'Stockfish depth for checks',opts:[['auto','Auto'],['12','12'],['14','14'],['16','16'],['18','18']]},
 ];
 const GROUPS=[['Look',['theme','board']],['Board',['anim','coords','lastMove','dests','sound']],['Moving pieces',['input','shapeColor']],
-  ['Puzzles',['ptheme']],['Openings',['omode','olevel','olen','ovariety','oshare','autoNext']],['Engine',['sfDepth']]];
+  ['Puzzles',['ptheme']],['Openings',['omode','olevel','olen','ovariety','oshare','autoNext']],['Guess the move',['gtries']],['Engine',['sfDepth']]];
 /* Groups of rows with segmented buttons (shared screens: Chess Lab's Settings). Each row keeps its <select> (hidden) as the
    value the rest of the page reads and the tests drive; the buttons set it and fire its change. */
 let prev=null;

@@ -1,0 +1,15 @@
+{
+  "_about": "Critical moments in Guess the move, by game id: plies (0-based index into moves) where the player should slow down. \"hand\" entries are hand-picked and never overwritten; \"auto\" entries come from tools/pick_critical.py.",
+  "g-9f73f3c1": {"by": "auto", "plies": [109]},
+  "g-2dea7d2e": {"by": "auto", "plies": [46, 70]},
+  "g-6c1bf12e": {"by": "auto", "plies": [44]},
+  "g-26380b01": {"by": "auto", "plies": [66]},
+  "g-6ca07018": {"by": "auto", "plies": [76, 104]},
+  "g-f4233153": {"by": "auto", "plies": [74, 88, 94, 104]},
+  "g-f441b193": {"by": "auto", "plies": [45]},
+  "g-2b878d89": {"by": "auto", "plies": [48]},
+  "g-3b6172a4": {"by": "auto", "plies": [48]},
+  "g-82b97770": {"by": "auto", "plies": [14, 26]},
+  "g-b2f690be": {"by": "auto", "plies": [37]},
+  "g-9818cba9": {"by": "auto", "plies": [36]}
+}
