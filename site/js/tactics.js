@@ -130,7 +130,7 @@ function userMove(from,to,promo){
   S.step++;
   const reply=S.cur.moves[S.step];
   if(!reply||test.in_checkmate()){
-    S.solved=true; facts();
+    S.solved=true; board.lock(); facts();
     const dr=!S.failedFirst&&!S.usedHint?saveResult(S.cur.id,true):null;
     status('good','Solved!',S.failedFirst||S.usedHint?'(no rating: not a clean first try)':'');
     const clean=!S.failedFirst&&!S.usedHint;

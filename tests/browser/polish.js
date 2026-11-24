@@ -152,6 +152,15 @@ const SCAN=`()=>{
     await el.evaluate(x=>x.scrollIntoView({block:'center'})); await sleep(200); await el.click(); return true };
   await screen('Today, a ? open',async()=>{ await help('today') },{slices:1});
   await screen('Today, menu Extra open',async()=>{ await go('today'); await page.evaluate(()=>{ const b=[...document.querySelectorAll('#tabs button')].find(x=>/Extra/.test(x.textContent)); if(b) b.click() }) });
+  /* his iPhone (Chrome), 23 Nov 2026: after Today's puzzle was solved every piece stopped a swipe from scrolling the page.
+     A finished board must scroll from anywhere (touch-action as WebKit computes it); a live one keeps your pieces draggable. */
+  { await go('today',()=>window.TacticsTab&&TacticsTab.state.cur); await sleep(300);
+    const blocked=()=>page.evaluate(()=>{ const b=document.getElementById('t-board'); return b?[...b.querySelectorAll('.sq')].filter(q=>getComputedStyle(q).touchAction==='none').length:-1 });
+    const live=await blocked();
+    for(let i=0;i<8;i++){ const done=await page.evaluate(()=>{ const S=TacticsTab.state; if(S.solved) return true; const u=S.cur.moves[S.step]; TacticsTab.userMove(u.slice(0,2),u.slice(2,4),u[4]); return S.solved }); if(done) break; await sleep(700) }
+    await screen('Today, the puzzle solved',async()=>{ await page.evaluate(()=>document.getElementById('t-board').scrollIntoView({block:'start'})) },{slices:1});
+    const after=await blocked();
+    check('Today: a live puzzle keeps your pieces draggable, a solved one scrolls from anywhere',live>0&&after===0,`${live} squares block a swipe while solving, ${after} after`) }
   await go('openings',()=>document.querySelector('#o-board .sq, #o-board piece, #o-board img')); await screen('Openings');
   await screen('Openings, ⋯ open',async()=>{ await tap('#openings .bb-morebtn') });
   await go('tactics',()=>document.querySelector('#t-board .sq, #t-board piece, #t-board img, #t-board svg')); await screen('Tactics');

@@ -8,7 +8,7 @@
        getState() -> {g, can(), sel(), setSel(sq), redraw()}; onMove(from, to, promo) gets a legal move
        (promo = 'q' when the move promotes; the site may ask which piece). input() -> 'both' | 'click' | 'drag'
        (Settings → Move input on the private site; Open has no setting yet, so 'both').
-   makeBoard(el, opts) -> {set(game,{last,orient,locked,keepHint}), setHint(sq,to), flip(), flash(squares,tone), orient, render}
+   makeBoard(el, opts) -> {set(game,{last,orient,locked,keepHint}), lock(on), setHint(sq,to), flip(), flash(squares,tone), orient, render}
    endBanner(boardEl, onNext, label) -> {show(tone,text), hide(), shown, text}: the result strip under a board
    Board.dragOver(el, e) outlines the square under a dragged piece (e = null clears it).
    Sound.play('move'|'capture') and BoardFX.after(el, last) (slide the piece that just moved, play the sound) read the
@@ -142,11 +142,16 @@ function endBanner(boardEl,onNext,label){
    (tap a piece then a square, or drag); opts.input() as in Board.bind. */
 function makeBoard(el,opts={}){
   const B={game:null,last:null,orient:'w',sel:null,hint:null,hintTo:null,locked:false};
-  const render=()=>{ Board.draw(el,B.game,{orient:B.orient,sel:B.sel,last:B.last,hint:B.hint,hintTo:B.hintTo}); BoardFX.after(el,B.last) };
+  /* .movable (shared.css: a drag that starts on a piece moves it instead of scrolling the page) only while this board takes
+     a move: not on a locked board (a finished puzzle or drill, a game being read, Today's preview) and not on one with no
+     onMove. 23 Nov 2026: it stayed on for good, so after a solve every piece swallowed a swipe (half an iPhone's screen). */
+  const movable=()=>el.classList.toggle('movable',!B.locked&&!!B.game&&!!opts.onMove);
+  const render=()=>{ Board.draw(el,B.game,{orient:B.orient,sel:B.sel,last:B.last,hint:B.hint,hintTo:B.hintTo}); movable(); BoardFX.after(el,B.last) };
   Board.bind(el,()=>({g:B.game,can:()=>!B.locked&&!!B.game,sel:()=>B.sel,setSel:v=>{ B.sel=v },redraw:render}),
     (f,t,p)=>{ opts.onMove&&opts.onMove(f,t,p) },{input:opts.input||(()=>{ const v=window.Settings&&Settings.get('input'); return v==='tap'?'both':v })});
   return {
     set(game,o={}){ B.game=game; if(o.last!==undefined) B.last=o.last; if(o.orient) B.orient=o.orient; B.sel=null; if(!o.keepHint){B.hint=null;B.hintTo=null} B.locked=!!o.locked; render() },
+    lock(on=true){ B.locked=!!on; movable() },   // done with this position (solved, game over): no more moves, and swipes on it scroll; no redraw, so a flash stays
     setHint(sq,to){ B.hint=sq||null; B.hintTo=to||null; B.sel=null; render() },   // a hint drops the piece you had picked up
     flip(){ B.orient=B.orient==='w'?'b':'w'; render() },
     flash(squares,tone){ const list=(squares||[]).filter(Boolean); list.forEach((sq,i)=>{ const q=el.querySelector(`.sq[data-sq="${sq}"]`); if(!q) return; q.classList.remove('flash-good','flash-bad','flash-to'); void q.offsetWidth; q.classList.add('flash-'+tone); if(i===list.length-1) q.classList.add('flash-to'); setTimeout(()=>q.classList.remove('flash-'+tone,'flash-to'),900) }) },   // the last square (the move's destination) also gets the ✓ / ✗ badge

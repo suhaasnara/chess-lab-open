@@ -2544,6 +2544,7 @@ await require('./watchsets')(H);
 await require('./critical')(H);   /* Guess the move: critical moments (data/gtm/critical.json) */
 await require('./tries')(H);   /* Guess the move: tries before the move is shown */
 await require('./drillresults')(H);   /* Drills: one result per attempt, the first thing you do decides it */
+await require('./scrolllock')(H);   /* a finished or read-only board scrolls the page (his iPhone, 23 Nov 2026) */
 await require('./prep')(H);   /* Analyze: your prep in your games (imported repertoires) */   /* the Apple Watch sets for the app (tools/build_watch_sets.js) */
 
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));
