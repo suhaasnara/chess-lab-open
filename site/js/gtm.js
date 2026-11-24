@@ -196,7 +196,7 @@ function hint(){
   }
 }
 function endGame(){
-  S.done=true; critRing(false); saveResult();
+  S.done=true; critRing(false); board.lock(); saveResult();
   const g=S.game;
   const pct=g.maxpts?S.pts/g.maxpts:0;
   endbar.show(pct>=0.8?'good':pct>=0.5?'warn':'bad',`Game over · ${S.pts} of ${g.maxpts} points (${Math.round(pct*100)}%)`,'Next game');

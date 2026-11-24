@@ -116,7 +116,7 @@ async function userMove(from,to,promo){
 function finish(m,ok,text){
   S.g.move(m); S.done=true;
   board.set(S.g,{last:{from:m.from,to:m.to}});
-  board.flash([m.from,m.to],'good');
+  board.lock(); board.flash([m.from,m.to],'good');
   status('good',`${m.san} ✓`,text||'');
   const solved=!S.counted&&!S.hinted;   /* a drill you missed first, hinted or were shown is played through but not counted solved */
   saveResult(S.cur.id,solved);
