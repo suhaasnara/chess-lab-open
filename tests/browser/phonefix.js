@@ -135,6 +135,19 @@ const SIZES=[['iPhone 13',390,664,true],['iPhone SE',320,568,true],['iPad uprigh
     check('Blind tactics: nowhere says how many moves the solution has',!/\d+\s+moves?\s+for you/i.test(t),(t.match(/.{0,20}for you.{0,10}/i)||[''])[0]);
     await page.context().close() }
 
+  /* ---------- 4: the status bar's height arrives late (his iPad, 24 Nov 2026) ---------- */
+  /* In the iPhone and iPad app (WKWebView) env(safe-area-inset-top) is 0 for the first moments, then the status bar's height.
+     The tab row moves down by that much, but the scroll padding (TV.pads) was worked out before and kept: Today's first
+     "Just try a puzzle" put the board's top row under the tab row. Here the late inset is played by a style added after
+     load, on the page's top padding, the tab row and the hidden ruler (#tv-safe), the three places that read env(). */
+  { const page=await open(820,1180,true,'#today'); await page.waitForSelector('#welcome-try',{state:'visible',timeout:20000}).catch(()=>{}); await sleep(300);
+    await page.addStyleTag({content:'body{padding-top:32px!important} nav.tabs{top:32px!important} #tv-safe{height:32px!important}'}); await sleep(300);
+    await page.click('#welcome-try').catch(()=>{}); await sleep(1500);
+    const r=await page.evaluate(()=>{ const n=document.querySelector('nav.tabs').getBoundingClientRect(), b=document.querySelector('#td-grid > :not([hidden]) .board');
+      return {nav:Math.round(n.bottom),board:b?Math.round(b.getBoundingClientRect().top):null,pad:document.documentElement.style.scrollPaddingTop} });
+    check('Upright iPad, status bar height arriving late: Today’s board lands below the tab row, not under it',r.board!==null&&r.board>=r.nav,JSON.stringify(r));
+    await page.context().close() }
+
   check('no page errors',!errors.length,errors.slice(0,3).join(' | '));
   await browser.close(); srv.close();
   console.log(failed?`\n${failed} check(s) FAILED`:'\nAll phone-fix checks passed.'); process.exit(failed?1:0);

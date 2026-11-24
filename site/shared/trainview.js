@@ -99,9 +99,10 @@ function pin(sec,col){ const q=x=>typeof x==='string'?document.querySelector(x):
 /* 15 Nov 2026: what is stuck over the page (the tab row and a pinned board at the top, the bottom bar at the bottom) becomes
    the page's scroll-padding, so scrollIntoView, find-in-page and a #link land in the part of the screen you can see
    instead of under the board (a solution card's heading used to go under it). Pinned boards are .tvpin or [data-pinpad]. */
-function safeTop(){ let p=document.getElementById('tv-safe'); if(!p){ p=document.createElement('div'); p.id='tv-safe'; p.setAttribute('aria-hidden','true');
+function safeEl(){ let p=document.getElementById('tv-safe'); if(!p&&document.body){ p=document.createElement('div'); p.id='tv-safe'; p.setAttribute('aria-hidden','true');
     p.style.cssText='position:fixed;top:0;left:0;width:0;height:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none'; document.body.appendChild(p) }
-  return p.offsetHeight||0 }
+  return p }
+function safeTop(){ const p=safeEl(); return p&&p.offsetHeight||0 }
 function pads(){ const de=document.documentElement; let top=0, bot=0, nav=0;
   const nv=document.querySelector('nav.tabs'); if(nv&&nv.offsetHeight&&!de.classList.contains('navhid')){ const cs=getComputedStyle(nv); if(/sticky|fixed/.test(cs.position)) top=nav=Math.max(top,(parseFloat(cs.top)||0)+nv.offsetHeight) }
   for(const e of document.querySelectorAll('.tvpin,[data-pinpad]')){ if(!e.offsetParent) continue; const cs=getComputedStyle(e); if(cs.position!=='sticky'&&cs.position!=='fixed') continue;
@@ -117,7 +118,12 @@ function padLater(){ if(!padQ) padQ=requestAnimationFrame(padNow) }
 if(typeof window!=='undefined'&&typeof document!=='undefined'){
   addEventListener('resize',padLater); addEventListener('hashchange',()=>setTimeout(padLater,80)); addEventListener('load',padLater);
   if(window.MutationObserver) new MutationObserver(padLater).observe(document.documentElement,{attributes:true,attributeFilter:['class']});
-  if(window.ResizeObserver){ const ro=new ResizeObserver(padLater); const watch=()=>{ for(const e of document.querySelectorAll('.tvpin,[data-pinpad],.bbar')) if(!e.__tvro){ e.__tvro=1; ro.observe(e) } }; padLater.watch=watch; addEventListener('load',watch); addEventListener('hashchange',()=>setTimeout(watch,80)) } }
+  if(window.ResizeObserver){ const ro=new ResizeObserver(padLater); const watch=()=>{ for(const e of [safeEl(),...document.querySelectorAll('.tvpin,[data-pinpad],.bbar')]) if(e&&!e.__tvro){ e.__tvro=1; ro.observe(e) } }; padLater.watch=watch;
+    /* the ruler for the status bar (#tv-safe) is watched from the start: in the iPhone and iPad app env(safe-area-inset-top)
+       is 0 for the first moments, and when it arrives the tab row moves down without changing size, so nothing else
+       would work the padding out again (his iPad, 24 Nov 2026: Today's first scroll put the board's top row under the tab row) */
+    if(document.body) watch(); else addEventListener('DOMContentLoaded',watch);
+    addEventListener('load',watch); addEventListener('hashchange',()=>setTimeout(watch,80)) } }
 /* true where the pinned layout is on (the page scrolls under the board; boxes with their own scrollbars are opened up) */
 function pinned(){ return !!(window.matchMedia&&matchMedia('(orientation:portrait) and (max-width:1099.98px)').matches) }
 /* Lists on phones (18 Nov 2026): a list is part of the page, not a short scrolling box that cut off mid-row; it shows
