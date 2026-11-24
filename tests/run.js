@@ -202,7 +202,11 @@ section('t7: drills — the better move is accepted, the game move refused');
   await w.DrillsTab.userMove('e1','g1'); await sleep(200);
   assert(dm.className.includes('good')&&dm.textContent.includes('\u2713'),'castling (the engine\u2019s move) is accepted');
   const p=w.Store.get('adrills-progress');
-  assert(p&&p.a12345678&&p.a12345678.ok===true,'the solve is stored against the drill id');
+  assert(p&&p.a12345678&&p.a12345678.ok===false&&p.a12345678.okN===0&&p.a12345678.tries===1,'the first try (the game move) is what counts: a miss, stored against the drill id');
+  /* a fresh attempt, right the first time: a solve */
+  w.location.hash='#drills'; await sleep(60); w.DrillsTab.load(w.Store.get('adrills')[0]); await w.DrillsTab.userMove('e1','g1'); await sleep(200);
+  const p2=w.Store.get('adrills-progress').a12345678;
+  assert(p2.ok===true&&p2.okN===1&&p2.tries===2,'found on the first try: solved');
 }
 
 section('t9: play vs Stockfish — limited strength, blindfold, result saved');
@@ -2539,6 +2543,7 @@ await require('./feedback')(H);   /* the 18 Nov 2026 phone feedback */   /* Abou
 await require('./watchsets')(H);
 await require('./critical')(H);   /* Guess the move: critical moments (data/gtm/critical.json) */
 await require('./tries')(H);   /* Guess the move: tries before the move is shown */
+await require('./drillresults')(H);   /* Drills: one result per attempt, the first thing you do decides it */
 await require('./prep')(H);   /* Analyze: your prep in your games (imported repertoires) */   /* the Apple Watch sets for the app (tools/build_watch_sets.js) */
 
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));

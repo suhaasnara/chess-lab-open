@@ -1,10 +1,13 @@
 /* Think Ahead — drills from your own analyzed games: the position before your
    mistake; find a better move. Judged against Stockfish (within 0.1 winning chances
-   of the best line counts, the kit's rule). Drill ids: 'a' + sha1(fen|playedUci)[:8]. */
+   of the best line counts, the kit's rule). Drill ids: 'a' + sha1(fen|playedUci)[:8].
+   Results (adrills-progress {id: {tries, ok, okN, t}}): one per attempt, decided by the first thing you do (23 Nov 2026,
+   the pre-TestFlight review). A wrong try, a Hint or the shown Solution is a miss (ok false, okN 0: back tomorrow), and
+   finding the move after that doesn't change it; finding it first is a solve (back after 3, 7, 21 days). */
 'use strict';
 (function(){
 let board=null, endbar=null, H=null;   /* H: Today, when it hosts this panel (its next item; told after each result) */
-const S={cur:null,g:null,done:false,busy:false,kind:'all',state:'all',plat:'all',q:''};
+const S={cur:null,g:null,done:false,busy:false,kind:'all',state:'all',plat:'all',q:'',att:0,counted:false};   /* att: which attempt is on the board (a check that ends after you moved on is dropped); counted: this attempt's result is saved */
 const KINDS=[['all','All'],['mine','Your mistakes'],['punish','Punish']];
 const STATES=[['all','Any'],['new','Not tried'],['missed','Missed'],['solved','Solved']];
 const SITE={lichess:'Lichess',chesscom:'Chess.com','chess.com':'Chess.com',pgn:'Over the board',otb:'Over the board'};
@@ -18,7 +21,10 @@ const DEPTH=13;
 
 const drills=()=>Store.get('adrills')||[];
 const prog=()=>Store.get('adrills-progress')||{};
-function saveResult(id,ok){ const p=prog(); const e=p[id]||{tries:0}; e.tries++; if(ok){ e.ok=true; e.okN=(e.okN||0)+1 } e.t=Date.now(); p[id]=e; Store.put('adrills-progress',p); renderL(); if(H) H.changed() }
+/* the attempt's result, once: the first call decides it (a solve, or a miss that sends the drill back tomorrow) */
+function saveResult(id,ok){
+  if(!S.counted){ S.counted=true; const p=prog(); const e=p[id]||{tries:0}; e.tries=(e.tries||0)+1; e.ok=!!ok; e.okN=ok?(e.okN||0)+1:0; e.t=Date.now(); p[id]=e; Store.put('adrills-progress',p) }
+  renderL(); if(H) H.changed() }
 
 function shown(){ const p=prog(), q=S.q.trim().toLowerCase();
   return drills().filter(d=>{ if(S.kind!=='all'&&(S.kind==='punish')!==isPunish(d)) return false;
@@ -50,7 +56,7 @@ function renderL(){
 }
 function load(d){
   if(endbar) endbar.hide();
-  S.cur=d; S.g=new Chess(d.fen); S.done=false; S.busy=false; S.hintStage=0; S.hinted=false;
+  S.cur=d; S.g=new Chess(d.fen); S.done=false; S.busy=false; S.hintStage=0; S.hinted=false; S.att++; S.counted=false;
   board.set(S.g,{last:null,orient:d.color});
   if(isPunish(d)&&d.gameBest) status('',`${d.oppMove} was a mistake. Punish it.`,`${S.g.turn()==='w'?'White':'Black'} to move. In the game you played ${d.played}; a deeper look found nothing better.`);
   else if(isPunish(d)) status('',`${d.oppMove} was a mistake. Punish it.`,`${S.g.turn()==='w'?'White':'Black'} to move. In the game you played ${d.played}, which let them off (it gave back ${WinPct.pts(d.drop)} points of Win%).`,DROP_HELP);
@@ -70,7 +76,7 @@ function load(d){
 }
 async function userMove(from,to,promo){
   if(!S.cur||S.done||S.busy) return;
-  const d=S.cur;
+  const d=S.cur, at=S.att, gone=()=>S.att!==at;   /* gone: another drill (or this one again) was opened while Stockfish was thinking */
   const test=new Chess(S.g.fen()); const m=test.move({from,to,promotion:promo||'q'}); if(!m) return;
   const uci=from+to+(m.promotion||'');
   if(uci.slice(0,4)===d.playedUci.slice(0,4)){
@@ -81,7 +87,7 @@ async function userMove(from,to,promo){
     if(!d.v&&window.AnalyzeTab&&AnalyzeTab.verifyDrill){
       S.busy=true; status('',`${m.san} is the game move. Checking it more deeply…`,'');
       const v=await AnalyzeTab.verifyDrill(d.fen,d.playedUci,'standard',{}).catch(()=>null);
-      S.busy=false; if(S.cur!==d) return;
+      if(gone()) return; S.busy=false;
       if(v){ const L=drills(), o=L.find(x=>x.id===d.id);
         if(v.drop<0.1){ d.gameBest=true; if(o){ o.gameBest=true; o.v=1; Store.put('adrills',L) }
           finish(m,true,'This is the game move, and on a deeper look nothing is better: it was not a mistake after all.'); return }
@@ -90,7 +96,7 @@ async function userMove(from,to,promo){
   if(d.best&&uci.slice(0,4)===d.best.slice(0,4)){ finish(m,true,'The engine’s choice.'); return }
   S.busy=true; status('','Checking with Stockfish…','');
   const a=await SharedEngine.analyse(S.g.fen(),DEPTH,3,10000).catch(()=>null);
-  S.busy=false;
+  if(gone()) return; S.busy=false;
   if(!a||!a.length){ status('warn','The engine isn’t available; comparing to the stored best move only.','');
     if(d.best){ board.flash([from,to],'bad'); status('bad',`The stored best move is ${sanOf(S.g.fen(),d.best)}.`,''); saveResult(d.id,false) } return }
   const me=S.g.turn()==='w'?1:-1;
@@ -98,7 +104,8 @@ async function userMove(from,to,promo){
   const mineRow=a.find(x=>x.uci.slice(0,4)===uci.slice(0,4));
   let mineP;
   if(mineRow) mineP=cpPawns(mineRow.mate!=null?(mineRow.mate>0?9900:-9900):mineRow.cp*100);
-  else{ const after=await SharedEngine.analyse(test.fen(),DEPTH,1,10000).catch(()=>null);
+  else{ S.busy=true; const after=await SharedEngine.analyse(test.fen(),DEPTH,1,10000).catch(()=>null);
+    if(gone()) return; S.busy=false;
     mineP=after&&after.length?-cpPawns(after[0].mate!=null?(after[0].mate>0?9900:-9900):after[0].cp*100):null }
   if(mineP==null){ status('warn','Could not judge that move.',''); return }
   const drop=wc(bestP)-wc(mineP);
@@ -111,18 +118,20 @@ function finish(m,ok,text){
   board.set(S.g,{last:{from:m.from,to:m.to}});
   board.flash([m.from,m.to],'good');
   status('good',`${m.san} ✓`,text||'');
-  saveResult(S.cur.id,!S.hinted);   /* a hinted drill is played through but not counted solved */
-  endbar.show('good',`${m.san} ✓ Solved`,H?'Next in session':'Next drill');
+  const solved=!S.counted&&!S.hinted;   /* a drill you missed first, hinted or were shown is played through but not counted solved */
+  saveResult(S.cur.id,solved);
+  endbar.show('good',solved?`${m.san} ✓ Solved`:`${m.san} ✓ (a miss: back tomorrow)`,H?'Next in session':'Next drill');
 }
 async function show(){
   if(!S.cur||S.done) return;
-  let u=S.cur.best;
-  if(!u){ const a=await SharedEngine.analyse(S.g.fen(),DEPTH,1,10000).catch(()=>null); u=a&&a[0]&&a[0].uci }
+  const d=S.cur, at=S.att;
+  let u=d.best;
+  if(!u){ const a=await SharedEngine.analyse(S.g.fen(),DEPTH,1,10000).catch(()=>null); if(S.att!==at||S.done) return; u=a&&a[0]&&a[0].uci }
   if(!u){ status('warn','No stored answer and no engine.',''); return }
   board.setHint(u.slice(0,2),u.slice(2,4));
   status('warn','Answer: '+sanOf(S.g.fen(),u),'Shown answers don’t count as solved.');
   endbar.show('warn','Answer: '+sanOf(S.g.fen(),u),H?'Next in session':'Next drill');
-  saveResult(S.cur.id,false);
+  saveResult(d.id,false);
 }
 /* Play it out: continue from the drill position against Stockfish (Play tab). The goal comes from the eval
    before the slip: from +1.5 for you it is a win (convert); otherwise don't lose (hold), as in the private kit. */
@@ -144,9 +153,9 @@ function playOut(){
 }
 /* H: the same two-step hint as the opening trainer (first the piece, then the move); a hinted drill isn't counted solved. */
 async function hint(){
-  const d=S.cur; if(!d||S.done||S.busy) return;
-  let u=d.best; if(!u){ const a=await SharedEngine.analyse(S.g.fen(),DEPTH,1,10000).catch(()=>null); u=a&&a[0]&&a[0].uci } if(!u) return;
-  S.hinted=true; S.hintStage=Math.min(2,(S.hintStage||0)+1);
+  const d=S.cur; if(!d||S.done||S.busy) return; const at=S.att;
+  let u=d.best; if(!u){ const a=await SharedEngine.analyse(S.g.fen(),DEPTH,1,10000).catch(()=>null); if(S.att!==at||S.done) return; u=a&&a[0]&&a[0].uci } if(!u) return;
+  S.hinted=true; S.hintStage=Math.min(2,(S.hintStage||0)+1); saveResult(d.id,false);   /* a hint is a miss, as in Tactics */
   if(S.hintStage===1){ board.setHint(u.slice(0,2)); status('warn','Hint: this piece.','Press Hint again for the move. A hinted drill doesn’t count as solved.') }
   else { board.setHint(u.slice(0,2),u.slice(2,4)); status('warn','Hint: '+sanOf(S.g.fen(),u),'Play it to finish. It doesn’t count as solved.') }
 }
