@@ -60,5 +60,9 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
+      # The upload above returns before GitHub lists the artifact; deploy-pages then finds "0 artifact(s)" and fails
+      # (22-24 Nov 2026: four runs in a row). A short wait lets the listing catch up.
+      - name: Wait for the uploaded site to be listed
+        run: sleep 30
       - id: deployment
         uses: actions/deploy-pages@v4
