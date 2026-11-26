@@ -106,4 +106,22 @@ module.exports=async H=>{
     slow=0; wrongFirst(z3); await C.submit(); await sleep(30);
     assert(rec(z3.id)&&rec(z3.id).tries===1&&S.sub,'a check left to finish still scores');
   }
+  section('t94: Today — the opening line ticks when that opening is played as the other side (roadmap #264)');
+  {
+    const {w}=await makePage({analyse:async()=>[{uci:'g1f3',cp:0.3,mate:null}]});
+    const O=w.OpeningsTab, S=O.state;
+    w.Store.put('oas',{'preset-english':'black'});   /* Play as Black on the English */
+    const t=w.TodayTab.plan(); t.opening='preset-english'; w.Store.put('today',t);
+    const op=()=>w.TodayTab.items().find(x=>x.kind==='opening');
+    assert(op()&&!op().done,'the English is today’s opening line, not done yet');
+    /* a line as Black: 1.c4 is played for White, you answer 1…e5, then end the line */
+    O.selectOpening('preset-english'); for(let i=0;i<80&&!(S.phase==='await'&&!S.busy&&S.g.turn()==='b');i++) await sleep(25);
+    assert(O.SID()==='preset-english@black','the trainer plays it as Black (stats-preset-english@black)');
+    await O.userMove('e7','e5'); for(let i=0;i<80&&!(S.phase==='await'&&!S.busy&&S.g.turn()==='b');i++) await sleep(25);
+    O.endHere(); await sleep(150);
+    const bs=O.stats('preset-english@black'), base=O.stats('preset-english');
+    assert(bs.last&&op().done,'Today ticks the line played as Black (it read the White stats)');
+    assert(bs.history.length&&typeof bs.history[bs.history.length-1].e==='number'&&!base.history.length,'the line’s eval is kept with the Black stats, not the White ones');
+    assert(O.sidOf(O.openings().find(o=>o.id==='preset-english'))==='preset-english@black'&&O.statsAs(O.openings().find(o=>o.id==='preset-english'))===O.stats('preset-english@black')||O.statsAs(O.openings().find(o=>o.id==='preset-english')).last===bs.last,'Today reads the side the opening is played as now');
+  }
 };

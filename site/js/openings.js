@@ -80,6 +80,10 @@ function stats(id){ const s=deep(Store.get('stats-'+id))||{};
 const saveStats=(id,s)=>Store.put('stats-'+id,s);
 /* "Play as": the other side of a preset, custom position or Anything keeps its own rating and review list (stats-<id>@<side>) */
 const SID=()=>S.op?(S.op.asSide?S.op.id+'@'+S.op.side:S.op.id):'';
+/* the stats key of the side an opening is played as now (its Play as choice, oas), for pages that show it without
+   opening it (Today; 26 Nov 2026, roadmap #264: Today read the base key, so the line never ticked as the other side) */
+const sidOf=o=>{ const as=(Store.get('oas')||{})[o.id]; return as&&!o.rep&&!o.player&&as!==o.side?o.id+'@'+as:o.id };
+const statsAs=o=>stats(sidOf(o));
 /* the review queue: positions you missed, replayed until you find the move first try (stats.mistakes, newest 40) */
 function addMistake(fen){ const s=stats(SID()); const k=posId(normKey(fen)); s.mistakes=Array.isArray(s.mistakes)?s.mistakes:[];
   if(s.mistakes.some(m=>m.key===k)) return; const i=S.log.findIndex(x=>x.before===fen); const path=(i>=0?S.log.slice(0,i):S.log).map(x=>x.san);
@@ -537,7 +541,7 @@ function endLine(msg){
   $('o-endbar').hidden=false;
   $('o-endretry').querySelector('.lbl').textContent=new Set(S.misses.map(x=>x.at)).size>1?'Retry from 1st miss':'Retry the miss';
   draw(); renderSide(); renderBook(); renderEval();
-  finalEval(S.op.id,S.lineId);
+  finalEval(SID(),S.lineId);   /* the eval goes with the side you played (it went to the base side) */
   if(H) H.changed();
   if(!S.misses.length&&Settings.get('autoNext')){ const id=S.lineId; setTimeout(()=>{ if(S.lineId===id&&S.phase==='done'&&document.body.dataset.view==='openings') newLine() },2500) }
 }
@@ -938,6 +942,6 @@ function init(){
   renderList();
   board.set(new Chess(),{orient:'w',locked:true});
 }
-window.OpeningsTab={init,oppLevel,levelMap,setOwnLevel,ownLevel,host:h=>{ H=h||null; $('o-newline').firstChild.textContent=H?'Next ':'Next line ' },flip:()=>$('o-flip').click(),openDefault,PRESETS,renderList,endHere,SID,skipList,renderCaptured,customs,saveCustom,deleteCustom,openNew,saveNew,saveCurrent,studyApi,fetchStudy,doImport,syncLevel,soundDemoMoves,get state(){return S},selectOpening,newLine,userMove,parseRepPGN,moveDifficulty,openings,stats,
+window.OpeningsTab={init,oppLevel,levelMap,setOwnLevel,ownLevel,host:h=>{ H=h||null; $('o-newline').firstChild.textContent=H?'Next ':'Next line ' },flip:()=>$('o-flip').click(),openDefault,PRESETS,renderList,endHere,SID,skipList,renderCaptured,customs,saveCustom,deleteCustom,openNew,saveNew,saveCurrent,studyApi,fetchStudy,doImport,syncLevel,soundDemoMoves,get state(){return S},selectOpening,newLine,userMove,parseRepPGN,moveDifficulty,openings,stats,statsAs,sidOf,
   takeBack,canTakeBack,redoLine,canRedo,retryMiss,browse,hint,repMap,annAt,repPick,ordered,saveOrder,setArrange,moveItem,renderStats,openStats,openSettings,firstListed};
 })();
