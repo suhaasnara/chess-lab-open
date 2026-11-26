@@ -159,7 +159,13 @@ async function hint(){
   if(S.hintStage===1){ board.setHint(u.slice(0,2)); status('warn','Hint: this piece.','Press Hint again for the move. A hinted drill doesn’t count as solved.') }
   else { board.setHint(u.slice(0,2),u.slice(2,4)); status('warn','Hint: '+sanOf(S.g.fen(),u),'Play it to finish. It doesn’t count as solved.') }
 }
-function next(){ if(H) return H.next(); const p=prog(); const d=drills().find(x=>!p[x.id]||!p[x.id].ok)||drills()[0]; if(d) load(d) }
+/* Next: the next drill after the one on the board, in the list as filtered (26 Nov 2026, roadmap #257: it took the first
+   unsolved drill of all of them, so after a miss it reloaded the same drill and ignored the filters). Untried or missed
+   first, then any; it wraps round, and comes back to the same drill only when it is the only one left. */
+function next(){ if(H) return H.next(); const p=prog(), cur=S.cur&&S.cur.id, keep=new Set(shown().map(x=>x.id));
+  const L=drills().filter(x=>keep.has(x.id)||x.id===cur), i=L.findIndex(x=>x.id===cur);
+  const after=[...L.slice(i+1),...L.slice(0,Math.max(0,i))];
+  const d=after.find(x=>!p[x.id]||!p[x.id].ok)||after[0]||L.find(x=>keep.has(x.id))||drills()[0]; if(d) load(d) }
 function status(tone,head,rest,help){ const el=$('d-status'); el.className='status'+(tone?' '+tone:''); el.innerHTML=`<strong>${esc(head)}</strong>${esc(rest||'')}${help?Help.q(help,'winpct'):''}` }
 
 function init(){

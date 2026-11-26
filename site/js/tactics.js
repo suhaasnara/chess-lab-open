@@ -152,11 +152,16 @@ function hint(){
 }
 /* As in Chess Lab, the page opens on the first puzzle of the list (nothing is counted until a move is made) */
 function first(){ const z=daily(filtered())[0]; if(z) load(z) }
+/* Next: the next puzzle after the one on the board, in today's order of the filtered list (26 Nov 2026, roadmap #257: it
+   took the first untried puzzle, which is the one on the board until you move, so an untried puzzle could not be
+   skipped). The puzzle on the board keeps its place in the order even when the filter now leaves it out (solved, with
+   Unsolved chosen). Untried first, then any; it wraps round. */
 function next(){
   if(H) return H.next();
-  const p=prog();
-  const list=daily(filtered());
-  const z=list.find(x=>!p[x.id])||list[0];
+  const p=prog(), cur=S.cur, f=filtered();
+  const L=daily(cur&&!f.includes(cur)?[...f,cur]:f), i=cur?L.indexOf(cur):-1;
+  const after=[...L.slice(i+1),...L.slice(0,Math.max(0,i))];
+  const z=after.find(x=>!p[x.id])||after[0]||(f.length?f[0]:null);
   if(z) load(z); else status('warn','No puzzles match these filters.','');
 }
 function status(tone,head,rest){ const el=$('t-status-box'); el.className='status'+(tone?' '+tone:''); el.innerHTML=`<strong>${esc(head)}</strong>${esc(rest||'')}` }
