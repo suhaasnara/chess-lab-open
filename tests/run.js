@@ -2387,6 +2387,30 @@ section('t72: Blunder check from Analyze my games (13 Nov 2026): the kit’s rul
   assert(n>=2&&!w.Store.get('abc').length&&JSON.stringify(w.Store.get('bc-progress'))==='{"kzzzzzzzz":{"n":1,"ok":false,"t":2}}','removing the set removes its blunder check and that result only');
 }
 
+section('t93: Analyze — Save drills keeps its own run: one set, its label, its blunder checks, one button (roadmap #265)');
+{
+  const {w}=await makePage({analyse:BC1.analyse}); await sleep(50);
+  const A=w.AnalyzeTab, $=id=>w.document.getElementById(id);
+  await runPgn(w,BC1.pgn,'mine.pgn');
+  assert(A.blunderChecks.length===1&&$('a-savedrills'),'a run with drills and 1 blunder check to save');
+  /* hold the deeper checks, so the save is still under way while things happen around it */
+  const keep=w.SharedEngine.analyse; let gate; const held=new Promise(r=>{ gate=r });
+  w.SharedEngine.analyse=async(...a)=>{ await held; return keep(...a) };
+  w.Store.del('adrill-verify'); $('a-savedrills').click(); await sleep(30);
+  assert($('a-go').disabled&&$('a-savedrills').disabled&&/Checking position/.test($('a-savedrills').textContent),'while saving: Analyze waits, the button says what it is doing');
+  A.rerender(); await sleep(10);   /* a filter change redraws the report */
+  const b2=$('a-savedrills');
+  assert(b2.disabled&&/Checking position|Saving/.test(b2.textContent),'a redrawn card shows the same disabled button (it drew a second Save that worked)');
+  b2.click(); await A.run('lichess','someone-else'); await sleep(20);
+  assert(!A.running&&A.blunderChecks.length===1,'a second run does not start while saving (it emptied the blunder checks)');
+  gate(); for(let i=0;i<80&&!/Saved|Already/.test(($('a-savedrills')||{}).textContent||'');i++) await sleep(25);
+  const sets=w.Store.get('adrill-sets')||[], K=w.Store.get('abc')||[];
+  assert(sets.length===1&&/mine\.pgn/.test(sets[0].label),'one set, labelled after the run it came from ('+(sets[0]&&sets[0].label)+')');
+  assert(K.length===1&&K[0].b.join()===sets[0].id,'the blunder check is saved in that set');
+  assert(!$('a-go').disabled&&/Saved/.test($('a-savedrills').textContent),'afterwards Analyze is back and the button says what was saved');
+  w.SharedEngine.analyse=keep;
+}
+
 section('t73: the games you analyzed are kept (js/agames.js): every drill and costly moment opens its game (#game), the report comes back after a reload');
 {
   const {w}=await makePage({analyse:BC1.analyse}); await sleep(50);

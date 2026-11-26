@@ -16,7 +16,7 @@ const CAP_CHESSCOM=25, CAP_LICHESS=60, MAX_ENGINE_GAMES=25;
    measured on 160 positions against a depth-22 reference (HANDOFF / PARITY, 14 Nov 2026). */
 const DEPTH={standard:11,deep:16};
 const MATE=9900;
-let running=false;
+let running=false, saving='';   /* saving: the Save drills button's text while a save is under way ('' when none) */
 
 function note(t,busy){ const n=$('a-note'); n.textContent=t; n.classList.toggle('busy',!!busy) }   /* busy: a spinner, so a long step never looks frozen */
 function prog(frac,show=true){ const p=$('a-prog'); p.hidden=!show; p.querySelector('i').style.width=Math.round(frac*100)+'%' }
@@ -323,7 +323,7 @@ function updateEstimate(){
 /* ---------- The run ---------- */
 async function run(site,user,blitz){
   blitz=blitz==null?!!($('a-blitz')&&$('a-blitz').checked):blitz;
-  if(running) return; running=true;
+  if(running||saving) return; running=true;   /* not while drills are being saved (roadmap #265) */
   $('a-go').disabled=true; $('a-report').innerHTML=''; prog(0);
   const m=mode();
   try{
@@ -494,7 +494,7 @@ function saveCard(mistakes,toPunish,final,rows){
   const what=[nm+np?`${nm+np} drill${nm+np===1?'':'s'}`:'',nb?`${nb} blunder check${nb===1?'':'s'}`:''].filter(Boolean).join(' and ');
   return `<div class="card asave"><div class="asavehead"><div><span class="label">Drills from these games${Help.q('A drill is the position before one of your costly moves: find a better move, judged by Stockfish. Punish drills are positions where your opponent erred and you didn’t make them pay. They go to the Drills tab (and Today) and come back until you solve them. A blunder check is one of your blunders asked the other way round: first spot what your opponent threatens, then find your move (Extra → Blunder check).')}</span>
     <p class="note">${can?`${nm?(nm===1?'Your costliest move':`Your ${nm} costliest moves`):''}${np?`${nm?', plus ':''}${np} position${np===1?'':'s'} where your opponent erred and you didn’t make them pay`:''}${nm+np?(nm+np===1?'. Train it in Drills.':'. Train them in Drills.'):''}${nb?` ${nb} of your blunders as blunder checks: spot the threat first, then your move.`:''}`:final?'No costly moves found in these games: nothing to save.':'Drills can be saved when the analysis finishes (or after Stop).'}</p></div>
-    ${can?`<button class="btn primary" id="a-savedrills">Save ${what}</button>`:''}</div>${setsHtml()}</div>`;
+    ${can?`<button class="btn primary" id="a-savedrills"${saving?' disabled':''}>${saving?esc(saving):`Save ${what}`}</button>`:''}</div>${setsHtml()}</div>`;
 }
 /* Before a drill is saved its position is searched again, deeper and with three lines (14 Nov 2026, audit item 2):
    the report's evals are one shallow line per position, enough for the statistics but not to tell someone "find a
@@ -517,21 +517,31 @@ async function verifyDrill(fen,uci,m,cache){
   const r={d,best:a[0].uci,drop:Math.max(0,+(wc(P(a[0]))-wc(mine)).toFixed(3))};
   cache[key]=r; return r;
 }
+/* 26 Nov 2026 (roadmap #265): everything the save needs is read before the deeper checks start (they take a while):
+   the report, the run it came from (its label) and its blunder checks. A new run, a filter change or a reload of the
+   report in the meantime used to label the set after the other run, drop the blunder checks, or draw a second Save
+   button that could be pressed. While saving, Analyze waits, and a redrawn card shows the same disabled button. */
 async function saveDrills(btn){
-  const R=AStats.last; if(!R) return;
-  btn.disabled=true; btn.textContent='Saving…';
+  const R=AStats.last; if(!R||saving||running) return;
+  const L=LAST, BC=bcOf(R.rows||[],LASTBC), fl=(L&&L.files||[]).map(f=>f.name), names=FILES.map(f=>f.name);
+  const label=L&&L.site==='pgn'?`From ${(fl.length?fl:names).join(', ')}`:`From ${L&&L.user} on ${L&&L.site==='lichess'?'Lichess':'Chess.com'}`;
+  const say=t=>{ saving=t; const b=$('a-savedrills')||btn; if(b){ b.disabled=true; b.textContent=t } };   /* the card may have been redrawn */
+  $('a-go').disabled=true; say('Saving…');
+  try{ await saveNow(R,BC,label,say) }
+  finally{ saving=''; if(!running) $('a-go').disabled=false }
+}
+async function saveNow(R,BCS,label,say){
   /* check each candidate first */
   const cand=R.mistakes.slice(0,40).map(m=>[m,'a']).concat(R.toPunish.slice(0,20).map(m=>[m,'p']));
   const vc=Store.get(VKEY)||{}, vm=mode(), ok=new Map(); let dropped=0, k=0;
   for(const [m] of cand){ k++; const uci=uciOf(m.fen,m.san); if(!uci) continue;
-    btn.textContent=`Checking position ${k} of ${cand.length} more deeply…`;
+    say(`Checking position ${k} of ${cand.length} more deeply…`);
     const v=await verifyDrill(m.fen,uci,vm,vc);
     if(v&&v.drop<VTOL){ dropped++; ok.set(m,false) } else ok.set(m,v||true) }
   { const ks=Object.keys(vc); if(ks.length>VMAX) for(const x of ks.slice(0,ks.length-VMAX)) delete vc[x]; Store.tryPut(VKEY,vc) }
-  btn.textContent='Saving…';
+  say('Saving…');
   const drills=Store.get('adrills')||[], at=new Map(drills.map((d,i)=>[d.id,i]));
-  const fl=(LAST&&LAST.files||[]).map(f=>f.name);
-  const set={id:'s'+Date.now().toString(36),t:Date.now(),label:LAST&&LAST.site==='pgn'?`From ${(fl.length?fl:FILES.map(f=>f.name)).join(', ')}`:`From ${LAST&&LAST.user} on ${LAST&&LAST.site==='lichess'?'Lichess':'Chess.com'}`};
+  const set={id:'s'+Date.now().toString(36),t:Date.now(),label};
   let added=0; const games=new Map();
   const put=async(m,extra,prefix)=>{ const uci=uciOf(m.fen,m.san); if(!uci) return;
     const v=ok.get(m); if(v===false) return;                       /* the game move is as good as the best: not a drill */
@@ -546,7 +556,7 @@ async function saveDrills(btn){
   for(const m of R.toPunish.slice(0,20)) await put(m,{kind:'punish',oppMove:m.opp,oppDrop:m.oppDrop,verdict:m.verdict},'p');
   /* blunder checks (abc), the same set */
   const K=Store.get('abc')||[], kat=new Map(K.map((d,i)=>[d.id,i])); let addedB=0;
-  for(const d of bcOf(R.rows||[],LASTBC)){
+  for(const d of BCS){
     if(kat.has(d.id)){ const o=K[kat.get(d.id)]; if(!(o.b||[]).includes(set.id)) o.b=(o.b||[]).concat(set.id); if(!o.g){ o.g=d.g; o.ply=d.ply } }
     else { kat.set(d.id,K.length); K.push({...d,b:[set.id]}); addedB++ }
     const r=(R.rows||[]).find(x=>x.game.id===d.g); if(r) games.set(r.game.id,r.game) }
@@ -556,9 +566,10 @@ async function saveDrills(btn){
   const evOf=new Map((R.rows||[]).map(r=>[r.game.id,r.marks.evs]));
   AGames.pin([...games.values()].map(g=>({game:g,evs:evOf.get(g.id)})));
   const left=dropped?` ${dropped} left out: on a deeper look the game move was as good as the best.`:'';
-  btn.textContent=(added||addedB?`Saved ${[added?`${added} drill${added===1?'':'s'}`:'',addedB?`${addedB} blunder check${addedB===1?'':'s'}`:''].filter(Boolean).join(' and ')} — see ${added?'Drills':'Blunder check'}.`:dropped&&!at.size?'Nothing to save.':'Already saved — see the Drills tab.')+left;
+  const done=(added||addedB?`Saved ${[added?`${added} drill${added===1?'':'s'}`:'',addedB?`${addedB} blunder check${addedB===1?'':'s'}`:''].filter(Boolean).join(' and ')} — see ${added?'Drills':'Blunder check'}.`:dropped&&!at.size?'Nothing to save.':'Already saved — see the Drills tab.')+left;
+  saving=''; const btn=$('a-savedrills'); if(btn){ btn.disabled=true; btn.textContent=done }
   if(window.DrillsTab) DrillsTab.refresh(); if(window.BlunderCheckTab) BlunderCheckTab.refresh();
-  const box=btn.closest('.asave'); const old=box&&box.querySelector('.asets'); const h=setsHtml();
+  const box=btn&&btn.closest('.asave'); const old=box&&box.querySelector('.asets'); const h=setsHtml();
   if(box){ if(old) old.outerHTML=h; else box.insertAdjacentHTML('beforeend',h) }
 }
 /* Year by year (shared/yearly.js) from every game: no engine needed. Ratings per pool (where + speed + rating system),
