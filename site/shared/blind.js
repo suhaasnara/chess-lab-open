@@ -222,12 +222,18 @@ window.BlindTactics=(()=>{
         say('',r?`${r.san}. Your move.`:'Your move.',' The board still shows the start.') },350);
       return true;
     }
+    /* what was recorded for the puzzle on the board and when it comes back (26 Nov 2026, roadmap #258): solved 3, 7,
+       then 21 days later, a miss the next day (the due rule above). [for the status card, for the strip under the board] */
+    function back(){ const r=(st.get('blind-progress')||{})[S.cur.id]||{};
+      const when=r.ok?`back in ${REVIEW[Math.min(REVIEW.length-1,Math.max(1,r.okN||1)-1)]} days`:'back tomorrow';
+      return r.ok?[`Solved: ${when}`,`solved, ${when}`]:[`Counted as a miss: ${when}`,`missed, ${when}`] }
     function finish(){
       S.solved=true; if(!S.scored) score(!S.failed&&!S.assisted);
       const clean=!S.failed&&!S.assisted;
       renderLine(); renderHead(); renderList();
-      say('good','Solved!',clean?' First try: it counts for your Blind rating.':S.assisted?' (you peeked, so it counts as a miss)':' (not a clean first try)');
-      endbar.show(clean?'good':'warn',clean?'Solved ✓ first try':'Solved, not first try','Next puzzle');
+      const when=back();
+      say('good','Solved!',(clean?' First try: it counts for your Blind rating.':S.assisted?' (you peeked, so it counts as a miss)':' (not a clean first try)')+` ${when[0]}.`);
+      endbar.show(clean?'good':'warn',(clean?'Solved ✓ first try':'Solved, not first try')+' · '+when[1],'Next puzzle');
       replay(false);
     }
     function submit(txt){
@@ -283,8 +289,8 @@ window.BlindTactics=(()=>{
       S.gaveUp=true; const z=S.cur;
       const sans=[], g=new Chess(S.puzzleFen); for(const u of z.sol){ const m=g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||undefined}); if(m) sans.push(m.san) }
       S.log=sans.map((san,i)=>({san,you:i%2===0})); renderLine(); renderHead(); renderList();
-      say('bad','The solution: '+sans.join(' '),' The hidden moves and the solution play on the board.');
-      endbar.show('bad','Given up','Next puzzle'); q('peek').disabled=q('giveup').disabled=true;
+      say('bad','The solution: '+sans.join(' '),' The hidden moves and the solution play on the board. '+back()[0]+'.');
+      endbar.show('bad','Given up · '+back()[1],'Next puzzle'); q('peek').disabled=q('giveup').disabled=true;
       replay(true); return true;
     }
     function next(){

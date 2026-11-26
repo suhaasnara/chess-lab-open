@@ -38,4 +38,49 @@ module.exports=async H=>{
     const c=TS.cur; T.saveResult(c.id,true); T.next(); await sleep(10);
     assert(TS.cur.id!==c.id&&TS.cur.id!==a&&TS.cur.id!==b,'after a solve, Next goes on from there (not back to the top)');
   }
+  section('t91: the result says what was recorded and when it comes back (Drills, Endgames, Blind tactics; roadmap #258)');
+  {
+    const {w}=await makePage({analyse:async()=>[{uci:'e1g1',cp:0.4,mate:null}]});
+    const fen='r1bqkb1r/1ppp1ppp/p1n2n2/4p3/B3P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 5';
+    const drill=id=>({id,fen,played:'Ke2',playedUci:'e1e2',best:'e1g1',drop:0.35,date:'2026-11-01',opp:'Opp',site:'lichess',color:'w',v:1});
+    w.Store.put('adrills',[drill('a00000011'),drill('a00000012'),drill('a00000013')]);
+    w.Store.put('adrills-progress',{a00000012:{tries:1,ok:true,okN:1,t:Date.now()-4*864e5}});
+    w.location.hash='#drills'; await sleep(60);
+    const D=w.DrillsTab, $=id=>w.document.getElementById(id), bar=id=>{ const b=$(id).nextElementSibling; return b&&b.classList.contains('endbar')?b.textContent:'' };
+    const open=id=>D.load(w.Store.get('adrills').find(x=>x.id===id));
+    open('a00000011'); await D.userMove('e1','g1'); await sleep(20);
+    assert(/Solved, back in 3 days/.test(bar('d-board'))&&/Solved: back in 3 days/.test($('d-status').textContent),'Drills: a first solve says "Solved, back in 3 days" on the strip and the card');
+    open('a00000012'); await D.userMove('e1','g1'); await sleep(20);
+    assert(/back in 7 days/.test(bar('d-board')),'a second solve in a row: back in 7 days');
+    open('a00000013'); await D.show(); await sleep(20);
+    assert(/Missed, back tomorrow/.test(bar('d-board'))&&/back tomorrow/.test($('d-status').textContent),'a shown Solution: missed, back tomorrow');
+
+    /* Blind tactics (shared/blind.js): a clean solve, then a give-up */
+    w.location.hash='#blind'; await sleep(400);
+    const T=w.BlindTab.api, S=T.state;
+    const z1=S.cur; for(let i=0;i<z1.sol.length;i+=2){ T.submit(z1.sol[i]); await sleep(420) }
+    const bl=()=>{ const e=w.document.querySelector('#blind .endbar'); return e?e.textContent:'' };
+    assert(S.solved&&/first try · solved, back in 3 days/.test(bl())&&/Solved: back in 3 days/.test(w.document.querySelector('#bl-root .status').textContent),'Blind tactics: a clean solve says "solved, back in 3 days"');
+    T.next(); await sleep(10); T.giveUp(); await sleep(20);
+    assert(/Given up · missed, back tomorrow/.test(bl()),'a give-up says "missed, back tomorrow"');
+  }
+  {
+    /* Endgames: a held draw (the live tablebase grades it), then a slip */
+    const DATA={groups:[{id:'pawn',name:'King and pawn'}],positions:[
+      {id:'t-hold',group:'pawn',title:'Test hold',fen:'8/8/4k3/8/4PK2/8/8/8 b - - 0 1',goal:'draw',end:'hold:1',text:'',tb:{cat:'draw'},line:[],nodes:{}}]};
+    let w0=null;
+    const {w}=await makePage({fetch:async url=>{
+      if(/data\/endgames\.json/.test(url)) return {ok:true,status:200,json:async()=>DATA};
+      if(/tablebase\.lichess\.ovh/.test(url)){ const f=decodeURIComponent(url.split('fen=')[1]); const gg=new w0.Chess(f);
+        const ms=gg.moves({verbose:true}).map(m=>({uci:m.from+m.to,category:m.to==='f6'?'draw':m.to==='d6'?'win':'loss',dtz:5,dtm:15}));
+        ms.sort((a,b)=>(a.category==='loss'?0:1)-(b.category==='loss'?0:1));
+        return {ok:true,status:200,json:async()=>({category:'draw',moves:ms})} }
+      return null }, beforeLoad:x=>{ w0=x }});
+    const E=w.EndgamesTab; w.location.hash='#endgames'; await sleep(80);
+    const bar=()=>w.document.querySelector('#endgames .endbar').textContent, st=()=>w.document.getElementById('eg-status').textContent;
+    E.load(E.byId('t-hold')); await E.userMove('e6','f6'); await sleep(400);
+    assert(/Solved, back in 3 days/.test(bar())&&/Solved: back in 3 days/.test(st()),'Endgames: a solve says "Solved, back in 3 days"');
+    E.load(E.byId('t-hold')); await E.userMove('e6','d6'); await sleep(400);
+    assert(/Counted as a miss: back tomorrow/.test(st()),'a slip says it was counted as a miss, back tomorrow');
+  }
 };
