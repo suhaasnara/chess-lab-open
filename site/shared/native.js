@@ -181,6 +181,8 @@ window.Native=(()=>{
   function welcome(){
     if(cfg.welcomed) return; cfg.welcomed=true; save();
     const lines=typeof site.welcome==='function'?site.welcome(Object.assign({},dev)):site.welcome;
+    /* a site with a welcome of its own on the page shows the lines there (site.welcomeInline(lines) -> true): one welcome, not two */
+    if(typeof site.welcomeInline==='function'&&site.welcomeInline(lines)) return;
     sheet(`<h2>Welcome to ${esc(site.name)}</h2><ul style="padding-left:18px;margin:8px 0">${lines.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`,[['Get started','ok']]) }
   /* the notification permission is asked in context, once: after the first few results (or when the reminder is turned
      on in Settings), never at launch */
@@ -239,6 +241,7 @@ window.Native=(()=>{
        reminder    [{k: a Due key, one, many, hash}]: the parts of the reminder, in order
        welcome     the first-launch card's lines, or a function (device) -> lines; device = {kind: 'phone' | 'pad',
                    name: 'iPhone' | 'iPad', watch, vibrate}
+       welcomeInline(lines) -> true when the site showed them in its own welcome on the page (optional; else a sheet)
        about       the link to the About page (optional) } */
   function start(s){
     site=s; cfg=Object.assign({},DEF);

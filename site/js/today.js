@@ -179,10 +179,11 @@ function hasProgress(){
   try{ for(let i=0;i<localStorage.length;i++) if(/^clo:stats-/.test(localStorage.key(i))) return true }catch(e){}
   return false;
 }
+/* a first visitor: the guide shows by itself (the app puts its first-launch lines in it: js/native.js) */
+function isNew(){ let seen=false; try{ seen=localStorage.getItem('clo-welcome')==='seen'||hasProgress() }catch(e){} return !seen }
 function welcome(show){
   const el=$('welcome'); if(!el) return;
-  let seen=false; try{ seen=localStorage.getItem('clo-welcome')==='seen'||hasProgress() }catch(e){}
-  el.hidden=show===true?false:seen;
+  el.hidden=show===true?false:!isNew();
   const more=$('welcome-more'); if(more) more.open=show===true;   /* asked for ("How Think Ahead works"): the whole list; a first visit: three lines and two buttons */
   /* returning visitors get Chess Lab's board page (no big header on Today); the guide brings it back */
   document.body.classList.toggle('welcomed',el.hidden);
@@ -224,5 +225,5 @@ function init(){
     if((lib&&eg)||tries>100) clearInterval(wait) };
   const wait=setInterval(tick,100); addEventListener('tactics-lib',()=>setTimeout(tick,0));
 }
-window.TodayTab={init,render,plan,items,start,select,next:nextItem,get hosted(){return hosted},get sel(){return sel}};
+window.TodayTab={init,render,plan,items,start,select,next:nextItem,isNew,get hosted(){return hosted},get sel(){return sel}};
 })();

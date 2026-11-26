@@ -57,6 +57,10 @@ Native.start({
     {k:'endgames',one:'endgame',many:'endgames',hash:'#endgames'},{k:'blundercheck',one:'Blunder check',many:'Blunder checks',hash:'#blundercheck'}],
   welcome:d=>['Everything works offline.',`Your progress stays on this ${d.name}${d.watch?' (and your Apple Watch)':''} and is backed up in Files.`,
     'Nothing is sent anywhere, except what you fetch yourself: your games from Lichess or Chess.com.'],
+  /* one welcome (26 Nov 2026, roadmap #288): the lines go into Today's "New here?" card, when it is showing, instead of a
+     sheet on top of it */
+  welcomeInline:lines=>{ const el=document.getElementById('welcome-app'); if(!el||!window.TodayTab||!TodayTab.isNew()) return false;
+    el.textContent=lines.join(' '); el.hidden=false; return true },
 });
 
 /* in the app only: every board's right / wrong flash also taps or buzzes (Openings, Tactics, Drills, Endgames, Blunder

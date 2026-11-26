@@ -56,6 +56,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
       <span class="label">New here?</span>
       <h2 style="margin:6px 0 8px">Train on your own games</h2>
       <p class="welcomelead">Think Ahead turns your games into a report card and drills, with puzzles, openings and endgames around them. No account, and nothing is uploaded.</p>
+      <p class="note welcomeapp" id="welcome-app" hidden></p><!-- in the app: its first-launch lines (js/native.js welcomeInline), instead of a second welcome -->
       <div class="btns" style="margin-top:10px"><a class="btn primary" href="#analyze" id="welcome-go">Analyze my games</a><button class="btn" id="welcome-try" type="button">Just try a puzzle</button></div>
       <details class="welcomemore" id="welcome-more"><summary>How it works</summary>
       <ul class="welcomelist">

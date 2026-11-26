@@ -109,7 +109,9 @@ function load(z){
   /* Lichess puzzles: the first move of the solution is the opponent's setup move. */
   if(z.pre!==false&&z.moves.length>1){ const u=z.moves[0]; const m=S.g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'}); if(m) last={from:m.from,to:m.to}; S.step=1 }
   board.set(S.g,{last,orient:S.g.turn()});
-  status('', (S.g.turn()==='w'?'White':'Black')+' to move.','Find the best move.');
+  /* the very first puzzle says how to move (26 Nov 2026, roadmap #288) */
+  const how=Object.keys(prog()).length?'':window.matchMedia&&matchMedia('(hover: none)').matches||document.documentElement.classList.contains('in-app')?' Tap a piece, then a square.':' Click a piece, then a square (or drag it).';
+  status('', (S.g.turn()==='w'?'White':'Black')+' to move.','Find the best move.'+how);
   facts();
   $('t-lichess').href=z.url||('https://lichess.org/analysis/'+encodeURIComponent(S.g.fen()));
   renderL();

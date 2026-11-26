@@ -253,6 +253,10 @@ footer .inner{padding-block:18px;font-size:.85rem;color:var(--muted)}
 .watoday .wtrow:first-of-type{border-top:0}
 .watoday .wtlab{font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--blue);flex:0 0 100%}.watoday .wtrow>.note{flex:0 0 100%}
 body.welcomed[data-view="today"] .hero{display:none}
+/* In the app (26 Nov 2026, roadmap #288): no website header. Its name is the app's, its links leave the app, and it
+   pushed a new user's first board down behind the bottom bar. The "New here?" card is the one welcome. */
+html.in-app .hero{display:none}
+.welcomeapp{margin:8px 0 0;max-width:62ch}
 .tdhead{margin:4px 0 8px;font-size:.95rem}
 .drill.done{opacity:.6}.drill.done .src{color:var(--good)}
 
