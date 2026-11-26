@@ -83,4 +83,27 @@ module.exports=async H=>{
     E.load(E.byId('t-hold')); await E.userMove('e6','d6'); await sleep(400);
     assert(/Counted as a miss: back tomorrow/.test(st()),'a slip says it was counted as a miss, back tomorrow');
   }
+  section('t92: Calculation — a Stockfish check still running when you move on is dropped (roadmap #263)');
+  {
+    let slow=300;
+    const {w}=await makePage({analyse:async()=>{ await sleep(slow); return [{uci:'x',cp:-9,mate:null}] }});
+    w.location.hash='#calc'; await sleep(60);
+    for(let i=0;i<40&&!(w.CalcTab.lib||[]).length;i++) await sleep(100);
+    const C=w.CalcTab, S=C.state, rec=id=>(w.Store.get('calc-progress')||{})[id];
+    /* a legal first move that isn't the solution's: Stockfish is asked */
+    const wrongFirst=z=>{ C.load(z); const g=new w.Chess(S.start); const m=g.moves({verbose:true}).find(x=>x.from+x.to!==z.moves[1].slice(0,4)); C.userMove(m.from,m.to,m.promotion) };
+    const [z1,z2,z3]=C.lib.slice(0,3);
+    wrongFirst(z1); const p=C.submit(); await sleep(50);
+    assert(/Checking your first move/.test(w.document.getElementById('cc-status').textContent),'a different first move is checked by Stockfish');
+    C.next(); const now=S.cur; await p; await sleep(30);
+    assert(!rec(z1.id),'Next during the check: nothing is saved for the old exercise');
+    assert(S.cur===now&&now!==z1&&!S.sub&&!S.busy&&!/Solution/.test(w.document.getElementById('cc-line').textContent),'the new exercise is still open to play (not locked, no solution shown)');
+    wrongFirst(z2); const p2=C.submit(); await sleep(50); C.lobby();
+    let err=null; try{ await p2; await sleep(30) }catch(e){ err=e }
+    assert(!err&&!rec(z2.id)&&!w.document.getElementById('cc-lobby').hidden,'Back to the list during the check: no error, nothing saved, the list stays');
+    wrongFirst(z3); const p3=C.submit(); await sleep(50); C.load(z3); await p3; await sleep(30);
+    assert(!rec(z3.id)&&!S.sub,'the same exercise opened again: the old check is dropped too');
+    slow=0; wrongFirst(z3); await C.submit(); await sleep(30);
+    assert(rec(z3.id)&&rec(z3.id).tries===1&&S.sub,'a check left to finish still scores');
+  }
 };
