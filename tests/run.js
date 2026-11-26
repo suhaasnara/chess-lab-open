@@ -2492,7 +2492,7 @@ section('t73: the games you analyzed are kept (js/agames.js): every drill and co
     await sleep(50); await runPgn(w5,BC1.pgn);
     const s5=w5.Store.get('agames');
     assert(s5&&s5.last===null&&!Object.keys(s5.g).length,'storage full: no report kept (no drill points to these games yet)');
-    assert(/storage is full/.test(w5.document.getElementById('a-note').textContent),'the note says so');
+    assert(/Storage on this device is full/.test(w5.document.getElementById('a-note').textContent),'the note says so');
     w5.document.getElementById('a-savedrills').click(); await sleep(300);
     const gid=w5.Store.get('adrills')[0].g; assert(gid&&w5.Store.get('agames').g[gid]&&w5.Store.get('agames').g[gid].ev,'saving drills still keeps their game (with its evals)'); }
 }
