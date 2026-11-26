@@ -74,7 +74,7 @@ async function load(file){
     <dt>Event</dt><dd>${esc(game.event||'—')} · ${esc(game.date)}</dd>
     <dt>Opening</dt><dd>${game.opening?esc(game.opening[1])+' <span class="note">('+esc(game.opening[0])+')</span>':'—'}</dd>
     <dt>Result</dt><dd>${esc(game.result)}</dd>${game.own?'<dt>Scoring</dt><dd>1 point a move after the opening; Stockfish judges other moves</dd>':''}`;
-  status('','Loading the opening…',`You play ${game.own?'':'the winner’s side '}(${me==='w'?'White':'Black'}). The first ${game.theory} plies are known theory and play themselves.${tries()>1?` You get ${tries()} tries a move; the first one scores.`:''}${S.crit.size?` ★ marks ${S.crit.size===1?'a critical moment':S.crit.size+' critical moments'}: take your time there.`:''}`);
+  status('','Loading the opening…',`You play ${game.own?'':'the winner’s side '}(${me==='w'?'White':'Black'}). The opening, up to move ${Math.ceil(game.theory/2)}, is known theory and plays itself.${tries()>1?` You get ${tries()} tries a move; the first one scores.`:''}${S.crit.size?` ★ marks ${S.crit.size===1?'a critical moment':S.crit.size+' critical moments'}: take your time there.`:''}`);
   renderList(); renderScore(); renderMoves();
   playTheory();
 }

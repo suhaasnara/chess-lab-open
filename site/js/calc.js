@@ -114,14 +114,14 @@ async function submit(){
     S.busy=false;
     score=alt?0.5:0; tone=alt?'warn':'bad'; head=alt?'A different first move that works just as well.':'Not the right first move.';
   }else if(k>=sol.length){ score=1; tone='good'; head='Solved: you saw the whole line ✓' }
-  else{ score=Math.max(0.5,k/sol.length); tone=k>=sol.length-1?'good':'warn'; head=`You saw ${k} of ${sol.length} plies.` }
+  else{ score=Math.max(0.5,k/sol.length); tone=k>=sol.length-1?'good':'warn'; head=`You saw ${Math.ceil(k/2)} of your ${mine(z)} moves.` }
   S.sub=true; clearInterval(S.tick);
   const secs=Math.round((Date.now()-t0)/1000);
   record(z.id,score,secs); window.Native&&Native.verdict(tone);   /* the app's tap or buzz */
   const ss=sanLine(start,sol);
   status(tone,head,`${fmt(secs)} · the solution is below; step through it with ‹ ›.`);
   endbar.show(tone==='bad'?'bad':score>=1?'good':'warn',`${head} ${Math.round(score*100)}% · ${fmt(secs)}`,'Next exercise');
-  $('cc-line').innerHTML=`<div><span class="label">Your line</span><br>${numbered(start,sanLine(start,line),i=>i<k?'ok':'miss')}</div>
+  $('cc-line').innerHTML=`<div>${numbered(start,sanLine(start,line),i=>i<k?'ok':'miss')}</div>
     <div style="margin-top:8px"><span class="label">Solution</span><br><span class="ccsol">${numbered(start,ss,i=>i<k?'ok':'',true)}</span></div>`;
   S.view=0; showView(); renderLine(); renderList();
 }

@@ -373,7 +373,7 @@ async function run(site,user,blitz){
         bcStopped=stopReq } }
     renderReport(user,site,rows,games.length,true);
     const kept=keepRun(rows,games.length,m);
-    const keptNote=kept==='ok'?'':kept==='partial'?' This browser’s storage is full: the games your drills come from are kept, but this report won’t come back after a reload.':' This browser’s storage is full: these games can’t be kept, so the report won’t come back after a reload.';
+    const keptNote=kept==='ok'?'':kept==='partial'?' Storage on this device is full: the games your drills come from are kept, but this report won’t come back after a reload.':' Storage on this device is full: these games can’t be kept, so the report won’t come back after a reload.';
     note((bcStopped?`Stopped during Blunder check: ${LASTBC.length} position${LASTBC.length===1?'':'s'} found so far. Press Analyze again to carry on (nothing is redone).`
       :stopReq?`Stopped: ${rows.length} of ${games.length} games analyzed so far. Press Analyze again to carry on (nothing is redone).`:site==='pgn'?`${fileNote} Done.`:'Done.')+keptNote);
   }catch(e){ note(String(e.message||e)) }

@@ -468,7 +468,7 @@ section('t16: Calculation — enter the whole line, graded against the solution'
   for(const u of z2.moves.slice(1,4)) C.userMove(u.slice(0,2),u.slice(2,4),u[4]);
   C.undo(); C.userMove(z2.moves[3].slice(0,2),z2.moves[3].slice(2,4),z2.moves[3][4]);
   await C.submit(); await sleep(30);
-  assert(/You saw 3 of 7 plies/.test(w.document.getElementById('cc-status').textContent),'a partial line scores how far it follows the solution (with undo working)');
+  assert(/You saw 2 of your 4 moves/.test(w.document.getElementById('cc-status').textContent),'a partial line scores how far it follows the solution (with undo working)');
   const v0=C.state.view; w.document.getElementById('cc-fwd').click(); w.document.getElementById('cc-fwd').click();
   assert(C.state.view===v0+2&&/2 \/ 7/.test(w.document.getElementById('cc-step').textContent),'→ steps through the solution');
   /* a wrong first move that the engine rates far worse */
@@ -2099,7 +2099,7 @@ section('t60: Blind tactics — the stored set replays, filters, first-try scori
   assert(T.filtered().length>=1&&T.filtered().every(z=>!w.Store.get('blind-progress')[z.id].ok),'Missed lists the misses');
   /* Progress tile; export */
   w.location.hash='#progress'; await sleep(60);
-  assert(/blind rating/i.test($('p-stats').textContent)&&/1 solved/.test($('p-stats').textContent)&&/8 hidden plies on average/.test($('p-stats').textContent),'Progress tile: Blind rating, solved, average hidden plies');
+  assert(/blind rating/i.test($('p-stats').textContent)&&/1 solved/.test($('p-stats').textContent)&&/8 hidden moves on average/.test($('p-stats').textContent),'Progress tile: Blind rating, solved, average hidden plies');
   const ex=w.Store.exportAll();
   assert(ex['blind-progress']&&ex['blind-rating'],'both keys are in the progress export');
   assert(started===0,'no engine started anywhere on the way');

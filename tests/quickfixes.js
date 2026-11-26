@@ -124,4 +124,36 @@ module.exports=async H=>{
     assert(bs.history.length&&typeof bs.history[bs.history.length-1].e==='number'&&!base.history.length,'the line’s eval is kept with the Black stats, not the White ones');
     assert(O.sidOf(O.openings().find(o=>o.id==='preset-english'))==='preset-english@black'&&O.statsAs(O.openings().find(o=>o.id==='preset-english'))===O.stats('preset-english@black')||O.statsAs(O.openings().find(o=>o.id==='preset-english')).last===bs.last,'Today reads the side the opening is played as now');
   }
+  section('t95: wording for a first-time user — moves not plies, nothing about "the site", themes kept until solved (roadmap #287)');
+  {
+    const {w}=await makePage({analyse:async()=>[{uci:'x',cp:-9,mate:null}]});
+    const d=w.document, $=id=>d.getElementById(id);
+    const txt=(()=>{ const c=d.body.cloneNode(true); c.querySelectorAll('script,style').forEach(x=>x.remove()); return c.textContent })();   /* the page's words, not its scripts */
+    assert(!/\bplies\b/.test(txt)&&!/UCI_Elo/.test(txt)&&!/\(JSON\)/.test(txt),'the page says moves, not plies; no UCI_Elo; no "(JSON)" on Export progress');
+    assert(!/(this|the) site\b/i.test($('settings').textContent+$('help').querySelector('.card').textContent),'Settings and Help don’t say "the site" (they are inside the app too)');
+    assert(!/phone or computer/.test(JSON.stringify([...d.querySelectorAll('#s-rows')].map(x=>x.textContent))),'Theme: no "phone or computer"');
+    /* Tactics: a wrong first try keeps the theme hidden; a solve shows it */
+    w.location.hash='#tactics'; await w.TacticsTab.ensure(); await sleep(30);
+    const T=w.TacticsTab, S=T.state;
+    const z=T.filtered().find(x=>!(w.Store.get('tactics-progress')||{})[x.id]&&x.motif); T.load(z); await sleep(10);
+    const exp=z.moves[S.step], g=new w.Chess(S.g.fen());
+    const bad=g.moves({verbose:true}).find(m=>m.from+m.to!==exp.slice(0,4)&&!(()=>{ const t=new w.Chess(S.g.fen()); t.move(m); return t.in_checkmate() })());
+    T.userMove(bad.from,bad.to); await sleep(20);
+    const head=()=>$('t-head').textContent, row=()=>$('t-list').querySelector(`[data-id="${z.id}"]`);
+    assert(S.failedFirst&&/Puzzle \d+/.test(head())&&/shown when solved/.test(head())&&(!row()||!row().textContent.includes(w.eval('themeName')(z.motif))),'after a wrong first try: still "Puzzle N", themes "shown when solved" (the title and chip gave it away)');
+    for(let i=S.step;i<z.moves.length&&!S.solved;i+=2){ const u=z.moves[i]; T.userMove(u.slice(0,2),u.slice(2,4),u[4]); await sleep(520) }
+    assert(S.solved&&head().includes(w.eval('themeName')(z.motif))&&!/shown when solved/.test(head()),'once solved, the theme shows');
+    /* Blind tactics: hidden moves */
+    w.location.hash='#blind'; await sleep(400);
+    const bl=$('bl-root').textContent;
+    assert(/4 hidden moves/.test(bl)&&!/\bpl(y|ies)\b/.test(bl),'Blind tactics says "4 hidden moves" (it said plies)');
+    /* Calculation: your moves, and one "Your line" */
+    w.location.hash='#calc'; for(let i=0;i<40&&!(w.CalcTab.lib||[]).length;i++) await sleep(100);
+    const C=w.CalcTab, z2=C.lib.find(x=>Math.floor(x.moves.length/2)===4); C.load(z2);
+    for(const u of z2.moves.slice(1,4)) C.userMove(u.slice(0,2),u.slice(2,4),u[4]);
+    await C.submit(); await sleep(30);
+    const card=$('cc-line').closest('.card').textContent;
+    assert(/You saw 2 of your 4 moves/.test($('cc-status').textContent),'Calculation: "You saw 2 of your 4 moves" (it said 3 of 7 plies)');
+    assert((card.match(/Your line/g)||[]).length===1&&/Solution/.test(card),'"Your line" once, then the solution');
+  }
 };
