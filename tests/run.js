@@ -2570,6 +2570,7 @@ await require('./tries')(H);   /* Guess the move: tries before the move is shown
 await require('./drillresults')(H);   /* Drills: one result per attempt, the first thing you do decides it */
 await require('./scrolllock')(H);   /* a finished or read-only board scrolls the page (his iPhone, 23 Nov 2026) */
 await require('./prep')(H);   /* Analyze: your prep in your games (imported repertoires) */   /* the Apple Watch sets for the app (tools/build_watch_sets.js) */
+await require('./notfound')(H);   /* the 404 page (site/404.html) */
 await require('./quickfixes')(H);   /* the 26 Nov 2026 quick fixes (roadmap #257, #258, #287, #288, #265, #263, #264) */
 await require('./appfixes')(H);   /* the 26 Nov 2026 app batch (roadmap #260, #267, #268) */
 await require('./polishbatch')(H);   /* the 26 Nov 2026 polish batch (roadmap #262, #290, #275, #291, #276, #269) */
