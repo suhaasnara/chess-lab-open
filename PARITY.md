@@ -6,7 +6,7 @@ calculation books and opponents, and none of that can be published. Everything t
 visitor's own data, belongs in both.
 
 This file records where the two stand (started on the `one-codebase` branch, 9 Nov 2026; last updated 26 Nov 2026,
-branch `claude/quick-fixes-0602f6`) and how the shared code is organized.
+branch `claude/polish-batch-cb9798`) and how the shared code is organized.
 
 ## Now the same in both
 
@@ -82,6 +82,7 @@ branch `claude/quick-fixes-0602f6`) and how the shared code is organized.
 | Endgame courses (Extra → Endgames → Courses, 13 Nov 2026) | His endgame course PGNs (three endgame books): book content. The reader and trainer around them are shared parts (`Reader.text`, `VarLine`, `Keys`); Open could offer the same screen for a visitor's own endgame PGN later. |
 | Drill guidance in the Explain tab (13 Nov 2026) | Stored per drill by the kit (`tools/drills/explain.py`, Stockfish 18 at depth 12–22): built from his games. Open's drills come from the visitor's games in the browser, without a deep stored analysis. |
 | Openings rename + shelf (13 Nov 2026) | Private only for now (his account docs `ol-onames` / `ol-oshelf`). Open's Arrange could get the same ✎ and Shelve buttons (localStorage). Not asked yet. |
+| The polish batch (26 Nov 2026, branch `claude/polish-batch-cb9798`; roadmap #262, #290, #275, #291, #276, #269) | **Open only:** Tactics has **Solution** (G): the rest of the line plays on the board, ← → or a tap on a move steps through it, and it counts as a miss as a Hint does; **Next reads Skip** until something is recorded for the puzzle, and Skip goes on without a result. (The private site's Solution is the line in its Moves tab, part of the Chessable-style flow below.) |
 | Alpha pieces | Free for personal non-commercial use only, so Open ships cburnett (see CREDITS.md). |
 
 ## Not ported yet (no private data needed)

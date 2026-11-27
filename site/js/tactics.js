@@ -6,7 +6,7 @@
 'use strict';
 (function(){
 let LIB=null, board=null, endbar=null, H=null;   /* H: Today, when it hosts this panel */
-const S={cur:null,g:null,step:0,solved:false,failedFirst:false,usedHint:false,hintStage:0,motifs:[],ops:[],lo:null,hi:null,status:'Unsolved',band:null};
+const S={cur:null,g:null,step:0,solved:false,failedFirst:false,usedHint:false,hintStage:0,sol:null,view:0,motifs:[],ops:[],lo:null,hi:null,status:'Unsolved',band:null};
 const BANDS=[['All','Any rating'],['1200','1200–1499'],['1500','1500–1799'],['1800','1800–2099'],['2100','2100–2399'],['2400','2400+']];
 const STATUSES=['All','Unsolved','Missed','Solved'];
 
@@ -110,7 +110,7 @@ function facts(){ const z=S.cur; if(!z) return;
 function load(z){
   if(endbar) endbar.hide();
   S.gen=(S.gen||0)+1;   /* a reply still on its timer belongs to the puzzle it was made for */
-  S.cur=z; S.g=new Chess(z.fen); S.step=0; S.solved=false; S.failedFirst=false; S.usedHint=false; S.hintStage=0; S.seen=!!prog()[z.id];
+  S.cur=z; S.g=new Chess(z.fen); S.step=0; S.solved=false; S.failedFirst=false; S.usedHint=false; S.hintStage=0; S.sol=null; S.view=0; S.seen=!!prog()[z.id];
   let last=null;
   /* Lichess puzzles: the first move of the solution is the opponent's setup move. */
   if(z.pre!==false&&z.moves.length>1){ const u=z.moves[0]; const m=S.g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'}); if(m) last={from:m.from,to:m.to}; S.step=1 }
@@ -120,20 +120,29 @@ function load(z){
   status('', (S.g.turn()==='w'?'White':'Black')+' to move.','Find the best move.'+how);
   facts();
   $('t-lichess').href=z.url||('https://lichess.org/analysis/'+encodeURIComponent(S.g.fen()));
-  renderL();
+  renderL(); nextLabel(); solButtons();
 }
+/* with the solution shown: ‹ › step through it, and Hint and Solution (nothing left to show) make room for them */
+function solButtons(){ const on=!!S.sol;
+  $('t-prev').hidden=$('t-fwd').hidden=!on; $('t-hint').hidden=$('t-sol').hidden=on;
+  if(on){ $('t-prev').disabled=S.view<=0; $('t-fwd').disabled=S.view>=S.sol.fens.length-1 } }
+/* Next reads "Skip" while nothing has been recorded for the puzzle on the board (no move tried, no Hint, no Solution):
+   pressing it then goes on without a result (26 Nov 2026, roadmap #262). Once a result is in, it reads "Next". */
+const skipping=()=>!!(S.cur&&!S.solved&&!S.sol&&!S.failedFirst&&!S.usedHint);
+function nextLabel(){ const b=$('t-next'); if(!b) return; const k=skipping();
+  b.firstChild.textContent=k?'Skip ':'Next '; b.title=k?'Go on to the next puzzle without a result for this one':'' }
 function expected(){ return S.cur.moves[S.step] }
 function userMove(from,to,promo){
-  if(!S.cur||S.solved) return;
+  if(!S.cur||S.solved||S.sol) return;
   const exp=expected(); if(!exp) return;
   const test=new Chess(S.g.fen()); const m=test.move({from,to,promotion:promo||'q'}); if(!m) return;
   const uci=from+to+(m.promotion||'');
   const hit=uci===exp||uci.slice(0,4)===exp.slice(0,4)&&(!exp[4]||exp[4]===uci[4]);
   /* any mate also counts, as on Lichess */
   if(!hit&&!test.in_checkmate()){
-    if(S.step===(S.cur.pre!==false?1:0)&&!S.failedFirst&&!S.usedHint){ S.failedFirst=true; saveResult(S.cur.id,false); facts() }
+    if(S.step===(S.cur.pre!==false?1:0)&&!S.failedFirst&&!S.usedHint){ S.failedFirst=true; saveResult(S.cur.id,false); facts(); nextLabel() }
     board.flash([from,to],'bad');
-    status('bad',`${m.san} isn’t it.`,'Try again, or press Hint.');
+    status('bad',`${m.san} isn’t it.`,'Try again, or press Hint or Solution.');
     return;
   }
   S.g.move({from,to,promotion:promo||'q'});
@@ -147,7 +156,7 @@ function userMove(from,to,promo){
     status('good','Solved!',S.failedFirst||S.usedHint?'(no rating: not a clean first try)':dr==null&&S.seen?'(no rating: only your first try at a puzzle is rated)':'');
     const clean=!S.failedFirst&&!S.usedHint;
     endbar.show(clean?'good':'warn',(clean?'Solved ✓ first try':'Solved, not first try')+(dr!=null?` · ${dr>=0?'+':''}${dr}`:''));
-    renderL(); return;
+    renderL(); nextLabel(); return;
   }
   const gen=S.gen;
   setTimeout(()=>{ if(gen!==S.gen) return; const u=reply; const mm=S.g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'});
@@ -156,12 +165,39 @@ function userMove(from,to,promo){
     status('','Keep going.',''); },450);
 }
 function hint(){
-  if(!S.cur||S.solved) return;
+  if(!S.cur||S.solved||S.sol) return;
   const exp=expected(); if(!exp) return;
-  if(!S.usedHint&&!S.failedFirst){ S.usedHint=true; saveResult(S.cur.id,false) }
+  if(!S.usedHint&&!S.failedFirst){ S.usedHint=true; saveResult(S.cur.id,false); nextLabel() }
   if(S.hintStage===0){ S.hintStage=1; board.setHint(exp.slice(0,2)); status('warn','Hint: this piece moves.','Press Hint again to see the move.') }
   else{ S.hintStage=2; board.setHint(exp.slice(0,2),exp.slice(2,4)); status('warn','Answer: '+sanOf(S.g.fen(),exp),''); facts(); renderL() }
 }
+/* Solution (G, 26 Nov 2026, roadmap #262): the rest of the line plays on the board, its first move shown; ← → (and a
+   click on a move) step through it. It counts as a miss, as a Hint does (nothing more if the first try already missed);
+   only a first try ever moves the rating. A reply still on its timer is dropped: the line starts from the board. */
+function solution(){
+  if(!S.cur||S.solved||S.sol) return;
+  S.gen=(S.gen||0)+1;
+  let dr=null; if(!S.usedHint&&!S.failedFirst){ S.usedHint=true; dr=saveResult(S.cur.id,false) }
+  const g=new Chess(S.g.fen()), fens=[g.fen()], sans=[], lasts=[null];
+  for(const u of S.cur.moves.slice(S.step)){ const m=g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||undefined}); if(!m) break;
+    fens.push(g.fen()); sans.push(m.san); lasts.push({from:m.from,to:m.to}) }
+  if(!sans.length) return;
+  S.sol={fens,sans,lasts}; S.view=1; S.hintStage=2;
+  facts(); renderL(); nextLabel(); showSol();
+  endbar.show('warn','Solution shown'+(dr!=null?` · ${dr>=0?'+':''}${dr}`:''));
+}
+/* the solution as move buttons: 24.Qxh7+ Kxh7 25.Rh3# (the current one marked) */
+function solLine(){ const o=S.sol, fen=o.fens[0].split(' '); let n=+fen[5]||1, w=fen[1]==='w'; const out=[];
+  o.sans.forEach((s,i)=>{ const lab=(w?n+'.':i===0?n+'…':'')+s; out.push(`<button type="button" class="vmv${S.view===i+1?' cur':''}" data-at="${i+1}">${esc(lab)}</button>`); if(!w) n++; w=!w });
+  return out.join(' ') }
+function showSol(){ const o=S.sol; if(!o) return;
+  S.view=Math.max(0,Math.min(o.fens.length-1,S.view));
+  board.set(new Chess(o.fens[S.view]),{last:o.lasts[S.view],orient:board.orient,locked:true});
+  solButtons();
+  const el=$('t-status-box'); el.className='status warn';
+  el.innerHTML=`<strong>Solution:</strong> <span class="tsol">${solLine()}</span><br><span class="note">Step through it with ← → or tap a move. Counted as a miss.</span>`;
+}
+function stepSol(d){ if(!S.sol) return false; S.view+=d; endbar.hide(); showSol() }
 /* As in Chess Lab, the page opens on the first puzzle of the list (nothing is counted until a move is made) */
 function first(){ const z=daily(filtered())[0]; if(z) load(z) }
 /* Next: the next puzzle after the one on the board, in today's order of the filtered list (26 Nov 2026, roadmap #257: it
@@ -192,9 +228,13 @@ function init(){
   TV.fitBoard('#t-wrap','#t-tools');
   $('t-next').addEventListener('click',next);
   $('t-hint').addEventListener('click',hint);
+  $('t-sol').addEventListener('click',solution);
+  $('t-prev').addEventListener('click',()=>stepSol(-1)); $('t-fwd').addEventListener('click',()=>stepSol(1));
+  $('t-status-box').addEventListener('click',e=>{ const b=e.target.closest('.tsol .vmv[data-at]'); if(b&&S.sol){ S.view=+b.dataset.at; endbar.hide(); showSol() } });
   $('t-flip').addEventListener('click',()=>board.flip());
-  Keys.on('tactics',{n:['Next puzzle',()=>next()],h:['Hint',()=>hint()],f:['Flip the board',()=>board.flip()]});
+  Keys.on('tactics',{n:['Next puzzle (reads Skip before you try it: no result is recorded)',()=>next()],h:['Hint',()=>hint()],g:['Solution: show the answer (counts as a miss)',()=>solution()],
+    ArrowLeft:['Back through the solution',()=>stepSol(-1)],ArrowRight:['Forward through the solution',()=>stepSol(1)],f:['Flip the board',()=>board.flip()]});
   addEventListener('hashchange',()=>{ if(location.hash==='#tactics'&&LIB) renderHeader() });   /* the rating and Weak row after an import on Progress */
 }
-window.TacticsTab={init,ensure,get state(){return S},saveResult,load,next,userMove,hint,filtered,host:h=>{ H=h||null },flip:()=>board.flip(),get lib(){return LIB}};
+window.TacticsTab={init,ensure,get state(){return S},saveResult,load,next,userMove,hint,solution,stepSol,filtered,host:h=>{ H=h||null },flip:()=>board.flip(),get lib(){return LIB}};
 })();

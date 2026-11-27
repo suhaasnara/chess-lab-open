@@ -10,7 +10,7 @@ Nav.mount(document.getElementById('tabs'),SITE.tabs);   /* js/config.js */
    less-used buttons fold into ⋯ on phones. Endgames sets its own in js/endgames.js. */
 TV.bar('#td-tools',{primary:['#td-go','#td-next'],host:'#today'});
 TV.bar('#o-tools',{prev:'#o-prev',next:'#o-next',primary:'#o-newline',more:['#o-endhere','#o-flip','#o-type'],host:'#openings'});
-TV.bar('#t-tools',{primary:'#t-next',more:['#t-lichess'],host:'#tactics'});
+TV.bar('#t-tools',{prev:'#t-prev',next:'#t-fwd',primary:'#t-next',more:['#t-flip','#t-lichess'],host:'#tactics'});   /* ‹ ›: through a shown solution; Flip under ⋯ on phones, so Hint and Solution fit (iPhone SE) */
 TV.bar('#d-tools',{primary:'#d-next',more:['#d-lichess'],host:'#drills'});
 TV.bar('#bc-tools',{primary:'#bc-next',more:['#bc-lichess'],host:'#blundercheck'});
 TV.bar('#cc-tools',{prev:'#cc-prev',next:'#cc-fwd',primary:['#cc-submit','#cc-next'],note:'#cc-step',more:['#cc-reset','#cc-flip','#cc-lichess'],host:'#calc'});
