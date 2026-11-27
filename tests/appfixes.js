@@ -61,4 +61,57 @@ module.exports=async H=>{
     w.fetch=async()=>({ok:true,status:200,json:async()=>({url:'https://lichess.org/XyZ'})});
     await w.Net.review('1. e4 *');
     assert(opened===1&&fake.location==='https://lichess.org/XyZ'&&!w.Native.canPrint()&&w.Native.saveFile&&w.Native.openExternal('https://x.org')===false,'the website is unchanged: the tab opens at the tap, then goes to the game; nothing is saved or handed over'); }
+
+  section('t98: Restore asks first, shows the backup’s date and counts, and keeps a copy (roadmap #268)');
+  const backup={_app:'chess-lab-open',_v:1,_t:'2026-11-12T18:30:00.000Z','tactics-progress':{x:{ok:true,t:1},y:{ok:false,t:2}},'calc-progress':{c:{score:1,t:3}}};
+  const day=new Date(backup._t).toLocaleDateString([], {day:'numeric',month:'short',year:'numeric'});   /* "12 Nov 2026" or "Nov 12, 2026", as the device writes it */
+  { const log=[]; let reloaded=0; const {w}=await makePage({beforeLoad:fakeApp(log,{localStorage:APP})}); await sleep(100);
+    w.Native.reloadPage=()=>{ reloaded++ };
+    w.Store.put('tactics-progress',{a:{ok:true,t:10},b:{ok:true,t:11},c:{ok:false,t:12},d:{ok:true,t:13}});
+    let p=w.Native.restore(backup); await sleep(20);
+    let sh=w.document.getElementById('app-sheet'), t=sh&&sh.textContent;
+    assert(sh&&/Restore this backup\?/.test(t)&&t.includes(day)&&/holds 3 puzzles/.test(t)&&/On this iPhone now: 4 puzzles/.test(t)&&/A copy of it is saved to Files first/.test(t),'it asks first: the backup’s date and what it holds, next to what is here, and that a copy is kept');
+    sh.querySelector('button[data-a="cancel"]').click();
+    assert(await p===false&&Object.keys(w.Store.get('tactics-progress')).length===4&&!calls(log,'FS','write').length&&!reloaded,'Cancel: nothing is written or replaced');
+    p=w.Native.restore(backup); await sleep(20);
+    w.document.querySelector('#app-sheet button[data-a="restore"]').click(); await p;
+    const cp=calls(log,'FS','write').pop();
+    assert(cp&&/^Think Ahead backup \(before restore \d{4}-\d\d-\d\d \d\d\.\d\d\)\.json$/.test(cp[2].path)&&cp[2].directory==='DOCUMENTS'&&Object.keys(JSON.parse(cp[2].data)['tactics-progress']).length===4,'Restore: first a copy of what was here goes to Files, under a dated name');
+    assert(Object.keys(w.Store.get('tactics-progress')).join()==='x,y'&&w.Store.get('calc-progress').c.score===1&&reloaded===1,'… then the backup’s progress, and the page reloads');
+    /* a key that can't be written (storage full) is named, and the reload waits for OK */
+    const set=w.Storage.prototype.setItem; w.Storage.prototype.setItem=function(k,v){ if(k==='clo:calc-progress') throw new Error('QuotaExceededError'); return set.call(this,k,v) };
+    p=w.Native.restore(backup); await sleep(20);
+    w.document.querySelector('#app-sheet button[data-a="restore"]').click(); await p; await sleep(10);
+    sh=w.document.getElementById('app-sheet');
+    assert(sh&&/Restored 1 entry, but 1 entry could not be written/.test(sh.textContent)&&/calc-progress/.test(sh.textContent)&&reloaded===1,'a key that could not be written is named');
+    sh.querySelector('button').click(); assert(reloaded===2,'… and the page reloads after OK');
+    w.Storage.prototype.setItem=set; }
+  { const log=[]; let reloaded=0; const {w}=await makePage({beforeLoad:fakeApp(log,{writeFails:true,localStorage:APP})}); await sleep(100);
+    w.Native.reloadPage=()=>{ reloaded++ };
+    w.Store.put('tactics-progress',{a:{ok:true,t:10}});
+    const p=w.Native.restore(backup); await sleep(20);
+    w.document.querySelector('#app-sheet button[data-a="restore"]').click(); await p; await sleep(10);
+    assert(/could not be copied to Files first, so nothing was restored/.test(w.document.getElementById('app-sheet').textContent)&&Object.keys(w.Store.get('tactics-progress')).join()==='a'&&!reloaded,'no copy, no restore: if the copy can’t be written, nothing is replaced'); }
+  { const log=[]; const {w}=await makePage({beforeLoad:fakeApp(log,{localStorage:APP})}); await sleep(100); w.Native.reloadPage=()=>{};
+    const p=w.Native.restore(backup); await sleep(20);
+    const sh=w.document.getElementById('app-sheet');
+    assert(/On this iPhone now: no progress yet\./.test(sh.textContent)&&!/A copy/.test(sh.textContent),'with nothing here yet, no copy is promised');
+    sh.querySelector('button[data-a="restore"]').click(); await p;
+    assert(!calls(log,'FS','write').length&&w.Store.get('calc-progress').c.score===1,'… none is written, and the backup is restored');
+    /* Progress → Import progress in the app goes through the same question */
+    w.location.hash='#progress'; await sleep(60);
+    const f=w.document.getElementById('p-file'); Object.defineProperty(f,'files',{configurable:true,value:[{text:async()=>JSON.stringify(backup)}]});
+    f.dispatchEvent(new w.Event('change')); await sleep(30);
+    assert(/Restore this backup\?/.test((w.document.getElementById('app-sheet')||{}).textContent||''),'Import progress in the app asks the same way'); }
+  { const {w}=await makePage(); w.location.hash='#progress'; await sleep(60);
+    w.Store.put('tactics-progress',{a:{ok:true,t:10}});
+    let asked='', dl=[]; w.confirm=q=>{ asked=q; return false }; w.URL.createObjectURL=()=>'blob:x'; w.URL.revokeObjectURL=()=>{};
+    w.HTMLAnchorElement.prototype.click=function(){ dl.push(this.download) };
+    const f=w.document.getElementById('p-file'), feed=()=>{ Object.defineProperty(f,'files',{configurable:true,value:[{text:async()=>JSON.stringify(backup)}]}); f.dispatchEvent(new w.Event('change')) };
+    feed(); await sleep(30);
+    assert(asked.includes(`from ${day}? It holds 3 puzzles`)&&/On this device now: 1 puzzle/.test(asked)&&/A copy of it is downloaded first/.test(asked),'on the website, Import progress asks first with the file’s date and counts');
+    assert(/Nothing was imported/.test(w.document.getElementById('p-note').textContent)&&Object.keys(w.Store.get('tactics-progress')).join()==='a'&&!dl.length,'… No: nothing changes');
+    w.confirm=()=>true; feed(); await sleep(30);
+    assert(dl.length===1&&/^think-ahead-progress-before-import-\d{4}-\d\d-\d\d\.json$/.test(dl[0])&&Object.keys(w.Store.get('tactics-progress')).join()==='x,y','… Yes: the current progress is downloaded first, then the file is imported');
+    assert(/Imported 2 entries\. Your progress from before is in your downloads\./.test(w.document.getElementById('p-note').textContent),'… and it says so'); }
 };

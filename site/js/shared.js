@@ -37,10 +37,16 @@ window.Store=(()=>{
   const del=k=>{ try{ localStorage.removeItem(PRE+k) }catch(e){} };
   const keys=()=>{ const out=[]; try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.startsWith(PRE)) out.push(k.slice(PRE.length)) } }catch(e){} return out };
   const exportAll=()=>{ const o={_app:'chess-lab-open',_v:1,_t:new Date().toISOString()}; for(const k of keys()) o[k]=get(k); return o };
-  const importAll=o=>{ if(!o||o._app!=='chess-lab-open') throw new Error('Not a Think Ahead export.');
-    let n=0; for(const k in o){ if(k[0]==='_') continue; put(k,o[k]); n++ } migrate(); return n };   /* an old export can hold a pack's keys */
   /* put that says whether it worked (false when this browser's storage is full) */
   const tryPut=(k,v)=>{ try{ localStorage.setItem(PRE+k,JSON.stringify(v)); return true }catch(e){ return false } };
+  /* an export's keys written back: {n written, failed: keys that could not be (storage full)}; 26 Nov 2026, roadmap #268 */
+  const restore=o=>{ if(!o||o._app!=='chess-lab-open') throw new Error('Not a Think Ahead export.');
+    let n=0; const failed=[]; for(const k in o){ if(k[0]==='_') continue; if(tryPut(k,o[k])) n++; else failed.push(k) } migrate(); return {n,failed} };   /* an old export can hold a pack's keys */
+  const importAll=o=>restore(o).n;
+  /* what an export holds, in a few words ("640 puzzles, 3 drills"), for the restore question */
+  const describe=b=>{ const n=k=>Object.keys((b&&b[k])||{}).length, puz=n('tactics-progress')+n('calc-progress')+n('blind-progress'), dr=((b&&b.adrills)||[]).length,
+      eg=n('endgame-progress'), op=Object.keys(b||{}).filter(k=>/^stats-/.test(k)).length;
+    return [puz?puz+(puz===1?' puzzle':' puzzles'):'',dr?dr+(dr===1?' drill':' drills'):'',eg?eg+(eg===1?' endgame':' endgames'):'',op?op+(op===1?' opening':' openings')+' trained':''].filter(Boolean).join(', ')||'your settings and lists' };
   /* Chess Lab packs are retired (13 Nov 2026): a friend's own games now go through Analyze my games. A browser that loaded
      one keeps everything it brought: its drills (in adrills, marked pack:1) join a drill set "From your Chess Lab pack"
      (removable like any saved set), its Blunder check positions join abc (your blunder checks) in the same set, results
@@ -64,7 +70,7 @@ window.Store=(()=>{
     if(ok) for(const k of PACK_KEYS) del(k);
     return ok?{drills:mine.length,bc:bc.length}:null;
   };
-  return {get,put,tryPut,del,keys,exportAll,importAll,migrate,PACK_KEYS};
+  return {get,put,tryPut,del,keys,exportAll,importAll,restore,describe,migrate,PACK_KEYS};
 })();
 Store.migrate();
 const deep=o=>o==null?o:JSON.parse(JSON.stringify(o));

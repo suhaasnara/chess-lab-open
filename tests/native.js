@@ -22,6 +22,7 @@ function fakeApp(log,opts={}){
         ack:call('WB','ack',a=>{ pending=pending.filter(r=>!a.rids.includes(r.rid)); return {} }),sendState:call('WB','sendState',()=>({sent:true})),addListener:(e,f)=>{ listeners[e]=f }},
     }};
     if(opts.print) w.Capacitor.Plugins.WatchBridge.print=call('WB','print',()=>({printed:true}));
+    if(opts.writeFails) w.Capacitor.Plugins.Filesystem.writeFile=call('FS','write',()=>{ throw new Error('disk full') });
     if(opts.localStorage) for(const k in opts.localStorage) w.localStorage.setItem(k,opts.localStorage[k]);
     w.__files=files; w.__listeners=listeners; w.__setPending=p=>{ pending=p };
   };
