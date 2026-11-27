@@ -911,7 +911,9 @@ function init(){
   lvl.addEventListener('change',()=>{ const lv=Book.ORDER[+lvl.value]; if(ownLevel()){ setOwnLevel(true,lv); return }   /* this opening's own level */
     Settings.set('olevel',lv); syncLevel(); if(window.SettingsTab&&SettingsTab.refresh) SettingsTab.refresh() });
   syncLevel();
-  function modeBtns(){ const t=training(); $('o-rated').setAttribute('aria-pressed',String(!t)); $('o-training').setAttribute('aria-pressed',String(t)); if(S.g) draw(); renderSide(); renderEval() }
+  function modeBtns(){ const t=training(); $('o-rated').setAttribute('aria-pressed',String(!t)); $('o-training').setAttribute('aria-pressed',String(t));
+    /* what the switch does, in one line under it (26 Nov 2026, roadmap #291) */
+    $('o-modenote').textContent=t?'Training: the book and your file’s notes and arrows show as you play. The rating doesn’t move.':'Rated: each line moves your opening rating. The book and your file’s notes show when the line ends.'; if(S.g) draw(); renderSide(); renderEval() }
   modeBtns();
   // the type-a-move box is hidden by default (keeps the board and its buttons on screen); the choice is remembered
   const typeOn=on=>{ $('o-moveform').hidden=!on; $('o-type').setAttribute('aria-pressed',String(on)); try{ localStorage.setItem('clo-typing',on?'1':'0') }catch(e){} };

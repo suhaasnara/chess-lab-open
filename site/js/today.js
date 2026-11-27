@@ -154,7 +154,8 @@ function draw(fresh){
   el.classList.toggle('isempty',!rows.length);
   if(!rows.length) el.innerHTML='<p class="empty">'+((TacticsTab.lib||[]).length?'Nothing to play here today.':'Loading the puzzles…')+'</p>';
   const nd=(Store.get('adrills')||[]).length;
-  $('td-note').innerHTML=nd?'':'Drills from your own games appear here once you run <a href="#analyze">Analyze my games</a> and save some.';
+  /* no games yet: the way to get drills, as a button in their place (26 Nov 2026, roadmap #291) */
+  $('td-note').innerHTML=nd?'':'Drills from your own games appear here: type your Lichess or Chess.com username in Analyze my games and save the drills it finds. <span class="btns" style="margin-top:8px;display:flex"><a class="btn sm" href="#analyze" id="td-analyze">Analyze my games</a></span>';
   /* on opening Today, only a drill or puzzle goes on the board by itself: the opening trainer would start the 6 MB book
      download (and the endgame its data) while the puzzles are still loading on a slow phone; those come with their card or Next */
   if(fresh||(!hosted&&!sel)) play(rows.find(x=>!x.done)||rows[0]||null);

@@ -82,4 +82,26 @@ module.exports=async H=>{
     w.DrillsTab.next(); await sleep(20);
     assert(['a1','a2','a5','a6'].includes(w.DrillsTab.state.cur.id),'… then one never tried');
   }
+
+  section('t101: Help says what each page is for; the Rated / Training switch says what it does; a kinder empty Progress (roadmap #291)');
+  {
+    const {w}=await makePage(); const d=w.document;
+    w.location.hash='#help?pages'; await sleep(150);
+    const hp=d.getElementById('h-pages');
+    assert(hp&&hp.open&&['Blind tactics','Calculation','Blunder check','Guess the move','Rated','Training'].every(x=>hp.textContent.includes(x)),'Help opens “What is each page for?”, with Blind tactics, Calculation, Blunder check and Guess the move');
+    for(const [id,sel] of [['calc','#cc-lobby'],['guess','#g-lobby'],['blundercheck','#bc-about'],['blind','#bl-about']])
+      assert(d.querySelector(sel+' a[href="#help?pages"],'+sel+'[id] a[href="#help?pages"]'),'a “What is each page for?” link on '+id);
+    w.location.hash='#openings'; await sleep(100);
+    const note=()=>d.getElementById('o-modenote').textContent;
+    d.getElementById('o-rated').click(); assert(/^Rated: each line moves your opening rating/.test(note()),'under the switch, Rated says what it does');
+    d.getElementById('o-training').click(); assert(/^Training: .*doesn’t move/.test(note()),'… and Training');
+    d.getElementById('o-rated').click();
+    w.location.hash='#progress'; await sleep(100);
+    const tips=[...d.querySelectorAll('#p-stats .pearn')];
+    assert(tips.length===6&&tips.every(t=>t.querySelector('a[href^="#"]')),'with nothing done, each Progress tile says how to fill it, with a link ('+tips.length+')');
+    w.Store.put('tactics-progress',{x:{ok:true,t:Date.now()}}); w.ProgressTab.render();
+    assert(d.querySelectorAll('#p-stats .pearn').length===5,'… and a tile with something in it drops its tip');
+    w.location.hash='#today'; await sleep(150);
+    assert(d.querySelector('#td-note a#td-analyze[href="#analyze"].btn'),'Today with no games: an Analyze my games button where the drills go');
+  }
 };

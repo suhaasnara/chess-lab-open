@@ -13,5 +13,8 @@ function init(){
       /* the app's tap or buzz for the result just recorded (shared/native.js; nothing on the website) */
       const L=Object.values(Store.get('blind-progress')||{}).filter(r=>r&&r.t).sort((a,b)=>b.t-a.t)[0]; if(L&&Date.now()-L.t<5000) window.Native&&Native.verdict(L.ok?'good':'bad') }});
 }
-window.BlindTab={init,show:()=>T&&T.show(),get api(){ return T }};
+/* what the page is for (26 Nov 2026, roadmap #291): a line under the settings card, by this site (the screen is shared) */
+function about(){ const set=document.querySelector('#bl-root [data-b="set"]'); if(!set||document.getElementById('bl-about')) return;
+  set.insertAdjacentHTML('afterend','<p class="note" id="bl-about" style="margin:8px 0 0">The moves before the puzzle are listed, not played: see them in your head, then solve it. <a href="#help?pages">What is each page for?</a></p>') }
+window.BlindTab={init:()=>{ init(); about() },show:()=>T&&T.show(),get api(){ return T }};
 })();

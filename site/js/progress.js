@@ -87,14 +87,17 @@ function render(){
   const dr=Store.get('adrills')||[]; const dp=Store.get('adrills-progress')||{};
   const bcs=Store.get('abc')||[], bp=Store.get('bc-progress')||{};
   const eg=window.EndgamesTab?EndgamesTab.stats():{solved:0,total:0};
+  /* an empty tile says how to fill it (26 Nov 2026, roadmap #291: a new visitor saw six tiles of 0 and –) */
+  const earn=(empty,html)=>empty?`<span class="note pearn">${html}</span>`:'';
+  const bst=BlindTactics.stats(Store.get('blind-progress'),Store.get('blind-rating')), nLines=withStats.reduce((a,x)=>a+x.st.lines,0);
   $('p-stats').innerHTML=`
-    <div class="stat"><b>${withStats.reduce((a,x)=>a+x.st.lines,0)}</b><span class="note">opening line${withStats.reduce((a,x)=>a+x.st.lines,0)===1?'':'s'} trained</span></div>
-    <div class="stat"><b>${tac.n>=TAC_MIN?tac.r:'–'}</b><span class="note">puzzle rating (${tac.n>=TAC_MIN?Help.n(tac.n,'rated puzzle'):`after ${TAC_MIN} rated puzzles; ${tac.n} so far`})${Help.q('Elo against each puzzle’s Lichess rating, on your first try at each puzzle only. It shows once you have solved or missed '+TAC_MIN+' puzzles, so one lucky puzzle can’t set it.')}</span></div>
-    <div class="stat"><b>${tsolved}</b><span class="note">${tsolved===1?'puzzle':'puzzles'} solved</span></div>
-    ${(()=>{ const b=BlindTactics.stats(Store.get('blind-progress'),Store.get('blind-rating')); return `<div class="stat"><b>${b.rating==null?'–':b.rating}</b><span class="note">blind rating · ${b.solved} solved${b.avgPlies?` · ${b.avgPlies} hidden moves on average`:''}${Help.q('Blind tactics (Extra): Elo against each puzzle’s Lichess rating, first try only; a peek counts as a miss. The average is over the puzzles you solved, at the number of hidden plies you had set.')}</span></div>` })()}
-    <div class="stat"><b>${Object.values(dp).filter(x=>x.ok).length} / ${dr.length}</b><span class="note">game drills solved</span></div>
+    <div class="stat"><b>${nLines}</b><span class="note">opening line${nLines===1?'':'s'} trained</span>${earn(!nLines,'Play a line in <a href="#openings">Openings</a> (Rated).')}</div>
+    <div class="stat"><b>${tac.n>=TAC_MIN?tac.r:'–'}</b><span class="note">puzzle rating (${tac.n>=TAC_MIN?Help.n(tac.n,'rated puzzle'):`after ${TAC_MIN} rated puzzles; ${tac.n} so far`})${Help.q('Elo against each puzzle’s Lichess rating, on your first try at each puzzle only. It shows once you have solved or missed '+TAC_MIN+' puzzles, so one lucky puzzle can’t set it.')}</span>${tac.n<TAC_MIN?earn(true,'Solve or miss puzzles in <a href="#tactics">Tactics</a>.'):''}</div>
+    <div class="stat"><b>${tsolved}</b><span class="note">${tsolved===1?'puzzle':'puzzles'} solved</span>${earn(!tsolved,'In <a href="#tactics">Tactics</a> or on <a href="#today">Today</a>.')}</div>
+    ${(()=>{ const b=BlindTactics.stats(Store.get('blind-progress'),Store.get('blind-rating')); return `<div class="stat"><b>${b.rating==null?'–':b.rating}</b><span class="note">blind rating · ${b.solved} solved${b.avgPlies?` · ${b.avgPlies} hidden moves on average`:''}${Help.q('Blind tactics (Extra): Elo against each puzzle’s Lichess rating, first try only; a peek counts as a miss. The average is over the puzzles you solved, at the number of hidden plies you had set.')}</span>${earn(b.rating==null,'Try <a href="#blind">Blind tactics</a>: a puzzle from a few moves back.')}</div>` })()}
+    <div class="stat"><b>${Object.values(dp).filter(x=>x.ok).length} / ${dr.length}</b><span class="note">game drills solved</span>${earn(!dr.length,'Run <a href="#analyze">Analyze my games</a> and save its drills.')}</div>
     ${bcs.length?`<div class="stat"><b>${bcs.filter(d=>bp[d.id]&&bp[d.id].ok).length} / ${bcs.length}</b><span class="note">blunder checks passed (<a href="#blundercheck">Blunder check</a>)${Help.q('Passed: both steps right on the first try (the threat, then your move). A passed position comes back after 3, 7 and 21 days.')}</span></div>`:''}
-    <div class="stat"><b>${eg.solved} / ${eg.total||'–'}</b><span class="note">endgames solved</span></div>`;
+    <div class="stat"><b>${eg.solved} / ${eg.total||'–'}</b><span class="note">endgames solved</span>${earn(!eg.solved,'Win or hold one in <a href="#endgames">Endgames</a>.')}</div>`;
   { const lines=withStats.reduce((a,x)=>a+x.st.lines,0), ds=Object.values(dp).filter(x=>x.ok).length;
     const parts=[lines?Help.n(lines,'opening line')+' trained':'',tsolved?Help.n(tsolved,'puzzle')+' solved':'',dr.length?`${ds} of ${Help.n(dr.length,'drill')} from your games solved`:'',eg.solved?`${eg.solved} of ${eg.total} endgames won or held`:''].filter(Boolean);
     $('p-lead').textContent=parts.length?`On this device: ${parts.join(', ')}.${tac.n>=TAC_MIN?` Puzzle rating ${tac.r} after ${Help.n(tac.n,'rated puzzle')}.`:''}`

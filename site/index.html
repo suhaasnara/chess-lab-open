@@ -120,6 +120,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
           <button id="o-rated" aria-pressed="true">Rated</button>
           <button id="o-training" aria-pressed="false">Training</button>
         </div><button class="btn sm icon gear" id="o-gear" title="Trainer settings" aria-label="Trainer settings">&#9881;</button></div>
+        <p class="note omode" id="o-modenote"></p>
         <div class="olevel">
           <label for="o-level"><span class="label">Opponent</span> <b id="o-levelname">Elite 2500+</b></label>
           <input type="range" id="o-level" min="0" max="7" step="1" value="7" aria-describedby="o-levelhelp">
@@ -274,7 +275,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
     <div class="card">
       <h2>Calculation</h2>
       <p class="note" style="margin-top:0">See the whole line before you play it: enter your moves <b>and</b> the replies you expect, then Submit.
-         Hard, long Lichess puzzles (4+ moves for you, rated 2200 to 2800), graded against the solution, with Stockfish judging other first moves.</p>
+         Hard, long Lichess puzzles (4+ moves for you, rated 2200 to 2800), graded against the solution, with Stockfish judging other first moves. <a href="#help?pages">What is each page for?</a></p>
       <div class="tvfilters"><div id="cc-range"></div></div>
       <div id="cc-lens"></div>
       <div class="btns" style="margin-top:14px"><button class="btn primary" id="cc-start" type="button">Start · next unsolved</button></div>
@@ -438,7 +439,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
       <div class="label tvlabel" id="bc-listlabel"></div>
       <div class="list" id="bc-list"></div>
       <p class="note" id="bc-about" style="margin:10px 0 0">Positions from your own games where your move was a blunder (your Win% fell 15 points or more).
-         First the question you skipped: <b>what does your opponent threaten?</b> Then <b>your move</b>. Saved from <a href="#analyze">Analyze my games</a>.</p>
+         First the question you skipped: <b>what does your opponent threaten?</b> Then <b>your move</b>. Saved from <a href="#analyze">Analyze my games</a>. <a href="#help?pages">What is each page for?</a></p>
     </div>
     <div class="panel">
       <div class="boardwrap" id="bc-wrap">
@@ -533,7 +534,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
     <div class="card">
       <h2>Guess the move</h2>
       <p class="note" style="margin-top:0">Play through a game from the winner&rsquo;s side and guess each move. 2 points for a key move, 1 for the rest;
-         a move the engine rates as good counts too. The opening plays itself.</p>
+         a move the engine rates as good counts too. The opening plays itself. <a href="#help?pages">What is each page for?</a></p>
       <div class="label" style="margin-top:12px">Guess moves from</div>
       <div class="gmopts three" id="g-src"></div>
       <div class="btns" style="margin-top:14px"><button class="btn primary" id="g-start" type="button">Start · next unplayed</button><button class="btn" id="g-add" type="button">Add a game (PGN)</button></div>
@@ -679,8 +680,26 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
   <div class="aboutwrap helpwrap">
   <div class="card">
     <h2>Help</h2>
-    <p class="note" style="margin:0">How the numbers here work. Tap a question to open it.</p>
+    <p class="note" style="margin:0">What each page is for, and how the numbers work. Tap a question to open it.</p>
   </div>
+  <details class="card hq" id="h-pages"><summary>What is each page for?</summary>
+    <ul class="hlist">
+      <li><b><a href="#today">Today</a>:</b> a short daily session: a few of your drills, five puzzles near your rating, one endgame and one opening line.</li>
+      <li><b><a href="#openings">Openings</a>:</b> play an opening against real Lichess games at the level you choose. <b>Rated</b> moves your opening rating and keeps the book and your file’s notes hidden until the line ends; <b>Training</b> shows them as you play and leaves the rating alone.</li>
+      <li><b><a href="#analyze">Analyze my games</a>:</b> a report card from your Lichess or Chess.com games, and drills from your mistakes.</li>
+      <li><b><a href="#drills">Drills</a>:</b> the positions from your own games where you went wrong (or your opponent did and you let it go): find the better move.</li>
+      <li><b><a href="#tactics">Tactics</a>:</b> Lichess puzzles near your rating, with a puzzle rating from your first tries.</li>
+      <li id="h-blind"><b><a href="#blind">Blind tactics</a>:</b> a puzzle shown a few moves early. The moves that lead to it are listed but not played on the board: see them in your head, then solve it. Trains how far ahead you can see.</li>
+      <li id="h-calc"><b><a href="#calc">Calculation</a>:</b> long, hard puzzles where you enter the whole line, your moves and the replies you expect, before anything is played. Graded on how far your line follows the solution.</li>
+      <li id="h-blundercheck"><b><a href="#blundercheck">Blunder check</a>:</b> your own blunders (saved from Analyze my games), asked in two steps: first what your opponent threatened, then your move. Builds the habit of checking before you move.</li>
+      <li id="h-guess"><b><a href="#guess">Guess the move</a>:</b> play through a master game (or your own) from the winner’s side and guess each move, for points.</li>
+      <li><b><a href="#endgames">Endgames</a>:</b> textbook endings against perfect defence (the tablebase): win them, or hold the draw.</li>
+      <li><b><a href="#play">Play</a>:</b> a game against Stockfish at a set strength, blindfold if you like.</li>
+      <li><b><a href="#players">Players</a>:</b> what any Lichess or Chess.com player plays, with a pre-round sheet to print.</li>
+      <li><b><a href="#watch">Watch</a>:</b> your own video library, with your place, notes and bookmarks.</li>
+      <li><b><a href="#progress">Progress</a>:</b> your ratings and totals, and Export / Import to move them to another device.</li>
+    </ul>
+  </details>
   <details class="card hq" id="h-winpct"><summary>What is Win%?</summary>
     <p>Your chance of winning, worked out from Stockfish’s evaluation the way Lichess does it, and always from your side.</p>
     <h4>From the evaluation</h4>
