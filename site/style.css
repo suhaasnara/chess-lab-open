@@ -628,3 +628,35 @@ html.on-ipad #h-watch{display:none}   /* Help's Apple Watch answer: the watch pa
 .hq .hlist{margin:8px 0;padding-left:20px}.hq .hlist li{margin:6px 0;line-height:1.5}.hq ul.hlist{list-style:none;padding-left:0}
 .hq ul.hlist li{padding-left:12px;border-left:3px solid var(--line)}
 .hq .hgrid{display:grid;grid-template-columns:max-content max-content;gap:4px 18px;margin:4px 0 8px}.hq .hgrid b{color:var(--head)}
+
+/* Touch polish (26 Nov 2026, roadmap #290). On a touch screen every control outside the bottom bar is at least 44 px
+   tall (Apple's 44 pt; WCAG 2.5.5): Settings' choices and jump row, chips, Play's setup, Progress's Export / Import, the
+   theme and opening lists, the sliders (their whole height takes a tap) and the moves in a move list. A "?" stays 24 px
+   but its tap area reaches 44. No key caps and no right-click hints on touch screens, iPads included (they were hidden
+   only up to 700 px wide). Here rather than in shared/ so the private site is unchanged. */
+@media (pointer:coarse){
+  .btn,.btn.sm,.btn.small,.seg button,.seg.mini button,.tvset .setrow .seg button,.chip,select,summary,.msel-row,
+  input[type=text],input[type=search],input[type=number],input:not([type]),#pl-setup .seg button,#pl-setup .chip{min-height:44px}
+  .chip,.seg button{display:inline-flex;align-items:center;justify-content:center;min-width:44px}
+  .msel summary,details>summary{min-height:44px}details>summary{padding-block:10px}.welcomemore>summary{padding:11px 0}
+  /* a "?" and the small links that stand on their own (not in a sentence): the tap area reaches 44 px around them, the
+     layout stays as it is */
+  .qhelp,.linkbtn:not(.welcomex),.watoday .walink,.watoday .wtrow>a,.ohchips>span a{position:relative}
+  .qhelp::after{content:"";position:absolute;inset:-10px}
+  .linkbtn::after,.watoday .walink::after,.watoday .wtrow>a::after{content:"";position:absolute;inset:-12px -4px}
+  .ohchips>span a::after{content:"";position:absolute;inset:-16px -4px}
+  .olevel input[type=range],.mset input[type=range],.bl .bl-row input[type=range]{min-height:44px}
+  .rng-track{height:44px}.rng-track::before,.rng-fill{top:20px}
+  .rng-track input[type=range]{height:44px}
+  .rng-track input[type=range]::-webkit-slider-thumb{width:44px;height:44px;border:0;background:radial-gradient(circle,var(--white) 0 9px,var(--blue) 9.5px 12px,transparent 12.5px)}
+  .rng-track input[type=range]::-moz-range-thumb{width:44px;height:44px;border:0;background:radial-gradient(circle,var(--white) 0 9px,var(--blue) 9.5px 12px,transparent 12.5px)}
+  .vmv:not(.rd-flow .vmv){display:inline-flex;align-items:center;min-height:44px;padding:0 5px;vertical-align:middle}
+}
+@media (hover:none) and (pointer:coarse){
+  .btn kbd{display:none}
+  .mouseonly,.tvset .setrow.mouseonly{display:none}
+  /* Play on an iPad on its side: the setup's choices wrap inside their card ("Random" spilled out) */
+  :is(.tvplay,.tv3) .prow .seg{flex-wrap:wrap;max-width:100%}
+}
+/* Small text: the board's coordinates are at least 10 px (8 on phones) */
+.coord{font-size:clamp(10px,1.5vw,11px)}

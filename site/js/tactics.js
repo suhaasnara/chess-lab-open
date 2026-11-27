@@ -116,7 +116,7 @@ function load(z){
   if(z.pre!==false&&z.moves.length>1){ const u=z.moves[0]; const m=S.g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'}); if(m) last={from:m.from,to:m.to}; S.step=1 }
   board.set(S.g,{last,orient:S.g.turn()});
   /* the very first puzzle says how to move (26 Nov 2026, roadmap #288) */
-  const how=Object.keys(prog()).length?'':window.matchMedia&&matchMedia('(hover: none)').matches||document.documentElement.classList.contains('in-app')?' Tap a piece, then a square.':' Click a piece, then a square (or drag it).';
+  const how=Object.keys(prog()).length?'':touch()?' Tap a piece, then a square.':' Click a piece, then a square (or drag it).';
   status('', (S.g.turn()==='w'?'White':'Black')+' to move.','Find the best move.'+how);
   facts();
   $('t-lichess').href=z.url||('https://lichess.org/analysis/'+encodeURIComponent(S.g.fen()));
@@ -131,6 +131,7 @@ function solButtons(){ const on=!!S.sol;
 const skipping=()=>!!(S.cur&&!S.solved&&!S.sol&&!S.failedFirst&&!S.usedHint);
 function nextLabel(){ const b=$('t-next'); if(!b) return; const k=skipping();
   b.firstChild.textContent=k?'Skip ':'Next '; b.title=k?'Go on to the next puzzle without a result for this one':'' }
+const touch=()=>!!(window.matchMedia&&matchMedia('(hover: none)').matches||document.documentElement.classList.contains('in-app'));
 function expected(){ return S.cur.moves[S.step] }
 function userMove(from,to,promo){
   if(!S.cur||S.solved||S.sol) return;
@@ -195,7 +196,7 @@ function showSol(){ const o=S.sol; if(!o) return;
   board.set(new Chess(o.fens[S.view]),{last:o.lasts[S.view],orient:board.orient,locked:true});
   solButtons();
   const el=$('t-status-box'); el.className='status warn';
-  el.innerHTML=`<strong>Solution:</strong> <span class="tsol">${solLine()}</span><br><span class="note">Step through it with ← → or tap a move. Counted as a miss.</span>`;
+  el.innerHTML=`<strong>Solution:</strong> <span class="tsol">${solLine()}</span><br><span class="note">${touch()?'Step through it with ‹ › or tap a move.':'Step through it with ← → or click a move.'} Counted as a miss.</span>`;
 }
 function stepSol(d){ if(!S.sol) return false; S.view+=d; endbar.hide(); showSol() }
 /* As in Chess Lab, the page opens on the first puzzle of the list (nothing is counted until a move is made) */

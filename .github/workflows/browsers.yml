@@ -61,6 +61,9 @@ jobs:
             set -- $s; mkdir -p out/webkit/$3; cp out/webkit/polish/state.json out/webkit/$3/
             TOUCH=1 W=$1 H=$2 node polish.js webkit out/webkit/$3
           done
+      - name: Touch polish in ${{ matrix.browser }} (44 px targets, no key or right-click hints, readable small text; iPhone and iPad sizes)
+        if: ${{ !github.event.inputs.base }}
+        run: cd tests/browser && node touch.js ${{ matrix.browser }} out/${{ matrix.browser }}/touch
       - name: Screenshots and summary
         if: always()
         uses: actions/upload-artifact@v4

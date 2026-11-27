@@ -7,9 +7,12 @@ const NS='http://www.w3.org/2000/svg';
 const fmtDay=t=>new Date(t).toLocaleDateString(undefined,{month:'short',day:'numeric'});
 const TAC_MIN=5;   /* the puzzle rating shows (tile and chart alike) after this many rated puzzles */
 const rating=()=>Store.get('tac-rating')||{r:2000,n:0};
+/* The chart is drawn as wide as its card, so its labels show at their own size (11 px, 12 px). Drawn 520 wide and scaled
+   down, they were 6.5–7.5 px on a phone (26 Nov 2026, roadmap #290). */
+const width=el=>Math.max(280,Math.min(900,Math.round(el.clientWidth||520)));
 function lineChart(el,pts,{empty,label}){
   if(pts.length<2){ el.innerHTML=`<p class="note">${esc(empty)}</p>`; return }
-  const W=520,H=190,L=44,R=12,T=12,B=26;
+  const W=width(el),H=190,L=44,R=12,T=12,B=26;
   const ys=pts.map(p=>p[1]); let lo=Math.min(...ys), hi=Math.max(...ys); if(hi-lo<40){ const m=(hi+lo)/2; lo=m-20; hi=m+20 }
   const pad=(hi-lo)*0.1; lo=Math.floor((lo-pad)/10)*10; hi=Math.ceil((hi+pad)/10)*10;
   const X=i=>L+(W-L-R)*(pts.length>1?i/(pts.length-1):0), Y=v=>T+(H-T-B)*(1-(v-lo)/(hi-lo));
@@ -24,7 +27,7 @@ function lineChart(el,pts,{empty,label}){
 }
 function barChart(el,bars,{empty}){
   if(!bars.some(b=>b.n)){ el.innerHTML=`<p class="note">${esc(empty)}</p>`; return }
-  const W=520,H=190,L=44,R=12,T=16,B=30, bw=(W-L-R)/bars.length;
+  const W=width(el),H=190,L=44,R=12,T=16,B=30, bw=(W-L-R)/bars.length;
   const Y=v=>T+(H-T-B)*(1-v);
   let g=[0,0.5,1].map(v=>`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" class="grid"/><text x="${L-6}" y="${Y(v)+4}" class="axis" text-anchor="end">${v*100}%</text>`).join('');
   bars.forEach((b,i)=>{ const x=L+i*bw+bw*0.22, w=bw*0.56;
@@ -56,7 +59,7 @@ function activity(el){
     cells+=`<rect x="${L+Math.floor(i/7)*(C+G)}" y="${T+(i%7)*(C+G)}" width="${C}" height="${C}" rx="3" class="lv${lv}"><title>${fmtDay(d)}: ${n} item${n===1?'':'s'}</title></rect>` }
   for(let d=new Date(end);;d.setDate(d.getDate()-1)){ if(cnt[key(d.getTime())]) streak++; else if(d.getTime()!==end.getTime()) break; else continue }
   const W=L+12*(C+G), H=T+7*(C+G);
-  const lab=['Sun','','Tue','','Thu','','Sat'].map((s,i)=>s?`<text x="0" y="${T+i*(C+G)+12}" class="axis" style="font-size:8.5px">${s}</text>`:'').join('');
+  const lab=['Sun','','Tue','','Thu','','Sat'].map((s,i)=>s?`<text x="0" y="${T+i*(C+G)+12}" class="axis" style="font-size:10px">${s}</text>`:'').join('');
   el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Days with practice in the last 12 weeks: ${days}" style="max-width:${Math.round(W*1.3)}px">${lab}${cells}</svg>
     <p class="note" style="margin:6px 0 0">${days} day${days===1?'':'s'} with practice · current streak ${streak} day${streak===1?'':'s'} · darker = more done (puzzles, drills, calculation, opening lines, games)</p>`;
 }
