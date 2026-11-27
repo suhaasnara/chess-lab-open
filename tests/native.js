@@ -21,6 +21,8 @@ function fakeApp(log,opts={}){
       WatchBridge:{status:call('WB','status',()=>opts.watch||{paired:true,installed:true}),getPending:call('WB','getPending',()=>({results:pending})),
         ack:call('WB','ack',a=>{ pending=pending.filter(r=>!a.rids.includes(r.rid)); return {} }),sendState:call('WB','sendState',()=>({sent:true})),addListener:(e,f)=>{ listeners[e]=f }},
     }};
+    if(opts.print) w.Capacitor.Plugins.WatchBridge.print=call('WB','print',()=>({printed:true}));
+    if(opts.writeFails) w.Capacitor.Plugins.Filesystem.writeFile=call('FS','write',()=>{ throw new Error('disk full') });
     if(opts.localStorage) for(const k in opts.localStorage) w.localStorage.setItem(k,opts.localStorage[k]);
     w.__files=files; w.__listeners=listeners; w.__setPending=p=>{ pending=p };
   };
@@ -103,6 +105,7 @@ module.exports=async function(H){
     await w.Native.watchSync();
     const tp=w.Store.get('tactics-progress')||{}, rt=w.Store.get('tac-rating')||{};
     assert(tp[T.id]&&tp[T.id].ok===true&&rt.n===1,'a tactic from the watch is recorded by Tactics’ own code: solved, and the puzzle rating moves (1 rated puzzle)');
+    assert(tp[T.id].t===now-5000,'… with the moment it was solved on the watch, not when it arrived (roadmap #260)');
     const cp=(w.Store.get('calc-progress')||{}).zcalc1;
     assert(cp&&cp.score===0.67&&cp.secs===41&&cp.tries===1&&cp.t===now-4000,'a Calculation result keeps its score, time and the moment it was solved');
     const bp=(w.Store.get('blind-progress')||{})[B.id], br=w.Store.get('blind-rating')||{};
@@ -116,6 +119,10 @@ module.exports=async function(H){
     assert(st.tac.n===1&&st.blind.n===1&&st.settings&&st.settings.plies===4,'… the two ratings and the Blind tactics setting');
     w.__setPending(res.slice(0,3)); await w.Native.watchSync();
     assert((w.Store.get('tac-rating')||{}).n===1&&w.Store.get('calc-progress').zcalc1.tries===1,'the same results again (the watch resent them): recorded once only');
+    /* an older Tactics miss after a newer solve made on the iPhone (roadmap #260): it neither overwrites it nor rates again */
+    w.Store.put('tactics-progress',Object.assign(w.Store.get('tactics-progress'),{[T.id]:{ok:true,t:now}}));
+    w.__setPending([{rid:'r-tlate',type:'tactic',id:T.id,at:now-60e3,ok:false}]); await w.Native.watchSync();
+    assert(w.Store.get('tactics-progress')[T.id].ok===true&&w.Store.get('tactics-progress')[T.id].t===now&&w.Store.get('tac-rating').n===1,'an older Tactics result from the watch doesn’t overwrite a newer solve, and isn’t rated (not the first try)');
     /* an older Blind result after a newer one (the watch's arrived late) */
     w.Store.put('blind-progress',{bz:{n:1,ok:true,okN:1,t:now}});
     w.__setPending([{rid:'r-old',type:'blind',id:'bz',at:now-60e3,ok:false,plies:4}]); await w.Native.watchSync();
@@ -177,3 +184,4 @@ module.exports=async function(H){
     const t=d.getElementById('appbox').textContent;
     assert(/iPhone app/.test(t)&&/Apple Watch/.test(t)&&/Vibrate/.test(t)&&/On My iPhone/.test(t)&&w.Native.device==='phone','… and its card keeps the watch, vibration and On My iPhone'); }
 };
+module.exports.fakeApp=fakeApp;   /* the 26 Nov 2026 app batch's tests use it too (tests/appfixes.js) */

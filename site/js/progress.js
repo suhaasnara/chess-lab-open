@@ -86,7 +86,7 @@ function render(){
   const eg=window.EndgamesTab?EndgamesTab.stats():{solved:0,total:0};
   $('p-stats').innerHTML=`
     <div class="stat"><b>${withStats.reduce((a,x)=>a+x.st.lines,0)}</b><span class="note">opening line${withStats.reduce((a,x)=>a+x.st.lines,0)===1?'':'s'} trained</span></div>
-    <div class="stat"><b>${tac.n>=TAC_MIN?tac.r:'–'}</b><span class="note">puzzle rating (${tac.n>=TAC_MIN?Help.n(tac.n,'rated puzzle'):`after ${TAC_MIN} rated puzzles; ${tac.n} so far`})${Help.q('Elo against each puzzle’s Lichess rating, first try only. It shows once you have solved or missed '+TAC_MIN+' puzzles, so one lucky puzzle can’t set it.')}</span></div>
+    <div class="stat"><b>${tac.n>=TAC_MIN?tac.r:'–'}</b><span class="note">puzzle rating (${tac.n>=TAC_MIN?Help.n(tac.n,'rated puzzle'):`after ${TAC_MIN} rated puzzles; ${tac.n} so far`})${Help.q('Elo against each puzzle’s Lichess rating, on your first try at each puzzle only. It shows once you have solved or missed '+TAC_MIN+' puzzles, so one lucky puzzle can’t set it.')}</span></div>
     <div class="stat"><b>${tsolved}</b><span class="note">${tsolved===1?'puzzle':'puzzles'} solved</span></div>
     ${(()=>{ const b=BlindTactics.stats(Store.get('blind-progress'),Store.get('blind-rating')); return `<div class="stat"><b>${b.rating==null?'–':b.rating}</b><span class="note">blind rating · ${b.solved} solved${b.avgPlies?` · ${b.avgPlies} hidden moves on average`:''}${Help.q('Blind tactics (Extra): Elo against each puzzle’s Lichess rating, first try only; a peek counts as a miss. The average is over the puzzles you solved, at the number of hidden plies you had set.')}</span></div>` })()}
     <div class="stat"><b>${Object.values(dp).filter(x=>x.ok).length} / ${dr.length}</b><span class="note">game drills solved</span></div>
@@ -106,19 +106,39 @@ function render(){
 }
 function init(){
   $('p-op').addEventListener('change',()=>render());
-  $('p-export').addEventListener('click',()=>{
-    const blob=new Blob([JSON.stringify(Store.exportAll(),null,1)],{type:'application/json'});
-    const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-    a.download='think-ahead-progress-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
-    setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  /* Export: a download on the website; in the app (no downloads in its web view, roadmap #267) a file in Files */
+  $('p-export').addEventListener('click',async()=>{
+    const name='think-ahead-progress-'+new Date().toISOString().slice(0,10)+'.json', text=JSON.stringify(Store.exportAll(),null,1);
+    if(window.Native&&Native.app){
+      try{ const where=await Native.saveFile(name,text); $('p-note').textContent=`Saved to ${where} → ${name}.` }
+      catch(err){ $('p-note').textContent='The progress file could not be saved: '+String(err.message||err) }
+      return }
+    download(name,text);
   });
   $('p-import').addEventListener('click',()=>$('p-file').click());
+  /* Import: asks first, with the file's date and what it holds next to what is here, and keeps a copy of what is here
+     (26 Nov 2026, roadmap #268: it replaced the progress at once). In the app the app's own sheet does it (a copy in
+     Files, then a reload); on the website a question, a download of the current progress, then the import. */
   $('p-file').addEventListener('change',e=>{
     const f=e.target.files[0]; if(!f) return;
-    f.text().then(txt=>{ const n=Store.importAll(JSON.parse(txt)); $('p-note').textContent=`Imported ${n} entries.`; render(); if(window.DrillsTab) DrillsTab.refresh(); if(window.BlunderCheckTab) BlunderCheckTab.refresh() })
+    f.text().then(txt=>{ const b=JSON.parse(txt); if(!b||b._app!=='chess-lab-open') throw new Error('Not a Think Ahead export.');
+      if(window.Native&&Native.app) return Native.restore(b);
+      const empty=!Store.keys().some(k=>!['today','watch-applied'].includes(k)), d=b._t?new Date(b._t):null;
+      const q=`Import this progress file${d&&!isNaN(d)?` from ${d.toLocaleDateString([], {day:'numeric',month:'short',year:'numeric'})}`:''}? It holds ${Store.describe(b)}.`+
+        (empty?'':`\n\nOn this device now: ${Store.describe(Store.exportAll())}. A copy of it is downloaded first, and the import replaces it.`);
+      if(!confirm(q)){ $('p-note').textContent='Nothing was imported.'; return }
+      if(!empty) download('think-ahead-progress-before-import-'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify(Store.exportAll(),null,1));
+      const r=Store.restore(b);
+      $('p-note').textContent=`Imported ${r.n} entries.`+(r.failed.length?` ${r.failed.length} could not be written (this browser’s storage is full): ${r.failed.join(', ')}.`:'')+(empty?'':' Your progress from before is in your downloads.');
+      render(); if(window.DrillsTab) DrillsTab.refresh(); if(window.BlunderCheckTab) BlunderCheckTab.refresh() })
       .catch(err=>{ $('p-note').textContent=String(err.message||err) });
     e.target.value='';
   });
+}
+function download(name,text){
+  const blob=new Blob([text],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
 }
 window.ProgressTab={init,render};
 })();

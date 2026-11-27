@@ -211,7 +211,10 @@ function init(){
     if(act==='back'){ S.line.pop(); drawExplorer() } else if(act==='start'){ S.line=[]; drawExplorer() }
     else if(act==='flip'){ S.board.flip(); S.orientSet=true }
     else if(act==='sheet'){ S.sheet=true; render(); if(document.scrollingElement) document.scrollingElement.scrollTop=0 } else if(act==='unsheet'){ S.sheet=false; render() }
-    else if(act==='print'){ document.body.classList.add('print-sheet'); const done=()=>{ document.body.classList.remove('print-sheet'); removeEventListener('afterprint',done) }; addEventListener('afterprint',done); try{ window.print() }catch(_){ done() } }
+    else if(act==='print'){ document.body.classList.add('print-sheet'); const done=()=>{ document.body.classList.remove('print-sheet'); removeEventListener('afterprint',done) };
+      /* in the app window.print() does nothing: the app's print sheet (roadmap #267) */
+      if(window.Native&&Native.canPrint&&Native.canPrint()){ Native.print().finally(done); return }
+      addEventListener('afterprint',done); try{ window.print() }catch(_){ done() } }
     else if(act==='remove'){ if(!confirm('Remove this player and their games from this device?')) return; Store.del('player-'+S.pid); Store.del('pnote-'+S.pid); for(const k of ['w','b']) Store.del('stats-pl-'+S.pid+'-'+k); Store.put('players-index',index().filter(x=>x.id!==S.pid)); S.pid=null; render() }
     else if(act==='refresh'){ const p=pdata(S.pid); if(!p||S.busy) return; S.busy=true; a.disabled=true; a.textContent='Fetching…';
       try{ await addPlayer(p.site,p.user,p.speeds||['blitz','rapid','classical']); select(p.id) }catch(x){ a.textContent='Could not refresh'; } S.busy=false }

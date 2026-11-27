@@ -164,11 +164,56 @@ window.Native=(()=>{
     const when=b._t?new Date(b._t):null;
     sheet(`<h2>Restore your progress?</h2><p>Your progress on this ${dev.name} is empty, but there is a backup${when?` from ${esc(when.toLocaleDateString([], {weekday:'short',day:'numeric',month:'short'}))}, ${esc(clock(when))}`:''} (${esc(site.describe(b))}).</p>`,
       [['Restore it','restore'],['Start fresh','fresh']],async a=>{
-        if(a==='restore'){ try{ site.importAll(b); offered=false; api.reloadPage() }catch(e){ offered=false; alertSheet('That backup could not be read.') } return }
+        if(a==='restore'){ offered=false; put(b); return }
         const stamp=(b._t||new Date().toISOString()).slice(0,10);
         try{ await FS.rename({from:backupName(),to:`${site.name} backup (before ${stamp}).json`,directory:DOCS,toDirectory:DOCS}) }catch(e){}
         offered=false });
   }
+
+  /* ---- restoring a backup someone picked (Settings → Restore from a backup…, Progress → Import progress), 26 Nov 2026,
+     roadmap #268: it replaced the progress key by key at once, with no question and no way back, so an old file silently
+     replaced newer results. Now it asks first, saying when the backup was made and what it holds next to what is here;
+     a copy of what is here is saved to Files before anything is replaced ("Think Ahead backup (before restore …).json");
+     keys that could not be written are named; then the page reloads, so every tab reads the restored progress. ---- */
+  const when=b=>{ const d=b&&b._t?new Date(b._t):null; return d&&!isNaN(d)?`${d.toLocaleDateString([], {day:'numeric',month:'short',year:'numeric'})}, ${clock(d)}`:'' };
+  const fileStamp=()=>{ const d=new Date(), p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}.${p(d.getMinutes())}` };
+  /* writes the backup's keys (site.restore -> {n, failed}, or importAll for an older site), then reloads */
+  function put(b){
+    let r; try{ r=site.restore?site.restore(b):{n:site.importAll(b),failed:[]} }catch(e){ alertSheet('That file is not a progress backup.'); return false }
+    if(!r.failed.length){ api.reloadPage(); return true }
+    sheet(`<p>Restored ${esc(plural(r.n,'entry','entries'))}, but ${esc(plural(r.failed.length,'entry','entries'))} could not be written (the ${esc(dev.name)}’s storage for the app may be full): ${esc(r.failed.join(', '))}.</p>`,
+      [['OK','ok']],()=>api.reloadPage());
+    return true }
+  async function restore(b){
+    if(!app||!site) return false;
+    if(!b||typeof b!=='object'||Array.isArray(b)){ alertSheet('That file is not a progress backup.'); return false }
+    const empty=site.isEmpty(), now=empty?null:site.exportAll(), copy=`${site.name} backup (before restore ${fileStamp()}).json`;
+    return new Promise(res=>{
+      sheet(`<h2>Restore this backup?</h2><p>The backup${when(b)?` is from ${esc(when(b))} and`:''} holds ${esc(site.describe(b))}.</p>
+        <p>On this ${esc(dev.name)} now: ${empty?'no progress yet':esc(site.describe(now))}.${empty?'':` A copy of it is saved to Files first (${esc(copy)}).`}</p>
+        <p class="note">Restoring replaces what is here with what is in the backup.</p>`,
+        [['Restore','restore'],['Cancel','cancel']],async a=>{
+          if(a!=='restore') return res(false);
+          if(now){ try{ await FS.writeFile({path:copy,data:JSON.stringify(now),directory:DOCS,encoding:'utf8'}) }
+            catch(e){ alertSheet('Your progress could not be copied to Files first, so nothing was restored.'); return res(false) } }
+          res(put(b)) }) }) }
+
+  /* ---- files and pages the web view can't handle by itself (26 Nov 2026, roadmap #267) ----
+     saveFile: a download (a Blob and <a download>) does nothing in the app: the web view has no downloads. The file is
+     written to the app's Documents folder instead, which the Files app shows (On My iPhone → Think Ahead); returns where.
+     openExternal: a window opened after an await (Review on Lichess imports the game first) is blocked in the app; a
+     plain navigation to another site is handed to Safari by Capacitor, so that is used instead.
+     print: window.print() does nothing in the app's web view; the app's WatchBridge.print() shows iOS's print sheet
+     (AirPrint, or Save to Files as a PDF) for the page as it prints. canPrint says whether this app has it. */
+  async function saveFile(name,text){
+    if(!app||!FS) return null;
+    await FS.writeFile({path:name,data:text,directory:DOCS,encoding:'utf8'});
+    return `Files → On My ${dev.name} → ${site?site.name:''}` }
+  function openExternal(url){
+    if(!app||!/^https:\/\//.test(String(url))) return false;
+    api.go(url); return true }
+  const canPrint=()=>!!(app&&WB&&typeof WB.print==='function');
+  async function print(){ if(!canPrint()) return false; try{ const r=await WB.print(); return !!(r&&r.printed) }catch(e){ console.error('[native] print',e); return false } }
 
   /* ---- sheets: the first-launch card, the reminder question, the restore offer (in the app only) ---- */
   function sheet(html,buttons,done){
@@ -217,7 +262,7 @@ window.Native=(()=>{
   }
   function pickBackup(){
     const f=document.createElement('input'); f.type='file'; f.accept='application/json,.json';
-    f.onchange=()=>{ const x=f.files&&f.files[0]; if(!x) return; x.text().then(t=>{ const n=site.importAll(JSON.parse(t)); alertSheet(`Restored ${n} entries.`); dirty=true; soon(0); watchSync() }).catch(()=>alertSheet('That file is not a progress backup.')) };
+    f.onchange=()=>{ const x=f.files&&f.files[0]; if(!x) return; x.text().then(t=>restore(JSON.parse(t))).catch(()=>alertSheet('That file is not a progress backup.')) };
     f.click() }
   function wire(){
     const box=document.getElementById('appbox'); if(!box) return;
@@ -237,6 +282,7 @@ window.Native=(()=>{
        cfgKey      localStorage key for these device settings (not part of the progress export: they are about this phone)
        store       {get(key), put(key, value)}: the progress store (the ledger of recorded watch results lives there)
        exportAll() -> the progress export; importAll(obj) -> entries restored; isEmpty() -> no progress yet;
+       restore(obj) -> {n, failed: [keys not written]} (optional; else importAll, and nothing is reported);
        describe(export) -> a short summary for the restore offer ('512 puzzles, 3 repertoires')
        reminder    [{k: a Due key, one, many, hash}]: the parts of the reminder, in order
        welcome     the first-launch card's lines, or a function (device) -> lines; device = {kind: 'phone' | 'pad',
@@ -264,8 +310,8 @@ window.Native=(()=>{
     };
     if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go();
   }
-  const api={app,start,verdict,plan,message,watchSync,buildState,backup,changed,askReminder,get cfg(){ return Object.assign({},cfg) },
+  const api={app,start,verdict,plan,message,watchSync,buildState,backup,changed,askReminder,restore,saveFile,openExternal,print,canPrint,get cfg(){ return Object.assign({},cfg) },
     get device(){ return dev.kind },
-    reloadPage:()=>location.reload()};   /* replaceable in tests (jsdom can't reload) */
+    reloadPage:()=>location.reload(), go:u=>{ location.href=u }};   /* replaceable in tests (jsdom can't reload or navigate) */
   return api;
 })();

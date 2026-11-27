@@ -21,7 +21,7 @@ Due.add('blind',at=>spacedCount(progress('blind-progress'),at));
 /* ---- the watch ---- */
 const clamp01=x=>Math.max(0,Math.min(1,+x||0));
 WatchSets.add('tactic',{
-  async apply(r){ await TacticsTab.ensure(); TacticsTab.saveResult(String(r.id),!!r.ok) },
+  async apply(r){ await TacticsTab.ensure(); TacticsTab.saveResult(String(r.id),!!r.ok,+r.at||Date.now()) },
   state(){ const p=progress('tactics-progress'), recs={}; for(const id in p) recs[id]=[p[id].ok?1:0,p[id].t||0];
     const rt=Store.get('tac-rating')||{r:1500,n:0}; return {recs,tac:{r:rt.r,n:rt.n}} }
 });
@@ -48,10 +48,9 @@ const hasProgress=o=>Object.keys(o).some(k=>k[0]!=='_'&&!EPHEMERAL.has(k));
 Native.start({
   name:'Think Ahead', cfgKey:'clo-app',
   store:{get:k=>Store.get(k),put:(k,v)=>Store.put(k,v)},
-  exportAll:()=>Store.exportAll(), importAll:o=>Store.importAll(o),
+  exportAll:()=>Store.exportAll(), importAll:o=>Store.importAll(o), restore:o=>Store.restore(o),
   isEmpty:()=>!hasProgress(Store.exportAll()),
-  describe:b=>{ const n=k=>Object.keys((b&&b[k])||{}).length, puz=n('tactics-progress')+n('calc-progress')+n('blind-progress'), dr=((b&&b.adrills)||[]).length;
-    return [puz?puz+(puz===1?' puzzle':' puzzles'):'',dr?dr+(dr===1?' drill':' drills'):''].filter(Boolean).join(', ')||'your settings and lists' },
+  describe:b=>Store.describe(b),
   about:'#about',
   reminder:[{k:'drills',one:'drill',many:'drills',hash:'#drills'},{k:'blind',one:'Blind tactic',many:'Blind tactics',hash:'#blind'},
     {k:'endgames',one:'endgame',many:'endgames',hash:'#endgames'},{k:'blundercheck',one:'Blunder check',many:'Blunder checks',hash:'#blundercheck'}],
