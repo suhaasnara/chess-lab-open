@@ -124,6 +124,10 @@ const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
 function card(label,href,all,rows){ return `<div class="card watoday"><div class="wthead"><span class="label">${label}</span><a class="note walink" href="${href}">${all} →</a></div>${rows}</div>` }
 function cards(list){
   const out=[];
+  /* Reviews due in the four sections with a schedule (26 Nov 2026, roadmap #275): one row each, to its page */
+  const dc=DueTabs.counts(), due=DueTabs.LIST.filter(([k])=>dc[k]>0);
+  if(due.length) out.push(`<div class="card watoday" id="td-due"><div class="wthead"><span class="label">Due for review</span></div>${due.map(([k,name,one,many])=>
+    `<div class="wtrow tddue"><a href="#${k}"><b>${esc(name)}</b></a><span class="note">${dc[k]} ${esc(dc[k]===1?one:many)} due</span></div>`).join('')}<p class="note" style="margin:6px 0 0">A miss comes back the next day; a solve after 3, 7 and 21 days.</p></div>`);
   const wp=window.WatchTab&&WatchTab.plan?WatchTab.plan():[];
   if(wp.length) out.push(card('Watch','#watch','All videos',wp.map(p=>`<div class="wtrow"><span class="wtlab">${esc(p.label)}</span><a href="${esc(p.url)}" target="_blank" rel="noopener"><b>${esc(p.v.title)}</b></a><span class="note">${esc(cap(p.meta||'Opens on YouTube'))}</span></div>`).join('')));
   const eg=list.find(x=>x.kind==='endgame');

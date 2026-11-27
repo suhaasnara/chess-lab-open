@@ -47,4 +47,39 @@ module.exports=async H=>{
     T.next(); await sleep(30); assert(pv.hidden&&fw.hidden&&!sb.hidden,'the next puzzle: ‹ › go, Hint and Solution are back');
     assert(w.Keys.map('tactics').g&&w.Keys.map('tactics').ArrowLeft,'G and ← → are in the keymap (the ? list)');
   }
+
+  section('t100: due counts on the tabs and on Today; Drills’ Next in review order (roadmap #275)');
+  {
+    const {w}=await makePage(); const d=w.document, DAY=864e5, now=Date.now();
+    const fen='r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3';
+    const mk=(id,extra)=>Object.assign({id,fen,played:'a3',playedUci:'a2a3',best:'f1c4',drop:0.2,before:0.3,date:'2026-11-01',opp:'X'+id,site:'lichess',color:'w'},extra||{});
+    w.Store.put('adrills',[mk('a1'),mk('a2'),mk('a3'),mk('a4'),mk('a5',{kind:'punish'}),mk('a6')]);
+    /* a2: missed yesterday (due); a3: solved 4 days ago once (due); a4: solved today (not due); a5: Punish, missed (no schedule); a6: missed today (not due yet) */
+    w.Store.put('adrills-progress',{a2:{tries:1,ok:false,okN:0,t:now-DAY-1000},a3:{tries:1,ok:true,okN:1,t:now-4*DAY},a4:{tries:1,ok:true,okN:1,t:now},a5:{tries:1,ok:false,okN:0,t:now-2*DAY},a6:{tries:1,ok:false,okN:0,t:now}});
+    w.Store.put('endgame-progress',{q1:{tries:1,ok:false,t:now-2*DAY}});
+    await sleep(20);
+    const tab=d.querySelector('#tabs .inner > a[data-view="drills"] .duebadge');
+    assert(tab&&tab.textContent.replace(/\s+/g,' ').trim()==='2 due'&&/^2/.test(tab.firstChild.textContent),'the Drills tab shows 2 (a miss from yesterday and a solve 4 days old; not today’s, not Punish)');
+    const eg=d.querySelector('#x-menu a[data-view="endgames"] .duebadge'), xb=d.querySelector('#x-btn .duebadge');
+    assert(eg&&eg.textContent==='1 due'&&xb&&/^1/.test(xb.textContent),'Endgames in Extra says “1 due”, and Extra’s button carries it');
+    assert(!d.querySelector('#x-menu a[data-view="blind"] .duebadge'),'nothing on a section with nothing due');
+    w.location.hash='#today'; await sleep(80);
+    const card=d.getElementById('td-due');
+    assert(card&&/Drills\s*2 drills due/.test(card.textContent)&&/Endgames\s*1 endgame due/.test(card.textContent)&&card.querySelector('a[href="#endgames"]'),'Today has a Due for review card with each section and a link to it');
+    /* a result changes the counts at once */
+    const p=w.Store.get('adrills-progress'); p.a2={tries:2,ok:true,okN:1,t:Date.now()}; w.Store.put('adrills-progress',p); await sleep(20);
+    assert(/^1/.test(d.querySelector('#tabs .inner > a[data-view="drills"] .duebadge').textContent),'after a review the tab’s count goes down');
+    p.a2.t=now-DAY-1000; p.a2.ok=false; p.a2.okN=0; w.Store.put('adrills-progress',p);
+    w.location.hash='#drills'; await sleep(80);
+    assert(/· 2 due/.test(d.getElementById('d-listlabel').textContent)&&d.querySelectorAll('#d-list .tag.info').length===2,'Drills’ list says how many are due and tags them');
+    /* Next: missed first, then due, then never tried */
+    w.DrillsTab.load(w.Store.get('adrills')[0]); await sleep(20);
+    const seq=[]; for(let i=0;i<3;i++){ w.DrillsTab.next(); await sleep(20); seq.push(w.DrillsTab.state.cur.id) }
+    assert(seq[0]==='a2'&&seq[1]==='a3','Next goes to a miss that is due first, then a solve that is due ('+seq.join(' ')+')');
+    w.DrillsTab.load(w.Store.get('adrills')[5]); await sleep(10);   /* a6 */
+    w.Store.put('adrills-progress',{a3:p.a3,a4:p.a4}); w.DrillsTab.next(); await sleep(20);
+    assert(w.DrillsTab.state.cur.id==='a3','with no misses, a drill that is due again comes before a new one');
+    w.DrillsTab.next(); await sleep(20);
+    assert(['a1','a2','a5','a6'].includes(w.DrillsTab.state.cur.id),'… then one never tried');
+  }
 };

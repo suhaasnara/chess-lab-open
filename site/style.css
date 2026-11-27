@@ -660,3 +660,7 @@ html.on-ipad #h-watch{display:none}   /* Help's Apple Watch answer: the watch pa
 }
 /* Small text: the board's coordinates are at least 10 px (8 on phones) */
 .coord{font-size:clamp(10px,1.5vw,11px)}
+/* Reviews due (26 Nov 2026, roadmap #275): a small count on a tab, "3 due" in Extra */
+.duebadge{display:inline-block;min-width:1.5em;margin-left:5px;padding:1px 6px;border-radius:999px;background:var(--navy);color:var(--on-navy);font-size:.7rem;font-weight:700;line-height:1.5;text-align:center;vertical-align:1px;font-variant-numeric:tabular-nums}
+.xmenu a > b > .duebadge{font-size:.68rem}
+.watoday .wtrow.tddue{flex-wrap:nowrap;align-items:baseline}.watoday .wtrow.tddue>.note{flex:0 0 auto;margin-left:auto}

@@ -5,6 +5,11 @@ const VIEWS=['today','openings','tactics','blind','calc','endgames','analyze','d
 const TITLES={today:'Today',openings:'Openings',tactics:'Tactics',blind:'Blind tactics',calc:'Calculation',endgames:'Endgames',analyze:'Analyze my games',drills:'Drills',play:'Play',guess:'Guess the move',players:'Players',watch:'Watch',blundercheck:'Blunder check',game:'A game you analyzed',progress:'Progress',settings:'Settings',help:'Help',about:'About'};
 /* The header (shared/nav.js): the same main row and Extra menu as the private Chess Lab, plus Analyze my games. */
 Nav.mount(document.getElementById('tabs'),SITE.tabs);   /* js/config.js */
+/* how many reviews are due, on the tabs (js/shared.js DueTabs): now, after each change to progress, on every page change and
+   when the page comes back into view (the day may have turned) */
+DueTabs.paint();
+for(const ev of ['store-change','hashchange']) addEventListener(ev,()=>DueTabs.paint());
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) DueTabs.paint() });
 /* The bottom bar on phones and iPads (14 Nov 2026; shared/trainview.js TV.bar, as on the private site): every board page's
    own button row becomes the bar. ‹ › (through the line on the board) are its corners, the page's main action sits beside ›,
    less-used buttons fold into ⋯ on phones. Endgames sets its own in js/endgames.js. */

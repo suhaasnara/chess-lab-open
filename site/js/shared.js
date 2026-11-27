@@ -33,7 +33,10 @@ window.Settings=(()=>{
 window.Store=(()=>{
   const PRE='clo:';
   const get=k=>{ try{ const v=localStorage.getItem(PRE+k); return v?JSON.parse(v):null }catch(e){ return null } };
-  const put=(k,v)=>{ try{ localStorage.setItem(PRE+k,JSON.stringify(v)) }catch(e){} };
+  /* every write is announced once the current task ends ('store-change'), so counts shown elsewhere (the due badges on the
+     tabs) follow it */
+  let told=0; const tell=()=>{ if(told) return; told=setTimeout(()=>{ told=0; dispatchEvent(new Event('store-change')) },0) };
+  const put=(k,v)=>{ try{ localStorage.setItem(PRE+k,JSON.stringify(v)) }catch(e){} tell() };
   const del=k=>{ try{ localStorage.removeItem(PRE+k) }catch(e){} };
   const keys=()=>{ const out=[]; try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.startsWith(PRE)) out.push(k.slice(PRE.length)) } }catch(e){} return out };
   const exportAll=()=>{ const o={_app:'chess-lab-open',_v:1,_t:new Date().toISOString()}; for(const k of keys()) o[k]=get(k); return o };
@@ -148,3 +151,25 @@ const MARK_NAMES={'!':'good move','?':'mistake','!!':'brilliant move','??':'blun
 const MARK_CLS={'!':'mk-good','!!':'mk-good','!?':'mk-int','?!':'mk-warn','?':'mk-bad','??':'mk-bad','□':'mk-good'};
 const markTokens=mk=>String(mk||'').match(/!!|\?\?|!\?|\?!|[!?]|\+−|−\+|\S/g)||[];
 function markHtml(mk){ return markTokens(mk).map(t=>`<span class="mk ${MARK_CLS[t]||'mk-sign'}" title="${esc(MARK_NAMES[t]||t)}">${esc(t)}</span>`).join('') }
+
+/* ---------- Reviews due (26 Nov 2026, roadmap #275) ----------
+   The four sections with a review schedule (a miss comes back the next day, a solve after 3, 7 and 21 days): how many are
+   due now, on their tabs ("3" on the tab row, "3 due" in Extra, the sum of Extra's on its button) and on Today. The
+   counts are the app's reminder counters (Due, registered in js/native.js), so the website and the app agree. */
+window.DueTabs={
+  LIST:[['drills','Drills','drill','drills'],['blind','Blind tactics','Blind tactic','Blind tactics'],['endgames','Endgames','endgame','endgames'],
+    ['blundercheck','Blunder check','Blunder check','Blunder checks']],
+  counts(){ return window.Due?Due.count(Date.now()):{} },
+  paint(){
+    const c=this.counts(); let extra=0;
+    const set=(el,n,word)=>{ if(!el) return; let b=el.querySelector(':scope > .duebadge');
+      if(!n){ if(b) b.remove(); return }
+      if(!b){ b=document.createElement('span'); b.className='duebadge'; const svg=el.querySelector(':scope > svg'); el.insertBefore(b,svg||null) }
+      b.innerHTML=word?`${n} due`:`${n}<span class="sr-only"> due</span>`; b.title=`${n} due for review` };
+    for(const [k] of this.LIST){ const n=c[k]||0;
+      set(document.querySelector(`#tabs .inner > a[data-view="${k}"]`),n,false);
+      set(document.querySelector(`#x-menu a[data-view="${k}"] > b`),n,true);
+      if(!document.querySelector(`#tabs .inner > a[data-view="${k}"]:not(.ph-x)`)) extra+=n }
+    set(document.getElementById('x-btn'),extra,false);
+  }
+};

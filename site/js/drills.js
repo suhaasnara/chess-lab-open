@@ -20,6 +20,8 @@ const isPunish=d=>d.kind==='punish';
 const DEPTH=13;
 
 const drills=()=>Store.get('adrills')||[];
+/* due for review today (the rule the app's reminder and the tab's count use: Due.spaced; Punish drills have no schedule) */
+const isDue=(d,p)=>!isPunish(d)&&!!window.Due&&Due.spaced(p[d.id],Date.now());
 const prog=()=>Store.get('adrills-progress')||{};
 /* the attempt's result, once: the first call decides it (a solve, or a miss that sends the drill back tomorrow) */
 function saveResult(id,ok){
@@ -41,11 +43,12 @@ function renderL(){
   if(here.length<=2&&S.plat!=='all') S.plat='all';
   $('d-plats').innerHTML=here.length>2?TV.chips('Source','plat',here.map(([v,l])=>[v,`${l} ${v==='all'?all.length:pc(v)}`]),S.plat):'';
   $('d-searchwrap').hidden=all.length<8;
-  $('d-listlabel').textContent=all.length?`${list.length} of ${all.length} positions`:'';
+  const dueN=all.filter(d=>isDue(d,p)).length;
+  $('d-listlabel').textContent=all.length?`${list.length} of ${all.length} positions${dueN?` · ${dueN} due`:''}`:'';
   el.innerHTML=list.map(d=>{ const st=p[d.id];
     return TV.row({badge:fmtW(d.before),badgeTitle:'Stockfish’s eval of this position from White’s side, in pawns (+ favors White)',
       title:`vs ${esc(d.opp)}${isPunish(d)?'<span class="tag punish">Punish</span>':''}`,
-      meta:`<span class="src">${esc(SITE[d.site]||d.site||'Game')}</span> · ${esc(d.date||'')} · ${d.color==='w'?'W':'B'} · −${WinPct.pts(d.drop)} Win%`,
+      meta:`${isDue(d,p)?'<span class="tag info">Due</span> ':''}<span class="src">${esc(SITE[d.site]||d.site||'Game')}</span> · ${esc(d.date||'')} · ${d.color==='w'?'W':'B'} · −${WinPct.pts(d.drop)} Win%`,
       right:TV.dots([[st?(st.ok?'good':'bad'):'','Find the move']]),current:!!(S.cur&&S.cur.id===d.id),data:{id:d.id}}) }).join('');
   el.classList.toggle('isempty',!list.length);
   if(!list.length) el.innerHTML=all.length?'<p class="empty">No drills match these filters.</p>':'<p class="empty">No drills yet. Run <a href="#analyze"><b>Analyze my games</b></a>, then press <b>Save</b> in its <b>Drills from these games</b> card near the top of the report. <a href="#help?drills">How drills work</a></p>';
@@ -162,12 +165,16 @@ async function hint(){
   else { board.setHint(u.slice(0,2),u.slice(2,4)); status('warn','Hint: '+sanOf(S.g.fen(),u),'Play it to finish. It doesn’t count as solved.') }
 }
 /* Next: the next drill after the one on the board, in the list as filtered (26 Nov 2026, roadmap #257: it took the first
-   unsolved drill of all of them, so after a miss it reloaded the same drill and ignored the filters). Untried or missed
-   first, then any; it wraps round, and comes back to the same drill only when it is the only one left. */
+   unsolved drill of all of them, so after a miss it reloaded the same drill and ignored the filters). In review order
+   (26 Nov 2026, roadmap #275): a miss that is due (from the day after), then a solve that is due again, then one never
+   tried or missed today, then any; within each, the next one in the list after the one on the board. It wraps round, and
+   comes back to the same drill only when it is the only one left. */
 function next(){ if(H) return H.next(); const p=prog(), cur=S.cur&&S.cur.id, keep=new Set(shown().map(x=>x.id));
   const L=drills().filter(x=>keep.has(x.id)||x.id===cur), i=L.findIndex(x=>x.id===cur);
   const after=[...L.slice(i+1),...L.slice(0,Math.max(0,i))];
-  const d=after.find(x=>!p[x.id]||!p[x.id].ok)||after[0]||L.find(x=>keep.has(x.id))||drills()[0]; if(d) load(d) }
+  const rank=x=>{ const r=p[x.id]; return isDue(x,p)?(r.ok?1:0):!r||!r.ok?2:3 };
+  let d=null; for(const x of after) if(!d||rank(x)<rank(d)) d=x;
+  d=d||L.find(x=>keep.has(x.id))||drills()[0]; if(d) load(d) }
 function status(tone,head,rest,help){ const el=$('d-status'); el.className='status'+(tone?' '+tone:''); el.innerHTML=`<strong>${esc(head)}</strong>${esc(rest||'')}${help?Help.q(help,'winpct'):''}` }
 
 function init(){
