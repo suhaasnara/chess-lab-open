@@ -104,4 +104,51 @@ module.exports=async H=>{
     w.location.hash='#today'; await sleep(150);
     assert(d.querySelector('#td-note a#td-analyze[href="#analyze"].btn'),'Today with no games: an Analyze my games button where the drills go');
   }
+
+  section('t102: Analyze my games says plainly when it is offline, rate-limited or gets no answer, and Stop ends a fetch (roadmap #276)');
+  {
+    const {w}=await makePage(); const d=w.document, A=w.AnalyzeTab, note=()=>d.getElementById('a-note').textContent;
+    w.location.hash='#analyze'; await sleep(50);
+    const res=(status,body)=>({ok:status>=200&&status<300,status,json:async()=>body,text:async()=>typeof body==='string'?body:JSON.stringify(body)});
+    const hang=(url,o)=>new Promise((_,rej)=>{ o&&o.signal&&o.signal.addEventListener('abort',()=>rej(new w.DOMException('aborted','AbortError'))) });
+    /* offline */
+    Object.defineProperty(w.navigator,'onLine',{configurable:true,get:()=>false});
+    let called=0; w.fetch=async()=>{ called++; return res(200,'') };
+    await A.run('lichess','someone');
+    assert(/^You are offline\./.test(note())&&!called,'offline: it says so, without trying (was the browser’s own “Load failed”)');
+    Object.defineProperty(w.navigator,'onLine',{configurable:true,get:()=>true});
+    /* a network error */
+    w.fetch=async()=>{ throw new TypeError('Load failed') };
+    await A.run('lichess','someone');
+    assert(/^Could not reach Lichess\./.test(note()),'a failed request names the site and what to check');
+    /* Lichess 429 */
+    w.fetch=async()=>res(429,'');
+    await A.run('lichess','someone');
+    assert(/Lichess is limiting requests/.test(note()),'Lichess 429: it is limiting requests, wait a minute');
+    /* Chess.com 429 on the archive list, and on every month */
+    w.fetch=async()=>res(429,{});
+    await A.run('chesscom','someone');
+    assert(/Chess\.com is limiting requests/.test(note())&&!/No recent/.test(note()),'Chess.com 429: the same, not “No recent rapid or classical games found”');
+    const months=['m1','m2','m3'].map(m=>'https://api.chess.com/pub/player/someone/games/'+m);
+    w.fetch=async u=>/archives$/.test(u)?res(200,{archives:months}):res(429,{});
+    await A.run('chesscom','someone');
+    assert(/Chess\.com is limiting requests/.test(note()),'… also when the list came but every month was refused');
+    /* one month refused, the others fine: the report says how many are missing */
+    const pgn='[Event "x"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5 7. Bb3 d6 8. c3 O-O 9. h3 Nb8 10. d4 Nbd7 1-0';
+    const game=i=>({rules:'chess',time_class:'rapid',url:'https://www.chess.com/game/live/'+i,end_time:1764000000+i,pgn,white:{username:'someone',rating:1500,result:'win'},black:{username:'other',rating:1500,result:'checkmated'}});
+    w.fetch=async u=>/archives$/.test(u)?res(200,{archives:months}):/m2$/.test(u)?res(429,{}):res(200,{games:[game(/m1$/.test(u)?1:3)]});
+    const g=await A.fetchChesscom('someone',false);
+    assert(g.length===2&&g.failed&&g.failed.n===1&&g.failed.of===3&&g.failed.why==='busy','Chess.com: a refused month is counted ('+JSON.stringify(g.failed)+')');
+    /* no answer: a time limit */
+    A.LIMIT.lichess=60; w.fetch=hang;
+    await A.run('lichess','someone');
+    assert(/^Lichess didn’t answer within/.test(note()),'a stalled request ends with a time limit and says so');
+    A.LIMIT.lichess=30000;
+    /* Stop during the fetch */
+    w.fetch=hang; const p=A.run('lichess','someone'); await sleep(20);
+    const stop=d.getElementById('a-stop');
+    assert(!stop.hidden,'Stop shows while the games are being fetched');
+    stop.click(); await p;
+    assert(/^Stopped before the games arrived/.test(note())&&stop.hidden&&!A.running,'Stop ends the fetch at once');
+  }
 };
