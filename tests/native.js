@@ -21,6 +21,7 @@ function fakeApp(log,opts={}){
       WatchBridge:{status:call('WB','status',()=>opts.watch||{paired:true,installed:true}),getPending:call('WB','getPending',()=>({results:pending})),
         ack:call('WB','ack',a=>{ pending=pending.filter(r=>!a.rids.includes(r.rid)); return {} }),sendState:call('WB','sendState',()=>({sent:true})),addListener:(e,f)=>{ listeners[e]=f }},
     }};
+    if(opts.print) w.Capacitor.Plugins.WatchBridge.print=call('WB','print',()=>({printed:true}));
     if(opts.localStorage) for(const k in opts.localStorage) w.localStorage.setItem(k,opts.localStorage[k]);
     w.__files=files; w.__listeners=listeners; w.__setPending=p=>{ pending=p };
   };
@@ -182,3 +183,4 @@ module.exports=async function(H){
     const t=d.getElementById('appbox').textContent;
     assert(/iPhone app/.test(t)&&/Apple Watch/.test(t)&&/Vibrate/.test(t)&&/On My iPhone/.test(t)&&w.Native.device==='phone','… and its card keeps the watch, vibration and On My iPhone'); }
 };
+module.exports.fakeApp=fakeApp;   /* the 26 Nov 2026 app batch's tests use it too (tests/appfixes.js) */

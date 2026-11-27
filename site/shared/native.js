@@ -170,6 +170,23 @@ window.Native=(()=>{
         offered=false });
   }
 
+  /* ---- files and pages the web view can't handle by itself (26 Nov 2026, roadmap #267) ----
+     saveFile: a download (a Blob and <a download>) does nothing in the app: the web view has no downloads. The file is
+     written to the app's Documents folder instead, which the Files app shows (On My iPhone → Think Ahead); returns where.
+     openExternal: a window opened after an await (Review on Lichess imports the game first) is blocked in the app; a
+     plain navigation to another site is handed to Safari by Capacitor, so that is used instead.
+     print: window.print() does nothing in the app's web view; the app's WatchBridge.print() shows iOS's print sheet
+     (AirPrint, or Save to Files as a PDF) for the page as it prints. canPrint says whether this app has it. */
+  async function saveFile(name,text){
+    if(!app||!FS) return null;
+    await FS.writeFile({path:name,data:text,directory:DOCS,encoding:'utf8'});
+    return `Files → On My ${dev.name} → ${site?site.name:''}` }
+  function openExternal(url){
+    if(!app||!/^https:\/\//.test(String(url))) return false;
+    api.go(url); return true }
+  const canPrint=()=>!!(app&&WB&&typeof WB.print==='function');
+  async function print(){ if(!canPrint()) return false; try{ const r=await WB.print(); return !!(r&&r.printed) }catch(e){ console.error('[native] print',e); return false } }
+
   /* ---- sheets: the first-launch card, the reminder question, the restore offer (in the app only) ---- */
   function sheet(html,buttons,done){
     const m=document.createElement('div'); m.className='modal'; m.id='app-sheet'; m.setAttribute('role','dialog'); m.setAttribute('aria-modal','true');
@@ -264,8 +281,8 @@ window.Native=(()=>{
     };
     if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go();
   }
-  const api={app,start,verdict,plan,message,watchSync,buildState,backup,changed,askReminder,get cfg(){ return Object.assign({},cfg) },
+  const api={app,start,verdict,plan,message,watchSync,buildState,backup,changed,askReminder,saveFile,openExternal,print,canPrint,get cfg(){ return Object.assign({},cfg) },
     get device(){ return dev.kind },
-    reloadPage:()=>location.reload()};   /* replaceable in tests (jsdom can't reload) */
+    reloadPage:()=>location.reload(), go:u=>{ location.href=u }};   /* replaceable in tests (jsdom can't reload or navigate) */
   return api;
 })();

@@ -106,11 +106,14 @@ function render(){
 }
 function init(){
   $('p-op').addEventListener('change',()=>render());
-  $('p-export').addEventListener('click',()=>{
-    const blob=new Blob([JSON.stringify(Store.exportAll(),null,1)],{type:'application/json'});
-    const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-    a.download='think-ahead-progress-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
-    setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  /* Export: a download on the website; in the app (no downloads in its web view, roadmap #267) a file in Files */
+  $('p-export').addEventListener('click',async()=>{
+    const name='think-ahead-progress-'+new Date().toISOString().slice(0,10)+'.json', text=JSON.stringify(Store.exportAll(),null,1);
+    if(window.Native&&Native.app){
+      try{ const where=await Native.saveFile(name,text); $('p-note').textContent=`Saved to ${where} → ${name}.` }
+      catch(err){ $('p-note').textContent='The progress file could not be saved: '+String(err.message||err) }
+      return }
+    download(name,text);
   });
   $('p-import').addEventListener('click',()=>$('p-file').click());
   $('p-file').addEventListener('change',e=>{
@@ -119,6 +122,11 @@ function init(){
       .catch(err=>{ $('p-note').textContent=String(err.message||err) });
     e.target.value='';
   });
+}
+function download(name,text){
+  const blob=new Blob([text],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
 }
 window.ProgressTab={init,render};
 })();

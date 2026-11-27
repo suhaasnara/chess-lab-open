@@ -51,11 +51,15 @@ window.Net=(()=>{
     if(!r.ok) throw new Error('Lichess answered '+r.status+'.');
     const j=await r.json(); if(!j||!j.url) throw new Error('Lichess sent no game link.'); return j.url;
   }
+  /* The tab is opened at the tap (a window opened after the await would be blocked as a pop-up), then sent to the game.
+     In the iPhone app (26 Nov 2026, roadmap #267) a web view has no tabs: the game opens in Safari (Native.openExternal). */
   async function review(pgn){
-    const w=window.open('about:blank','_blank');
-    try{ const u=await lichessImport(pgn); if(w) w.location=u; else open(u,'_blank'); return {ok:true,url:u} }
+    const inApp=!!(window.Native&&Native.app&&Native.openExternal);
+    const go=u=>{ if(w) w.location=u; else if(inApp) Native.openExternal(u); else open(u,'_blank') };
+    const w=inApp?null:window.open('about:blank','_blank');
+    try{ const u=await lichessImport(pgn); go(u); return {ok:true,url:u} }
     catch(e){ let copied=false; try{ await navigator.clipboard.writeText(pgn); copied=true }catch(_){}
-      if(w) w.location='https://lichess.org/paste'; else open('https://lichess.org/paste','_blank');
+      go('https://lichess.org/paste');
       return {ok:false,copied,why:e.message} }
   }
   function needs(el,what,retry){
