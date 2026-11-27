@@ -41,10 +41,13 @@ module.exports=async function(H){
   section('app layer: first launch, Settings card, the reminder asked in context');
   { const log=[]; const {w}=await makePage({beforeLoad:fakeApp(log)}); const d=w.document;
     await sleep(100);
-    const sh=d.getElementById('app-sheet');
-    assert(sh&&/Welcome to Think Ahead/.test(sh.textContent)&&/works offline/.test(sh.textContent),'the first launch shows the welcome card (sketch P1)');
-    sh.querySelector('button').click();
-    assert(!d.getElementById('app-sheet')&&JSON.parse(w.localStorage.getItem('clo-app')).welcomed===true,'… Get started closes it, once and for all');
+    /* one welcome, then a board (26 Nov 2026, roadmap #288): the app's lines go into Today's "New here?" card, no sheet on top */
+    const card=d.getElementById('welcome'), wa=d.getElementById('welcome-app');
+    assert(!d.getElementById('app-sheet')&&!card.hidden&&!wa.hidden&&/works offline/.test(wa.textContent)&&/backed up in Files/.test(wa.textContent),'the first launch: one welcome, the "New here?" card with the app’s lines (it was a sheet over the card)');
+    assert(JSON.parse(w.localStorage.getItem('clo-app')).welcomed===true,'… once and for all');
+    assert(/html\.in-app \.hero\{display:none\}/.test(fs.readFileSync(path.join(H.SITE,'style.css'),'utf8')),'… and no website header inside the app (its links leave the app; it pushed the first board down)');
+    w.TodayTab.items(); w.document.getElementById('welcome-try').click(); await sleep(50);
+    assert(/Tap a piece, then a square/.test(d.getElementById('t-status-box').textContent),'Just try a puzzle: the very first puzzle says how to move');
     const box=d.getElementById('appbox');
     assert(!box.hidden&&/iPhone app/.test(box.textContent)&&/Apple Watch/.test(box.textContent)&&/Backup/.test(box.textContent),'Settings shows the iPhone app card: vibration, reminder, Apple Watch, backup');
     assert(d.documentElement.classList.contains('in-app'),'… and the page knows it is in the app');
@@ -154,9 +157,8 @@ module.exports=async function(H){
   { const pad={device:'pad',supported:false,paired:false,installed:false};
     const log=[]; const {w}=await makePage({beforeLoad:fakeApp(log,{watch:pad})}); const d=w.document;
     await sleep(150);
-    const sh=d.getElementById('app-sheet');
-    assert(sh&&/stays on this iPad and is backed up/.test(sh.textContent)&&!/Apple Watch|iPhone/.test(sh.textContent),'the welcome card says iPad, with no Apple Watch and no iPhone');
-    sh.querySelector('button').click();
+    const wa=d.getElementById('welcome-app');
+    assert(!d.getElementById('app-sheet')&&/stays on this iPad and is backed up/.test(wa.textContent)&&!/Apple Watch|iPhone/.test(wa.textContent),'the welcome says iPad, with no Apple Watch and no iPhone');
     const box=d.getElementById('appbox'), t=box.textContent;
     assert(/iPad app/.test(t)&&/stay on this iPad/.test(t)&&!/iPhone/.test(t),'Settings: the iPad app card, never “iPhone”');
     assert(!/Apple Watch/.test(t)&&!d.getElementById('ap-wsync'),'… no Apple Watch row (an iPad can’t pair one)');
@@ -170,8 +172,8 @@ module.exports=async function(H){
     await sleep(150); const sh=w.document.getElementById('app-sheet');
     assert(sh&&/progress on this iPad is empty/.test(sh.textContent),'the restore offer on an iPad says “this iPad”'); }
   { const log=[]; const {w}=await makePage({beforeLoad:fakeApp(log,{watch:{device:'phone',supported:true,paired:true,installed:true}})}); const d=w.document;
-    await sleep(150); const sh=d.getElementById('app-sheet');
-    assert(sh&&/stays on this iPhone \(and your Apple Watch\)/.test(sh.textContent),'an iPhone (device: phone) keeps the iPhone wording');
-    sh.querySelector('button').click(); const t=d.getElementById('appbox').textContent;
+    await sleep(150); const wa=d.getElementById('welcome-app');
+    assert(/stays on this iPhone \(and your Apple Watch\)/.test(wa.textContent),'an iPhone (device: phone) keeps the iPhone wording');
+    const t=d.getElementById('appbox').textContent;
     assert(/iPhone app/.test(t)&&/Apple Watch/.test(t)&&/Vibrate/.test(t)&&/On My iPhone/.test(t)&&w.Native.device==='phone','… and its card keeps the watch, vibration and On My iPhone'); }
 };

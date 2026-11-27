@@ -46,11 +46,11 @@ function renderList(){
   if(L.length>400) $('cc-list').insertAdjacentHTML('beforeend','<p class="note">Showing the first 400; narrow the rating or length to see the rest.</p>');
 }
 function showTrain(on){ $('cc-lobby').hidden=on; $('cc-train').hidden=!on }
-function lobby(){ clearInterval(S.tick); S.cur=null; if(endbar) endbar.hide(); showTrain(false); renderList(); scrollTo(0,0) }
+function lobby(){ clearInterval(S.tick); S.cur=null; S.gen=(S.gen||0)+1; S.busy=false; if(endbar) endbar.hide(); showTrain(false); renderList(); scrollTo(0,0) }
 function fmt(s){ return Math.floor(s/60)+':'+String(s%60).padStart(2,'0') }
 function load(z){
   if(endbar) endbar.hide();
-  S.cur=z; S.line=[]; S.sub=false; S.view=0; S.busy=false; { const sl=$('cc-readslot'); if(sl) sl.innerHTML='' }
+  S.cur=z; S.line=[]; S.sub=false; S.view=0; S.busy=false; S.gen=(S.gen||0)+1; { const sl=$('cc-readslot'); if(sl) sl.innerHTML='' }
   const g=new Chess(z.fen); const u=z.moves[0]; const m=g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'});
   S.start=g.fen(); S.g=new Chess(S.start); S.last=m?{from:m.from,to:m.to}:null;
   board.set(S.g,{last:S.last,orient:S.g.turn(),locked:false});
@@ -88,35 +88,41 @@ function undo(){ if(S.sub||!S.line.length) return; S.line.pop(); S.g=new Chess(S
   board.set(S.g,{last:null}); renderLine() }
 function reset(){ if(S.sub) return; S.line=[]; S.g=new Chess(S.start); board.set(S.g,{last:S.last}); renderLine() }
 const same=(a,b)=>a&&b&&a.slice(0,4)===b.slice(0,4)&&(a[4]||'q')===(b[4]||'q');
+/* 26 Nov 2026 (roadmap #263): the Stockfish check of a different first move takes a few seconds. Everything it needs is
+   read before it starts (the position, your line, the clock), and its answer is dropped if you moved on in the meantime
+   (Next, Back to the list, or the same exercise opened again): it used to score the old exercise from the new position,
+   or lock the new one with its solution shown. */
 async function submit(){
   const z=S.cur; if(!z||S.sub||!S.line.length||S.busy) return;
+  const gen=S.gen, start=S.start, line=S.line.slice(), t0=S.t0, gone=()=>S.gen!==gen||S.cur!==z;
   const sol=z.moves.slice(1);
-  let k=0; while(k<sol.length&&k<S.line.length&&same(S.line[k],sol[k])) k++;
+  let k=0; while(k<sol.length&&k<line.length&&same(line[k],sol[k])) k++;
   let score, head, tone;
   if(k===0){
     /* a different first move: Stockfish decides whether it is as good */
     S.busy=true; status('','Checking your first move with Stockfish…','');
     let alt=false;
     try{
-      const g=new Chess(S.start); const sideW=g.turn()==='w';
-      const ev=async u=>{ const t=new Chess(S.start); t.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'});
+      const ev=async u=>{ const t=new Chess(start); t.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'});
         if(t.in_checkmate()) return 15; const a=await SharedEngine.analyse(t.fen(),14,1,8000); if(!a||!a.length) throw 0;
         return a[0].mate!=null?(a[0].mate>0?-15:15):-a[0].cp };
-      const [mineP,solP]=[await ev(S.line[0]),await ev(sol[0])];
-      alt=wc(solP)-wc(mineP)<=0.1; void sideW;
+      const mineP=await ev(line[0]); if(gone()) return;
+      const solP=await ev(sol[0]); if(gone()) return;
+      alt=wc(solP)-wc(mineP)<=0.1;
     }catch(e){}
+    if(gone()) return;
     S.busy=false;
     score=alt?0.5:0; tone=alt?'warn':'bad'; head=alt?'A different first move that works just as well.':'Not the right first move.';
   }else if(k>=sol.length){ score=1; tone='good'; head='Solved: you saw the whole line ✓' }
-  else{ score=Math.max(0.5,k/sol.length); tone=k>=sol.length-1?'good':'warn'; head=`You saw ${k} of ${sol.length} plies.` }
+  else{ score=Math.max(0.5,k/sol.length); tone=k>=sol.length-1?'good':'warn'; head=`You saw ${Math.ceil(k/2)} of your ${mine(z)} moves.` }
   S.sub=true; clearInterval(S.tick);
-  const secs=Math.round((Date.now()-S.t0)/1000);
+  const secs=Math.round((Date.now()-t0)/1000);
   record(z.id,score,secs); window.Native&&Native.verdict(tone);   /* the app's tap or buzz */
-  const ss=sanLine(S.start,sol);
+  const ss=sanLine(start,sol);
   status(tone,head,`${fmt(secs)} · the solution is below; step through it with ‹ ›.`);
   endbar.show(tone==='bad'?'bad':score>=1?'good':'warn',`${head} ${Math.round(score*100)}% · ${fmt(secs)}`,'Next exercise');
-  $('cc-line').innerHTML=`<div><span class="label">Your line</span><br>${numbered(S.start,sanLine(S.start,S.line),i=>i<k?'ok':'miss')}</div>
-    <div style="margin-top:8px"><span class="label">Solution</span><br><span class="ccsol">${numbered(S.start,ss,i=>i<k?'ok':'',true)}</span></div>`;
+  $('cc-line').innerHTML=`<div>${numbered(start,sanLine(start,line),i=>i<k?'ok':'miss')}</div>
+    <div style="margin-top:8px"><span class="label">Solution</span><br><span class="ccsol">${numbered(start,ss,i=>i<k?'ok':'',true)}</span></div>`;
   S.view=0; showView(); renderLine(); renderList();
 }
 function showView(){

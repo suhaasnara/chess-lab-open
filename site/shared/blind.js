@@ -59,7 +59,7 @@ window.BlindTactics=(()=>{
     <div class="filters"><div data-b="rate"></div>
       <div class="card bl-set" data-b="set">
         <div class="bl-range" data-b="range"></div>
-        <label class="bl-row"><span class="label">Hidden moves</span> <input type="range" min="2" max="16" step="1" data-b="plies" aria-label="Hidden plies"> <b class="mono" data-b="pliesv"></b></label>
+        <label class="bl-row"><span class="label">Hidden moves</span> <input type="range" min="2" max="16" step="1" data-b="plies" aria-label="Hidden moves"> <b class="mono" data-b="pliesv"></b></label>
         <label class="bl-row bl-auto"><input type="checkbox" data-b="auto"> <span>Auto: one more after 3 clean solves in a row, one fewer after 2 misses</span></label>
         <p class="note bl-autonote" data-b="autonote" hidden></p>
         <div data-b="lenrow"></div>
@@ -114,14 +114,14 @@ window.BlindTactics=(()=>{
       const was=S.cfg.plies;
       if(run>=AUTO_UP){ if(S.cfg.plies<16) S.cfg.plies++; run=0 }
       else if(run<=-AUTO_DOWN){ if(S.cfg.plies>2) S.cfg.plies--; run=0 }
-      S.cfg.run=run; S.autoMsg=S.cfg.plies!==was?`Auto: ${S.cfg.plies} hidden plies from the next puzzle (${S.cfg.plies>was?'up':'down'} from ${was}).`:'';
+      S.cfg.run=run; S.autoMsg=S.cfg.plies!==was?`Auto: ${S.cfg.plies} hidden moves from the next puzzle (${S.cfg.plies>was?'up':'down'} from ${was}).`:'';
       saveCfg(); renderSet();
     }
     function autoNote(){ const el=q('autonote'); if(!S.cfg.auto){ el.hidden=true; return } el.hidden=false; const r=S.cfg.run||0;
-      el.textContent=S.autoMsg||(r>0?`${Help.n(AUTO_UP-r,'more clean solve')} in a row for ${Math.min(16,S.cfg.plies+1)} plies.`:r<0?`One more miss and it drops to ${Math.max(2,S.cfg.plies-1)}.`:`${AUTO_UP} clean solves in a row add a ply; ${AUTO_DOWN} misses take one off.`) }
+      el.textContent=S.autoMsg||(r>0?`${Help.n(AUTO_UP-r,'more clean solve')} in a row for ${Math.min(16,S.cfg.plies+1)} hidden moves.`:r<0?`One more miss and it drops to ${Math.max(2,S.cfg.plies-1)}.`:`${AUTO_UP} clean solves in a row add a hidden move; ${AUTO_DOWN} misses take one off.`) }
     const summary=()=>Object.assign(stats(prog(),rating()),{assisted:Object.values(prog()).filter(x=>x.a).length});
     function renderRate(){ const s=summary();
-      q('rate').innerHTML=TV.rate('Blind rating',s.rated?s.rating:'–',s.rated?`${Help.n(s.rated,'rated puzzle')} · ${s.solved} solved${s.avgPlies?` · ${s.avgPlies} hidden plies on average`:''}`:'first try at each puzzle counts') }
+      q('rate').innerHTML=TV.rate('Blind rating',s.rated?s.rating:'–',s.rated?`${Help.n(s.rated,'rated puzzle')} · ${s.solved} solved${s.avgPlies?` · ${s.avgPlies} hidden moves on average`:''}`:'first try at each puzzle counts') }
 
     /* ---------- settings and filters ---------- */
     const saveCfg=()=>site.settings.set(Object.assign({},S.cfg));
@@ -129,12 +129,12 @@ window.BlindTactics=(()=>{
     function renderSet(){
       if(!RANGE) RANGE=Controls.range(q('range'),{label:'Rating range',min:MINR,max:MAXR,step:100,lo:S.cfg.lo==null?MINR:S.cfg.lo,hi:S.cfg.hi==null?MAXR:S.cfg.hi,
         onChange:(a,b)=>{ S.cfg.lo=a<=MINR?null:a; S.cfg.hi=b>=MAXR?null:b; saveCfg(); renderList() }});
-      const pl=q('plies'); pl.value=S.cfg.plies; q('pliesv').textContent=S.cfg.plies+' plies';
+      const pl=q('plies'); pl.value=S.cfg.plies; q('pliesv').textContent=S.cfg.plies+' moves';
       q('auto').checked=!!S.cfg.auto; autoNote();
       q('lenrow').innerHTML=TV.chips('Length','len',[['any','Any'],['2','2+ moves'],['3','3+ moves']],S.cfg.len);
       q('chips').innerHTML=TV.chips('Status','status',[['todo','To do'],['missed','Missed'],['solved','Solved'],['all','Any']],S.cfg.status);
     }
-    q('plies').addEventListener('input',e=>{ q('pliesv').textContent=e.target.value+' plies' });
+    q('plies').addEventListener('input',e=>{ q('pliesv').textContent=e.target.value+' moves' });
     q('plies').addEventListener('change',e=>{ S.cfg.plies=Math.max(2,Math.min(16,+e.target.value||4)); saveCfg(); if(S.cur&&!S.scored&&!S.log.length) load(S.cur); else renderLine() });
     q('auto').addEventListener('change',e=>{ S.cfg.auto=e.target.checked; S.cfg.run=0; S.autoMsg=''; saveCfg(); autoNote() });
     TV.onChip(root,(k,v)=>{ if(k==='len'||k==='status'){ S.cfg[k]=v; saveCfg(); renderSet(); renderList() } });
@@ -189,7 +189,7 @@ window.BlindTactics=(()=>{
       const th=(z.themes||[]).filter(t=>!NOT_THEME.includes(t)).map(themeName).join(', ')||themeName(z.motif);
       q('head').innerHTML=TV.head({kicker:'Blind tactics · Lichess puzzle',right:rating().n?String(rating().r):'',
         title:esc(ended&&z.motif?themeName(z.motif):'Puzzle '+(Puzzles.num(S.lib,z.id)||z.id)),
-        chips:[`<span class="mono">${z.rating}</span>`,`${side()} to move`,Help.n(hp(),'hidden ply','hidden plies'),
+        chips:[`<span class="mono">${z.rating}</span>`,`${side()} to move`,Help.n(hp(),'hidden move'),
           ended?`Themes: ${esc(th||'—')}`:'',ended?`<a href="https://lichess.org/training/${esc(z.id.slice(3))}" target="_blank" rel="noopener">Lichess ↗</a>`:'']}) }
     /* the move list: the hidden moves (numbered from the shown position), the task, then your moves and the replies as text */
     function renderLine(){
@@ -222,18 +222,24 @@ window.BlindTactics=(()=>{
         say('',r?`${r.san}. Your move.`:'Your move.',' The board still shows the start.') },350);
       return true;
     }
+    /* what was recorded for the puzzle on the board and when it comes back (26 Nov 2026, roadmap #258): solved 3, 7,
+       then 21 days later, a miss the next day (the due rule above). [for the status card, for the strip under the board] */
+    function back(){ const r=(st.get('blind-progress')||{})[S.cur.id]||{};
+      const when=r.ok?`back in ${REVIEW[Math.min(REVIEW.length-1,Math.max(1,r.okN||1)-1)]} days`:'back tomorrow';
+      return r.ok?[`Solved: ${when}`,`solved, ${when}`]:[`Counted as a miss: ${when}`,`missed, ${when}`] }
     function finish(){
       S.solved=true; if(!S.scored) score(!S.failed&&!S.assisted);
       const clean=!S.failed&&!S.assisted;
       renderLine(); renderHead(); renderList();
-      say('good','Solved!',clean?' First try: it counts for your Blind rating.':S.assisted?' (you peeked, so it counts as a miss)':' (not a clean first try)');
-      endbar.show(clean?'good':'warn',clean?'Solved ✓ first try':'Solved, not first try','Next puzzle');
+      const when=back();
+      say('good','Solved!',(clean?' First try: it counts for your Blind rating.':S.assisted?' (you peeked, so it counts as a miss)':' (not a clean first try)')+` ${when[0]}.`);
+      endbar.show(clean?'good':'warn',(clean?'Solved ✓ first try':'Solved, not first try')+' · '+when[1],'Next puzzle');
       replay(false);
     }
     function submit(txt){
       if(!S.cur||S.solved||S.gaveUp) return false;
       const mv=parse(S.real,txt);
-      if(!mv){ if(String(txt||'').trim()) say('warn',`“${String(txt).trim()}” isn’t a legal move in the real position.`,' Not counted. Check the hidden moves: the board is '+Help.n(hp(),'ply','plies')+' behind.'); return false }
+      if(!mv){ if(String(txt||'').trim()) say('warn',`“${String(txt).trim()}” isn’t a legal move in the real position.`,' Not counted. Check the hidden moves: the board is '+Help.n(hp(),'move')+' behind.'); return false }
       const ok=attempt(mv); if(ok) q('in').value=''; return ok;
     }
     q('form').addEventListener('submit',e=>{ e.preventDefault(); submit(q('in').value) });
@@ -283,8 +289,8 @@ window.BlindTactics=(()=>{
       S.gaveUp=true; const z=S.cur;
       const sans=[], g=new Chess(S.puzzleFen); for(const u of z.sol){ const m=g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||undefined}); if(m) sans.push(m.san) }
       S.log=sans.map((san,i)=>({san,you:i%2===0})); renderLine(); renderHead(); renderList();
-      say('bad','The solution: '+sans.join(' '),' The hidden moves and the solution play on the board.');
-      endbar.show('bad','Given up','Next puzzle'); q('peek').disabled=q('giveup').disabled=true;
+      say('bad','The solution: '+sans.join(' '),' The hidden moves and the solution play on the board. '+back()[0]+'.');
+      endbar.show('bad','Given up · '+back()[1],'Next puzzle'); q('peek').disabled=q('giveup').disabled=true;
       replay(true); return true;
     }
     function next(){

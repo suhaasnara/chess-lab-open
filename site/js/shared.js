@@ -86,6 +86,10 @@ async function drillId(prefix,fen,uci){
 /* ---------- Evals ---------- */
 /* Lichess winning chances, p in pawns, result -1..1 from the mover's side of the sign. */
 const wc=p=>2/(1+Math.exp(-0.368208*Math.max(-15,Math.min(15,p))))-1;
+/* When a reviewed item comes back (Drills, Endgames, Blunder check: solved 3, 7, then 21 days later; a miss the next day),
+   in words for the result strip (26 Nov 2026, roadmap #258: say what was recorded and when it comes back).
+   okN: how many solves in a row, counting this one. */
+const backWhen=(ok,okN)=>ok?`back in ${[3,7,21][Math.min(2,Math.max(1,okN||1)-1)]} days`:'back tomorrow';
 const cpPawns=cp=>Math.abs(cp)>=9900?(cp>0?99:-99):cp/100;
 const fmtEval=p=>p==null?'':(p>0?'+':'')+p.toFixed(1);
 

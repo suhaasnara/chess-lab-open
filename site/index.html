@@ -56,6 +56,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
       <span class="label">New here?</span>
       <h2 style="margin:6px 0 8px">Train on your own games</h2>
       <p class="welcomelead">Think Ahead turns your games into a report card and drills, with puzzles, openings and endgames around them. No account, and nothing is uploaded.</p>
+      <p class="note welcomeapp" id="welcome-app" hidden></p><!-- in the app: its first-launch lines (js/native.js welcomeInline), instead of a second welcome -->
       <div class="btns" style="margin-top:10px"><a class="btn primary" href="#analyze" id="welcome-go">Analyze my games</a><button class="btn" id="welcome-try" type="button">Just try a puzzle</button></div>
       <details class="welcomemore" id="welcome-more"><summary>How it works</summary>
       <ul class="welcomelist">
@@ -497,7 +498,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
             <option value="2600">2600</option><option value="max">Full strength</option>
           </select><select id="pl-color" aria-label="Your side"><option value="w">White</option><option value="b">Black</option><option value="random">Random</option></select>
           <input type="checkbox" id="pl-blind" aria-label="Blindfold"></div>
-        <p class="note pnote">Bot ratings are Stockfish’s own scale (held back with its UCI_Elo setting); treat them as rough online-style ratings.</p>
+        <p class="note pnote">Bot ratings are Stockfish’s own strength scale, so treat them as rough online-style ratings.</p>
       </div>
     </div>
     <div class="boardwrap" id="pl-wrap">
@@ -591,7 +592,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
         </div>
         <div class="chips" id="p-speeds" style="margin-top:8px;gap:12px"></div>
         <div class="btns" style="margin-top:10px"><button class="btn primary" id="p-go" type="submit">Fetch their games</button><span class="note" id="p-err" role="status"></span></div>
-        <p class="note" style="margin:8px 0 0">Their last 200 public games are fetched by this device from the site’s public API and kept only here.</p>
+        <p class="note" style="margin:8px 0 0">Their last 200 public games are fetched by this device from Lichess’s or Chess.com’s public API and kept only here.</p>
       </form>
       <div class="label tvlabel" id="p-listlabel" style="margin-top:4px">Players</div>
       <div class="list" id="p-list"></div>
@@ -634,7 +635,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
 <section id="progress" hidden>
   <div class="report">
     <div class="rhead"><h2>Progress</h2>
-      <div class="rbar"><button class="btn sm" id="p-export">Export progress (JSON)</button><button class="btn sm" id="p-import">Import progress</button><input type="file" id="p-file" accept="application/json" hidden></div>
+      <div class="rbar"><button class="btn sm" id="p-export">Export progress</button><button class="btn sm" id="p-import">Import progress</button><input type="file" id="p-file" accept="application/json" hidden></div>
     </div>
     <p class="lead note" id="p-lead"></p>
     <div class="stats" id="p-stats"></div>
@@ -657,10 +658,10 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
     <h2>Settings</h2>
     <p class="note" style="margin:0">Kept on this device.</p>
     <div id="s-rows"></div>
-    <p class="note" style="margin-top:14px">Engine: Stockfish 18 (lite, WebAssembly), GPL-3.0 &mdash; served with this site;
+    <p class="note" style="margin-top:14px">Engine: Stockfish 18 (lite, WebAssembly), GPL-3.0 &mdash; built in;
        source at <a href="https://github.com/official-stockfish/Stockfish">github.com/official-stockfish/Stockfish</a> and
        <a href="https://github.com/nmrugg/stockfish.js">nmrugg/stockfish.js</a>.
-       Book data: the <a href="https://database.nikonoel.fr/">Lichess Elite Database</a> and the <a href="https://database.lichess.org/">Lichess open database</a> (CC0), built into static books that ship with the site. See CREDITS.</p>
+       Book data: the <a href="https://database.nikonoel.fr/">Lichess Elite Database</a> and the <a href="https://database.lichess.org/">Lichess open database</a> (CC0), built into static books that come with Think Ahead. See CREDITS.</p>
     <p class="note" style="margin-top:8px"><a href="#about">About, privacy and licences</a></p>
   </div>
   <div class="card" id="appbox" hidden></div>
@@ -674,7 +675,7 @@ try{ var t=(JSON.parse(localStorage.getItem('clo-settings')||'{}').theme)||'auto
   <div class="aboutwrap helpwrap">
   <div class="card">
     <h2>Help</h2>
-    <p class="note" style="margin:0">How the numbers on the site work. Tap a question to open it.</p>
+    <p class="note" style="margin:0">How the numbers here work. Tap a question to open it.</p>
   </div>
   <details class="card hq" id="h-winpct"><summary>What is Win%?</summary>
     <p>Your chance of winning, worked out from Stockfish’s evaluation the way Lichess does it, and always from your side.</p>

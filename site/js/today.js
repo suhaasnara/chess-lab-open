@@ -27,7 +27,7 @@ function pickPuzzles(){
 }
 function pickOpening(){
   const ops=OpeningsTab.openings();
-  const played=ops.map(o=>({o,s:OpeningsTab.stats(o.id)})).filter(x=>x.s.lines>0);
+  const played=ops.map(o=>({o,s:OpeningsTab.statsAs(o)})).filter(x=>x.s.lines>0);   /* the side you play it as now */
   if(played.length) return played.sort((a,b)=>a.s.rating-b.s.rating)[0].o.id;
   const presets=ops.filter(o=>!o.rep&&!o.player);
   return presets[(new Date().getDate())%presets.length].id;
@@ -56,7 +56,9 @@ function items(){
   if(eg) out.push({kind:'endgame',id:eg.id,obj:eg,done:!!(ep[eg.id]&&ep[eg.id].t>=s),
     title:'Endgame: '+eg.title,meta:(eg.goal==='win'?'win it':'hold the draw')+' against perfect defence'});
   const o=O.find(x=>x.id===t.opening);
-  if(o){ const st=OpeningsTab.stats(o.id); out.push({kind:'opening',id:o.id,obj:o,done:!!(st.last&&st.last>=s),
+  /* the side you play it as now; a line today as either side ticks it (26 Nov 2026, roadmap #264) */
+  if(o){ const st=OpeningsTab.statsAs(o), last=Math.max(st.last||0,OpeningsTab.stats(o.id).last||0,OpeningsTab.stats(o.id+'@'+(o.side==='white'?'black':'white')).last||0);
+    out.push({kind:'opening',id:o.id,obj:o,done:last>=s,
     title:'Opening line: '+o.name,meta:st.lines?`rating ${st.rating} · ${Help.n(st.lines,'line')}`:'new for you'}) }
   return out;
 }
@@ -128,7 +130,7 @@ function cards(list){
   if(eg){ const seen=!!((Store.get('endgame-progress')||{})[eg.id]);
     out.push(card('Endgame','#endgames','All endgames',`<div class="wtrow" data-tdrow="${esc(keyOf(eg))}"><span class="wtlab">${eg.done?'Done ✓':seen?'Review':'New'}</span><a href="#today" data-td="${esc(keyOf(eg))}"><b>${esc(eg.obj.title)}</b></a><span class="note">${eg.obj.goal==='win'?'Win it':'Hold the draw'} against perfect defence</span></div>`)) }
   const op=list.find(x=>x.kind==='opening');
-  if(op){ const st=OpeningsTab.stats(op.id);
+  if(op){ const st=OpeningsTab.statsAs(op.obj);
     out.push(card('Opening line','#openings','All openings',`<div class="wtrow" data-tdrow="${esc(keyOf(op))}"><span class="wtlab">${op.done?'Done ✓':st.lines?'Rating '+st.rating:'New'}</span><a href="#today" data-td="${esc(keyOf(op))}"><b>${esc(op.obj.name)}</b></a><span class="note">${st.lines?'Your lowest-rated opening · '+Help.n(st.lines,'line'):'One line against real Lichess games'}</span></div>`)) }
   return out.join('');
 }
@@ -177,10 +179,11 @@ function hasProgress(){
   try{ for(let i=0;i<localStorage.length;i++) if(/^clo:stats-/.test(localStorage.key(i))) return true }catch(e){}
   return false;
 }
+/* a first visitor: the guide shows by itself (the app puts its first-launch lines in it: js/native.js) */
+function isNew(){ let seen=false; try{ seen=localStorage.getItem('clo-welcome')==='seen'||hasProgress() }catch(e){} return !seen }
 function welcome(show){
   const el=$('welcome'); if(!el) return;
-  let seen=false; try{ seen=localStorage.getItem('clo-welcome')==='seen'||hasProgress() }catch(e){}
-  el.hidden=show===true?false:seen;
+  el.hidden=show===true?false:!isNew();
   const more=$('welcome-more'); if(more) more.open=show===true;   /* asked for ("How Think Ahead works"): the whole list; a first visit: three lines and two buttons */
   /* returning visitors get Chess Lab's board page (no big header on Today); the guide brings it back */
   document.body.classList.toggle('welcomed',el.hidden);
@@ -222,5 +225,5 @@ function init(){
     if((lib&&eg)||tries>100) clearInterval(wait) };
   const wait=setInterval(tick,100); addEventListener('tactics-lib',()=>setTimeout(tick,0));
 }
-window.TodayTab={init,render,plan,items,start,select,next:nextItem,get hosted(){return hosted},get sel(){return sel}};
+window.TodayTab={init,render,plan,items,start,select,next:nextItem,isNew,get hosted(){return hosted},get sel(){return sel}};
 })();

@@ -81,15 +81,19 @@ function renderL(){
   const el=$('t-list'), p=prog(), list=daily(filtered());
   $('t-listlabel').textContent=`${list.length.toLocaleString()} puzzle${list.length===1?'':'s'}${list.length>200?' · showing the first 200':''}`;
   el.innerHTML=list.slice(0,200).map(z=>{ const st=p[z.id];
-    return TV.row({badge:z.rating||'—',title:esc(Puzzles.title(z.id,themeName(z.motif),!!st,Puzzles.num(LIB,z.id))),meta:z.op?esc(opName(z.op)):'Lichess',
+    return TV.row({badge:z.rating||'—',title:esc(Puzzles.title(z.id,themeName(z.motif),doneNow(z),Puzzles.num(LIB,z.id))),meta:z.op?esc(opName(z.op)):'Lichess',
       right:TV.dots([[st?(st.ok?'good':'bad'):'','Puzzle']]),current:!!(S.cur&&S.cur.id===z.id),data:{id:z.id}}) }).join('');
   el.classList.toggle('isempty',!list.length);
   if(!list.length) el.innerHTML='<p class="empty">No puzzles match these filters. Try Any rating or Any status.</p>';
 }
 
-/* the facts card; themes stay hidden until the puzzle is done (shared/puzzles.js) */
+/* Is the theme shown? (shared/puzzles.js: "shown when solved"). For the puzzle on the board: once it is solved or its
+   answer shown (the second Hint), or if it was done before this try. A wrong first try no longer gives it away
+   (26 Nov 2026, roadmap #287: it showed the theme in the title and the chip after the first miss). Other puzzles: once tried. */
+const doneNow=z=>S.cur&&z.id===S.cur.id?!!(S.solved||S.hintStage>=2||S.seen):!!prog()[z.id];
+/* the facts card */
 function facts(){ const z=S.cur; if(!z) return;
-  const done=!!(S.solved||S.failedFirst||prog()[z.id]);   /* themes stay hidden until the puzzle is done (Puzzles) */
+  const done=doneNow(z);
   const rt=rating(), toMove=S.g&&S.g.turn()==='w'?'White':'Black';
   $('t-head').innerHTML=TV.head({kicker:'Lichess puzzle'+(z.op?' · '+esc(opName(z.op)):''),right:rt.n?String(rt.r):'',
     title:esc(Puzzles.title(z.id,themeName(z.motif),done,Puzzles.num(LIB,z.id))),
@@ -100,12 +104,14 @@ function facts(){ const z=S.cur; if(!z) return;
 function load(z){
   if(endbar) endbar.hide();
   S.gen=(S.gen||0)+1;   /* a reply still on its timer belongs to the puzzle it was made for */
-  S.cur=z; S.g=new Chess(z.fen); S.step=0; S.solved=false; S.failedFirst=false; S.usedHint=false; S.hintStage=0;
+  S.cur=z; S.g=new Chess(z.fen); S.step=0; S.solved=false; S.failedFirst=false; S.usedHint=false; S.hintStage=0; S.seen=!!prog()[z.id];
   let last=null;
   /* Lichess puzzles: the first move of the solution is the opponent's setup move. */
   if(z.pre!==false&&z.moves.length>1){ const u=z.moves[0]; const m=S.g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'}); if(m) last={from:m.from,to:m.to}; S.step=1 }
   board.set(S.g,{last,orient:S.g.turn()});
-  status('', (S.g.turn()==='w'?'White':'Black')+' to move.','Find the best move.');
+  /* the very first puzzle says how to move (26 Nov 2026, roadmap #288) */
+  const how=Object.keys(prog()).length?'':window.matchMedia&&matchMedia('(hover: none)').matches||document.documentElement.classList.contains('in-app')?' Tap a piece, then a square.':' Click a piece, then a square (or drag it).';
+  status('', (S.g.turn()==='w'?'White':'Black')+' to move.','Find the best move.'+how);
   facts();
   $('t-lichess').href=z.url||('https://lichess.org/analysis/'+encodeURIComponent(S.g.fen()));
   renderL();
@@ -148,15 +154,20 @@ function hint(){
   const exp=expected(); if(!exp) return;
   if(!S.usedHint&&!S.failedFirst){ S.usedHint=true; saveResult(S.cur.id,false) }
   if(S.hintStage===0){ S.hintStage=1; board.setHint(exp.slice(0,2)); status('warn','Hint: this piece moves.','Press Hint again to see the move.') }
-  else{ board.setHint(exp.slice(0,2),exp.slice(2,4)); status('warn','Answer: '+sanOf(S.g.fen(),exp),'') }
+  else{ S.hintStage=2; board.setHint(exp.slice(0,2),exp.slice(2,4)); status('warn','Answer: '+sanOf(S.g.fen(),exp),''); facts(); renderL() }
 }
 /* As in Chess Lab, the page opens on the first puzzle of the list (nothing is counted until a move is made) */
 function first(){ const z=daily(filtered())[0]; if(z) load(z) }
+/* Next: the next puzzle after the one on the board, in today's order of the filtered list (26 Nov 2026, roadmap #257: it
+   took the first untried puzzle, which is the one on the board until you move, so an untried puzzle could not be
+   skipped). The puzzle on the board keeps its place in the order even when the filter now leaves it out (solved, with
+   Unsolved chosen). Untried first, then any; it wraps round. */
 function next(){
   if(H) return H.next();
-  const p=prog();
-  const list=daily(filtered());
-  const z=list.find(x=>!p[x.id])||list[0];
+  const p=prog(), cur=S.cur, f=filtered();
+  const L=daily(cur&&!f.includes(cur)?[...f,cur]:f), i=cur?L.indexOf(cur):-1;
+  const after=[...L.slice(i+1),...L.slice(0,Math.max(0,i))];
+  const z=after.find(x=>!p[x.id])||after[0]||(f.length?f[0]:null);
   if(z) load(z); else status('warn','No puzzles match these filters.','');
 }
 function status(tone,head,rest){ const el=$('t-status-box'); el.className='status'+(tone?' '+tone:''); el.innerHTML=`<strong>${esc(head)}</strong>${esc(rest||'')}` }

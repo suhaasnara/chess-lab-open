@@ -111,16 +111,17 @@ async function userMove(from,to,promo){
   const drop=wc(bestP)-wc(mineP);
   if(drop<0.1) finish(m,true,`Good: about as strong as ${sanOf(S.g.fen(),a[0].uci)} (best).`);
   else{ board.flash([from,to],'bad'); saveResult(d.id,false);
-    status('bad',`${m.san} still gives away ${WinPct.pts(drop)} points of Win%.`,'Try again, or press Solution.') }
+    status('bad',`${m.san} still gives away ${WinPct.pts(drop)} points of Win%.`,'Try again, or press Solution. (Recorded as a miss: back tomorrow.)') }
 }
 function finish(m,ok,text){
   S.g.move(m); S.done=true;
   board.set(S.g,{last:{from:m.from,to:m.to}});
   board.lock(); board.flash([m.from,m.to],'good');
-  status('good',`${m.san} ✓`,text||'');
   const solved=!S.counted&&!S.hinted;   /* a drill you missed first, hinted or were shown is played through but not counted solved */
   saveResult(S.cur.id,solved);
-  endbar.show('good',solved?`${m.san} ✓ Solved`:`${m.san} ✓ (a miss: back tomorrow)`,H?'Next in session':'Next drill');
+  const r=prog()[S.cur.id]||{}, when=backWhen(!!r.ok,r.okN);   /* what was recorded for this attempt, and when it comes back */
+  endbar.show('good',solved?`${m.san} ✓ Solved, ${when}`:`${m.san} ✓ Missed first, ${when}`,H?'Next in session':'Next drill');
+  status('good',`${m.san} ✓`,(text?text+' ':'')+(solved?`Solved: ${when}.`:`Recorded as a miss: ${when}.`));
 }
 async function show(){
   if(!S.cur||S.done) return;
@@ -129,9 +130,10 @@ async function show(){
   if(!u){ const a=await SharedEngine.analyse(S.g.fen(),DEPTH,1,10000).catch(()=>null); if(S.att!==at||S.done) return; u=a&&a[0]&&a[0].uci }
   if(!u){ status('warn','No stored answer and no engine.',''); return }
   board.setHint(u.slice(0,2),u.slice(2,4));
-  status('warn','Answer: '+sanOf(S.g.fen(),u),'Shown answers don’t count as solved.');
-  endbar.show('warn','Answer: '+sanOf(S.g.fen(),u),H?'Next in session':'Next drill');
   saveResult(d.id,false);
+  const r=prog()[d.id]||{}, when=backWhen(!!r.ok,r.okN);
+  status('warn','Answer: '+sanOf(S.g.fen(),u),`Shown answers don’t count as solved: ${when}.`);
+  endbar.show('warn',`Answer: ${sanOf(S.g.fen(),u)} · ${r.ok?'Solved':'Missed'}, ${when}`,H?'Next in session':'Next drill');
 }
 /* Play it out: continue from the drill position against Stockfish (Play tab). The goal comes from the eval
    before the slip: from +1.5 for you it is a win (convert); otherwise don't lose (hold), as in the private kit. */
@@ -159,7 +161,13 @@ async function hint(){
   if(S.hintStage===1){ board.setHint(u.slice(0,2)); status('warn','Hint: this piece.','Press Hint again for the move. A hinted drill doesn’t count as solved.') }
   else { board.setHint(u.slice(0,2),u.slice(2,4)); status('warn','Hint: '+sanOf(S.g.fen(),u),'Play it to finish. It doesn’t count as solved.') }
 }
-function next(){ if(H) return H.next(); const p=prog(); const d=drills().find(x=>!p[x.id]||!p[x.id].ok)||drills()[0]; if(d) load(d) }
+/* Next: the next drill after the one on the board, in the list as filtered (26 Nov 2026, roadmap #257: it took the first
+   unsolved drill of all of them, so after a miss it reloaded the same drill and ignored the filters). Untried or missed
+   first, then any; it wraps round, and comes back to the same drill only when it is the only one left. */
+function next(){ if(H) return H.next(); const p=prog(), cur=S.cur&&S.cur.id, keep=new Set(shown().map(x=>x.id));
+  const L=drills().filter(x=>keep.has(x.id)||x.id===cur), i=L.findIndex(x=>x.id===cur);
+  const after=[...L.slice(i+1),...L.slice(0,Math.max(0,i))];
+  const d=after.find(x=>!p[x.id]||!p[x.id].ok)||after[0]||L.find(x=>keep.has(x.id))||drills()[0]; if(d) load(d) }
 function status(tone,head,rest,help){ const el=$('d-status'); el.className='status'+(tone?' '+tone:''); el.innerHTML=`<strong>${esc(head)}</strong>${esc(rest||'')}${help?Help.q(help,'winpct'):''}` }
 
 function init(){

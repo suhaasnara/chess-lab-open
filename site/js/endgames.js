@@ -146,7 +146,9 @@ function finish(ok,head,rest){
   const p=prog(), e=p[z.id]||{tries:0,okN:0};
   if(!S.counted) e.tries++; S.counted=true; e.t=Date.now(); e.ok=ok&&!S.assisted; if(e.ok) e.okN=(e.okN||0)+1; p[z.id]=e; Store.put('endgame-progress',p);
   const tone=ok?(S.assisted?'warn':'good'):'bad';
-  status(tone,head,rest||''); endbar.show(tone,head,H?'Next in session':'Next endgame');
+  /* what was recorded and when it comes back (26 Nov 2026, roadmap #258) */
+  const when=backWhen(e.ok,e.okN), rec=e.ok?`Solved: ${when}.`:`Counted as a miss: ${when}.`;
+  status(tone,head,(rest?rest+' ':' ')+rec); endbar.show(tone,`${head} · ${e.ok?'Solved':'Missed'}, ${when}`,H?'Next in session':'Next endgame');
   board.set(S.g,{locked:true}); renderList(); buttons(); EndgamesTab.onFinish&&EndgamesTab.onFinish(z,e); if(H) H.changed();
 }
 function over(){                                  /* after any move: is the exercise finished? */
@@ -173,7 +175,7 @@ async function userMove(from,to,promo){
     const why=z.goal==='win'?'That lets the win slip.':'That loses.';
     S.busy=false; S.phase='mistake';
     if(!S.counted){ const p=prog(), e=p[z.id]||{tries:0,okN:0}; e.tries++; e.t=Date.now(); e.ok=false; p[z.id]=e; Store.put('endgame-progress',p); S.counted=true; renderList(); if(H) H.changed() }
-    status('bad',why,bestSan?` ${bestSan} was the move. Take it back and try again, or start over.`:' Take it back and try again, or start over.');
+    status('bad',why,(bestSan?` ${bestSan} was the move.`:'')+' Take it back and try again, or start over. (Counted as a miss: back tomorrow.)');
     endbar.show('bad',why+(bestSan?' '+bestSan+' was the move.':''),'Take back');
     endbar.onNext=()=>{ endbar.onNext=()=>next(); takeBack() };
     buttons(); return;

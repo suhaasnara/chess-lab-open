@@ -468,7 +468,7 @@ section('t16: Calculation — enter the whole line, graded against the solution'
   for(const u of z2.moves.slice(1,4)) C.userMove(u.slice(0,2),u.slice(2,4),u[4]);
   C.undo(); C.userMove(z2.moves[3].slice(0,2),z2.moves[3].slice(2,4),z2.moves[3][4]);
   await C.submit(); await sleep(30);
-  assert(/You saw 3 of 7 plies/.test(w.document.getElementById('cc-status').textContent),'a partial line scores how far it follows the solution (with undo working)');
+  assert(/You saw 2 of your 4 moves/.test(w.document.getElementById('cc-status').textContent),'a partial line scores how far it follows the solution (with undo working)');
   const v0=C.state.view; w.document.getElementById('cc-fwd').click(); w.document.getElementById('cc-fwd').click();
   assert(C.state.view===v0+2&&/2 \/ 7/.test(w.document.getElementById('cc-step').textContent),'→ steps through the solution');
   /* a wrong first move that the engine rates far worse */
@@ -2099,7 +2099,7 @@ section('t60: Blind tactics — the stored set replays, filters, first-try scori
   assert(T.filtered().length>=1&&T.filtered().every(z=>!w.Store.get('blind-progress')[z.id].ok),'Missed lists the misses');
   /* Progress tile; export */
   w.location.hash='#progress'; await sleep(60);
-  assert(/blind rating/i.test($('p-stats').textContent)&&/1 solved/.test($('p-stats').textContent)&&/8 hidden plies on average/.test($('p-stats').textContent),'Progress tile: Blind rating, solved, average hidden plies');
+  assert(/blind rating/i.test($('p-stats').textContent)&&/1 solved/.test($('p-stats').textContent)&&/8 hidden moves on average/.test($('p-stats').textContent),'Progress tile: Blind rating, solved, average hidden plies');
   const ex=w.Store.exportAll();
   assert(ex['blind-progress']&&ex['blind-rating'],'both keys are in the progress export');
   assert(started===0,'no engine started anywhere on the way');
@@ -2387,6 +2387,30 @@ section('t72: Blunder check from Analyze my games (13 Nov 2026): the kit’s rul
   assert(n>=2&&!w.Store.get('abc').length&&JSON.stringify(w.Store.get('bc-progress'))==='{"kzzzzzzzz":{"n":1,"ok":false,"t":2}}','removing the set removes its blunder check and that result only');
 }
 
+section('t93: Analyze — Save drills keeps its own run: one set, its label, its blunder checks, one button (roadmap #265)');
+{
+  const {w}=await makePage({analyse:BC1.analyse}); await sleep(50);
+  const A=w.AnalyzeTab, $=id=>w.document.getElementById(id);
+  await runPgn(w,BC1.pgn,'mine.pgn');
+  assert(A.blunderChecks.length===1&&$('a-savedrills'),'a run with drills and 1 blunder check to save');
+  /* hold the deeper checks, so the save is still under way while things happen around it */
+  const keep=w.SharedEngine.analyse; let gate; const held=new Promise(r=>{ gate=r });
+  w.SharedEngine.analyse=async(...a)=>{ await held; return keep(...a) };
+  w.Store.del('adrill-verify'); $('a-savedrills').click(); await sleep(30);
+  assert($('a-go').disabled&&$('a-savedrills').disabled&&/Checking position/.test($('a-savedrills').textContent),'while saving: Analyze waits, the button says what it is doing');
+  A.rerender(); await sleep(10);   /* a filter change redraws the report */
+  const b2=$('a-savedrills');
+  assert(b2.disabled&&/Checking position|Saving/.test(b2.textContent),'a redrawn card shows the same disabled button (it drew a second Save that worked)');
+  b2.click(); await A.run('lichess','someone-else'); await sleep(20);
+  assert(!A.running&&A.blunderChecks.length===1,'a second run does not start while saving (it emptied the blunder checks)');
+  gate(); for(let i=0;i<80&&!/Saved|Already/.test(($('a-savedrills')||{}).textContent||'');i++) await sleep(25);
+  const sets=w.Store.get('adrill-sets')||[], K=w.Store.get('abc')||[];
+  assert(sets.length===1&&/mine\.pgn/.test(sets[0].label),'one set, labelled after the run it came from ('+(sets[0]&&sets[0].label)+')');
+  assert(K.length===1&&K[0].b.join()===sets[0].id,'the blunder check is saved in that set');
+  assert(!$('a-go').disabled&&/Saved/.test($('a-savedrills').textContent),'afterwards Analyze is back and the button says what was saved');
+  w.SharedEngine.analyse=keep;
+}
+
 section('t73: the games you analyzed are kept (js/agames.js): every drill and costly moment opens its game (#game), the report comes back after a reload');
 {
   const {w}=await makePage({analyse:BC1.analyse}); await sleep(50);
@@ -2468,7 +2492,7 @@ section('t73: the games you analyzed are kept (js/agames.js): every drill and co
     await sleep(50); await runPgn(w5,BC1.pgn);
     const s5=w5.Store.get('agames');
     assert(s5&&s5.last===null&&!Object.keys(s5.g).length,'storage full: no report kept (no drill points to these games yet)');
-    assert(/storage is full/.test(w5.document.getElementById('a-note').textContent),'the note says so');
+    assert(/Storage on this device is full/.test(w5.document.getElementById('a-note').textContent),'the note says so');
     w5.document.getElementById('a-savedrills').click(); await sleep(300);
     const gid=w5.Store.get('adrills')[0].g; assert(gid&&w5.Store.get('agames').g[gid]&&w5.Store.get('agames').g[gid].ev,'saving drills still keeps their game (with its evals)'); }
 }
@@ -2546,6 +2570,7 @@ await require('./tries')(H);   /* Guess the move: tries before the move is shown
 await require('./drillresults')(H);   /* Drills: one result per attempt, the first thing you do decides it */
 await require('./scrolllock')(H);   /* a finished or read-only board scrolls the page (his iPhone, 23 Nov 2026) */
 await require('./prep')(H);   /* Analyze: your prep in your games (imported repertoires) */   /* the Apple Watch sets for the app (tools/build_watch_sets.js) */
+await require('./quickfixes')(H);   /* the 26 Nov 2026 quick fixes (roadmap #257, #258, #287, #288, #265, #263, #264) */
 
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));
 process.exit(H.failures?1:0);

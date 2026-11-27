@@ -2,7 +2,7 @@
 'use strict';
 (function(){
 const ROWS=[
-  {k:'theme',label:'Theme',note:'Dark redraws the page in dark colours; the board keeps its own. Match device follows your phone or computer.',
+  {k:'theme',label:'Theme',note:'Dark redraws the page in dark colours; the board keeps its own. Match device follows your device’s light or dark setting.',
    opts:[['auto','Match device'],['light','Light'],['dark','Dark']]},
   {k:'board',label:'Board colour',opts:[['maple','Maple (Lichess image)'],['brown','Brown'],['blue','Blue'],['green','Green'],['grey','Grey']]},
   {k:'anim',label:'Piece animation',opts:[['none','None'],['fast','Fast'],['normal','Normal'],['slow','Slow']]},
@@ -15,7 +15,7 @@ const ROWS=[
   {k:'lastMove',label:'Highlight the last move',opts:[['true','Yes'],['false','No']]},
   {k:'dests',label:'Show where a piece can go',opts:[['true','Yes'],['false','No']]},
   {k:'autoNext',label:'Next line by itself',note:'After a line with no misses, the next one starts after 2.5 seconds.',opts:[['false','No'],['true','Yes']]},
-  {k:'olevel',label:'Opponent level (openings)',note:'Lichess Elite games (2500+ vs 2300+), or Lichess rapid and classical games by rating band, 1000 to 2200+. All books ship with the site; no account needed. Also on the Openings tab.',
+  {k:'olevel',label:'Opponent level (openings)',note:'Lichess Elite games (2500+ vs 2300+), or Lichess rapid and classical games by rating band, 1000 to 2200+. All books are built in; no account needed. Also on the Openings tab.',
    opts:Book.ORDER.slice().reverse().map(k=>[k,Book.levelLabel(k)])},
   {k:'olen',label:'Line length',note:'How many of your moves an opening line lasts.',
    opts:[['short','Short (5)'],['medium','Medium (8)'],['long','Long (12)'],['vlong','Very long (20)'],['max','Max (30)']]},
