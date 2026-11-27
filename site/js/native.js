@@ -21,7 +21,7 @@ Due.add('blind',at=>spacedCount(progress('blind-progress'),at));
 /* ---- the watch ---- */
 const clamp01=x=>Math.max(0,Math.min(1,+x||0));
 WatchSets.add('tactic',{
-  async apply(r){ await TacticsTab.ensure(); TacticsTab.saveResult(String(r.id),!!r.ok) },
+  async apply(r){ await TacticsTab.ensure(); TacticsTab.saveResult(String(r.id),!!r.ok,+r.at||Date.now()) },
   state(){ const p=progress('tactics-progress'), recs={}; for(const id in p) recs[id]=[p[id].ok?1:0,p[id].t||0];
     const rt=Store.get('tac-rating')||{r:1500,n:0}; return {recs,tac:{r:rt.r,n:rt.n}} }
 });

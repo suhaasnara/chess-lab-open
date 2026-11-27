@@ -1,6 +1,8 @@
 /* Think Ahead — tactics from the Lichess puzzle database (CC0).
    The solver gets a puzzle rating: Elo against the puzzle's Lichess rating,
-   first attempt only (a hint counts as a miss); K = 32 for the first 30 puzzles, then 16. */
+   first attempt only (a hint counts as a miss); K = 32 for the first 30 puzzles, then 16. Only the first try at each
+   puzzle is rated, as in Blind tactics (26 Nov 2026, roadmap #260: a puzzle solved three times moved the rating three
+   times, 1500 to 1596); a later try still updates its Solved / Missed record. */
 'use strict';
 (function(){
 let LIB=null, board=null, endbar=null, H=null;   /* H: Today, when it hosts this panel */
@@ -11,12 +13,16 @@ const STATUSES=['All','Unsolved','Missed','Solved'];
 function prog(){ return Store.get('tactics-progress')||{} }
 /* a new visitor starts at 1500, the level Today assumes too (14 Nov 2026: it was 2000 here and 1500 there) */
 function rating(){ return Store.get('tac-rating')||{r:1500,n:0} }
-function saveResult(id,ok){
-  const p=prog(); p[id]={ok,t:Date.now()}; Store.put('tactics-progress',p);
+/* at: when it was solved (a result from the Apple Watch keeps its own time; js/native.js). The record follows the
+   newest try only, so a watch result that arrives late never overwrites a newer one made here; the rating moves on the
+   first try ever. */
+function saveResult(id,ok,at){
+  const p=prog(), prev=p[id], t=+at||Date.now();
+  if(!prev||t>=(prev.t||0)){ p[id]={ok,t}; Store.put('tactics-progress',p) }
   const rt=rating(), r0=rt.r; let delta=null; const pz=LIB.find(x=>x.id===id);
-  if(pz&&pz.rating){ const K=rt.n<30?32:16; const E=1/(1+Math.pow(10,(pz.rating-rt.r)/400));
+  if(!prev&&pz&&pz.rating){ const K=rt.n<30?32:16; const E=1/(1+Math.pow(10,(pz.rating-rt.r)/400));
     rt.r=Math.round(rt.r+K*((ok?1:0)-E)); rt.n++; Store.put('tac-rating',rt);
-    const h=Store.get('tac-history')||[]; h.push({t:Date.now(),r:rt.r}); Store.put('tac-history',h.slice(-500)); delta=rt.r-r0 }
+    const h=Store.get('tac-history')||[]; h.push({t,r:rt.r}); Store.put('tac-history',h.slice(-500)); delta=rt.r-r0 }
   renderHeader();
   if(H) H.changed();
   return delta;   /* the rating change, for the result strip under the board (17 Nov 2026) */
@@ -138,7 +144,7 @@ function userMove(from,to,promo){
   if(!reply||test.in_checkmate()){
     S.solved=true; board.lock(); facts();
     const dr=!S.failedFirst&&!S.usedHint?saveResult(S.cur.id,true):null;
-    status('good','Solved!',S.failedFirst||S.usedHint?'(no rating: not a clean first try)':'');
+    status('good','Solved!',S.failedFirst||S.usedHint?'(no rating: not a clean first try)':dr==null&&S.seen?'(no rating: only your first try at a puzzle is rated)':'');
     const clean=!S.failedFirst&&!S.usedHint;
     endbar.show(clean?'good':'warn',(clean?'Solved ✓ first try':'Solved, not first try')+(dr!=null?` · ${dr>=0?'+':''}${dr}`:''));
     renderL(); return;
