@@ -668,3 +668,8 @@ html.on-ipad #h-watch{display:none}   /* Help's Apple Watch answer: the watch pa
    Progress tile */
 .ohead .omode{margin:6px 0 0;font-size:.8rem}
 .stat .pearn{margin-top:6px;font-size:.8rem}
+/* Storage full (26 Nov 2026, roadmap #269): one banner under the tab row, clear of the bottom bar */
+.storefull{position:fixed;left:12px;right:12px;top:calc(var(--navh,56px) + env(safe-area-inset-top,0px) + 8px);z-index:60;max-width:640px;margin:0 auto;display:flex;gap:12px;align-items:center;
+  background:var(--white);color:var(--ink);border:1px solid var(--line);border-left:4px solid var(--error);border-radius:var(--radius);padding:10px 12px;box-shadow:0 6px 20px rgba(19,40,74,.18)}
+.storefull[data-kind="freed"]{border-left-color:var(--blue)}
+.storefull p{margin:0;font-size:.9rem;flex:1}.storefull[hidden]{display:none}

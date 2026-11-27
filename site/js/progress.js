@@ -109,9 +109,17 @@ function render(){
       return `<tr><td>${esc(o.name)}</td><td>${o.side}</td><td>${st.lines}</td><td>${st.rating}</td><td>${last}</td></tr>`;
     }).join('')||'<tr><td colspan="5" class="note">Nothing trained yet. Opening lines you play in Rated mode show up here.</td></tr>');
   charts(withStats);
+  storage();
 }
+/* How much is kept, and a way to free the caches (26 Nov 2026, roadmap #269). Browsers allow about 5 million characters
+   per site; Think Ahead counts what it keeps against that. */
+function storage(){ const u=Store.usage(), mb=n=>(n/1e6).toFixed(n<1e5?2:1);
+  $('p-storagetext').textContent=`Think Ahead keeps ${mb(u.all)} million characters on this device (browsers allow about 5)${u.cache>=1000?`, ${mb(u.cache)} of them analysis caches: Stockfish’s evals and checks of games you analyzed, rebuilt when needed.`:'.'}`;
+  $('p-clearcache').hidden=u.cache<1000 }
 function init(){
   $('p-op').addEventListener('change',()=>render());
+  $('p-clearcache').addEventListener('click',()=>{ const before=Store.usage().all; Store.clearCaches(); const freed=before-Store.usage().all;
+    $('p-note').textContent=`Cleared the analysis caches (${(freed/1e6).toFixed(freed<1e5?2:1)} million characters). Your progress, drills and the games they come from are kept.`; storage() });
   /* Export: a download on the website; in the app (no downloads in its web view, roadmap #267) a file in Files */
   $('p-export').addEventListener('click',async()=>{
     const name='think-ahead-progress-'+new Date().toISOString().slice(0,10)+'.json', text=JSON.stringify(Store.exportAll(),null,1);

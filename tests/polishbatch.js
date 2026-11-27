@@ -151,4 +151,50 @@ module.exports=async H=>{
     stop.click(); await p;
     assert(/^Stopped before the games arrived/.test(note())&&stop.hidden&&!A.running,'Stop ends the fetch at once');
   }
+
+  section('t103: a full storage is never silent: it says so, frees the caches, and Guess the move caps big imports (roadmap #269)');
+  {
+    const {w}=await makePage(); const d=w.document, L=w.localStorage, S=w.Store;
+    /* fill this browser's storage (jsdom's, like a browser's, holds about 5 million characters) with analysis caches */
+    const fill=key=>{ const v=x=>JSON.stringify({x:'x'.repeat(x)}); let lo=0, hi=6e6;   /* the largest value that still fits */
+      while(hi-lo>50){ const mid=Math.floor((lo+hi)/2); try{ L.setItem('clo:'+key,v(mid)); lo=mid }catch(e){ hi=mid } }
+      L.setItem('clo:'+key,v(lo)) };
+    fill('pgn-evals');
+    let threw=false; try{ L.setItem('clo:probe','y'.repeat(5000)) }catch(e){ threw=true } L.removeItem('clo:probe');
+    assert(threw,'the test browser’s storage is full');
+    const big={}; for(let i=0;i<200;i++) big['p'+i]={ok:true,t:Date.now()};
+    const ok=S.put('tactics-progress',big);
+    const b=d.getElementById('store-full');
+    assert(ok&&S.get('tactics-progress').p199&&L.getItem('clo:pgn-evals')==null,'a result that doesn’t fit: the caches go, and it is saved');
+    assert(b&&!b.hidden&&b.dataset.kind==='freed'&&/caches were cleared/.test(b.textContent),'… and a banner says the caches were cleared to make room');
+    d.getElementById('store-full-x').click(); assert(b.hidden,'the banner closes');
+    /* full with progress itself: nothing to free */
+    fill('gtm-own');
+    const before=JSON.stringify(S.get('tactics-progress'));
+    const more=Object.assign({},big); for(let i=0;i<400;i++) more['q'+i]={ok:false,t:Date.now()};
+    const ok2=S.put('tactics-progress',more);
+    assert(ok2===false&&JSON.stringify(S.get('tactics-progress'))===before,'when nothing can be freed, put says false (it used to look saved)');
+    assert(!b.hidden&&b.dataset.kind==='full'&&/your last result wasn’t saved/.test(b.textContent)&&b.querySelector('a[href="#progress"]'),'… and the banner says the result wasn’t saved and where to make room');
+    /* a setting that can't be written says so too */
+    b.hidden=true; w.Settings.set('sound',true);
+    assert(!b.hidden&&/that setting wasn’t saved/.test(b.textContent),'a setting that can’t be saved says so');
+    L.removeItem('clo:gtm-own'); b.hidden=true;
+    /* Progress: how much is kept, and Clear analysis caches */
+    S.put('bc-evals',{a:'z'.repeat(50000)});
+    w.location.hash='#progress'; await sleep(100);
+    const st=d.getElementById('p-storagetext').textContent, btn=d.getElementById('p-clearcache');
+    assert(/million characters on this device/.test(st)&&/analysis caches/.test(st)&&!btn.hidden,'Progress says how much is kept and how much is caches: '+st);
+    btn.click();
+    assert(L.getItem('clo:bc-evals')==null&&S.get('tactics-progress')&&/Cleared the analysis caches/.test(d.getElementById('p-note').textContent)&&btn.hidden,'Clear analysis caches frees them and keeps progress');
+  }
+  {
+    /* Guess the move: one paste adds at most 100 games */
+    const {w}=await makePage(); const d=w.document;
+    w.location.hash='#guess'; await sleep(100);
+    const one=i=>`[White "A${i}"]\n[Black "B"]\n[Result "1-0"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. c3 Nf6 5. d4 exd4 6. cxd4 Bb4+ 7. Nc3 Nxe4 ${i%2?'8. O-O':'8. Qe2'} 1-0\n`;
+    d.getElementById('g-addbox').value=Array.from({length:130},(_,i)=>one(i)).join('\n');
+    await w.GtmTab.addGames();
+    const own=w.Store.get('gtm-own')||[];
+    assert(own.length===100&&/Added the first 100 games: one paste adds up to 100/.test(d.getElementById('g-adderr').textContent),'one paste adds at most 100 games, and says so ('+own.length+')');
+  }
 };

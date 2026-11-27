@@ -370,6 +370,7 @@ function init(){
 }
 /* ---------- Your own games ---------- */
 function ownGames(){ return Store.get('gtm-own')||[] }
+const OWN_MAX_ADD=100, OWN_MAX_CHARS=1500000;
 function ownGame(id){ const o=ownGames().find(x=>x.game.id===id); return o?o.game:null }
 function removeOwn(id){ if(!confirm('Remove this game from this device?')) return; Store.put('gtm-own',ownGames().filter(x=>x.game.id!==id));
   const r=results(); delete r[id]; Store.put('gtm-results',r); renderList() }
@@ -422,8 +423,12 @@ async function addGames(){
   const err=$('g-adderr'), txt=$('g-addbox').value; let list;
   try{ list=parseGames(txt) }catch(e){ list=[] }
   if(!list.length){ err.textContent='No moves found. Paste a PGN: 1. e4 e5 2. Nf3 {a note} Nc6 …'; return }
-  const want=$('g-addside').value, own=ownGames(); let added=0, skipped=0, last=null;
+  const want=$('g-addside').value, own=ownGames(); let added=0, skipped=0, last=null, capped=0;
+  /* a cap on what one paste adds, and on all your games together (26 Nov 2026, roadmap #269: a 3 MB PGN became a
+     2.66 M-character value, about half of what a browser allows the whole site) */
+  let size=JSON.stringify(own).length;
   for(const p of list){
+    if(added>=OWN_MAX_ADD||size>=OWN_MAX_CHARS){ capped++; continue }
     const h=p.h, res=h.Result||'*';
     const side=want==='white'?'w':want==='black'?'b':res==='1-0'?'w':res==='0-1'?'b':'w';
     const id='u-'+fnv((h.White||'')+'|'+(h.Black||'')+'|'+(h.Date||'')+'|'+p.moves.join(' ')+'|'+side);
@@ -441,12 +446,13 @@ async function addGames(){
       opening:opening||null,theory,moves:p.moves,fen:p.fen||undefined,evs:[],m:mm,maxpts:Object.values(mm).reduce((a,x)=>a+x.pts,0),notes,intro:p.intro||undefined};
     const last2=s=>String(s).split(',')[0].trim();
     own.push({title:`${last2(game.white)} – ${last2(game.black)}${game.date&&/^\d{4}/.test(game.date)?', '+game.date.slice(0,4):''}`,meta:`${opening?opening[1]+' · ':''}${res} · you play ${side==='w'?'White':'Black'}${Object.keys(notes).length?' · '+Object.keys(notes).length+' notes':''}`,game});
-    added++; last=game;
+    added++; last=game; size+=JSON.stringify(own[own.length-1]).length;
   }
-  Store.put('gtm-own',own);
-  if(added&&!Store.get('gtm-own')){ err.textContent='This browser has no room left to store those games.'; return }
-  err.textContent=added?'':skipped?'Those games are already in your list.':'';
-  if(added){ $('g-addmodal').hidden=true; $('g-addbox').value=''; S.src='own'; renderList(); load(last) }
+  if(added&&!Store.put('gtm-own',own)){ err.textContent='This browser has no room left to store those games. Remove some of your games here (or other saved data), then try again.'; return }
+  const why=capped?(added>=OWN_MAX_ADD?`Added the first ${added} games: one paste adds up to ${OWN_MAX_ADD}. Paste the rest again to add more.`
+    :`Added ${added} of ${added+capped} games: your games here are at their limit (about ${OWN_MAX_CHARS/1e6} million characters). Remove some to add more.`):'';
+  err.textContent=added?why:capped?why||'Your games here are at their limit. Remove some to add more.':skipped?'Those games are already in your list.':'';
+  if(added){ if(!capped) $('g-addmodal').hidden=true; $('g-addbox').value=''; S.src='own'; renderList(); load(last) }   /* capped: the box stays open with why */
 }
 /* evals for the graph of your own game, after you finish it (depth 10, White's side; stored with the game) */
 async function ownEvals(g){

@@ -58,7 +58,14 @@ window.AGames=(()=>{
       else if(!r.ev&&evs&&evs.length){ r.ev=round(evs); ch=true } }
     return ch?Store.tryPut(KEY,o):true;
   }
+  /* storage full (Store.room, roadmap #269): keep only the games saved drills and blunder checks point to; the last
+     report then doesn't come back after a reload. True if anything was dropped. spare(): the characters that would free. */
+  function slim(){ const o=load(), keep=refs(), g={}; for(const id of keep) if(o.g[id]) g[id]=o.g[id]; return {o,n:{v:1,g,last:null}} }
+  function trim(){ const raw=localStorage.getItem('clo:'+KEY); if(!raw) return false; const {o,n}=slim();
+    if(!o.last&&Object.keys(n.g).length===Object.keys(o.g).length) return false;
+    return Store.tryPut(KEY,n) }
+  function spare(){ const raw=localStorage.getItem('clo:'+KEY); if(!raw) return 0; return Math.max(0,raw.length-JSON.stringify(slim().n).length) }
   const get=id=>load().g[id]||null;
   const href=(id,ply,from)=>`#game?id=${encodeURIComponent(id)}${ply!=null?'&ply='+ply:''}${from?'&from='+from:''}`;
-  return {get,has:id=>!!load().g[id],last:()=>load().last,all:()=>load().g,evals,pack,unpack,saveRun,pin,refs,href,KEY};
+  return {get,has:id=>!!load().g[id],last:()=>load().last,all:()=>load().g,evals,pack,unpack,saveRun,pin,refs,href,trim,spare,KEY};
 })();
