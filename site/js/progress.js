@@ -7,9 +7,12 @@ const NS='http://www.w3.org/2000/svg';
 const fmtDay=t=>new Date(t).toLocaleDateString(undefined,{month:'short',day:'numeric'});
 const TAC_MIN=5;   /* the puzzle rating shows (tile and chart alike) after this many rated puzzles */
 const rating=()=>Store.get('tac-rating')||{r:2000,n:0};
+/* The chart is drawn as wide as its card, so its labels show at their own size (11 px, 12 px). Drawn 520 wide and scaled
+   down, they were 6.5–7.5 px on a phone (26 Nov 2026, roadmap #290). */
+const width=el=>Math.max(280,Math.min(900,Math.round(el.clientWidth||520)));
 function lineChart(el,pts,{empty,label}){
   if(pts.length<2){ el.innerHTML=`<p class="note">${esc(empty)}</p>`; return }
-  const W=520,H=190,L=44,R=12,T=12,B=26;
+  const W=width(el),H=190,L=44,R=12,T=12,B=26;
   const ys=pts.map(p=>p[1]); let lo=Math.min(...ys), hi=Math.max(...ys); if(hi-lo<40){ const m=(hi+lo)/2; lo=m-20; hi=m+20 }
   const pad=(hi-lo)*0.1; lo=Math.floor((lo-pad)/10)*10; hi=Math.ceil((hi+pad)/10)*10;
   const X=i=>L+(W-L-R)*(pts.length>1?i/(pts.length-1):0), Y=v=>T+(H-T-B)*(1-(v-lo)/(hi-lo));
@@ -24,7 +27,7 @@ function lineChart(el,pts,{empty,label}){
 }
 function barChart(el,bars,{empty}){
   if(!bars.some(b=>b.n)){ el.innerHTML=`<p class="note">${esc(empty)}</p>`; return }
-  const W=520,H=190,L=44,R=12,T=16,B=30, bw=(W-L-R)/bars.length;
+  const W=width(el),H=190,L=44,R=12,T=16,B=30, bw=(W-L-R)/bars.length;
   const Y=v=>T+(H-T-B)*(1-v);
   let g=[0,0.5,1].map(v=>`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" class="grid"/><text x="${L-6}" y="${Y(v)+4}" class="axis" text-anchor="end">${v*100}%</text>`).join('');
   bars.forEach((b,i)=>{ const x=L+i*bw+bw*0.22, w=bw*0.56;
@@ -56,7 +59,7 @@ function activity(el){
     cells+=`<rect x="${L+Math.floor(i/7)*(C+G)}" y="${T+(i%7)*(C+G)}" width="${C}" height="${C}" rx="3" class="lv${lv}"><title>${fmtDay(d)}: ${n} item${n===1?'':'s'}</title></rect>` }
   for(let d=new Date(end);;d.setDate(d.getDate()-1)){ if(cnt[key(d.getTime())]) streak++; else if(d.getTime()!==end.getTime()) break; else continue }
   const W=L+12*(C+G), H=T+7*(C+G);
-  const lab=['Sun','','Tue','','Thu','','Sat'].map((s,i)=>s?`<text x="0" y="${T+i*(C+G)+12}" class="axis" style="font-size:8.5px">${s}</text>`:'').join('');
+  const lab=['Sun','','Tue','','Thu','','Sat'].map((s,i)=>s?`<text x="0" y="${T+i*(C+G)+12}" class="axis" style="font-size:10px">${s}</text>`:'').join('');
   el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Days with practice in the last 12 weeks: ${days}" style="max-width:${Math.round(W*1.3)}px">${lab}${cells}</svg>
     <p class="note" style="margin:6px 0 0">${days} day${days===1?'':'s'} with practice · current streak ${streak} day${streak===1?'':'s'} · darker = more done (puzzles, drills, calculation, opening lines, games)</p>`;
 }
@@ -84,14 +87,17 @@ function render(){
   const dr=Store.get('adrills')||[]; const dp=Store.get('adrills-progress')||{};
   const bcs=Store.get('abc')||[], bp=Store.get('bc-progress')||{};
   const eg=window.EndgamesTab?EndgamesTab.stats():{solved:0,total:0};
+  /* an empty tile says how to fill it (26 Nov 2026, roadmap #291: a new visitor saw six tiles of 0 and –) */
+  const earn=(empty,html)=>empty?`<span class="note pearn">${html}</span>`:'';
+  const bst=BlindTactics.stats(Store.get('blind-progress'),Store.get('blind-rating')), nLines=withStats.reduce((a,x)=>a+x.st.lines,0);
   $('p-stats').innerHTML=`
-    <div class="stat"><b>${withStats.reduce((a,x)=>a+x.st.lines,0)}</b><span class="note">opening line${withStats.reduce((a,x)=>a+x.st.lines,0)===1?'':'s'} trained</span></div>
-    <div class="stat"><b>${tac.n>=TAC_MIN?tac.r:'–'}</b><span class="note">puzzle rating (${tac.n>=TAC_MIN?Help.n(tac.n,'rated puzzle'):`after ${TAC_MIN} rated puzzles; ${tac.n} so far`})${Help.q('Elo against each puzzle’s Lichess rating, on your first try at each puzzle only. It shows once you have solved or missed '+TAC_MIN+' puzzles, so one lucky puzzle can’t set it.')}</span></div>
-    <div class="stat"><b>${tsolved}</b><span class="note">${tsolved===1?'puzzle':'puzzles'} solved</span></div>
-    ${(()=>{ const b=BlindTactics.stats(Store.get('blind-progress'),Store.get('blind-rating')); return `<div class="stat"><b>${b.rating==null?'–':b.rating}</b><span class="note">blind rating · ${b.solved} solved${b.avgPlies?` · ${b.avgPlies} hidden moves on average`:''}${Help.q('Blind tactics (Extra): Elo against each puzzle’s Lichess rating, first try only; a peek counts as a miss. The average is over the puzzles you solved, at the number of hidden plies you had set.')}</span></div>` })()}
-    <div class="stat"><b>${Object.values(dp).filter(x=>x.ok).length} / ${dr.length}</b><span class="note">game drills solved</span></div>
+    <div class="stat"><b>${nLines}</b><span class="note">opening line${nLines===1?'':'s'} trained</span>${earn(!nLines,'Play a line in <a href="#openings">Openings</a> (Rated).')}</div>
+    <div class="stat"><b>${tac.n>=TAC_MIN?tac.r:'–'}</b><span class="note">puzzle rating (${tac.n>=TAC_MIN?Help.n(tac.n,'rated puzzle'):`after ${TAC_MIN} rated puzzles; ${tac.n} so far`})${Help.q('Elo against each puzzle’s Lichess rating, on your first try at each puzzle only. It shows once you have solved or missed '+TAC_MIN+' puzzles, so one lucky puzzle can’t set it.')}</span>${tac.n<TAC_MIN?earn(true,'Solve or miss puzzles in <a href="#tactics">Tactics</a>.'):''}</div>
+    <div class="stat"><b>${tsolved}</b><span class="note">${tsolved===1?'puzzle':'puzzles'} solved</span>${earn(!tsolved,'In <a href="#tactics">Tactics</a> or on <a href="#today">Today</a>.')}</div>
+    ${(()=>{ const b=BlindTactics.stats(Store.get('blind-progress'),Store.get('blind-rating')); return `<div class="stat"><b>${b.rating==null?'–':b.rating}</b><span class="note">blind rating · ${b.solved} solved${b.avgPlies?` · ${b.avgPlies} hidden moves on average`:''}${Help.q('Blind tactics (Extra): Elo against each puzzle’s Lichess rating, first try only; a peek counts as a miss. The average is over the puzzles you solved, at the number of hidden plies you had set.')}</span>${earn(b.rating==null,'Try <a href="#blind">Blind tactics</a>: a puzzle from a few moves back.')}</div>` })()}
+    <div class="stat"><b>${Object.values(dp).filter(x=>x.ok).length} / ${dr.length}</b><span class="note">game drills solved</span>${earn(!dr.length,'Run <a href="#analyze">Analyze my games</a> and save its drills.')}</div>
     ${bcs.length?`<div class="stat"><b>${bcs.filter(d=>bp[d.id]&&bp[d.id].ok).length} / ${bcs.length}</b><span class="note">blunder checks passed (<a href="#blundercheck">Blunder check</a>)${Help.q('Passed: both steps right on the first try (the threat, then your move). A passed position comes back after 3, 7 and 21 days.')}</span></div>`:''}
-    <div class="stat"><b>${eg.solved} / ${eg.total||'–'}</b><span class="note">endgames solved</span></div>`;
+    <div class="stat"><b>${eg.solved} / ${eg.total||'–'}</b><span class="note">endgames solved</span>${earn(!eg.solved,'Win or hold one in <a href="#endgames">Endgames</a>.')}</div>`;
   { const lines=withStats.reduce((a,x)=>a+x.st.lines,0), ds=Object.values(dp).filter(x=>x.ok).length;
     const parts=[lines?Help.n(lines,'opening line')+' trained':'',tsolved?Help.n(tsolved,'puzzle')+' solved':'',dr.length?`${ds} of ${Help.n(dr.length,'drill')} from your games solved`:'',eg.solved?`${eg.solved} of ${eg.total} endgames won or held`:''].filter(Boolean);
     $('p-lead').textContent=parts.length?`On this device: ${parts.join(', ')}.${tac.n>=TAC_MIN?` Puzzle rating ${tac.r} after ${Help.n(tac.n,'rated puzzle')}.`:''}`
@@ -103,9 +109,17 @@ function render(){
       return `<tr><td>${esc(o.name)}</td><td>${o.side}</td><td>${st.lines}</td><td>${st.rating}</td><td>${last}</td></tr>`;
     }).join('')||'<tr><td colspan="5" class="note">Nothing trained yet. Opening lines you play in Rated mode show up here.</td></tr>');
   charts(withStats);
+  storage();
 }
+/* How much is kept, and a way to free the caches (26 Nov 2026, roadmap #269). Browsers allow about 5 million characters
+   per site; Think Ahead counts what it keeps against that. */
+function storage(){ const u=Store.usage(), mb=n=>(n/1e6).toFixed(n<1e5?2:1);
+  $('p-storagetext').textContent=`Think Ahead keeps ${mb(u.all)} million characters on this device (browsers allow about 5)${u.cache>=1000?`, ${mb(u.cache)} of them analysis caches: Stockfish’s evals and checks of games you analyzed, rebuilt when needed.`:'.'}`;
+  $('p-clearcache').hidden=u.cache<1000 }
 function init(){
   $('p-op').addEventListener('change',()=>render());
+  $('p-clearcache').addEventListener('click',()=>{ const before=Store.usage().all; Store.clearCaches(); const freed=before-Store.usage().all;
+    $('p-note').textContent=`Cleared the analysis caches (${(freed/1e6).toFixed(freed<1e5?2:1)} million characters). Your progress, drills and the games they come from are kept.`; storage() });
   /* Export: a download on the website; in the app (no downloads in its web view, roadmap #267) a file in Files */
   $('p-export').addEventListener('click',async()=>{
     const name='think-ahead-progress-'+new Date().toISOString().slice(0,10)+'.json', text=JSON.stringify(Store.exportAll(),null,1);

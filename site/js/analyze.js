@@ -22,13 +22,37 @@ function note(t,busy){ const n=$('a-note'); n.textContent=t; n.classList.toggle(
 function prog(frac,show=true){ const p=$('a-prog'); p.hidden=!show; p.querySelector('i').style.width=Math.round(frac*100)+'%' }
 const mode=()=>Store.get('a-mode')==='deep'?'deep':'standard';
 
-/* ---------- Fetching ---------- */
+/* ---------- Fetching ----------
+   26 Nov 2026 (roadmap #276): every request has a time limit and Stop ends it; offline, a site that limits requests
+   (429) and one that doesn't answer each get a plain sentence (offline showed the browser's own "Load failed", and a
+   Chess.com 429 read "No recent rapid or classical games found"). Chess.com months that fail are counted and said. */
+const LIMIT={lichess:30000,chesscom:15000};   /* Lichess sends up to 60 games with their analysis in one answer */
+let fetchCtl=null;   /* the request under way, so Stop can end it */
+class FetchError extends Error{ constructor(msg,why){ super(msg); this.why=why } }
+const BUSY={lichess:'Lichess is limiting requests from this connection (too many in a short time). Wait a minute, then try again.',
+  chesscom:'Chess.com is limiting requests from this connection (too many in a short time). Wait a minute, then try again.'};
+async function getFrom(site,url,as,headers){
+  const name=site==='lichess'?'Lichess':'Chess.com', ms=LIMIT[site];
+  if(!Net.online()) throw new FetchError('You are offline. Analyze my games needs the internet to fetch your games; your PGN files work offline.','offline');
+  const ctl=fetchCtl=new AbortController(); let late=false; const t=setTimeout(()=>{ late=true; ctl.abort() },ms);
+  try{
+    const r=await fetch(url,{headers:headers||{},signal:ctl.signal});
+    if(r.status===429) throw new FetchError(BUSY[site],'busy');
+    return {status:r.status,ok:r.ok,body:r.ok?await (as==='json'?r.json():r.text()):null};
+  }catch(e){
+    if(e instanceof FetchError) throw e;
+    if(late) throw new FetchError(`${name} didn’t answer within ${ms/1000} seconds. Check the connection and try again.`,'timeout');
+    if(e&&e.name==='AbortError') throw new FetchError('Stopped before the games arrived.','stopped');
+    if(!Net.online()) throw new FetchError('You are offline. Analyze my games needs the internet to fetch your games; your PGN files work offline.','offline');
+    throw new FetchError(`Could not reach ${name}. Check the connection, or a browser extension that blocks it, and try again.`,'net');
+  }finally{ clearTimeout(t); if(fetchCtl===ctl) fetchCtl=null }
+}
 async function fetchLichess(user,blitz){
   const url=`https://lichess.org/api/games/user/${encodeURIComponent(user)}?max=${CAP_LICHESS}&perfType=${blitz?'blitz,':''}rapid,classical&rated=true&moves=true&evals=true`;
-  const r=await fetch(url,{headers:{Accept:'application/x-ndjson'}});
+  const r=await getFrom('lichess',url,'text',{Accept:'application/x-ndjson'});
   if(r.status===404) throw new Error('No such Lichess user.');
   if(!r.ok) throw new Error('Lichess answered '+r.status+'.');
-  const text=await r.text();
+  const text=r.body;
   const games=[];
   for(const line of text.split('\n')){ if(!line.trim()) continue; try{ games.push(JSON.parse(line)) }catch(e){} }
   return games.map(j=>{
@@ -46,14 +70,16 @@ async function fetchLichess(user,blitz){
 }
 async function fetchChesscom(user,blitz){
   const base=`https://api.chess.com/pub/player/${encodeURIComponent(user.toLowerCase())}`;
-  const ar=await fetch(base+'/games/archives');
+  const ar=await getFrom('chesscom',base+'/games/archives','json');
   if(ar.status===404) throw new Error('No such Chess.com user.');
   if(!ar.ok) throw new Error('Chess.com answered '+ar.status+'.');
-  const archives=(await ar.json()).archives||[];
-  const games=[];
-  for(const u of archives.slice(-6).reverse()){
-    const r=await fetch(u); if(!r.ok) continue;
-    for(const j of ((await r.json()).games||[]).reverse()){
+  const archives=(ar.body&&ar.body.archives)||[];
+  const games=[], months=archives.slice(-6).reverse(); let failed=0, lastErr=null, tried=0;
+  for(const u of months){
+    tried++;
+    let r; try{ r=await getFrom('chesscom',u,'json') }catch(e){ if(e.why==='stopped'||e.why==='offline') throw e; failed++; lastErr=e; continue }
+    if(!r.ok){ failed++; lastErr=new FetchError('Chess.com answered '+r.status+'.','http'); continue }
+    for(const j of ((r.body&&r.body.games)||[]).reverse()){
       if(j.rules!=='chess'||!(j.time_class==='rapid'||blitz&&j.time_class==='blitz')) continue;
       if(j.time_class==='daily') continue; /* rapid only: chess.com has no classical pool */
       const color=j.white.username.toLowerCase()===user.toLowerCase()?'w':'b';
@@ -71,6 +97,9 @@ async function fetchChesscom(user,blitz){
     }
     if(games.length>=CAP_CHESSCOM) break;
   }
+  /* months that didn't come: with no games at all, say why instead of "no games found"; otherwise run() says how many */
+  if(failed&&!games.length) throw lastErr;
+  games.failed=failed?{n:failed,of:tried,why:lastErr&&lastErr.why,msg:lastErr&&lastErr.message}:null;
   return games;
 }
 
@@ -340,7 +369,9 @@ async function run(site,user,blitz){
     } else {
       LASTCHECKS=null; if($('a-checks')) $('a-checks').hidden=true;
       note('Fetching games…',true);
+      stopReq=false; if($('a-stop')) $('a-stop').hidden=false;   /* Stop ends a slow fetch too */
       games=site==='lichess'?await fetchLichess(user,blitz):await fetchChesscom(user,blitz);
+      if(games.failed) fileNote=`Chess.com didn’t send ${games.failed.n} of the ${games.failed.of} months${games.failed.why==='busy'?' (it is limiting requests: try again in a minute for the rest)':games.failed.why==='timeout'?' (no answer in time)':''}; this report covers the others.`;
       budget={games:MAX_ENGINE_GAMES,cache:true,mode:m};
     }
     LAST={games,site,fileNote,user,files:site==='pgn'?FILES.map(f=>({name:f.name,sys:effSys(f),why:sysWhy(f)})):[]}; LASTBC=[];
@@ -349,7 +380,7 @@ async function run(site,user,blitz){
     const engPlies=needEngine.slice(0,nEng).reduce((a,g)=>a+g.moves.length,0);
     const how=`${m==='deep'?'Deep':'Standard'} analysis, depth ${DEPTH[m]}`;
     note(site==='pgn'?`${fileNote} ${games.length-needEngine.length} already have evals${nEng?`; Stockfish is analyzing the other ${nEng} on your device (${how}). You can stop any time: what is done is kept, and running it again carries on.`:'.'}`
-      :`${Help.n(games.length,'game')}.${nEng?` ${nEng} without stored evals — analyzing with Stockfish on your device (${how}), this takes a while…`:''}`,true);
+      :`${fileNote?fileNote+' ':''}${Help.n(games.length,'game')}.${nEng?` ${nEng} without stored evals — analyzing with Stockfish on your device (${how}), this takes a while…`:''}`,true);
     stopReq=false; if($('a-stop')) $('a-stop').hidden=!nEng;
     const rows=[], t0=Date.now(); let doneP=0, drawn=0, tick=Date.now();
     for(let i=0;i<games.length&&!stopReq;i++){
@@ -375,7 +406,7 @@ async function run(site,user,blitz){
     const kept=keepRun(rows,games.length,m);
     const keptNote=kept==='ok'?'':kept==='partial'?' Storage on this device is full: the games your drills come from are kept, but this report won’t come back after a reload.':' Storage on this device is full: these games can’t be kept, so the report won’t come back after a reload.';
     note((bcStopped?`Stopped during Blunder check: ${LASTBC.length} position${LASTBC.length===1?'':'s'} found so far. Press Analyze again to carry on (nothing is redone).`
-      :stopReq?`Stopped: ${rows.length} of ${games.length} games analyzed so far. Press Analyze again to carry on (nothing is redone).`:site==='pgn'?`${fileNote} Done.`:'Done.')+keptNote);
+      :stopReq?`Stopped: ${rows.length} of ${games.length} games analyzed so far. Press Analyze again to carry on (nothing is redone).`:site==='pgn'?`${fileNote} Done.`:fileNote?`Done. ${fileNote}`:'Done.')+keptNote);
   }catch(e){ note(String(e.message||e)) }
   prog(0,false); $('a-go').disabled=false; if($('a-stop')) $('a-stop').hidden=true; running=false; updateEstimate();
 }
@@ -616,7 +647,7 @@ function init(){
   /* Standard / Deep */
   document.querySelectorAll('input[name="a-mode"]').forEach(r=>{ r.checked=r.value===mode(); r.addEventListener('change',()=>{ if(r.checked) Store.put('a-mode',r.value); updateEstimate() }) });
   $('a-est').addEventListener('click',e=>{ if(e.target.closest('[data-bench]')){ e.preventDefault(); bench(); updateEstimate() } });
-  if($('a-stop')) $('a-stop').addEventListener('click',()=>{ stopReq=true; note('Stopping after this position…') });
+  if($('a-stop')) $('a-stop').addEventListener('click',()=>{ stopReq=true; if(fetchCtl){ fetchCtl.abort(); note('Stopping…') } else note('Stopping after this position…') });
   if($('a-pgnfile')) $('a-pgnfile').addEventListener('change',async e=>{ await readFiles(e.target.files||[]); e.target.value='' });
   /* drag-and-drop anywhere on the form */
   const card=$('a-form')||$('analyze');
@@ -648,7 +679,7 @@ function init(){
     if(AStats.click(e)&&LASTR) renderReport(...LASTR) });
   $('a-report').addEventListener('change',e=>{ if(AStats.change(e)&&LASTR) renderReport(...LASTR) });
 }
-window.AnalyzeTab={init,verifyDrill,saveDrills,evCache,phaseAccuracy,phaseOf,run,markGame,fetchLichess,fetchChesscom,evalsFor,yearlyOf,drillSets,removeSet,addFile,bench,DEPTH,
+window.AnalyzeTab={LIMIT,init,verifyDrill,saveDrills,evCache,phaseAccuracy,phaseOf,run,markGame,fetchLichess,fetchChesscom,evalsFor,yearlyOf,drillSets,removeSet,addFile,bench,DEPTH,
   restore,live,findBlunderChecks,bcCandidates,BCMAX,get blunderChecks(){ return LASTBC },
   get files(){ return FILES },
   setFile(text,name){ FILES=[]; addFile(text,name||'file.pgn'); renderFiles() },

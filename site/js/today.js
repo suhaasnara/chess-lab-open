@@ -124,6 +124,10 @@ const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
 function card(label,href,all,rows){ return `<div class="card watoday"><div class="wthead"><span class="label">${label}</span><a class="note walink" href="${href}">${all} →</a></div>${rows}</div>` }
 function cards(list){
   const out=[];
+  /* Reviews due in the four sections with a schedule (26 Nov 2026, roadmap #275): one row each, to its page */
+  const dc=DueTabs.counts(), due=DueTabs.LIST.filter(([k])=>dc[k]>0);
+  if(due.length) out.push(`<div class="card watoday" id="td-due"><div class="wthead"><span class="label">Due for review</span></div>${due.map(([k,name,one,many])=>
+    `<div class="wtrow tddue"><a href="#${k}"><b>${esc(name)}</b></a><span class="note">${dc[k]} ${esc(dc[k]===1?one:many)} due</span></div>`).join('')}<p class="note" style="margin:6px 0 0">A miss comes back the next day; a solve after 3, 7 and 21 days.</p></div>`);
   const wp=window.WatchTab&&WatchTab.plan?WatchTab.plan():[];
   if(wp.length) out.push(card('Watch','#watch','All videos',wp.map(p=>`<div class="wtrow"><span class="wtlab">${esc(p.label)}</span><a href="${esc(p.url)}" target="_blank" rel="noopener"><b>${esc(p.v.title)}</b></a><span class="note">${esc(cap(p.meta||'Opens on YouTube'))}</span></div>`).join('')));
   const eg=list.find(x=>x.kind==='endgame');
@@ -150,7 +154,8 @@ function draw(fresh){
   el.classList.toggle('isempty',!rows.length);
   if(!rows.length) el.innerHTML='<p class="empty">'+((TacticsTab.lib||[]).length?'Nothing to play here today.':'Loading the puzzles…')+'</p>';
   const nd=(Store.get('adrills')||[]).length;
-  $('td-note').innerHTML=nd?'':'Drills from your own games appear here once you run <a href="#analyze">Analyze my games</a> and save some.';
+  /* no games yet: the way to get drills, as a button in their place (26 Nov 2026, roadmap #291) */
+  $('td-note').innerHTML=nd?'':'Drills from your own games appear here: type your Lichess or Chess.com username in Analyze my games and save the drills it finds. <span class="btns" style="margin-top:8px;display:flex"><a class="btn sm" href="#analyze" id="td-analyze">Analyze my games</a></span>';
   /* on opening Today, only a drill or puzzle goes on the board by itself: the opening trainer would start the 6 MB book
      download (and the endgame its data) while the puzzles are still loading on a slow phone; those come with their card or Next */
   if(fresh||(!hosted&&!sel)) play(rows.find(x=>!x.done)||rows[0]||null);

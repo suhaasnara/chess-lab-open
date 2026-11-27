@@ -19,7 +19,9 @@ window.Settings=(()=>{
   /* board display toggles: coordinates, last-move highlight, move dots */
   const classes=()=>{ const b=document.body; if(!b) return; b.classList.toggle('no-coords',get('coords')===false||get('coords')==='false');
     b.classList.toggle('no-last',get('lastMove')===false||get('lastMove')==='false'); b.classList.toggle('no-dests',get('dests')===false||get('dests')==='false') };
-  const set=(k,v)=>{ cur[k]=v; try{ localStorage.setItem('clo-settings',JSON.stringify(cur)) }catch(e){}
+  /* a setting that can't be written (storage full) makes room or says so, as progress does (Store.room) */
+  const set=(k,v)=>{ cur[k]=v; const w=()=>localStorage.setItem('clo-settings',JSON.stringify(cur));
+    try{ w() }catch(e){ if(window.Store&&Store.room) Store.room(w,'settings') }
     if(k==='board') document.body.dataset.board=v==='maple'?'':v;
     if(k==='theme') theme();
     classes();
@@ -33,12 +35,51 @@ window.Settings=(()=>{
 window.Store=(()=>{
   const PRE='clo:';
   const get=k=>{ try{ const v=localStorage.getItem(PRE+k); return v?JSON.parse(v):null }catch(e){ return null } };
-  const put=(k,v)=>{ try{ localStorage.setItem(PRE+k,JSON.stringify(v)) }catch(e){} };
+  /* every write is announced once the current task ends ('store-change'), so counts shown elsewhere (the due badges on the
+     tabs) follow it */
+  let told=0; const tell=()=>{ if(told) return; told=setTimeout(()=>{ told=0; dispatchEvent(new Event('store-change')) },0) };
+  /* Storage full is never silent (26 Nov 2026, roadmap #269: put swallowed every error, so once this browser's storage was
+     full a result showed as saved and wasn't, and settings went back after a reload). put returns whether it was written.
+     When it can't be, the caches go first (Stockfish's evals of analyzed games, Blunder check's searches, the drill
+     checks, and the analyzed games no drill points to: all of it is rebuilt when needed) and it is tried once more; if
+     it still can't be written, a banner says so (once until it is closed). A write to a cache itself just fails. */
+  const CACHES=['pgn-evals','bc-evals','adrill-verify'];
+  const write=(k,s)=>localStorage.setItem(PRE+k,s);
+  function freeCaches(){ let n=0;
+    for(const k of CACHES) if(localStorage.getItem(PRE+k)!=null){ try{ localStorage.removeItem(PRE+k); n++ }catch(e){} }
+    try{ if(window.AGames&&AGames.trim&&AGames.trim()) n++ }catch(e){}
+    return n }
+  function room(w,what){
+    if(freeCaches()){ try{ w(); banner('freed'); tell(); return true }catch(e){} }
+    banner('full',what); return false }
+  function banner(kind,what){
+    if(typeof document==='undefined'||!document.body) return;
+    let b=document.getElementById('store-full');
+    if(kind==='freed'&&b&&!b.hidden) return;
+    if(!b){ b=document.createElement('div'); b.id='store-full'; b.className='storefull'; b.setAttribute('role','alert'); document.body.appendChild(b) }
+    b.dataset.kind=kind;
+    b.innerHTML=(kind==='freed'
+      ?'<p><b>Storage on this device was full.</b> The analysis caches were cleared to make room, and your progress was saved. They are rebuilt when needed.</p>'
+      :`<p><b>Storage on this device is full: ${what==='settings'?'that setting':'your last result'} wasn’t saved.</b> In <a href="#progress">Progress</a>, export your progress, then remove what you no longer need (games in Guess the move, saved drills or opponents).</p>`)
+      +'<button type="button" class="btn sm" id="store-full-x">Close</button>';
+    b.hidden=false; b.querySelector('#store-full-x').onclick=()=>{ b.hidden=true };
+    dispatchEvent(new Event('store-full')) }
+  const put=(k,v)=>{ const s=JSON.stringify(v);
+    try{ write(k,s); tell(); return true }catch(e){}
+    if(CACHES.includes(k)) return false;
+    return room(()=>write(k,s)) };
+  /* how much this site keeps, in characters (what browsers count against their limit), and how much of it is caches */
+  const usage=()=>{ let all=0, cache=0; try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i), n=(k.length+(localStorage.getItem(k)||'').length);
+      if(k.startsWith(PRE)||k.startsWith('clo-')){ all+=n; if(CACHES.includes(k.slice(PRE.length))) cache+=n } } }catch(e){}
+    try{ if(window.AGames&&AGames.spare) cache+=AGames.spare() }catch(e){}
+    return {all,cache} };
+  /* Progress → Clear analysis caches */
+  const clearCaches=()=>{ const n=freeCaches(); tell(); return n };
   const del=k=>{ try{ localStorage.removeItem(PRE+k) }catch(e){} };
   const keys=()=>{ const out=[]; try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.startsWith(PRE)) out.push(k.slice(PRE.length)) } }catch(e){} return out };
   const exportAll=()=>{ const o={_app:'chess-lab-open',_v:1,_t:new Date().toISOString()}; for(const k of keys()) o[k]=get(k); return o };
   /* put that says whether it worked (false when this browser's storage is full) */
-  const tryPut=(k,v)=>{ try{ localStorage.setItem(PRE+k,JSON.stringify(v)); return true }catch(e){ return false } };
+  const tryPut=(k,v)=>{ try{ localStorage.setItem(PRE+k,JSON.stringify(v)); tell(); return true }catch(e){ return false } };
   /* an export's keys written back: {n written, failed: keys that could not be (storage full)}; 26 Nov 2026, roadmap #268 */
   const restore=o=>{ if(!o||o._app!=='chess-lab-open') throw new Error('Not a Think Ahead export.');
     let n=0; const failed=[]; for(const k in o){ if(k[0]==='_') continue; if(tryPut(k,o[k])) n++; else failed.push(k) } migrate(); return {n,failed} };   /* an old export can hold a pack's keys */
@@ -70,7 +111,7 @@ window.Store=(()=>{
     if(ok) for(const k of PACK_KEYS) del(k);
     return ok?{drills:mine.length,bc:bc.length}:null;
   };
-  return {get,put,tryPut,del,keys,exportAll,importAll,restore,describe,migrate,PACK_KEYS};
+  return {get,put,tryPut,del,keys,exportAll,importAll,restore,describe,migrate,PACK_KEYS,room,usage,clearCaches,CACHES};
 })();
 Store.migrate();
 const deep=o=>o==null?o:JSON.parse(JSON.stringify(o));
@@ -148,3 +189,25 @@ const MARK_NAMES={'!':'good move','?':'mistake','!!':'brilliant move','??':'blun
 const MARK_CLS={'!':'mk-good','!!':'mk-good','!?':'mk-int','?!':'mk-warn','?':'mk-bad','??':'mk-bad','□':'mk-good'};
 const markTokens=mk=>String(mk||'').match(/!!|\?\?|!\?|\?!|[!?]|\+−|−\+|\S/g)||[];
 function markHtml(mk){ return markTokens(mk).map(t=>`<span class="mk ${MARK_CLS[t]||'mk-sign'}" title="${esc(MARK_NAMES[t]||t)}">${esc(t)}</span>`).join('') }
+
+/* ---------- Reviews due (26 Nov 2026, roadmap #275) ----------
+   The four sections with a review schedule (a miss comes back the next day, a solve after 3, 7 and 21 days): how many are
+   due now, on their tabs ("3" on the tab row, "3 due" in Extra, the sum of Extra's on its button) and on Today. The
+   counts are the app's reminder counters (Due, registered in js/native.js), so the website and the app agree. */
+window.DueTabs={
+  LIST:[['drills','Drills','drill','drills'],['blind','Blind tactics','Blind tactic','Blind tactics'],['endgames','Endgames','endgame','endgames'],
+    ['blundercheck','Blunder check','Blunder check','Blunder checks']],
+  counts(){ return window.Due?Due.count(Date.now()):{} },
+  paint(){
+    const c=this.counts(); let extra=0;
+    const set=(el,n,word)=>{ if(!el) return; let b=el.querySelector(':scope > .duebadge');
+      if(!n){ if(b) b.remove(); return }
+      if(!b){ b=document.createElement('span'); b.className='duebadge'; const svg=el.querySelector(':scope > svg'); el.insertBefore(b,svg||null) }
+      b.innerHTML=word?`${n} due`:`${n}<span class="sr-only"> due</span>`; b.title=`${n} due for review` };
+    for(const [k] of this.LIST){ const n=c[k]||0;
+      set(document.querySelector(`#tabs .inner > a[data-view="${k}"]`),n,false);
+      set(document.querySelector(`#x-menu a[data-view="${k}"] > b`),n,true);
+      if(!document.querySelector(`#tabs .inner > a[data-view="${k}"]:not(.ph-x)`)) extra+=n }
+    set(document.getElementById('x-btn'),extra,false);
+  }
+};
