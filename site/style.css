@@ -515,6 +515,12 @@ th.num{white-space:normal}   /* a heading wraps rather than run into the next on
 #a-note.busy::before{content:"";flex:none;width:14px;height:14px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--blue);animation:aspin .8s linear infinite}
 @keyframes aspin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){#a-note.busy::before{animation-duration:2.4s}}
+/* the run's steps, as it goes (27 Nov 2026, roadmap #279): done ✓, the current one bold, the rest muted */
+#a-steps{margin-top:8px}#a-steps ol{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.92rem;color:var(--text-2)}
+#a-steps li{display:inline-flex;align-items:center;gap:5px}#a-steps li::before{content:"";width:8px;height:8px;border-radius:50%;border:1.5px solid var(--border-strong)}
+#a-steps li.on{color:var(--text-head);font-weight:600}#a-steps li.on::before{background:var(--accent);border-color:var(--accent)}
+#a-steps li.done{color:var(--success)}#a-steps li.done::before{content:"✓";width:auto;height:auto;border:0;font-weight:700}
+#a-steps .note{margin:4px 0 0}
 #a-report .ayears{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:4px 0 14px}#a-report .ayears .note{margin-right:4px}
 
 /* ---------- Analyze my games v2 (14 Nov 2026): files, Standard / Deep, filters, results, charts, saved sets ---------- */

@@ -55,4 +55,54 @@ module.exports=async H=>{
     const {w:w5}=await makePage();
     assert(!w5.document.getElementById('pl-continue'),'no game kept: no offer');
   }
+  section('t112: Analyze remembers you, keeps the screen awake and shows its steps (roadmap #279)');
+  {
+    const mv='e4 e5 Nf3 Nc6 Bb5 a6 Ba4 Nf6 O-O Be7 Re1 b5';
+    const nd=JSON.stringify({id:'g1',createdAt:1762300000000,speed:'rapid',players:{white:{user:{name:'Me'},rating:2000},black:{user:{name:'Opp'},rating:1900}},
+      winner:'white',moves:mv,analysis:[30,25,35,30,35,30,35,30,40,30,35,30].map(e=>({eval:e}))})+'\n';
+    let seen=[], locks=[];
+    const fakeLock=w=>{ w.navigator.wakeLock={request:async t=>{ const l={type:t,released:false,release:async()=>{ l.released=true }}; locks.push(l); return l }} };
+    const {w}=await makePage({beforeLoad:fakeLock,fetch:async u=>{ if(u.includes('lichess.org/api/games/user/')){
+      await sleep(30); const el=w.document.getElementById('a-steps');
+      seen.push({hidden:el.hidden,on:(el.querySelector('li.on')||{}).textContent,text:el.textContent,note:w.document.getElementById('a-note').textContent}); return {ok:true,status:200,text:async()=>nd,json:async()=>({})} } return null }});
+    const $=id=>w.document.getElementById(id);
+    assert($('a-steps').hidden,'no steps before a run');
+    $('a-site').value='lichess'; $('a-user').value='  Me  '; $('a-blitz').checked=true; $('a-site').dispatchEvent(new w.Event('change'));
+    $('a-go').click();
+    const mid=$('a-steps');
+    for(let i=0;i<50&&w.AnalyzeTab.running;i++) await sleep(20);
+    const f=seen[0]||{};
+    assert(!f.hidden&&f.on==='Fetch your games'&&/Fetching your games from Lichess/.test(f.note),'the first step shows while the games are fetched: '+JSON.stringify(f));
+    assert(locks.length===1&&locks[0].type==='screen','the screen is kept awake during the run');
+    assert(/The screen stays on/.test(f.text),'… and it says so');
+    for(let i=0;i<50&&w.AnalyzeTab.running;i++) await sleep(20);
+    assert(!w.AnalyzeTab.running&&mid.querySelectorAll('li.done').length===4&&!mid.querySelector('li.on'),'every step ticked when it is done');
+    assert(locks[0].released,'… and the screen may lock again');
+    const who=w.Store.get('a-who');
+    assert(who&&who.site==='lichess'&&who.u==='Me'&&who.blitz===true,'the username, site and blitz are remembered: '+JSON.stringify(who));
+
+    /* the next launch: the form is filled in */
+    const {w:w2}=await makePage({beforeLoad:seed('a-who',who)});
+    const $2=id=>w2.document.getElementById(id);
+    assert($2('a-site').value==='lichess'&&$2('a-user').value==='Me'&&$2('a-blitz').checked,'the next launch fills in the username and site');
+    assert(!$2('a-user').closest('[data-src]').hidden,'… with the username box showing');
+    /* a link with ?u= still wins */
+    const {w:w3}=await makePage({beforeLoad:seed('a-who',who),url:'https://chess-lab-open.test/#analyze?site=chesscom&u=Other'});
+    w3.dispatchEvent(new w3.HashChangeEvent('hashchange')); await sleep(10);
+    assert(w3.document.getElementById('a-user').value==='Other'&&w3.document.getElementById('a-site').value==='chesscom','a link’s username still wins over the remembered one');
+    /* a browser with no wake lock, or one that refuses: the run goes on, with the plain advice */
+    let mid4='';
+    const {w:w4}=await makePage({beforeLoad:w=>{ w.navigator.wakeLock={request:async()=>{ throw new Error('NotAllowedError') }} },
+      fetch:async u=>{ if(!u.includes('lichess.org/api/games/user/')) return null; await sleep(20); mid4=w4.document.getElementById('a-steps').textContent; return {ok:true,status:200,text:async()=>nd,json:async()=>({})} }});
+    await w4.AnalyzeTab.run('lichess','Me'); await sleep(50);
+    assert(/Keep this page open/.test(mid4),'a refused wake lock: “keep this page open”: '+mid4);
+    assert(/analyzed game/.test(w4.document.getElementById('a-report').textContent),'… and the run still finishes');
+    /* the demo isn't remembered as your name */
+    const {w:w5}=await makePage({fetch:async()=>({ok:true,status:200,text:async()=>'',json:async()=>({games:[],archives:[]})})});
+    w5.document.getElementById('a-demo').click(); await sleep(50);
+    assert(w5.Store.get('a-who')==null,'trying the demo doesn’t remember its username');
+    /* an error hides the steps */
+    for(let i=0;i<50&&w5.AnalyzeTab.running;i++) await sleep(20);
+    assert(w5.document.getElementById('a-steps').hidden,'a run that ends in an error hides the steps');
+  }
 };
