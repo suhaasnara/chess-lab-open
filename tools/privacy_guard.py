@@ -337,7 +337,8 @@ NAME_ALLOW = {
 # name-checked (a 3-letter id would sooner or later equal a nickname); the two-word denylist above still applies.
 NAME_SKIP = [r'(^|/)data/(masters|demo-book)\.json$', r'(^|/)data/club/']
 
-TEXT_EXT = {'.js','.css','.html','.md','.json','.py','.yml','.yaml','.txt','.tsv','.svg','.sh','.csv','.xml','.webmanifest',''}
+# .swift: tools/make_touch_icon.swift (27 Nov 2026; the app's guard already scans Swift as text)
+TEXT_EXT = {'.js','.css','.html','.md','.json','.py','.yml','.yaml','.txt','.tsv','.svg','.sh','.csv','.xml','.webmanifest','.swift',''}
 # binary files that may be published (images, fonts, the Stockfish WebAssembly): their printable text runs are scanned
 BINARY_EXT = {'.wasm','.jpg','.jpeg','.png','.webp','.gif','.ico','.woff','.woff2'}
 SKIP = {'.git','node_modules'}
