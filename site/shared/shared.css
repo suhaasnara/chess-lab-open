@@ -11,10 +11,10 @@
 .board.movable .sq.mine,.board.movable .sq.own{touch-action:none}   /* .own: a drag on your piece while the reply is still coming (or played back) doesn't scroll the page either (his recheck, 23 Nov 2026); .movable is on only while the board takes a move (makeBoard), so a finished or read-only board scrolls from anywhere */
 /* ? = the keys on this page (shared/keys.js) */
 #keys-overlay{position:fixed;inset:0;background:var(--scrim);display:grid;place-items:center;z-index:80;padding:16px}
-#keys-overlay .card{background:var(--white);color:var(--ink);border-radius:var(--radius);padding:16px 18px;max-width:440px;width:100%;max-height:calc(100vh - 32px);overflow:auto;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+#keys-overlay .card{background:var(--white);color:var(--ink);border-radius:var(--radius-card,var(--radius));padding:16px 18px;max-width:440px;width:100%;max-height:calc(100vh - 32px);overflow:auto;box-shadow:0 8px 30px rgba(0,0,0,.25)}
 #keys-overlay h2{margin:0 0 6px;font:700 20px/1.2 var(--serif);color:var(--head)}
 .keystable{border-collapse:collapse;margin:8px 0}.keystable td{padding:4px 10px 4px 0;vertical-align:top}
-.keystable kbd{display:inline-block;min-width:2.2em;text-align:center;padding:1px 6px;border:1px solid var(--line);border-radius:4px;font:600 12px/1.6 var(--sans);background:var(--band)}
+.keystable kbd{display:inline-block;min-width:2.2em;text-align:center;padding:1px 6px;border:1px solid var(--line);border-radius:var(--radius-sm,4px);font:600 12px/1.6 var(--sans);background:var(--band)}
 /* "?" help beside a stat (shared/help.js) */
 .qglue{white-space:nowrap}.qhelp{display:inline-grid;place-items:center;width:18px;height:18px;margin-left:4px;padding:0;border:1px solid var(--line);border-radius:50%;background:var(--white);color:var(--muted);font:600 11px/1 var(--sans);cursor:help;vertical-align:middle}
 .qhelp:hover,.qhelp:focus-visible{color:var(--head);border-color:var(--muted)}
@@ -87,7 +87,7 @@ html.reader-open,html.reader-open body{overflow:hidden}
 .msel-row{display:flex;gap:8px;align-items:center;min-height:36px;padding:2px 6px;cursor:pointer}.msel-row:hover{background:var(--band)}
 .msel-acts{display:flex;justify-content:flex-end;padding-bottom:4px;border-bottom:1px solid var(--line);margin-bottom:4px}
 /* Header tabs (shared/nav.js): main tabs, Extra drop-down, Settings at the right; on phones Settings moves into Extra */
-nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:var(--white);border-bottom:1px solid var(--line)}
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:var(--bg);border-bottom:1px solid var(--line)}   /* 27 Nov 2026: on the page colour (was a white bar) */
 nav.tabs .inner{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;align-items:stretch}
 nav.tabs .inner::-webkit-scrollbar{display:none}
 /* a row that scrolls sideways fades at the edge that has more tabs (13 Nov 2026: "Today" read "ay" at 320 px) */
@@ -96,17 +96,17 @@ nav.tabs .inner.fr{-webkit-mask-image:linear-gradient(to left,transparent 0,#000
 nav.tabs .inner.fl.fr{-webkit-mask-image:linear-gradient(to right,transparent 0,#000 28px,#000 calc(100% - 28px),transparent 100%);mask-image:linear-gradient(to right,transparent 0,#000 28px,#000 calc(100% - 28px),transparent 100%)}
 nav.tabs a{color:var(--muted);text-decoration:none;font-size:.95rem;padding:13px 12px;border-bottom:2px solid transparent;white-space:nowrap}
 nav.tabs a:hover{color:var(--head)}
-nav.tabs a[aria-current="page"]{color:var(--head);border-bottom-color:var(--blue);font-weight:600}
+nav.tabs a[aria-current="page"]{color:var(--head);border-bottom-color:var(--primary,var(--blue));font-weight:600}
 nav.tabs .xtab{display:inline-flex;align-items:center;gap:6px;background:none;border:0;border-bottom:2px solid transparent;font:inherit;font-size:.95rem;color:var(--muted);padding:13px 12px;cursor:pointer;white-space:nowrap}
 nav.tabs .xtab:hover{color:var(--head)}
 .xmenu a.ph-x{display:none}
 nav.tabs .xtab[aria-expanded="true"] svg{transform:rotate(180deg)}
-nav.tabs .xtab.cur{color:var(--head);border-bottom-color:var(--blue);font-weight:600}
+nav.tabs .xtab.cur{color:var(--head);border-bottom-color:var(--primary,var(--blue));font-weight:600}
 nav.tabs .tabgap{flex:1 1 auto;min-width:8px}
 nav.tabs a.settab{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;min-width:44px}
 nav.tabs a.settab svg{flex:none;width:22px;height:22px}
-.xmenu{position:fixed;z-index:40;min-width:260px;max-width:calc(100vw - 32px);background:var(--white);border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 28px rgba(19,40,74,.18);padding:6px}
-.xmenu a{display:flex;flex-direction:column;gap:1px;padding:9px 12px;border-radius:6px;text-decoration:none;color:var(--ink)}
+.xmenu{position:fixed;z-index:40;min-width:260px;max-width:calc(100vw - 32px);background:var(--white);border:1px solid var(--line);border-radius:var(--radius-card,8px);box-shadow:0 10px 28px rgba(19,40,74,.18);padding:6px}
+.xmenu a{display:flex;flex-direction:column;gap:1px;padding:9px 12px;border-radius:calc(var(--radius) - 2px);text-decoration:none;color:var(--ink)}
 .xmenu a b{font-weight:600;color:var(--head);font-size:.95rem}
 .xmenu a span{font-size:.82rem;color:var(--muted)}
 .xmenu a:hover,.xmenu a:focus-visible{background:var(--accent-soft);outline:none}
@@ -121,7 +121,7 @@ nav.tabs a.settab svg{flex:none;width:22px;height:22px}
 .xmenu.grouped .xph{column-span:all;display:none}
 .xmenu.grouped .xset{column-span:all;grid-column:1/-1}
 .xmenu.grouped .xph{grid-column:1/-1}
-@media (max-width:480px){nav.tabs .inner > a.ph-x{display:none}.xmenu a.ph-x{display:flex}nav.tabs .xtab.cur-ph{color:var(--head);border-bottom-color:var(--blue);font-weight:600}nav.tabs a.settab{display:none}.xmenu .xset{display:flex;border-top:1px solid var(--line);margin-top:4px;padding-top:11px}
+@media (max-width:480px){nav.tabs .inner > a.ph-x{display:none}.xmenu a.ph-x{display:flex}nav.tabs .xtab.cur-ph{color:var(--head);border-bottom-color:var(--primary,var(--blue));font-weight:600}nav.tabs a.settab{display:none}.xmenu .xset{display:flex;border-top:1px solid var(--line);margin-top:4px;padding-top:11px}
   .xmenu.grouped{padding:6px}.xmenu.grouped a span{display:none}.xmenu.grouped a{padding:9px 10px;min-height:40px;justify-content:center}.xmenu.grouped .xgh{padding:6px 10px 2px}
   .xmenu.grouped .xph{display:grid;grid-template-columns:1fr 1fr;gap:0 6px;border-bottom:1px solid var(--line);padding:0 0 4px;margin-bottom:2px}
   nav.tabs a,nav.tabs .xtab{padding:12px 4px;font-size:.84rem}nav.tabs .tabgap{display:none}nav.tabs .inner{gap:0;padding-left:12px;padding-right:12px;justify-content:space-between}}   /* 14 Nov: 12 + the tab's own 4 = the page's 16 px margin, so the first tab's word starts on the same edge as the board and the cards (it sat 4 px left of them) */
