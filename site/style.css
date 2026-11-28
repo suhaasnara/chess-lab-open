@@ -480,6 +480,13 @@ th.num{white-space:normal}   /* a heading wraps rather than run into the next on
   margin:0 -16px;padding:4px 16px 6px;box-shadow:0 8px 10px -10px var(--shadow);--pinb:min(100%,max(250px,calc(70vh - 190px)));--pinb:min(100%,max(250px,calc(70dvh - 190px)))}
 #openings .otrain.pin .boardbox,#openings .otrain.pin .capline,#openings .otrain.pin .evalrow{max-width:var(--pinb);margin-left:auto;margin-right:auto}
 #openings .otrain.pin .boardbox{width:var(--pinb)}
+/* short phones (iPhone SE, 667 px tall; 27 Nov 2026, roadmap #292): the 70%-of-the-height rule gave a 277 px board (343 on
+   other phones). Up to 320 px here, and the opening picker on one slim line above it. */
+@media (max-height:700px) and (max-width:420px){
+  #openings .otrain.pin>.boardwrap{--pinb:min(100%,320px)}
+  #openings .otrain.pin .opickbtn{padding-top:6px;padding-bottom:6px}
+  #openings .otrain.pin .opicklab{display:none}
+}
 #openings .otrain.pin #o-tools{flex-wrap:nowrap;gap:5px;margin-top:6px}
 #openings .otrain.pin #o-tools kbd{display:none}
 #openings .otrain.pin #o-tools>.btn{flex:0 0 auto}

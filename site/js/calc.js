@@ -75,6 +75,9 @@ function renderLine(){
   if(!S.sub){ const yours=sanLine(S.start,S.line);
     $('cc-line').innerHTML=yours.length?numbered(S.start,yours):'<span class="note">Your line appears here.</span>' }
   $('cc-submit').disabled=S.sub||!S.line.length; $('cc-undo').disabled=S.sub||!S.line.length;
+  /* once submitted, Submit and Undo have nothing left to do: they go, so ‹ Read ⋯ Next › fit one row on an iPhone SE (the bar
+     wrapped to 124 px and pushed the board under the tab row: roadmap #292) */
+  $('cc-submit').hidden=$('cc-undo').hidden=!!S.sub;
   $('cc-next').classList.toggle('primary',!!S.sub);   /* 14 Nov: one filled button: Submit until the line is in, then Next */
 }
 function userMove(from,to,promo){
