@@ -39,7 +39,7 @@ function offerResume(){
   const k=kept(); if(!k) return false;
   const c=k.c, n=Math.ceil(c.moves.length/2);
   status('','You have a game in progress.',` ${c.goal?'Play it out · ':''}${vsBot(c.me,c.elo)}${c.blind?' · blindfold':''}, ${Help.n(n,'move')} in, from ${localDay(c.t)===localDay(Date.now())?'today':localDay(c.t)}. Continue it, or start a new one.`);
-  const b=document.createElement('button'); b.type='button'; b.className='btn sm primary'; b.id='pl-continue'; b.textContent='Continue your game'; b.style.marginLeft='8px';
+  const b=document.createElement('button'); b.type='button'; b.className='btn sm primary'; b.id='pl-continue'; b.textContent='Continue your game'; b.style.display='block'; b.style.marginTop='8px';
   b.addEventListener('click',()=>resume()); $('pl-status').appendChild(b);
   return true;
 }
