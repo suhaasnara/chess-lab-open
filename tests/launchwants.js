@@ -105,4 +105,14 @@ module.exports=async H=>{
     for(let i=0;i<50&&w5.AnalyzeTab.running;i++) await sleep(20);
     assert(w5.document.getElementById('a-steps').hidden,'a run that ends in an error hides the steps');
   }
+  section('t113: a home-screen icon for the website (roadmap #399)');
+  {
+    const fs=require('fs'), path=require('path');
+    const png=fs.readFileSync(path.join(H.SITE,'apple-touch-icon.png'));
+    assert(png.slice(1,4).toString()==='PNG'&&png.readUInt32BE(16)===180&&png.readUInt32BE(20)===180,'site/apple-touch-icon.png is a 180 × 180 PNG');
+    assert(png[25]===2,'… opaque (RGB, no alpha: iOS shows transparency as black)');
+    for(const [f,href] of [['index.html','apple-touch-icon.png'],['404.html','/chess-lab-open/apple-touch-icon.png']]){
+      const html=fs.readFileSync(path.join(H.SITE,f),'utf8');
+      assert(html.includes(`<link rel="apple-touch-icon" href="${href}">`),f+' links it ('+href+')') }
+  }
 };
