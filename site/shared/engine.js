@@ -8,17 +8,21 @@
      side to move (callers show evals from White's side); null if the engine failed. Finished searches are cached
      (3,000 positions) and a search already queued or running is shared, not repeated.
    SharedEngine.play(fen, elo, movetime=700) -> uci at limited strength (UCI_Elo 1320-3190, switched off right after).
-   SharedEngine.start(), .restart(); getters failed, ready, started (asked to start: downloading or ready), name, why, restarts. Fires 'engine-change' on window.
+   SharedEngine.start(), .restart(), .revive() (start again after it failed: Settings → Engine); getters failed, ready, started (asked to start: downloading or ready), name, why, restarts. Fires 'engine-change' on window.
 
    The worker is a small boot script that importScripts() the build; the .wasm is found from the worker URL's #fragment.
    A build that can't start reports it at once (__sf_fail), so the next one starts without waiting for its timer.
    Watchdog: every search has a time limit; at the limit it sends "stop" and takes the deepest line so far; with no
-   "bestmove" 2.5 s later the worker is replaced by a fresh one of the same build (after 5 restarts: failed). */
+   "bestmove" 2.5 s later the worker is replaced by a fresh one of the same build (after 6 restarts in a row: failed).
+   27 Nov 2026 (roadmap #271): a search that answers resets the count, and a search the page slept through (the app sent
+   to the background, a laptop lid shut) restarts without counting; before, six over a whole session ended the engine. */
 window.EngineKit=(()=>{
   function create(URLS){
     const emit=()=>dispatchEvent(new Event('engine-change'));
     let w=null, ok=false, queue=Promise.resolve(), listener=null, failed=false, name='', started=false, readyRes, why='', okIdx=-1, restarts=0;
     let ready=new Promise(r=>readyRes=r);
+    let hidAt=0; if(typeof document!=='undefined') document.addEventListener('visibilitychange',()=>{ if(document.hidden) hidAt=Date.now() });
+    const slept=t0=>typeof document!=='undefined'&&(document.hidden||hidAt>=t0);
     /* a build's wasm may be a function (a site's own lookup, e.g. a copy kept in the browser's cache): it returns, or
        resolves to, the URL to use; false skips that build */
     function tryUrl(k){
@@ -36,8 +40,10 @@ window.EngineKit=(()=>{
       nw.postMessage('uci');
     }
     function start(){ if(started) return; started=true; tryUrl(0) }
-    function restart(){
-      try{ w&&w.terminate() }catch(e){} w=null; ok=false; listener=null; restarts++;
+    function revive(){ if(!failed&&started) return restart(true); try{ w&&w.terminate() }catch(e){} w=null; ok=false; listener=null; failed=false; restarts=0; why='';
+      ready=new Promise(r=>readyRes=r); started=true; emit(); tryUrl(0) }
+    function restart(free){
+      try{ w&&w.terminate() }catch(e){} w=null; ok=false; listener=null; if(!free) restarts++;
       ready=new Promise(r=>readyRes=r);
       if(restarts>5){ failed=true; why='the engine stopped answering repeatedly'; readyRes(); emit(); return }
       tryUrl(Math.max(0,okIdx));
@@ -46,17 +52,17 @@ window.EngineKit=(()=>{
       start();
       const job=()=>ready.then(()=>new Promise(res=>{
         if(!w||failed){res(null);return}
-        const lines={}; let done=false;
+        const lines={}; let done=false; const t0=Date.now();
         const finish=r=>{ if(done) return; done=true; clearTimeout(t); clearTimeout(kill); listener=null; res(r) };
         const t=setTimeout(()=>w&&w.postMessage('stop'),limitMs);
-        const kill=setTimeout(()=>{ const got=Object.keys(lines).sort((a,b)=>a-b).map(k=>lines[k]); finish(got.length?got:null); restart() },limitMs+2500);
+        const kill=setTimeout(()=>{ const got=Object.keys(lines).sort((a,b)=>a-b).map(k=>lines[k]); finish(got.length?got:null); restart(slept(t0)) },limitMs+2500);
         listener=l=>{
           if(l.startsWith('info')&&l.includes(' pv ')&&l.includes(' score ')){
             const p=l.split(' '); const mi=p.indexOf('multipv'); const k=mi>=0?+p[mi+1]:1; const si=p.indexOf('score');
             const cp=p[si+1]==='cp'?parseInt(p[si+2])/100:(parseInt(p[si+2])>0?99:-99); const mate=p[si+1]==='mate'?parseInt(p[si+2]):null;
             lines[k]={uci:p[p.indexOf('pv')+1],cp,mate};
           }
-          if(l.startsWith('bestmove')) finish(Object.keys(lines).sort((a,b)=>a-b).map(k=>lines[k]));
+          if(l.startsWith('bestmove')){ restarts=0; finish(Object.keys(lines).sort((a,b)=>a-b).map(k=>lines[k])) }
         };
         w.postMessage('setoption name MultiPV value '+multipv); w.postMessage('position fen '+fen); w.postMessage('go depth '+depth);
       }));
@@ -66,16 +72,16 @@ window.EngineKit=(()=>{
       start();
       const job=()=>ready.then(()=>new Promise(res=>{
         if(!w||failed){res(null);return}
-        let done=false; const finish=u=>{ if(done) return; done=true; clearTimeout(kill); listener=null; w&&w.postMessage('setoption name UCI_LimitStrength value false'); res(u) };
-        const kill=setTimeout(()=>{ finish(null); restart() },movetime+6000);
-        listener=l=>{ if(l.startsWith('bestmove')){ const u=l.split(' ')[1]; finish(u&&u!=='(none)'?u:null) } };
+        let done=false; const t0=Date.now(); const finish=u=>{ if(done) return; done=true; clearTimeout(kill); listener=null; w&&w.postMessage('setoption name UCI_LimitStrength value false'); res(u) };
+        const kill=setTimeout(()=>{ finish(null); restart(slept(t0)) },movetime+6000);
+        listener=l=>{ if(l.startsWith('bestmove')){ restarts=0; const u=l.split(' ')[1]; finish(u&&u!=='(none)'?u:null) } };
         w.postMessage('setoption name MultiPV value 1'); w.postMessage('setoption name UCI_LimitStrength value true');
         w.postMessage('setoption name UCI_Elo value '+Math.max(1320,Math.min(3190,Math.round(elo))));
         w.postMessage('position fen '+fen); w.postMessage('go movetime '+movetime);
       }));
       const p=queue.then(job); queue=p.catch(()=>{}); return p;
     }
-    const E={start,analyse,play,restart,get failed(){return failed},get ready(){return ok},get started(){return started},get name(){return name},get why(){return why},get restarts(){return restarts}};
+    const E={start,analyse,play,restart:()=>restart(),revive,get failed(){return failed},get ready(){return ok},get started(){return started},get name(){return name},get why(){return why},get restarts(){return restarts}};
     /* Remember finished searches, so revisiting a position answers instantly; share searches already in flight. */
     const raw=E.analyse, cache=new Map(), inflight=new Map();
     E.analyse=function(fen,depth,mpv=1,limitMs){ const k=fen+'|'+depth+'|'+mpv; if(cache.has(k)) return Promise.resolve(cache.get(k));

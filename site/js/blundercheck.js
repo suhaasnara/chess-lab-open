@@ -68,13 +68,14 @@ function finish(){
   render();
 }
 function move(f,t,p){
-  const d=S.cur; if(!d||S.phase==='done'||S.phase==='idle') return; const u=f+t+(p&&p!=='q'?p:'');
+  const d=S.cur; if(!d||S.phase==='done'||S.phase==='idle'||S.phase==='found') return; const u=f+t+(p&&p!=='q'?p:'');
   if(S.phase==='threat'){
     if(d.threats.some(x=>x.slice(0,4)===u.slice(0,4))){
       if(S.okThreat===null) S.okThreat=S.firstTry;
       const g=new Chess(d.null), m=g.move({from:f,to:t,promotion:p||'q'}); board.set(g,{last:m,locked:true}); board.flash([f,t],'good');
       say('good',`✓ ${esc(m.san)}${m.san!==d.threat?` (and ${esc(d.threat)} is the strongest)`:''}.`,'That’s the danger.');
-      S.firstTry=true; const id=d.id; timer=setTimeout(()=>{ if(S.cur&&S.cur.id===id&&S.phase==='threat') toMove() },1300);
+      S.firstTry=true; S.phase='found';   /* the pause before step 2: Show now goes on to step 2 instead of undoing a right answer (27 Nov 2026, roadmap #274) */
+      const id=d.id; timer=setTimeout(()=>{ if(S.cur&&S.cur.id===id&&S.phase==='found') toMove() },1300);
     } else { S.firstTry=false; S.okThreat=false; board.set(new Chess(d.null),{last:null}); board.flash([f,t],'bad');
       say('bad',`✗ ${esc(sanOf(d.null,u))} isn’t it.`,'Look for what they gain if you ignore them. Try again, or press Show the threat.') }
     return;
@@ -88,6 +89,7 @@ function move(f,t,p){
   finish();
 }
 function show(){ const d=S.cur; if(!d) return;
+  if(S.phase==='found'){ clearTimeout(timer); toMove(); return }
   if(S.phase==='threat'){ S.okThreat=false; const g=new Chess(d.null), u=d.threatUci, m=g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'}); board.set(g,{last:m,locked:true});
     say('warn',`The threat: ${esc(d.threat)}.`,'Now find your move.'); const id=d.id; clearTimeout(timer); timer=setTimeout(()=>{ if(S.cur&&S.cur.id===id&&S.phase==='threat') toMove() },1500) }
   else if(S.phase==='move'){ S.okMove=false; const g=new Chess(d.fen), u=d.bestUci, m=g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'}); board.set(g,{last:m,locked:true});
@@ -100,7 +102,7 @@ function refresh(onShow){
   render(); if(onShow&&!S.cur&&data().length) next();
 }
 function init(){
-  board=makeBoard($('bc-board'),{onMove:move});
+  board=makeBoard($('bc-board'),{onMove:move,expect:()=>{ const d=S.cur; return d?[d.threatUci,d.bestUci,...(d.goods||[])]:null }});
   board.set(new Chess(),{locked:true});
   $('bc-list').addEventListener('click',e=>{ const b=e.target.closest('.drill'); if(!b) return; const d=data().find(x=>x.id===b.dataset.id); if(d) open(d) });
   TV.onChip($('bc-filters'),(k,v)=>{ S[k]=v; render() });

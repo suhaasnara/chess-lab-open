@@ -17,7 +17,10 @@ function fakeApp(log,opts={}){
       LocalNotifications:{checkPermissions:call('LN','check',()=>({display:perm})),requestPermissions:call('LN','request',()=>{ perm='granted'; return {display:perm} }),
         schedule:call('LN','schedule'),cancel:call('LN','cancel'),addListener:(e,f)=>{ listeners[e]=f }},
       Filesystem:{writeFile:call('FS','write',a=>{ files[a.path]=a.data; return {} }),readFile:call('FS','read',a=>{ if(!(a.path in files)) throw new Error('missing'); return {data:files[a.path]} }),
-        rename:call('FS','rename',a=>{ files[a.to]=files[a.from]; delete files[a.from]; return {} })},
+        rename:call('FS','rename',a=>{ if(!(a.from in files)) throw new Error('missing'); if(a.to in files) throw new Error('exists'); files[a.to]=files[a.from]; delete files[a.from]; return {} }),   /* as iOS: no rename over a file */
+        copy:call('FS','copy',a=>{ if(!(a.from in files)) throw new Error('missing'); files[a.to]=files[a.from]; return {} }),
+        deleteFile:call('FS','delete',a=>{ delete files[a.path]; return {} }),
+        readdir:call('FS','readdir',()=>({files:Object.keys(files).map(name=>({name,type:'file'}))}))},
       WatchBridge:{status:call('WB','status',()=>opts.watch||{paired:true,installed:true}),getPending:call('WB','getPending',()=>({results:pending})),
         ack:call('WB','ack',a=>{ pending=pending.filter(r=>!a.rids.includes(r.rid)); return {} }),sendState:call('WB','sendState',()=>({sent:true})),addListener:(e,f)=>{ listeners[e]=f }},
     }};
@@ -142,8 +145,8 @@ module.exports=async function(H){
     assert(await w.Native.backup(true)===false&&!calls(log,'FS','write').length,'an empty store is never backed up (it could overwrite a good backup)');
     w.Store.put('tactics-progress',{a:{ok:true,t:1}});
     Object.defineProperty(w.document,'hidden',{configurable:true,get:()=>true}); w.document.dispatchEvent(new w.Event('visibilitychange')); await sleep(100);
-    const wr=calls(log,'FS','write').pop();
-    assert(wr&&wr[2].path==='Think Ahead backup.json'&&wr[2].directory==='DOCUMENTS'&&JSON.parse(wr[2].data)['tactics-progress'].a.ok===true,'leaving the app writes the progress export to Documents ("Think Ahead backup.json", visible in Files)');
+    const wr=calls(log,'FS','write').pop(), f=w.__files['Think Ahead backup.json'];
+    assert(wr&&wr[2].path==='.Think Ahead backup.tmp'&&wr[2].directory==='DOCUMENTS'&&f&&JSON.parse(f)['tactics-progress'].a.ok===true&&!w.__files['.Think Ahead backup.tmp'],'leaving the app writes the progress export to Documents ("Think Ahead backup.json", visible in Files), through a hidden file read back first');
     w.Store.put('tactics-progress',{a:{ok:true,t:2}}); w.document.dispatchEvent(new w.Event('visibilitychange')); await sleep(100);
     assert(calls(log,'FS','write').length===1,'… at most once a minute'); }
   { const backup=JSON.stringify({_app:'chess-lab-open',_v:1,_t:'2026-11-16T21:42:00.000Z','tactics-progress':{a:{ok:true,t:1},b:{ok:false,t:2}},adrills:[{id:'d1',fen:'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',played:'e5',playedUci:'e7e5'}]});
@@ -159,6 +162,50 @@ module.exports=async function(H){
     await sleep(150); const sh=w.document.getElementById('app-sheet'); let reloaded=false; w.Native.reloadPage=()=>{ reloaded=true };
     sh.querySelector('button[data-a="restore"]').click(); await sleep(50);
     assert(w.Store.get('tactics-progress').a.ok===true&&reloaded,'Restore it brings the progress back and reloads the page'); }
+
+  section('app layer: the backup is written safely, with dated copies (roadmap #270)');
+  { const DAY=864e5, now=Date.now();
+    const old=JSON.stringify({_app:'chess-lab-open',_v:1,_t:new Date(now-3*DAY).toISOString(),'tactics-progress':{a:{ok:true,t:1}}});
+    const files={'Think Ahead backup.json':old};
+    for(let i=4;i<=9;i++) files[`Think Ahead backup (2026-10-0${i}).json`]=old;   /* six older dated copies */
+    const log=[]; const {w}=await makePage({beforeLoad:fakeApp(log,{files,localStorage:{'clo-app':JSON.stringify({welcomed:true,asked:true}),'clo:tactics-progress':JSON.stringify({a:{ok:true,t:1}})}})});
+    await sleep(150);
+    w.Store.put('tactics-progress',{a:{ok:true,t:1},b:{ok:true,t:2}});
+    assert(await w.Native.backup(true)===true,'a backup over an older one is written');
+    const F=w.__files, dated=Object.keys(F).filter(n=>/^Think Ahead backup \(\d{4}-\d\d-\d\d\)\.json$/.test(n)).sort();
+    const d3=w.Due.day(now-3*DAY);
+    assert(JSON.parse(F['Think Ahead backup.json'])['tactics-progress'].b&&F[`Think Ahead backup (${d3}).json`]===old,'the new backup takes the name; the one it replaced is kept as a dated copy');
+    assert(dated.length===5&&!F['Think Ahead backup (2026-10-04).json'],'the last 5 dated copies are kept, the oldest removed');
+    w.Store.put('tactics-progress',{a:{ok:true,t:1},b:{ok:true,t:2},c:{ok:false,t:3}});
+    await w.Native.backup(true);
+    assert(Object.keys(F).filter(n=>/^Think Ahead backup \(/.test(n)).length===5,'a second backup the same day adds no copy');
+    /* a write that reads back wrong leaves the old backup alone */
+    const good=F['Think Ahead backup.json'];
+    w.Capacitor.Plugins.Filesystem.readFile=async a=>a.path.endsWith('.tmp')?{data:'{"trunc'}:{data:F[a.path]};
+    assert(await w.Native.backup(true)===false&&F['Think Ahead backup.json']===good,'a backup that doesn’t read back the same is not used: the good one stays');
+  }
+  { /* reading: the backup gone, a dated copy left: still offered */
+    const b=JSON.stringify({_app:'chess-lab-open',_v:1,_t:'2026-11-20T10:00:00.000Z','tactics-progress':{a:{ok:true,t:1}}});
+    const log=[]; const {w}=await makePage({beforeLoad:fakeApp(log,{files:{'.Think Ahead backup.tmp':'{"broken','Think Ahead backup (2026-11-20).json':b},localStorage:{'clo-app':JSON.stringify({welcomed:true,asked:true})}})});
+    await sleep(150); const sh=w.document.getElementById('app-sheet');
+    assert(sh&&/Restore your progress/.test(sh.textContent),'no backup file (or a broken one): the newest dated copy is offered instead');
+  }
+
+  section('app layer: the watch sync keeps each id at once, and an empty iPhone sends no state (roadmap #272)');
+  { const T=JSON.parse(fs.readFileSync(path.join(H.SITE,'data','tactics.json'),'utf8'));
+    const now=Date.now(), res=[{rid:'k1',type:'tactic',id:T[0].id,at:now-3000,ok:true},{rid:'k2',type:'tactic',id:T[1].id,at:now-2000,ok:false}];
+    const log=[]; const {w}=await makePage({beforeLoad:fakeApp(log,{pending:res,localStorage:{'clo-app':JSON.stringify({welcomed:true,asked:true})}})});
+    const puts=[]; const op=w.Store.put; w.Store.put=(k,v)=>{ if(k==='watch-applied') puts.push(v.slice()); return op(k,v) };
+    await w.Native.watchSync();
+    assert(puts.length===2&&puts[0].join()==='k1'&&puts[1].join()==='k1,k2','each recorded id is kept as soon as its result is (a page killed mid-way records nothing twice)');
+    w.Store.put=op;
+  }
+  { const log=[]; const {w}=await makePage({beforeLoad:fakeApp(log,{localStorage:{'clo-app':JSON.stringify({welcomed:true,asked:true})}})});
+    await w.Native.watchSync();
+    assert(!calls(log,'WB','sendState').length,'an iPhone with no progress (reinstalled, or storage cleared) sends no state: the watch keeps its own');
+    w.Store.put('tactics-progress',{a:{ok:true,t:1}}); await w.Native.watchSync();
+    assert(calls(log,'WB','sendState').length===1,'… and sends one once it has progress');
+  }
 
   section('app layer: on an iPad (22 Nov 2026)');
   { const pad={device:'pad',supported:false,paired:false,installed:false};

@@ -113,12 +113,15 @@ window.Native=(()=>{
         if(!r||!r.rid) continue;
         if(!seen.has(r.rid)){ const s=WatchSets.src[r.type]; if(!s) continue;   // a type this site doesn't know stays pending
           try{ await s.apply(r) }catch(e){ console.error('[native] watch result',r,e); continue }   // tried again next time
-          seen.add(r.rid); done.push(r.rid); n++ }
+          /* the id is kept at once, result by result (27 Nov 2026, roadmap #272: it was kept after the whole batch, so a
+             page killed mid-way recorded those results again the next time) */
+          seen.add(r.rid); done.push(r.rid); n++; site.store.put('watch-applied',done.slice(-LEDGER)) }
         ack.push(r.rid) }
-      if(n) site.store.put('watch-applied',done.slice(-LEDGER));
       if(ack.length) await WB.ack({rids:ack});
       let sent=false;
-      if(wstate&&wstate.paired&&wstate.installed){ const r=await WB.sendState({json:JSON.stringify(await buildState())}); sent=!!(r&&r.sent) }
+      /* no state from an empty iPhone (27 Nov 2026, roadmap #272): the app reinstalled, or the storage cleared with the
+         restore offer still open, sent an empty state and the watch's confirmed progress was replaced by nothing */
+      if(wstate&&wstate.paired&&wstate.installed&&!offered&&!site.isEmpty()){ const r=await WB.sendState({json:JSON.stringify(await buildState())}); sent=!!(r&&r.sent) }
       wlast={at:Date.now(),recorded:n,sent,recAt:n?Date.now():(wlast&&wlast.recAt)||null,recN:n||(wlast&&wlast.recN)||0};
       if(n){ dirty=true; soon(2000) }
     }catch(e){ console.error('[native] watch sync',e) }
@@ -142,18 +145,49 @@ window.Native=(()=>{
      after each session the whole progress export is written to the app's Documents folder, which shows in the Files app
      (On My iPhone, or On My iPad → the app) and goes into the device's own backups. Never written while the progress is empty, so an
      emptied store can't overwrite a good backup. ---- */
-  const FS=P.Filesystem, DOCS='DOCUMENTS';
-  let dirty=false, lastBackup=0, backupAt=null, offered=false;
-  const backupName=()=>site.name+' backup.json';
+  /* 27 Nov 2026 (roadmap #270): the one file was overwritten in place (the plugin doesn't write atomically), so the app
+     killed mid-write left a backup that couldn't be read, and damaged progress overwrote the good copy. Now:
+       1. the export is written to a hidden file next to it (".… backup.tmp") and read back: it must parse and match;
+       2. once a day, the file it replaces is kept as a dated copy ("… backup (2026-11-26).json"), the last 5 kept;
+       3. then the old file is removed and the new one takes its name.
+     Reading tries the backup, then the hidden file (a write that stopped between 3's two steps), then the newest dated
+     copy. The name is fixed by the site (site.backupFile), so renaming the app later won't lose it. It is also written
+     every 5 minutes while the app is open and something changed, not only when the app is left. */
+  const FS=P.Filesystem, DOCS='DOCUMENTS', KEEP=5;
+  let dirty=false, lastBackup=0, backupAt=null, offered=false, writing=false;
+  const backupName=()=>site.backupFile||site.name+' backup.json';
+  const stem=()=>backupName().replace(/\.json$/,'');
+  const tmpName=()=>'.'+stem()+'.tmp';
+  const dayName=d=>`${stem()} (${d}).json`;
+  const DAYRX=()=>new RegExp('^'+stem().replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+' \\((\\d{4}-\\d\\d-\\d\\d)\\)\\.json$');
+  async function listDays(){ try{ const r=await FS.readdir({path:'',directory:DOCS}); const rx=DAYRX();
+    return ((r&&r.files)||[]).map(f=>typeof f==='string'?f:f.name).map(n=>{ const m=rx.exec(n||''); return m?{n,d:m[1]}:null }).filter(Boolean).sort((a,b)=>a.d<b.d?1:-1) }catch(e){ return [] } }
+  async function readJson(path){ try{ const r=await FS.readFile({path,directory:DOCS,encoding:'utf8'}); const j=JSON.parse(r.data); return j&&typeof j==='object'?j:null }catch(e){ return null } }
   async function backup(force){
-    if(!app||!FS||site.isEmpty()||offered) return false;
+    if(!app||!FS||site.isEmpty()||offered||writing) return false;
     if(!force&&(!dirty||Date.now()-lastBackup<60e3)) return false;
-    try{ await FS.writeFile({path:backupName(),data:JSON.stringify(site.exportAll()),directory:DOCS,encoding:'utf8'});
-      dirty=false; lastBackup=Date.now(); backupAt=lastBackup; render(); return true }catch(e){ console.error('[native] backup',e); return false }
+    writing=true;
+    try{
+      const data=JSON.stringify(site.exportAll()), main=backupName(), tmp=tmpName();
+      await FS.writeFile({path:tmp,data,directory:DOCS,encoding:'utf8'});
+      const back=await FS.readFile({path:tmp,directory:DOCS,encoding:'utf8'}).catch(()=>null);
+      if(!back||back.data!==data) throw new Error('the backup did not read back the same');
+      const today=Due.day(Date.now()), old=await readJson(main), days=await listDays();
+      if(old&&!days.some(x=>x.d===today)){ const d=old._t?Due.day(old._t):today;
+        if(!days.some(x=>x.d===d)) await FS.copy({from:main,to:dayName(d),directory:DOCS,toDirectory:DOCS}).catch(()=>{}) }
+      for(const x of (await listDays()).slice(KEEP)) await FS.deleteFile({path:x.n,directory:DOCS}).catch(()=>{});
+      if(old) await FS.deleteFile({path:main,directory:DOCS}).catch(()=>{});
+      await FS.rename({from:tmp,to:main,directory:DOCS,toDirectory:DOCS});
+      dirty=false; lastBackup=Date.now(); backupAt=lastBackup; render(); return true
+    }catch(e){ console.error('[native] backup',e); return false }
+    finally{ writing=false }
   }
   async function readBackup(){
     if(!FS) return null;
-    try{ const r=await FS.readFile({path:backupName(),directory:DOCS,encoding:'utf8'}); return JSON.parse(r.data) }catch(e){ return null }
+    const a=await readJson(backupName()); if(a) return a;
+    const b=await readJson(tmpName()); if(b) return b;
+    for(const x of await listDays()){ const c=await readJson(x.n); if(c) return c }
+    return null;
   }
   /* at start: an empty store and a backup on disk -> offer to restore it (sketch P4). "Start fresh" keeps the old backup
      under a dated name instead of letting the next backup overwrite it. */
@@ -165,7 +199,7 @@ window.Native=(()=>{
     sheet(`<h2>Restore your progress?</h2><p>Your progress on this ${dev.name} is empty, but there is a backup${when?` from ${esc(when.toLocaleDateString([], {weekday:'short',day:'numeric',month:'short'}))}, ${esc(clock(when))}`:''} (${esc(site.describe(b))}).</p>`,
       [['Restore it','restore'],['Start fresh','fresh']],async a=>{
         if(a==='restore'){ offered=false; put(b); return }
-        const stamp=(b._t||new Date().toISOString()).slice(0,10);
+        const stamp=Due.day(b._t||Date.now());
         try{ await FS.rename({from:backupName(),to:`${site.name} backup (before ${stamp}).json`,directory:DOCS,toDirectory:DOCS}) }catch(e){}
         offered=false });
   }
@@ -302,6 +336,7 @@ window.Native=(()=>{
       setTimeout(plan,3000);
       /* leaving the app (a session ends): back up and redo the reminder plan; coming back: redo it a little later */
       document.addEventListener('visibilitychange',()=>{ if(document.hidden){ clearTimeout(timer); backup(); plan() } else soon(5000) });
+      setInterval(()=>{ if(!document.hidden&&dirty) backup() },5*60e3);   /* every 5 minutes too, while something changed (roadmap #270) */
       if(WB){ let wt=0; const wsoon=ms=>{ clearTimeout(wt); wt=setTimeout(watchSync,ms) };
         setTimeout(watchSync,4000);
         document.addEventListener('visibilitychange',()=>{ if(!document.hidden) wsoon(3000) });

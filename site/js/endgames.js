@@ -80,7 +80,7 @@ function renderList(){
     b.innerHTML=`<span class="src">${mark}</span><span><span class="opp">${esc(z.title)}</span><br><span class="meta">${z.goal==='win'?'Win':'Draw'} · ${z.me||(z.fen.split(' ')[1]==='w'?'White':'Black')}</span></span><span class="evalchip">&#9654;</span>`;
     b.addEventListener('click',()=>load(z)); el.appendChild(b);
   }
-  if(!el.children.length) el.innerHTML=DATA?'<p class="empty">No positions in this group.</p>':'<p class="empty">Loading endgames…</p>';
+  if(!el.children.length) el.innerHTML=DATA&&DATA.failed?'<p class="empty">The endgames could not load. Check the connection and open the tab again.</p>':DATA?'<p class="empty">No positions in this group.</p>':'<p class="empty">Loading endgames…</p>';
 }
 
 /* ---------- playing ---------- */
@@ -117,11 +117,12 @@ async function liveLine(z){ const g=new Chess(z.fen), out=[];
     const u=g.turn()===S.me?(EndgameCore.options(d,z.goal)||{}).b?.split(' ')[0]||d.moves[0].uci:await EndgameCore.pickReply(g.fen(),d,null); if(!u) break; g.move(U(u)); out.push(u) }
   return out }
 /* ← → during play: look back through the moves played (view only); at the end the board takes moves again */
-function look(d){ if(!S.cur||!S.hist.length) return false; const n=S.hist.length; let k=(S.look==null?n:S.look)+d; k=Math.max(0,Math.min(n,k)); S.look=k===n?null:k;
+function look(d){ if(!S.cur||!S.hist.length||S.busy) return false; const n=S.hist.length; let k=(S.look==null?n:S.look)+d; k=Math.max(0,Math.min(n,k)); S.look=k===n?null:k;
   const g=new Chess(S.cur.fen); let last=null; for(const h of S.hist.slice(0,k)){ const m=g.move(U(h.u)); if(m) last={from:m.from,to:m.to} }
   board.set(S.look==null?S.g:g,{last,locked:S.look!=null||S.phase!=='play'}); $('eg-step').hidden=S.look==null; if(S.look!=null) $('eg-step').textContent=`move ${k} of ${n} · → to come back` }
 function load(z){
   if(!z) return; if(endbar) endbar.hide();
+  S.att=(S.att||0)+1;   /* an attempt: Retry or another ending drops a reply still coming (roadmap #274) */
   S.cur=z; S.look=null; S.g=new Chess(z.fen); S.hist=[]; { const sl=$('eg-readslot'); if(sl) sl.innerHTML='' } S.phase='play'; S.busy=false; S.me=S.g.turn(); S.moves=0; S.grades=[]; S.assisted=false; S.counted=false; S.sol=null; S.view=0;
   board.set(S.g,{last:null,orient:S.me,locked:false});
   status('',goalText(z),'');
@@ -144,7 +145,10 @@ function status(tone,head,rest){ const el=$('eg-status'); el.className='status'+
 function finish(ok,head,rest){
   S.phase='done'; S.busy=false; const z=S.cur;
   const p=prog(), e=p[z.id]||{tries:0,okN:0};
-  if(!S.counted) e.tries++; S.counted=true; e.t=Date.now(); e.ok=ok&&!S.assisted; if(e.ok) e.okN=(e.okN||0)+1; p[z.id]=e; Store.put('endgame-progress',p);
+  /* one result per attempt, set by the first finish (27 Nov 2026, roadmap #281): Take back after a clean solve used to
+     turn it into a miss; a miss starts the 3/7/21-day streak again (okN 0), as in Drills and Blunder check */
+  if(!S.counted){ e.tries++; e.t=Date.now(); e.ok=ok&&!S.assisted; e.okN=e.ok?(e.okN||0)+1:0; p[z.id]=e; Store.put('endgame-progress',p) }
+  S.counted=true;
   const tone=ok?(S.assisted?'warn':'good'):'bad';
   /* what was recorded and when it comes back (26 Nov 2026, roadmap #258) */
   const when=backWhen(e.ok,e.okN), rec=e.ok?`Solved: ${when}.`:`Counted as a miss: ${when}.`;
@@ -160,12 +164,12 @@ function over(){                                  /* after any move: is the exer
   return null;
 }
 async function userMove(from,to,promo){
-  const z=S.cur; if(!z||S.phase!=='play'||S.busy||S.g.turn()!==S.me||S.look!=null) return;
+  const z=S.cur, att=S.att, gone=()=>S.cur!==z||S.att!==att; if(!z||S.phase!=='play'||S.busy||S.g.turn()!==S.me||S.look!=null) return;
   const before=S.g.fen(); const t=new Chess(before); const m=t.move({from,to,promotion:promo||'q'}); if(!m) return;
   const uci=m.from+m.to+(m.promotion||'');
   S.busy=true; buttons(); $('eg-tip').hidden=true;
   S.g=t; board.set(S.g,{last:{from:m.from,to:m.to},locked:true});
-  const gr=await grade(before,uci); if(S.cur!==z) return;
+  const gr=await grade(before,uci); if(gone()) return;
   S.hist.push({u:uci,gr:gr.g,fen:before}); S.moves++; S.src=gr.src; $('eg-src').textContent=gr.src==='Stockfish'?'Stockfish (no tablebase answer here)':'the Lichess '+gr.src;
   renderMoves();
   const bestU=gr.n&&(z.goal==='win'?(gr.n.b||gr.n.w):(gr.n.d||gr.n.w));
@@ -174,7 +178,7 @@ async function userMove(from,to,promo){
     board.flash([m.to],'bad');
     const why=z.goal==='win'?'That lets the win slip.':'That loses.';
     S.busy=false; S.phase='mistake';
-    if(!S.counted){ const p=prog(), e=p[z.id]||{tries:0,okN:0}; e.tries++; e.t=Date.now(); e.ok=false; p[z.id]=e; Store.put('endgame-progress',p); S.counted=true; renderList(); if(H) H.changed() }
+    if(!S.counted){ const p=prog(), e=p[z.id]||{tries:0,okN:0}; e.tries++; e.t=Date.now(); e.ok=false; e.okN=0; p[z.id]=e; Store.put('endgame-progress',p); S.counted=true; renderList(); if(H) H.changed() }
     status('bad',why,(bestSan?` ${bestSan} was the move.`:'')+' Take it back and try again, or start over. (Counted as a miss: back tomorrow.)');
     endbar.show('bad',why+(bestSan?' '+bestSan+' was the move.':''),'Take back');
     endbar.onNext=()=>{ endbar.onNext=()=>next(); takeBack() };
@@ -189,8 +193,8 @@ async function userMove(from,to,promo){
   if(held) return finish(true,`Held for ${S.moves} moves ✓`,'');
   status(gr.g==='good'?'warn':'good',gr.g==='best'?'Best move ✓':gr.g==='good'?'Still winning, but slower.':'Holds ✓',
     gr.g==='good'&&bestSan?` ${bestSan} was faster.`:'');
-  await new Promise(r=>setTimeout(r,300));
-  const r=await bestReply(S.g.fen()); if(S.cur!==z) return;
+  await new Promise(r=>setTimeout(r,300)); if(gone()) return;
+  const r=await bestReply(S.g.fen()); if(gone()) return;
   if(!r){ S.busy=false; S.phase='done'; status('warn','No reply here.',' Neither the tablebase nor Stockfish answered (are you offline?). Retry, or show the solution.'); buttons(); return }
   const rm=S.g.move(U(r)); S.hist.push({u:r,fen:null});
   board.set(S.g,{last:rm?{from:rm.from,to:rm.to}:null,locked:false}); renderMoves();
@@ -208,7 +212,7 @@ function takeBack(){
 }
 async function hint(){
   if(!S.cur||S.phase!=='play'||S.busy) return; S.busy=true; buttons();
-  const u=await hintMove(S.g.fen()); S.busy=false; buttons(); if(!u) return;
+  const z=S.cur, att=S.att; const u=await hintMove(S.g.fen()); if(S.cur!==z||S.att!==att) return; S.busy=false; buttons(); if(!u) return;
   S.assisted=true; board.setHint(u.slice(0,2)); $('eg-tip').hidden=false; $('eg-tip').textContent='Hint: move the highlighted piece (this attempt no longer counts as solved).';
 }
 /* The tablebase's main line, stepped through with ← → */
@@ -249,7 +253,7 @@ function init(){
   endbar=endBanner($('eg-board'),()=>next(),'Next endgame');
   board.set(new Chess('8/8/8/4k3/8/8/8/4K3 w - - 0 1'),{locked:true});
   fetch(Site.url('endgames')).then(r=>{ if(!r.ok) throw 0; return r.json() }).then(j=>{ DATA=j; mergeCustoms(); renderList(); if(!S.cur&&DATA.positions.length) load(DATA.positions[0]) })   /* opens on the first ending, as Chess Lab does */
-    .catch(()=>{ DATA={groups:[],positions:[]}; renderList() });
+    .catch(()=>{ DATA={groups:[],positions:[],failed:true}; renderList() });
   $('eg-back').addEventListener('click',takeBack);
   $('eg-hint').addEventListener('click',hint);
   $('eg-sol').addEventListener('click',solution);
@@ -264,6 +268,6 @@ function init(){
     ArrowRight:['Forward a move',()=>{ if(S.sol){ S.view++; endbar.hide(); showSol(); return } return look(1) }],
     b:['Take back your move (and the reply)',()=>takeBack()], h:['Hint',()=>hint()], n:['Next ending',()=>next()], f:['Flip the board',()=>board.flip()]});
 }
-window.EndgamesTab={init,host:h=>{ H=h||null },flip:()=>board.flip(),saveCustomPos,customs,deleteCustomPos,liveLine,load,userMove,takeBack,hint,solution,next,pickToday,stats,offline:false,onFinish:null,
+window.EndgamesTab={init,host:h=>{ H=h||null },flip:()=>board.flip(),saveCustomPos,customs,deleteCustomPos,liveLine,load,userMove,takeBack,finish,hint,solution,next,pickToday,stats,offline:false,onFinish:null,
   get state(){return S},get data(){return DATA},byId:id=>DATA&&DATA.positions.find(z=>z.id===id)};
 })();

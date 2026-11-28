@@ -43,6 +43,7 @@ window.Keys=(()=>{
     if(document.getElementById('keys-overlay')) return;
     const k=e.key&&e.key.length===1?e.key.toLowerCase():e.key;
     const a=(MAPS[api.view()]||{})[k]; if(!a) return;
+    if(e.repeat&&k.length===1){ e.preventDefault(); return }   /* a held letter key acts once (27 Nov 2026, roadmap #274: a held H used both hint stages, a held N skipped puzzles); held arrows still step */
     if(a[1](e)!==false) e.preventDefault();
   });
   addEventListener('change',e=>{ const t=e.target;   /* a drop-down keeps focus after a pick and would take the arrow keys */

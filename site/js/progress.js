@@ -105,7 +105,7 @@ function render(){
   const t=$('p-table');
   t.innerHTML='<tr><th>Opening</th><th>Side</th><th>Lines</th><th>Rating</th><th>Last trained</th></tr>'+(
     withStats.sort((a,b)=>b.st.lines-a.st.lines).map(({o,st})=>{
-      const last=st.history.length?new Date(st.history[st.history.length-1].t).toISOString().slice(0,10):'—';
+      const last=st.history.length?localDay(st.history[st.history.length-1].t):'—';
       return `<tr><td>${esc(o.name)}</td><td>${o.side}</td><td>${st.lines}</td><td>${st.rating}</td><td>${last}</td></tr>`;
     }).join('')||'<tr><td colspan="5" class="note">Nothing trained yet. Opening lines you play in Rated mode show up here.</td></tr>');
   charts(withStats);
@@ -122,7 +122,7 @@ function init(){
     $('p-note').textContent=`Cleared the analysis caches (${(freed/1e6).toFixed(freed<1e5?2:1)} million characters). Your progress, drills and the games they come from are kept.`; storage() });
   /* Export: a download on the website; in the app (no downloads in its web view, roadmap #267) a file in Files */
   $('p-export').addEventListener('click',async()=>{
-    const name='think-ahead-progress-'+new Date().toISOString().slice(0,10)+'.json', text=JSON.stringify(Store.exportAll(),null,1);
+    const name='think-ahead-progress-'+localDay()+'.json', text=JSON.stringify(Store.exportAll(),null,1);
     if(window.Native&&Native.app){
       try{ const where=await Native.saveFile(name,text); $('p-note').textContent=`Saved to ${where} → ${name}.` }
       catch(err){ $('p-note').textContent='The progress file could not be saved: '+String(err.message||err) }
@@ -141,7 +141,7 @@ function init(){
       const q=`Import this progress file${d&&!isNaN(d)?` from ${d.toLocaleDateString([], {day:'numeric',month:'short',year:'numeric'})}`:''}? It holds ${Store.describe(b)}.`+
         (empty?'':`\n\nOn this device now: ${Store.describe(Store.exportAll())}. A copy of it is downloaded first, and the import replaces it.`);
       if(!confirm(q)){ $('p-note').textContent='Nothing was imported.'; return }
-      if(!empty) download('think-ahead-progress-before-import-'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify(Store.exportAll(),null,1));
+      if(!empty) download('think-ahead-progress-before-import-'+localDay()+'.json',JSON.stringify(Store.exportAll(),null,1));
       const r=Store.restore(b);
       $('p-note').textContent=`Imported ${r.n} entries.`+(r.failed.length?` ${r.failed.length} could not be written (this browser’s storage is full): ${r.failed.join(', ')}.`:'')+(empty?'':' Your progress from before is in your downloads.');
       render(); if(window.DrillsTab) DrillsTab.refresh(); if(window.BlunderCheckTab) BlunderCheckTab.refresh() })

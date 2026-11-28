@@ -34,7 +34,7 @@ function renderList(){
     RNG=Controls.range($('cc-range'),{label:'Puzzle rating',min:lo,max:hi,step:100,lo:S.lo==null?lo:S.lo,hi:S.hi==null?hi:S.hi,onChange:(a,b)=>{ S.lo=a<=lo?null:a; S.hi=b>=hi?null:b; renderList() }}) }
   $('cc-lens').innerHTML=TV.chips('','len',LENS,S.len)+TV.chips('','st',STS,S.st);
   const L=list(), p=prog();
-  $('cc-count').textContent=LIB?`${L.length.toLocaleString()} puzzle${L.length===1?'':'s'}`:'';
+  $('cc-count').textContent=LOADFAIL?'The puzzles could not load. Check the connection and open the tab again.':LIB?`${L.length.toLocaleString()} puzzle${L.length===1?'':'s'}`:'';
   $('cc-start').disabled=!L.length; $('cc-start').textContent=L.length?'Start'+(S.st==='all'||S.st==='unsolved'?' · next unsolved':' · first in this list'):'Start';
   const groups=[['4','4 moves'],['5','5 moves'],['6','6+ moves']].map(([k,n])=>{ const xs=(LIB||[]).filter(z=>k==='6'?mine(z)>=6:mine(z)===+k), done=xs.filter(z=>p[z.id]);
     const ok=done.filter(z=>p[z.id].score>=1).length, tn=done.filter(z=>p[z.id].secs), t=tn.reduce((a,z)=>a+p[z.id].secs,0);
@@ -75,6 +75,9 @@ function renderLine(){
   if(!S.sub){ const yours=sanLine(S.start,S.line);
     $('cc-line').innerHTML=yours.length?numbered(S.start,yours):'<span class="note">Your line appears here.</span>' }
   $('cc-submit').disabled=S.sub||!S.line.length; $('cc-undo').disabled=S.sub||!S.line.length;
+  /* once submitted, Submit and Undo have nothing left to do: they go, so ‹ Read ⋯ Next › fit one row on an iPhone SE (the bar
+     wrapped to 124 px and pushed the board under the tab row: roadmap #292) */
+  $('cc-submit').hidden=$('cc-undo').hidden=!!S.sub;
   $('cc-next').classList.toggle('primary',!!S.sub);   /* 14 Nov: one filled button: Submit until the line is in, then Next */
 }
 function userMove(from,to,promo){
@@ -140,7 +143,7 @@ function next(){ const p=prog(); const L=list(); const i=L.findIndex(z=>S.cur&&z
 function status(tone,head,rest){ const el=$('cc-status'); el.className='status'+(tone?' '+tone:''); el.innerHTML=`<strong>${esc(head)}</strong>${esc(rest||'')}` }
 
 function init(){
-  board=makeBoard($('cc-board'),{onMove:userMove});
+  board=makeBoard($('cc-board'),{onMove:userMove,expect:()=>{ if(!S.cur||S.sub) return null; const sol=S.cur.moves.slice(1); return S.line.every((u,i)=>same(u,sol[i]))?sol[S.line.length]:null }});
   endbar=endBanner($('cc-board'),()=>next(),'Next exercise');
   board.set(new Chess(),{locked:true});
   $('cc-submit').addEventListener('click',submit);
@@ -165,11 +168,11 @@ function init(){
   document.addEventListener('keydown',e=>{ if(document.body.dataset.view==='calc'&&e.key==='Enter'&&!S.sub&&!/INPUT|TEXTAREA|SELECT|BUTTON/.test(e.target.tagName)) submit() });
 }
 /* data/calc.json loads the first time Calculation or Progress is opened (not on every visit). */
-let libP=null;
+let libP=null, LOADFAIL=false;   /* the set didn't load: the list says so, not "0 puzzles" (roadmap #281) */
 function ensure(){
   if(!libP) libP=fetch(Site.url('calc')).then(r=>{ if(!r.ok) throw 0; return r.json() })
     .catch(()=>fetch(Site.url('tactics')).then(r=>r.json()))
-    .then(j=>{ LIB=j; renderList() }).catch(()=>{ LIB=[]; renderList() });
+    .then(j=>{ LIB=j; renderList() }).catch(()=>{ LIB=[]; LOADFAIL=true; renderList() });
   return libP;
 }
 window.CalcTab={ensure,init,load,lobby,userMove,undo,reset,submit,next,record,get state(){return S},get lib(){return LIB}};

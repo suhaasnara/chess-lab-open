@@ -5,7 +5,7 @@
    times, 1500 to 1596); a later try still updates its Solved / Missed record. */
 'use strict';
 (function(){
-let LIB=null, board=null, endbar=null, H=null;   /* H: Today, when it hosts this panel */
+let LIB=null, LOADFAIL=false, board=null, endbar=null, H=null;   /* H: Today, when it hosts this panel */
 const S={cur:null,g:null,step:0,solved:false,failedFirst:false,usedHint:false,hintStage:0,sol:null,view:0,motifs:[],ops:[],lo:null,hi:null,status:'Unsolved',band:null};
 const BANDS=[['All','Any rating'],['1200','1200–1499'],['1500','1500–1799'],['1800','1800–2099'],['2100','2100–2399'],['2400','2400+']];
 const STATUSES=['All','Unsolved','Missed','Solved'];
@@ -43,12 +43,17 @@ document.addEventListener('click',e=>{ const b=e.target.closest('#t-rate [data-w
 /* Rating: Near my rating (±150, the default from the first puzzle since 14 Nov 2026: Next used to serve 1504, then
    2411, then 1690 until 10 puzzles were rated), Any, or the slider's range */
 const bandNow=()=>S.band||'near';
+/* the middle of Near my rating: your rating, kept 150 inside the set's range (27 Nov 2026, roadmap #281: below 1050 the
+   window held no puzzles, as the easiest are about 1200) */
+let RANGE=null;
+function nearMid(){ const r=rating().r; if(!RANGE){ const rs=LIB.map(z=>z.rating).filter(Boolean); if(!rs.length) return r; RANGE=[Math.min(...rs),Math.max(...rs)] }
+  return Math.max(RANGE[0]+150,Math.min(RANGE[1]-150,r)) }
 function filtered(){
-  const p=prog();
+  const p=prog(), mid=bandNow()==='near'?nearMid():0;
   return LIB.filter(z=>{
     if(S.motifs.length&&!S.motifs.some(m=>z.motif===m||(z.themes||[]).includes(m))) return false;   /* any of the chosen themes */
     if(S.ops.length&&!S.ops.includes(z.op)) return false;   /* any of the chosen openings */
-    if(bandNow()==='near'){ if(z.rating&&Math.abs(z.rating-rating().r)>150) return false }
+    if(bandNow()==='near'){ if(z.rating&&Math.abs(z.rating-mid)>150) return false }
     else{ if(S.lo!=null&&z.rating<S.lo) return false; if(S.hi!=null&&z.rating>S.hi) return false }
     const st=p[z.id];
     if(S.status==='Unsolved'&&st) return false;
@@ -59,7 +64,7 @@ function filtered(){
 }
 /* A stable daily shuffle, so the list order holds within a day. */
 function daily(list){
-  const seed=new Date().toISOString().slice(0,10);
+  const seed=localDay();
   const h=s=>{ let x=2166136261; for(const c of s) x=Math.imul(x^c.charCodeAt(0),16777619); return x>>>0 };
   return list.map(z=>[h(seed+z.id),z]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
 }
@@ -90,7 +95,7 @@ function renderL(){
     return TV.row({badge:z.rating||'—',title:esc(Puzzles.title(z.id,themeName(z.motif),doneNow(z),Puzzles.num(LIB,z.id))),meta:z.op?esc(opName(z.op)):'Lichess',
       right:TV.dots([[st?(st.ok?'good':'bad'):'','Puzzle']]),current:!!(S.cur&&S.cur.id===z.id),data:{id:z.id}}) }).join('');
   el.classList.toggle('isempty',!list.length);
-  if(!list.length) el.innerHTML='<p class="empty">No puzzles match these filters. Try Any rating or Any status.</p>';
+  if(!list.length) el.innerHTML=LOADFAIL?'<p class="empty">The puzzle library could not load. Check the connection and open the tab again.</p>':'<p class="empty">No puzzles match these filters. Try Any rating or Any status.</p>';
 }
 
 /* Is the theme shown? (shared/puzzles.js: "shown when solved"). For the puzzle on the board: once it is solved or its
@@ -109,7 +114,7 @@ function facts(){ const z=S.cur; if(!z) return;
 }
 function load(z){
   if(endbar) endbar.hide();
-  S.gen=(S.gen||0)+1;   /* a reply still on its timer belongs to the puzzle it was made for */
+  S.gen=(S.gen||0)+1; S.wait=false;   /* a reply still on its timer belongs to the puzzle it was made for */
   S.cur=z; S.g=new Chess(z.fen); S.step=0; S.solved=false; S.failedFirst=false; S.usedHint=false; S.hintStage=0; S.sol=null; S.view=0; S.seen=!!prog()[z.id];
   let last=null;
   /* Lichess puzzles: the first move of the solution is the opponent's setup move. */
@@ -134,7 +139,7 @@ function nextLabel(){ const b=$('t-next'); if(!b) return; const k=skipping();
 const touch=()=>!!(window.matchMedia&&matchMedia('(hover: none)').matches||document.documentElement.classList.contains('in-app'));
 function expected(){ return S.cur.moves[S.step] }
 function userMove(from,to,promo){
-  if(!S.cur||S.solved||S.sol) return;
+  if(!S.cur||S.solved||S.sol||S.wait) return;
   const exp=expected(); if(!exp) return;
   const test=new Chess(S.g.fen()); const m=test.move({from,to,promotion:promo||'q'}); if(!m) return;
   const uci=from+to+(m.promotion||'');
@@ -159,14 +164,16 @@ function userMove(from,to,promo){
     endbar.show(clean?'good':'warn',(clean?'Solved ✓ first try':'Solved, not first try')+(dr!=null?` · ${dr>=0?'+':''}${dr}`:''));
     renderL(); nextLabel(); return;
   }
-  const gen=S.gen;
-  setTimeout(()=>{ if(gen!==S.gen) return; const u=reply; const mm=S.g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'});
+  /* the 450 ms before the reply: Hint and moves wait (27 Nov 2026, roadmap #274: Hint read the reply as your move and
+     recorded a miss). The board stays unlocked, so a drag on your pieces still doesn't scroll the page (his recheck). */
+  const gen=S.gen; S.wait=true;
+  setTimeout(()=>{ if(gen!==S.gen) return; S.wait=false; const u=reply; const mm=S.g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'});
     S.step++;
     board.set(S.g,{last:mm?{from:mm.from,to:mm.to}:null,orient:board.orient});
     status('','Keep going.',''); },450);
 }
 function hint(){
-  if(!S.cur||S.solved||S.sol) return;
+  if(!S.cur||S.solved||S.sol||S.wait) return;
   const exp=expected(); if(!exp) return;
   if(!S.usedHint&&!S.failedFirst){ S.usedHint=true; saveResult(S.cur.id,false); nextLabel() }
   if(S.hintStage===0){ S.hintStage=1; board.setHint(exp.slice(0,2)); status('warn','Hint: this piece moves.','Press Hint again to see the move.') }
@@ -177,7 +184,7 @@ function hint(){
    only a first try ever moves the rating. A reply still on its timer is dropped: the line starts from the board. */
 function solution(){
   if(!S.cur||S.solved||S.sol) return;
-  S.gen=(S.gen||0)+1;
+  S.gen=(S.gen||0)+1; S.wait=false;
   let dr=null; if(!S.usedHint&&!S.failedFirst){ S.usedHint=true; dr=saveResult(S.cur.id,false) }
   const g=new Chess(S.g.fen()), fens=[g.fen()], sans=[], lasts=[null];
   for(const u of S.cur.moves.slice(S.step)){ const m=g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||undefined}); if(!m) break;
@@ -218,10 +225,10 @@ function status(tone,head,rest){ const el=$('t-status-box'); el.className='statu
 let libP=null;
 function ensure(){
   return libP||(libP=fetch(Site.url('tactics')).then(r=>r.json()).then(j=>{ LIB=j; dispatchEvent(new Event('tactics-lib')); renderHeader(); renderFilters(); renderL(); if(!S.cur) first() })
-    .catch(()=>{ $('t-list').innerHTML='<p class="empty">The puzzle library could not load.</p>'; LIB=[] }));
+    .catch(()=>{ LIB=[]; LOADFAIL=true; $('t-list').innerHTML='<p class="empty">The puzzle library could not load. Check the connection and open the tab again.</p>' }));
 }
 function init(){
-  board=makeBoard($('t-board'),{onMove:userMove});
+  board=makeBoard($('t-board'),{onMove:userMove,expect:()=>S.cur&&!S.solved&&!S.sol?expected():null});
   endbar=endBanner($('t-board'),()=>next(),'Next puzzle');
   board.set(new Chess(),{locked:true});
   /* the puzzle library (2.9 MB) loads when a page needs it (Today, Tactics: ensure()), not on every visit (14 Nov 2026) */

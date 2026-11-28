@@ -87,7 +87,7 @@ const statsAs=o=>stats(sidOf(o));
 /* the review queue: positions you missed, replayed until you find the move first try (stats.mistakes, newest 40) */
 function addMistake(fen){ const s=stats(SID()); const k=posId(normKey(fen)); s.mistakes=Array.isArray(s.mistakes)?s.mistakes:[];
   if(s.mistakes.some(m=>m.key===k)) return; const i=S.log.findIndex(x=>x.before===fen); const path=(i>=0?S.log.slice(0,i):S.log).map(x=>x.san);
-  s.mistakes.push({key:k,path,added:new Date().toISOString().slice(0,10)}); s.mistakes=s.mistakes.slice(-40); saveStats(SID(),s) }
+  s.mistakes.push({key:k,path,added:localDay()}); s.mistakes=s.mistakes.slice(-40); saveStats(SID(),s) }
 function clearMistake(k){ const s=stats(SID()); if(!Array.isArray(s.mistakes)) return; s.mistakes=s.mistakes.filter(m=>m.key!==k); saveStats(SID(),s) }
 /* "Never play this reply" (repertoires): oskip-<id> = [{k:'<posId>|<uci>', san}] */
 const skipList=id=>Store.get('oskip-'+id)||[];
@@ -254,7 +254,7 @@ function refreshRedo(){ document.querySelectorAll('[data-redo]').forEach(b=>{ (b
 function viewPos(){ if(!browsing()) return {g:S.g,last:lastMove(S.g)}; const g=new Chess(S.fens[S.browse]); return {g,last:lastMove(g)} }
 function draw(keepHint){
   const v=viewPos();
-  board.set(v.g,{last:v.last,orient:board?.orient&&S.orientSet?board.orient:myColor(),locked:browsing()||S.phase!=='await',keepHint:!!keepHint});
+  board.set(v.g,{last:v.last,orient:board?.orient&&S.orientSet?board.orient:myColor(),locked:browsing()||S.phase!=='await'||S.g.turn()!==myColor(),keepHint:!!keepHint});
   $('o-board').classList.toggle('browsing',browsing());
   Shapes.auto($('o-board'),noteShapes());
   renderCaptured(v.g);
@@ -415,8 +415,11 @@ async function soundDemoMoves(fen,ucis){
 /* a position you took back isn't rated again in this line (its first try already counted) */
 const scoredAt=fen=>S.scored.some(s=>s.fen===fen)||!!(S.redoSeen&&S.redoSeen.has(fen));
 
+/* your move is wanted: not in the 650 ms before the reply (27 Nov 2026, roadmap #274: a Hint then read the opponent's
+   position and wrote a miss there, and a tap could play his reply for him) */
+const myTurn=()=>!!(S.g&&S.g.turn()===myColor());
 async function userMove(from,to,promo){
-  if(!S.op||S.phase!=='await'||S.busy||browsing()) return;
+  if(!S.op||S.phase!=='await'||S.busy||browsing()||!myTurn()) return;
   const lid=S.lineId, fen=S.g.fen();
   const test=new Chess(fen); const m=test.move({from,to,promotion:promo||'q'});
   if(!m) return;
@@ -721,7 +724,7 @@ async function renderBook(){
 
 /* ---------- Hint ---------- */
 async function hint(){
-  if(!S.op||S.phase!=='await'||browsing()) return;
+  if(!S.op||S.phase!=='await'||browsing()||!myTurn()) return;
   const fen=S.g.fen();
   let u=null;
   if(S.op.rep){ const file=repMovesAt(fen); u=file[0] }
@@ -811,7 +814,7 @@ function openSettings(){ renderSetModal(); $('o-setmodal').hidden=false; const f
 const ST={sort:'lines',dir:-1,all:false};
 function statRows(){
   return ordered(openings()).map(o=>{ const st=stats(o.id); const ev=st.history.map(h=>h.e).filter(e=>typeof e==='number');
-    const last=st.last?new Date(st.last).toISOString().slice(0,10):'';
+    const last=st.last?localDay(st.last):'';
     return {o,name:o.name,side:o.side,lines:st.lines||0,rating:Math.round(st.rating),avg:ev.length?ev.reduce((a,b)=>a+b,0)/ev.length:null,nev:ev.length,last,misses:Object.values(st.rep||{}).reduce((a,x)=>a+(x.w||0),0)} })
     .filter(r=>ST.all||r.lines>0);
 }
@@ -836,7 +839,7 @@ function init(){
   applyPin(); if(PINQ&&PINQ.addEventListener) PINQ.addEventListener('change',applyPin); addEventListener('hashchange',()=>setTimeout(applyPin,0));
   $('o-more').addEventListener('click',()=>{ const t=$('o-tools'), on=!t.classList.contains('more'); t.classList.toggle('more',on); $('o-more').setAttribute('aria-expanded',String(on)) });
   $('o-tools').addEventListener('click',e=>{ if(e.target.closest('button')&&!e.target.closest('#o-more')) { $('o-tools').classList.remove('more'); $('o-more').setAttribute('aria-expanded','false') } });
-  board=makeBoard($('o-board'),{onMove:userMove});
+  board=makeBoard($('o-board'),{onMove:userMove,expect:()=>S.op&&S.op.rep?repMovesAt(S.g.fen()):null});
   $('o-pick').addEventListener('click',()=>setPop($('o-pop').hidden));
   document.addEventListener('pointerdown',e=>{ if(!$('o-pop').hidden&&!e.target.closest('.opick')&&!e.target.closest('.modal')) setPop(false) });
   $('o-search').addEventListener('input',e=>renderList(e.target.value));
@@ -922,7 +925,7 @@ function init(){
   $('o-moveform').addEventListener('submit',e=>{
     e.preventDefault(); const txt=$('o-movein').value; $('o-moveerr').textContent='';
     if(!txt.trim())return;
-    if(!S.g||S.phase!=='await'||S.busy||browsing()){ $('o-moveerr').textContent='Wait for the position.'; return }
+    if(!S.g||S.phase!=='await'||S.busy||browsing()||!myTurn()){ $('o-moveerr').textContent='Wait for the position.'; return }
     const mv=parseTyped(S.g,txt);
     if(!mv){ $('o-moveerr').textContent=`${txt} isn’t legal here. ${S.g.turn()==='w'?'White':'Black'} to move.`; return }
     $('o-movein').value=''; userMove(mv.from,mv.to,mv.promotion);

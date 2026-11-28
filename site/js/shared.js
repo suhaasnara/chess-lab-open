@@ -32,6 +32,9 @@ window.Settings=(()=>{
 })();
 
 /* ---------- Progress store (localStorage, with export/import) ---------- */
+/* The date on this device's calendar, YYYY-MM-DD (27 Nov 2026, roadmap #281: toISOString() is UTC, so in the evening in
+   America "today" was already tomorrow: the daily order changed and "Last trained" read a day late). */
+window.localDay=t=>{ const d=t==null?new Date():new Date(t); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0') };
 window.Store=(()=>{
   const PRE='clo:';
   const get=k=>{ try{ const v=localStorage.getItem(PRE+k); return v?JSON.parse(v):null }catch(e){ return null } };

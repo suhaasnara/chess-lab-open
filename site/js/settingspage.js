@@ -55,7 +55,7 @@ function init(){
     const box=document.createElement('div'); box.appendChild(seg); box.appendChild(sel);
     row.appendChild(box); el.appendChild(row);
   }
-  hiddenRow(); jumps();
+  hiddenRow(); engineRow(); jumps();
   if($('s-board')){ prev=makeBoard($('s-board'),{}); preview() }
 }
 /* A row of jump buttons under the title (his recheck, 23 Nov 2026: the app card at the bottom was easy to miss). One per
@@ -73,6 +73,20 @@ function jumps(){
   nav.innerHTML=items.map(([id,t])=>`<button type="button" class="btn sm" data-to="${esc(id)}">${esc(t)}</button>`).join('');
   if(app&&!jumpObs&&window.MutationObserver){ jumpObs=new MutationObserver(()=>{ const now=!app.hidden&&app.querySelector('h2'); if(!!now!==!!nav.querySelector('[data-to="appbox"]')) jumps() });
     jumpObs.observe(app,{attributes:true,attributeFilter:['hidden'],childList:true}) }
+}
+/* Settings → Engine: what Stockfish is doing, and Restart (27 Nov 2026, roadmap #271: once it stopped, only a reload
+   brought it back). Under the depth row; follows 'engine-change'. */
+let engL=false;
+function engineRow(){
+  const dep=document.querySelector('#s-rows select[data-k="sfDepth"]'), after=dep&&dep.closest('.setrow'); if(!after) return;
+  let row=document.getElementById('s-engine');
+  if(!row){ row=document.createElement('div'); row.className='setrow'; row.id='s-engine'; after.insertAdjacentElement('afterend',row)
+    row.addEventListener('click',e=>{ if(e.target.closest('#s-sfrestart')){ SharedEngine.revive(); draw() } });
+    if(!engL){ engL=true; addEventListener('engine-change',()=>engineRow()) } }
+  function draw(){ const E=window.SharedEngine; if(!E) return;
+    const st=E.failed?`Stopped${E.why?': '+E.why:''}.`:E.ready?`Ready${E.name?' ('+E.name+')':''}.`:E.started?'Starting…':'Not started yet: it starts when a page needs it.';
+    row.innerHTML=`<div><div class="setname">Stockfish</div><div class="note" id="s-sfstate">${esc(st)}</div></div>`+(E.failed||E.ready?'<button type="button" class="btn sm" id="s-sfrestart">Restart Stockfish</button>':'') }
+  draw();
 }
 /* Restore hidden openings (Openings → Hide this opening keeps their progress) */
 function hiddenRow(){ const el=$('s-rows'); let row=document.getElementById('s-hidden'); if(!row){ row=document.createElement('div'); row.className='setrow'; row.id='s-hidden'; el.appendChild(row) }

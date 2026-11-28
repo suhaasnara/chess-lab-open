@@ -31,9 +31,11 @@ let fetchCtl=null;   /* the request under way, so Stop can end it */
 class FetchError extends Error{ constructor(msg,why){ super(msg); this.why=why } }
 const BUSY={lichess:'Lichess is limiting requests from this connection (too many in a short time). Wait a minute, then try again.',
   chesscom:'Chess.com is limiting requests from this connection (too many in a short time). Wait a minute, then try again.'};
-async function getFrom(site,url,as,headers){
-  const name=site==='lichess'?'Lichess':'Chess.com', ms=LIMIT[site];
-  if(!Net.online()) throw new FetchError('You are offline. Analyze my games needs the internet to fetch your games; your PGN files work offline.','offline');
+/* off: the offline sentence (Players passes its own: 27 Nov 2026, roadmap #398) */
+const OFF_A='You are offline. Analyze my games needs the internet to fetch your games; your PGN files work offline.';
+async function getFrom(site,url,as,headers,off){
+  const name=site==='lichess'?'Lichess':'Chess.com', ms=LIMIT[site]; off=off||OFF_A;
+  if(!Net.online()) throw new FetchError(off,'offline');
   const ctl=fetchCtl=new AbortController(); let late=false; const t=setTimeout(()=>{ late=true; ctl.abort() },ms);
   try{
     const r=await fetch(url,{headers:headers||{},signal:ctl.signal});
@@ -43,7 +45,7 @@ async function getFrom(site,url,as,headers){
     if(e instanceof FetchError) throw e;
     if(late) throw new FetchError(`${name} didn’t answer within ${ms/1000} seconds. Check the connection and try again.`,'timeout');
     if(e&&e.name==='AbortError') throw new FetchError('Stopped before the games arrived.','stopped');
-    if(!Net.online()) throw new FetchError('You are offline. Analyze my games needs the internet to fetch your games; your PGN files work offline.','offline');
+    if(!Net.online()) throw new FetchError(off,'offline');
     throw new FetchError(`Could not reach ${name}. Check the connection, or a browser extension that blocks it, and try again.`,'net');
   }finally{ clearTimeout(t); if(fetchCtl===ctl) fetchCtl=null }
 }
@@ -135,8 +137,11 @@ async function evalsFor(game,budget,onStep){
     const mv=g.move(game.moves[i]); if(!mv) break;
     ef+=first&&first.slice(0,4)===mv.from+mv.to&&(first[4]||'')===(mv.promotion||'')?'1':'0'; first=null;
     if(g.in_checkmate()){ evs.push(g.turn()==='w'?-MATE/100:MATE/100); break }
-    const a=await SharedEngine.analyse(g.fen(),depth,1,m==='deep'?30000:9000).catch(()=>null);
-    if(!a||!a.length){ evs.push(evs.length?evs[evs.length-1]:0) }
+    let a=await SharedEngine.analyse(g.fen(),depth,1,m==='deep'?30000:9000).catch(()=>null);
+    if((!a||!a.length)&&!stopReq&&!SharedEngine.failed) a=await SharedEngine.analyse(g.fen(),depth,1,m==='deep'?30000:9000).catch(()=>null);   /* one more try */
+    /* no answer: the game is not analysed (27 Nov 2026, roadmap #271: the eval before, or 0, was stored for the position
+       and the game cached as analysed, so made-up drops and drills came from it). Nothing is kept; the next run redoes it. */
+    if(!a||!a.length){ game.evfail=true; return null }
     else{ const cp=a[0].mate!=null?(a[0].mate>0?MATE/100:-MATE/100):a[0].cp; evs.push(g.turn()==='w'?cp:-cp); first=a[0].uci||null }
     onStep&&onStep(i/game.moves.length);
   }
@@ -382,11 +387,12 @@ async function run(site,user,blitz){
     note(site==='pgn'?`${fileNote} ${games.length-needEngine.length} already have evals${nEng?`; Stockfish is analyzing the other ${nEng} on your device (${how}). You can stop any time: what is done is kept, and running it again carries on.`:'.'}`
       :`${fileNote?fileNote+' ':''}${Help.n(games.length,'game')}.${nEng?` ${nEng} without stored evals — analyzing with Stockfish on your device (${how}), this takes a while…`:''}`,true);
     stopReq=false; if($('a-stop')) $('a-stop').hidden=!nEng;
-    const rows=[], t0=Date.now(); let doneP=0, drawn=0, tick=Date.now();
+    const rows=[], t0=Date.now(); let doneP=0, drawn=0, tick=Date.now(), noEval=0;
     for(let i=0;i<games.length&&!stopReq;i++){
       const game=games[i], eng=needEngine.includes(game);
       const evs=await evalsFor(game,budget,f=>prog((i+f)/games.length));
       prog((i+1)/games.length);
+      if(eng&&!evs&&game.evfail){ noEval++; if(SharedEngine.failed) break }
       if(eng&&evs){ doneP+=game.moves.length; const left=engPlies-doneP, sec=doneP?(Date.now()-t0)/1000*left/doneP:0;
         if(left>0) note(`${site==='pgn'?fileNote+' ':''}Stockfish (${how}): game ${i+1} of ${games.length}, about ${sec<90?Math.max(1,Math.round(sec/10)*10)+' seconds':Math.round(sec/60)+' minutes'} left. You can stop any time and carry on later.`,true) }
       else if(Date.now()-tick>250){ note(`${site==='pgn'?fileNote+' ':''}Reading game ${i+1} of ${games.length}…`,true) }
@@ -405,8 +411,9 @@ async function run(site,user,blitz){
     renderReport(user,site,rows,games.length,true);
     const kept=keepRun(rows,games.length,m);
     const keptNote=kept==='ok'?'':kept==='partial'?' Storage on this device is full: the games your drills come from are kept, but this report won’t come back after a reload.':' Storage on this device is full: these games can’t be kept, so the report won’t come back after a reload.';
+    const evNote=noEval?` Stockfish didn’t answer for ${Help.n(noEval,'game')}${SharedEngine.failed?' (it has stopped: Settings → Engine can restart it)':''}, so ${noEval===1?'it is':'they are'} left out; press Analyze again to try ${noEval===1?'it':'them'}.`:'';
     note((bcStopped?`Stopped during Blunder check: ${LASTBC.length} position${LASTBC.length===1?'':'s'} found so far. Press Analyze again to carry on (nothing is redone).`
-      :stopReq?`Stopped: ${rows.length} of ${games.length} games analyzed so far. Press Analyze again to carry on (nothing is redone).`:site==='pgn'?`${fileNote} Done.`:fileNote?`Done. ${fileNote}`:'Done.')+keptNote);
+      :stopReq?`Stopped: ${rows.length} of ${games.length} games analyzed so far. Press Analyze again to carry on (nothing is redone).`:site==='pgn'?`${fileNote} Done.`:fileNote?`Done. ${fileNote}`:'Done.')+evNote+keptNote);
   }catch(e){ note(String(e.message||e)) }
   prog(0,false); $('a-go').disabled=false; if($('a-stop')) $('a-stop').hidden=true; running=false; updateEstimate();
 }
@@ -679,7 +686,7 @@ function init(){
     if(AStats.click(e)&&LASTR) renderReport(...LASTR) });
   $('a-report').addEventListener('change',e=>{ if(AStats.change(e)&&LASTR) renderReport(...LASTR) });
 }
-window.AnalyzeTab={LIMIT,init,verifyDrill,saveDrills,evCache,phaseAccuracy,phaseOf,run,markGame,fetchLichess,fetchChesscom,evalsFor,yearlyOf,drillSets,removeSet,addFile,bench,DEPTH,
+window.AnalyzeTab={LIMIT,getFrom,init,verifyDrill,saveDrills,evCache,phaseAccuracy,phaseOf,run,markGame,fetchLichess,fetchChesscom,evalsFor,yearlyOf,drillSets,removeSet,addFile,bench,DEPTH,
   restore,live,findBlunderChecks,bcCandidates,BCMAX,get blunderChecks(){ return LASTBC },
   get files(){ return FILES },
   setFile(text,name){ FILES=[]; addFile(text,name||'file.pgn'); renderFiles() },
