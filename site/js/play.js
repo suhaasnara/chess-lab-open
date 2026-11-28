@@ -19,7 +19,7 @@ function renderGames(){
   const el=$('pl-games');
   const W=list.filter(g=>g.result==='win').length,D=list.filter(g=>g.result==='draw').length,L=list.length-W-D;
   el.innerHTML=(list.length?`<p class="note">${Help.n(W,'win')} · ${Help.n(D,'draw')} · ${Help.n(L,'loss','losses')}</p>`:'<p class="note">No games yet.</p>')+
-    list.slice(0,12).map(g=>`<div class="gamerow"><span class="src">${new Date(g.t).toISOString().slice(0,10)}</span>
+    list.slice(0,12).map(g=>`<div class="gamerow"><span class="src">${localDay(g.t)}</span>
       <span>${g.goal?'Play it out ('+(g.goal==='win'?'convert':'hold')+') · ':''}${g.me==='w'?'White':'Black'} vs Stockfish${g.elo==='max'?'':' ('+g.elo+')'}${g.blind?' · blindfold'+(g.peeks?' ('+g.peeks+' peeks)':''):''}${g.takebacks?' · '+g.takebacks+' takeback'+(g.takebacks>1?'s':''):''}</span>
       <span class="pill ${g.result==='win'?'good':g.result==='draw'?'none':'bad'}">${{win:'Win',draw:'Draw',loss:'Loss'}[g.result]||esc(String(g.result))}</span>
       <a class="note" href="${g.fen?'https://lichess.org/analysis/'+encodeURIComponent(g.fen.replace(/ /g,'_')):'https://lichess.org/analysis/pgn/'+encodeURIComponent(g.moves)}" target="_blank" rel="noopener">Review ↗</a></div>`).join('');
@@ -58,7 +58,10 @@ async function botMove(){
   if(gid!==S.gid) return;   /* a take back or a new game while the engine thought */
   S.busy=false;
   if(S.over) return;
-  if(!uci){ status('warn','The engine is not available.','Check Settings, or try again.'); return }
+  /* no move: the game waits on the bot's turn, with a way to ask again (27 Nov 2026, roadmap #271: it stayed stuck) */
+  if(!uci){ status('warn','Stockfish didn’t answer.',SharedEngine.failed?' It has stopped; asking again restarts it.':' Ask it again.');
+    const b=document.createElement('button'); b.type='button'; b.className='btn sm'; b.id='pl-retry'; b.textContent='Ask Stockfish again'; b.style.marginLeft='8px';
+    b.addEventListener('click',()=>{ if(SharedEngine.failed) SharedEngine.revive(); botMove() }); $('pl-status').appendChild(b); return }
   const m=S.g.move({from:uci.slice(0,2),to:uci.slice(2,4),promotion:uci[4]||'q'});
   if(!m){ status('warn','Engine move failed.',''); return }
   S.moves.push(m.san);
@@ -147,12 +150,14 @@ function viewAt(k){ if(!S.g||!S.moves.length) return false; const n=S.moves.leng
 /* H: two-step hint (the piece, then the move), counted on the saved game like takebacks */
 async function hint(){
   if(!S.g||S.over||S.busy||S.g.turn()!==S.me||S.view!=null) return false;
-  const a=await SharedEngine.analyse(S.g.fen(),14,1,6000).catch(()=>null); const u=a&&a[0]&&a[0].uci; if(!u) return;
+  const gid=S.gid, fen=S.g.fen();
+  const a=await SharedEngine.analyse(fen,14,1,6000).catch(()=>null); const u=a&&a[0]&&a[0].uci; if(!u) return;
+  if(gid!==S.gid||!S.g||S.g.fen()!==fen||S.view!=null) return;   /* a late answer: another game, a take back or a move since (roadmap #281) */
   if(!S.hintStage){ S.hints++; S.hintStage=1; board.setHint(u.slice(0,2)); status('warn','Hint: this piece.','Press Hint again for the move. Hints are saved with the game.') }
   else { board.setHint(u.slice(0,2),u.slice(2,4)); status('warn','Hint: '+sanOf(S.g.fen(),u),`Hints this game: ${S.hints}.`) }
 }
 const numbered=(fen,sans)=>{ const t=(fen||'x w - - 0 1').split(' '); let n=+t[5]||1, w=t[1]!=='b'; return sans.map((s,i)=>{ const x=w?n+'. '+s:(i===0?n+'... '+s:s); if(!w) n++; w=!w; return x }).join(' ') };
-function pgn(){ const d=new Date(); const tags=[['Event','Think Ahead: Play'],['Site','Think Ahead'],['Date',d.toISOString().slice(0,10).replace(/-/g,'.')],
+function pgn(){ const d=new Date(); const tags=[['Event','Think Ahead: Play'],['Site','Think Ahead'],['Date',localDay(d).replace(/-/g,'.')],
     ['White',S.me==='w'?'Me':'Stockfish '+S.elo],['Black',S.me==='b'?'Me':'Stockfish '+S.elo],['Result',S.result||'*']].concat(S.start?[['SetUp','1'],['FEN',S.start]]:[]);
   return tags.map(([k,v])=>`[${k} "${v}"]`).join('\n')+'\n\n'+numbered(S.start,S.moves)+' '+(S.result||'*') }
 async function reviewLichess(){ const r=await Net.review(pgn()); if(!r.ok) status('warn','Lichess import didn’t work here.',(r.copied?'The PGN is copied: paste it on the page that opened. ':'Copy the PGN below and paste it on lichess.org/paste. ')+r.why) }

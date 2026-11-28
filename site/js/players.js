@@ -18,15 +18,18 @@ function gamesOf(p){ if(!p) return []; const since=S.win==='all'?'':new Date(Dat
 const filterKey=()=>S.win+'/'+S.band;
 const noteOf=id=>Store.get('pnote-'+id)||'';   /* your own notes on a player (kept apart from their games, so Refresh keeps them) */
 
-/* ---------- Fetching (public APIs, in your browser) ---------- */
+/* ---------- Fetching (public APIs, in your browser) ----------
+   27 Nov 2026 (roadmap #398): through Analyze's getFrom, so offline, a site limiting requests (429) and no answer in time
+   each say so plainly (offline showed the browser's "Load failed"), and Chess.com months that don't come are counted. */
+const OFF='You are offline. Players needs the internet to fetch an opponent’s games; players you added still work offline.';
+const get=(site,url,as,h)=>AnalyzeTab.getFrom(site,url,as,h,OFF);
 async function fetchLichess(user,speeds){
   const url=`https://lichess.org/api/games/user/${encodeURIComponent(user)}?max=${MAX_GAMES}&moves=true&perfType=${speeds.join(',')}`;
-  const r=await fetch(url,{headers:{Accept:'application/x-ndjson'}});
+  const r=await get('lichess',url,'text',{Accept:'application/x-ndjson'});
   if(r.status===404) throw new Error('No such Lichess user.');
-  if(r.status===429) throw new Error('Lichess asks to wait a minute (too many requests). Try again shortly.');
   if(!r.ok) throw new Error('Lichess answered '+r.status+'.');
   const out=[]; let name=user;
-  for(const line of (await r.text()).split('\n')){ if(!line.trim()) continue; let j; try{ j=JSON.parse(line) }catch(e){ continue }
+  for(const line of r.body.split('\n')){ if(!line.trim()) continue; let j; try{ j=JSON.parse(line) }catch(e){ continue }
     if(j.variant&&j.variant!=='standard'||j.initialFen) continue;
     const wn=j.players.white.user?j.players.white.user.name:'', bn=j.players.black.user?j.players.black.user.name:'';
     const c=wn.toLowerCase()===user.toLowerCase()?'w':bn.toLowerCase()===user.toLowerCase()?'b':null; if(!c) continue; name=c==='w'?wn:bn;
@@ -38,14 +41,15 @@ async function fetchLichess(user,speeds){
 }
 async function fetchChesscom(user,speeds){
   const base=`https://api.chess.com/pub/player/${encodeURIComponent(user.toLowerCase())}`;
-  const ar=await fetch(base+'/games/archives');
+  const ar=await get('chesscom',base+'/games/archives','json');
   if(ar.status===404) throw new Error('No such Chess.com user.');
   if(!ar.ok) throw new Error('Chess.com answered '+ar.status+'.');
-  const archives=(await ar.json()).archives||[]; const out=[]; let name=user;
+  const archives=(ar.body&&ar.body.archives)||[]; const out=[]; let name=user, missed=0, lastErr=null;
   const want=new Set(speeds.map(s=>s==='classical'?'daily':s));   /* Chess.com has no classical pool: its long games are rapid/daily */
   for(const u of archives.slice(-12).reverse()){
-    const r=await fetch(u); if(!r.ok) continue;
-    for(const j of ((await r.json()).games||[]).reverse()){
+    let r; try{ r=await get('chesscom',u,'json') }catch(e){ if(e.why==='offline'||e.why==='stopped') throw e; missed++; lastErr=e; continue }
+    if(!r.ok){ missed++; continue }
+    for(const j of ((r.body&&r.body.games)||[]).reverse()){
       if(j.rules!=='chess'||!want.has(j.time_class)||/\[SetUp "1"\]/.test(j.pgn||'')) continue;
       const c=j.white.username.toLowerCase()===user.toLowerCase()?'w':'b'; name=c==='w'?j.white.username:j.black.username;
       const me=c==='w'?j.white:j.black; const sc=me.result==='win'?1:['agreed','repetition','stalemate','insufficient','50move','timevsinsufficient'].includes(me.result)?0.5:0;
@@ -53,7 +57,8 @@ async function fetchChesscom(user,speeds){
       out.push({d:new Date(j.end_time*1000).toISOString().slice(0,10),c,r:sc,m:ms.join(' '),o:c==='w'?j.black.username:j.white.username,or:c==='w'?j.black.rating:j.white.rating,sp:j.time_class,url:j.url});
       if(out.length>=MAX_GAMES) break }
     if(out.length>=MAX_GAMES) break }
-  return {name,games:out};
+  if(missed&&!out.length&&lastErr) throw lastErr;
+  return {name,games:out,missed:missed?`Chess.com didn’t send ${missed} of the months${lastErr&&lastErr.why==='busy'?' (it is limiting requests: refresh in a minute for the rest)':''}.`:''};
 }
 function pgnMoves(pgn){ const g=new Chess(), out=[];
   const body=pgn.replace(/\{[^}]*\}/g,' ').replace(/\[[^\]]*\]\s*/g,'').replace(/\([^()]*\)/g,' ').replace(/\$\d+/g,' ').replace(/\d+\.\.\./g,'');
@@ -66,7 +71,10 @@ async function addPlayer(site,user,speeds){
   if(!f.games.length) throw new Error('No standard games in those time controls.');
   const id=(site==='chesscom'?'cc-':'li-')+user.toLowerCase();
   const p={id,site,user,name:f.name,t:Date.now(),speeds,games:f.games};
-  Store.put('player-'+id,p); if(!Store.get('player-'+id)) throw new Error('This browser has no room left to keep these games.');
+  Store.put('player-'+id,p); const kept=Store.get('player-'+id);
+  /* a refresh into a full store kept the old copy and read as done (27 Nov 2026, roadmap #281): check it is this one */
+  if(!kept||kept.t!==p.t) throw new Error('This browser has no room left to keep these games'+(kept?' (the games you had are kept).':'.'));
+  p.missed=f.missed;
   const idx=index().filter(x=>x.id!==id); idx.unshift({id,site,user,name:f.name,n:f.games.length,t:p.t}); Store.put('players-index',idx);
   for(const k of [...TREES.keys()]) if(k.startsWith(id+'|')) TREES.delete(k); return p;
 }
@@ -117,7 +125,7 @@ function renderList(){
   const el=$('p-list'), idx=index();
   $('p-listlabel').hidden=!idx.length; $('p-listlabel').textContent=Help.n(idx.length,'player');
   el.innerHTML=idx.length?idx.map(x=>TV.row({badge:x.site==='chesscom'?'C.com':'Li',badgeTitle:x.site==='chesscom'?'Chess.com':'Lichess',title:esc(x.name),
-      meta:`${x.n} games · fetched ${new Date(x.t).toISOString().slice(0,10)}`,current:S.pid===x.id,data:{pid:x.id}})).join('')
+      meta:`${x.n} games · fetched ${localDay(x.t)}`,current:S.pid===x.id,data:{pid:x.id}})).join('')
     :'<p class="empty">No players yet. Type an opponent’s username above. Their public games are fetched by this device and kept only here.</p>';
 }
 /* Three columns (shared screens: Chess Lab's Players): the list | their moves on a board with the explorer under it | who they are */
@@ -197,7 +205,7 @@ function init(){
   $('p-form').addEventListener('submit',async e=>{ e.preventDefault(); if(S.busy) return;
     const err=$('p-err'); const speeds=[...$('p-speeds').querySelectorAll('input:checked')].map(x=>x.value);
     S.busy=true; $('p-go').disabled=true; err.textContent='Fetching their games…';
-    try{ const p=await addPlayer($('p-site').value,$('p-user').value,speeds); err.textContent=`${p.games.length} games.`; $('p-user').value=''; select(p.id) }
+    try{ const p=await addPlayer($('p-site').value,$('p-user').value,speeds); err.textContent=`${p.games.length} games.`+(p.missed?' '+p.missed:''); $('p-user').value=''; select(p.id) }
     catch(x){ err.textContent=x instanceof TypeError?'Could not reach '+($('p-site').value==='chesscom'?'Chess.com':'Lichess')+' (offline, or blocked by a browser extension).':String(x.message||x) }
     S.busy=false; $('p-go').disabled=false });
   sec.addEventListener('input',e=>{ if(e.target.id==='pl-note'&&S.pid){ const v=e.target.value; if(v.trim()) Store.put('pnote-'+S.pid,v); else Store.del('pnote-'+S.pid) } });
@@ -217,7 +225,9 @@ function init(){
       addEventListener('afterprint',done); try{ window.print() }catch(_){ done() } }
     else if(act==='remove'){ if(!confirm('Remove this player and their games from this device?')) return; Store.del('player-'+S.pid); Store.del('pnote-'+S.pid); for(const k of ['w','b']) Store.del('stats-pl-'+S.pid+'-'+k); Store.put('players-index',index().filter(x=>x.id!==S.pid)); S.pid=null; render() }
     else if(act==='refresh'){ const p=pdata(S.pid); if(!p||S.busy) return; S.busy=true; a.disabled=true; a.textContent='Fetching…';
-      try{ await addPlayer(p.site,p.user,p.speeds||['blitz','rapid','classical']); select(p.id) }catch(x){ a.textContent='Could not refresh'; } S.busy=false }
+      /* a failed refresh says why and the button works again (27 Nov 2026, roadmap #281: it stayed disabled) */
+      try{ await addPlayer(p.site,p.user,p.speeds||['blitz','rapid','classical']); select(p.id) }catch(x){ a.disabled=false; a.textContent='Refresh games';
+        let n=document.getElementById('p-referr'); if(!n){ n=document.createElement('p'); n.id='p-referr'; n.className='note err'; a.parentNode.insertAdjacentElement('afterend',n) } n.textContent=String(x&&x.message||x) } S.busy=false }
   });
   Keys.on('players',{ArrowLeft:['Back a move in the explorer',()=>{ if(!S.board||S.sheet||!S.line.length) return false; S.line.pop(); drawExplorer() }],
     Home:['Back to the start',()=>{ if(!S.board||S.sheet) return false; S.line=[]; drawExplorer() }]});

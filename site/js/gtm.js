@@ -127,7 +127,10 @@ function takeBack(){
   status(S.crit&&S.crit.has(S.ply)?'crit':'',`Move ${Math.floor(S.ply/2)+1}: try another move.`,`A retry: your first answer (${last.guess}) is what counts.`);
   backBtn();
 }
-function nextGame(){ if(!INDEX||!INDEX.length) return false; const i=INDEX.findIndex(e=>S.game&&e.id===S.game.id); const e=INDEX[(i+1)%INDEX.length]; if(e) load(e.file) }
+/* Next game: from your own games, the next of yours (27 Nov 2026, roadmap #281: it opened a built-in game) */
+function nextGame(){
+  if(S.game&&S.game.own){ const L=ownGames(); if(!L.length) return false; const i=L.findIndex(x=>x.game.id===S.game.id); load(L[(i+1)%L.length].game); return }
+  if(!INDEX||!INDEX.length) return false; const i=INDEX.findIndex(e=>S.game&&e.id===S.game.id); const e=INDEX[(i+1)%INDEX.length]; if(e) load(e.file) }
 function restart(){ if(!S.game) return false; if(S.game.own) load(ownGame(S.game.id)); else load(INDEX.find(e=>e.id===S.game.id).file) }
 async function userMove(from,to,promo){
   const g=S.game;
@@ -326,7 +329,7 @@ function renderScore(){
 function status(tone,head,rest){ const el=$('g-status'); el.className='status'+(tone?' '+tone:''); el.innerHTML=`<strong>${esc(head)}</strong>${rest||''}` }
 
 function init(){
-  board=makeBoard($('g-board'),{onMove:userMove});
+  board=makeBoard($('g-board'),{onMove:userMove,expect:()=>{ const g=S.game; if(!g||S.done||S.read) return null; try{ const m=new Chess(S.g.fen()).move(g.moves[S.ply]); return m?m.from+m.to+(m.promotion||''):null }catch(e){ return null } }});
   endbar=endBanner($('g-board'),nextGame,'Next game');
   board.set(new Chess(),{locked:true});
   fetch(Site.url('gtmIndex')).then(r=>r.json()).then(j=>{ INDEX=j; renderList() }).catch(()=>{ INDEX=[]; renderList() });

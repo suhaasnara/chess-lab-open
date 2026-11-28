@@ -10,6 +10,7 @@
        (Settings → Move input on the private site; Open has no setting yet, so 'both').
    makeBoard(el, opts) -> {set(game,{last,orient,locked,keepHint}), lock(on), setHint(sq,to), flip(), flash(squares,tone), orient, render}
    endBanner(boardEl, onNext, label) -> {show(tone,text), hide(), shown, text}: the result strip under a board
+   Board.promoFor(from, to, promo, expected) -> the expected move's piece when it promotes on those squares, else promo.
    Board.dragOver(el, e) outlines the square under a dragged piece (e = null clears it).
    Sound.play('move'|'capture') and BoardFX.after(el, last) (slide the piece that just moved, play the sound) read the
    site's Settings: sound (true/false), anim (none/fast/normal/slow). makeBoard runs BoardFX after every redraw. */
@@ -85,7 +86,16 @@ window.Board=(()=>{
     });
     el.addEventListener('pointercancel',()=>{ if(drag){ drag.ghost.remove(); drag=null; const st=getState(); st&&st.redraw() } });
   }
-  return {draw,bind,dragOver};
+  /* The piece a promotion becomes. A tap or drag can't say which piece, so it arrives as 'q'; when the page knows the
+     move it is waiting for (exp: a uci or a list of them) and that move promotes on the same squares, the pawn becomes
+     that piece instead (27 Nov 2026, roadmap #273: 39 tactics and a few Calculation and Blind lines promote to a knight or
+     rook, and were a miss whatever you did). */
+  function promoFor(from,to,promo,exp){
+    if(!promo||!exp) return promo;
+    const hit=[].concat(exp).find(u=>typeof u==='string'&&u.slice(0,4)===from+to&&/[qrbn]/.test(u[4]||''));
+    return hit?hit[4]:promo;
+  }
+  return {draw,bind,dragOver,promoFor};
 })();
 
 /* Move sounds: a short synthesized wooden click, louder and lower for captures. */
@@ -139,7 +149,8 @@ function endBanner(boardEl,onNext,label){
 }
 
 /* The board component: makeBoard(el, opts); opts.onMove(from,to,promo) is called for the user's move attempt
-   (tap a piece then a square, or drag); opts.input() as in Board.bind. */
+   (tap a piece then a square, or drag); opts.input() as in Board.bind; opts.expect() -> the uci (or list) the page is
+   waiting for, so a promotion becomes the expected piece (Board.promoFor). */
 function makeBoard(el,opts={}){
   const B={game:null,last:null,orient:'w',sel:null,hint:null,hintTo:null,locked:false};
   /* .movable (shared.css: a drag that starts on a piece moves it instead of scrolling the page) only while this board takes
@@ -148,7 +159,7 @@ function makeBoard(el,opts={}){
   const movable=()=>el.classList.toggle('movable',!B.locked&&!!B.game&&!!opts.onMove);
   const render=()=>{ Board.draw(el,B.game,{orient:B.orient,sel:B.sel,last:B.last,hint:B.hint,hintTo:B.hintTo}); movable(); BoardFX.after(el,B.last) };
   Board.bind(el,()=>({g:B.game,can:()=>!B.locked&&!!B.game,sel:()=>B.sel,setSel:v=>{ B.sel=v },redraw:render}),
-    (f,t,p)=>{ opts.onMove&&opts.onMove(f,t,p) },{input:opts.input||(()=>{ const v=window.Settings&&Settings.get('input'); return v==='tap'?'both':v })});
+    (f,t,p)=>{ opts.onMove&&opts.onMove(f,t,Board.promoFor(f,t,p,opts.expect&&opts.expect())) },{input:opts.input||(()=>{ const v=window.Settings&&Settings.get('input'); return v==='tap'?'both':v })});
   return {
     set(game,o={}){ B.game=game; if(o.last!==undefined) B.last=o.last; if(o.orient) B.orient=o.orient; B.sel=null; if(!o.keepHint){B.hint=null;B.hintTo=null} B.locked=!!o.locked; render() },
     lock(on=true){ B.locked=!!on; movable() },   // done with this position (solved, game over): no more moves, and swipes on it scroll; no redraw, so a flash stays

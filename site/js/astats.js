@@ -350,7 +350,7 @@ window.AStats=(()=>{
      "Review mistakes" draws from: found first try, it comes off), then Openings plays it (#openings/review/<id>/<key>) */
   function practise(b){ const id=b.dataset.pprac, k=b.dataset.pk, path=(b.dataset.ppath||'').split(' ').filter(Boolean);
     const st=Store.get('stats-'+id)||{}; st.mistakes=Array.isArray(st.mistakes)?st.mistakes:[];
-    if(!st.mistakes.some(m=>m.key===k)){ st.mistakes.push({key:k,path,added:new Date().toISOString().slice(0,10)}); st.mistakes=st.mistakes.slice(-40); Store.put('stats-'+id,st) }
+    if(!st.mistakes.some(m=>m.key===k)){ st.mistakes.push({key:k,path,added:localDay()}); st.mistakes=st.mistakes.slice(-40); Store.put('stats-'+id,st) }
     location.hash='#openings/review/'+encodeURIComponent(id)+'/'+encodeURIComponent(k) }
   function click(e){
     const t=e.target;

@@ -1598,7 +1598,9 @@ section('t70: PGN accuracy (13 Nov 2026): zero castling, glued marks, e.p., elli
 
 section('t61: your own PGN file in Analyze my games (js/pgnfile.js): parse, who you are, report with Year by year, evals kept');
 {
-  const {w}=await makePage(); await sleep(100); const F=w.PgnFile;
+  /* an engine that answers 0.00 everywhere (since 27 Nov 2026, roadmap #271, a game Stockfish doesn't answer for is left
+     unanalysed, so this test needs answers) */
+  const {w}=await makePage({analyse:async()=>[{uci:'a2a3',cp:0,mate:null}]}); await sleep(100); const F=w.PgnFile;
   const L=['1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6','1. d4 d5 2. c4 e6 3. Nc3 Nf6 4. Bg5 Be7','1. c4 e5 2. Nc3 Nf6 3. g3 d5 4. cxd5 Nxd5'];
   let pgn='', elo=1800;
   for(let i=0;i<12;i++){ const y=i<6?2025:2026, me=i%2?'Black':'White', opp=me==='White'?'Black':'White', res=i%3===0?(me==='White'?'0-1':'1-0'):(me==='White'?'1-0':'0-1');
@@ -2573,7 +2575,8 @@ await require('./prep')(H);   /* Analyze: your prep in your games (imported repe
 await require('./notfound')(H);   /* the 404 page (site/404.html) */
 await require('./quickfixes')(H);   /* the 26 Nov 2026 quick fixes (roadmap #257, #258, #287, #288, #265, #263, #264) */
 await require('./appfixes')(H);   /* the 26 Nov 2026 app batch (roadmap #260, #267, #268) */
-await require('./polishbatch')(H);   /* the 26 Nov 2026 polish batch (roadmap #262, #290, #275, #291, #276, #269) */
+await require('./polishbatch')(H);
+await require('./launchfixes')(H);   /* the 27 Nov 2026 launch fixes */   /* the 26 Nov 2026 polish batch (roadmap #262, #290, #275, #291, #276, #269) */
 
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));
 process.exit(H.failures?1:0);

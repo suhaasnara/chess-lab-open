@@ -40,7 +40,7 @@ module.exports=async H=>{
     let clicked=0; w.HTMLAnchorElement.prototype.click=function(){ clicked++ };
     w.location.hash='#progress'; await sleep(60);
     w.document.getElementById('p-export').click(); await sleep(50);
-    const wr=calls(log,'FS','write').pop(), name='think-ahead-progress-'+new Date().toISOString().slice(0,10)+'.json';
+    const wr=calls(log,'FS','write').pop(), name='think-ahead-progress-'+w.localDay()+'.json';
     assert(wr&&wr[2].path===name&&wr[2].directory==='DOCUMENTS'&&JSON.parse(wr[2].data)['tactics-progress'].a.ok===true&&!clicked,'Export writes the progress file to Files (the web view has no downloads; a link’s download did nothing)');
     assert(w.document.getElementById('p-note').textContent===`Saved to Files → On My iPhone → Think Ahead → ${name}.`,'… and says where it is');
     /* Review on Lichess: no window opened at the tap (the app has no tabs); the game goes to Safari once imported */

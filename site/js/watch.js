@@ -6,6 +6,8 @@
 'use strict';
 (function(){
 const F={kind:'all',state:'all',topic:'all',q:''};
+/* a video is a lecture or fun; any other kind (two starters were 'speedrun' and 'game') counts as a lecture (roadmap #281) */
+const kindOf=v=>v&&v.kind==='fun'?'fun':'lecture';
 const VIEWS=[['series','By series'],['recent','Last watched'],['added','Order added']];
 let EXP=null, VIEW='series';
 try{ const v=localStorage.getItem('clo-watch-view'); if(VIEWS.some(x=>x[0]===v)) VIEW=v }catch(e){}
@@ -33,7 +35,7 @@ function chNum(v){ let m=String(v.title).match(/^(\d+(?:\.\d+)?)/); if(m) return
 const groupOf=v=>v.series||v.channel||'Single videos';
 function contNext(vs){ const prog=vs.filter(v=>state(v)==='progress').sort((a,b)=>(rec(b.id).u||0)-(rec(a.id).u||0))[0]; return prog||vs.find(v=>state(v)==='new') }
 function matches(v){ const st=state(v);
-  if(F.kind!=='all'&&(v.kind||'lecture')!==F.kind) return false; if(F.state!=='all'&&st!==F.state) return false;
+  if(F.kind!=='all'&&kindOf(v)!==F.kind) return false; if(F.state!=='all'&&st!==F.state) return false;
   if(F.topic!=='all'&&(v.topic||'—')!==F.topic) return false;
   if(F.q){ const r=rec(v.id); const q=F.q.toLowerCase(); if(!(v.title+' '+(v.channel||'')+' '+(v.series||'')+' '+(v.topic||'')+' '+(v.opening||'')+' '+(r.notes||'')).toLowerCase().includes(q)) return false }
   return true }
@@ -43,7 +45,7 @@ const OPEN={}; try{ Object.assign(OPEN,JSON.parse(localStorage.getItem('clo-watc
 function render(){
   const list=$('wa-list'); if(!list) return;
   const a=document.activeElement; if(a&&a.closest&&a.closest('#watch .wadetail')&&a.dataset&&a.dataset.f){ list.dataset.dirty='1'; return }
-  const A=all(), n=k=>A.filter(v=>(v.kind||'lecture')===k).length, s=k=>A.filter(v=>state(v)===k).length;
+  const A=all(), n=k=>A.filter(v=>kindOf(v)===k).length, s=k=>A.filter(v=>state(v)===k).length;
   const chips=(el,key,opts)=>{ $(el).innerHTML=opts.map(([v,l])=>`<button type="button" class="chip" data-k="${key}" data-v="${esc(v)}" aria-pressed="${F[key]===v}">${l}</button>`).join('') };
   chips('wa-kind','kind',[['all','All'],['lecture',`Lectures ${n('lecture')}`],['fun',`Fun ${n('fun')}`]]);
   chips('wa-state','state',[['all','Any'],['new',`Unwatched ${s('new')}`],['progress',`In progress ${s('progress')}`],['watched',`Watched ${s('watched')}`]]);
@@ -78,7 +80,7 @@ function row(v){
   const r=rec(v.id), st=state(v), p=pos(v);
   const prog=st==='watched'?'<span class="wst good">✓ Watched</span>'
     :st==='progress'?`<span class="wst warn">At ${fmt(p)}${v.sec?' of '+fmt(v.sec):''}</span>${v.sec?`<span class="wbar" aria-hidden="true"><i style="width:${Math.min(100,Math.round(100*p/v.sec))}%"></i></span>`:''}`:'';
-  const bits=[esc(v.channel||''),v.sec?fmt(v.sec):'',(v.kind||'lecture')==='fun'?'Fun':'Lecture',esc(v.topic||''),esc(v.opening||''),r.notes?'✎ notes':'',(r.bm||[]).length?`${r.bm.length} bookmark${r.bm.length>1?'s':''}`:''].filter(Boolean);
+  const bits=[esc(v.channel||''),v.sec?fmt(v.sec):'',kindOf(v)==='fun'?'Fun':'Lecture',esc(v.topic||''),esc(v.opening||''),r.notes?'✎ notes':'',(r.bm||[]).length?`${r.bm.length} bookmark${r.bm.length>1?'s':''}`:''].filter(Boolean);
   const tr=trainable(v);
   return `<div class="card warow${EXP===v.id?' open':''}" data-id="${esc(v.id)}">
     <div class="wamain"><a class="watitle" href="${url(v)}" target="_blank" rel="noopener">${esc(v.title)}</a>
@@ -107,14 +109,14 @@ function fillDetail(el,id){
       <label class="field">Title<input type="text" data-f="title" value="${esc(v.title)}"></label><label class="field">Series<input type="text" data-f="series" list="wa-series" value="${esc(v.series||'')}"></label>
       <label class="field">Channel<input type="text" data-f="channel" value="${esc(v.channel||'')}"></label><label class="field">Length (h:mm:ss)<input type="text" data-f="sec" value="${v.sec?fmt(v.sec):''}"></label>
       <label class="field">Topic<input type="text" data-f="topic" list="wa-topics" value="${esc(v.topic||'')}"></label><label class="field">Opening (links to Openings)<input type="text" data-f="opening" value="${esc(v.opening||'')}"></label>
-      <label class="field">Kind<select data-f="kind"><option value="lecture"${(v.kind||'lecture')==='lecture'?' selected':''}>Lecture</option><option value="fun"${v.kind==='fun'?' selected':''}>Fun</option></select></label></div>
+      <label class="field">Kind<select data-f="kind"><option value="lecture"${kindOf(v)==='lecture'?' selected':''}>Lecture</option><option value="fun"${v.kind==='fun'?' selected':''}>Fun</option></select></label></div>
       <div class="btns" style="margin-top:8px"><button type="button" class="btn sm" data-act="meta-save">Save details</button><button type="button" class="btn sm" data-act="remove">Remove this video</button></div></details>`;
 }
 function setMeta(id,patch){ const d=data(); const i=d.list.findIndex(x=>x.id===id); if(i<0) return; d.list[i]=Object.assign({},d.list[i],patch); save(d) }
 /* Starter videos (Session C): real links, checked by hand; deep links as always, no embeds. One click adds one. */
 const STARTERS=[
-  {id:'rgLTiUZAWQY',t:1200,title:'Scandinavian Defense Dissected | GM Naroditsky’s DYI Speedrun (the Najdorf game from 20:00)',channel:'Daniel Naroditsky',series:'Speedruns',kind:'speedrun',topic:'Openings',opening:'Sicilian Najdorf'},
-  {id:'AFntasewn9Q',title:'Mickey Adams Game Review with GM Johan Hellsten | USCS',channel:'U.S. Chess School',series:'U.S. Chess School',kind:'game',topic:'Game review'},
+  {id:'rgLTiUZAWQY',t:1200,title:'Scandinavian Defense Dissected | GM Naroditsky’s DYI Speedrun (the Najdorf game from 20:00)',channel:'Daniel Naroditsky',series:'Speedruns',kind:'lecture',topic:'Openings',opening:'Sicilian Najdorf'},
+  {id:'AFntasewn9Q',title:'Mickey Adams Game Review with GM Johan Hellsten | USCS',channel:'U.S. Chess School',series:'U.S. Chess School',kind:'lecture',topic:'Game review'},
   {id:'-OeADHFL-nY',title:'GM Sam Shankland: High-Level Defense II | US Chess School 5.7.2021',channel:'ChessDojo',series:'U.S. Chess School',kind:'lecture',topic:'Defence'}];
 function addStarter(i){ const v=STARTERS[i], d=data(); if(!v||d.list.some(x=>x.id===v.id)) return false;
   d.list.push({id:v.id,title:v.title,channel:v.channel,series:v.series,kind:v.kind,topic:v.topic,opening:v.opening||'',sec:0,added:Date.now()});
@@ -148,7 +150,7 @@ function today(){ const v=all().filter(x=>state(x)==='progress').sort((a,b)=>(re
 function plan(){
   const lect=all().filter(v=>(v.kind||'lecture')!=='fun');
   if(!lect.length) return [];
-  const day=new Date().toISOString().slice(0,10);
+  const day=localDay();
   const hash=s=>{ let h=0; for(const c of s) h=(h*31+c.charCodeAt(0))|0; return h };
   const picks=[], usedTopic=new Set(), usedGroup=new Set();
   const going=lect.filter(v=>state(v)==='progress').sort((a,b)=>(rec(b.id).u||0)-(rec(a.id).u||0))[0];
@@ -192,11 +194,14 @@ function init(){
   });
   sec.addEventListener('change',e=>{ if(e.target.id==='wa-topic'){ F.topic=e.target.value; render() } });
   sec.addEventListener('toggle',e=>{ const d=e.target; if(d.classList&&d.classList.contains('waser')){ OPEN[d.dataset.g]=d.open?1:0; try{ localStorage.setItem('clo-watch-open',JSON.stringify(OPEN)) }catch(_){} } },true);
-  let timer=null;
+  /* one timer for Search and one per video's notes (27 Nov 2026, roadmap #281: they shared one, so typing in Search
+     within half a second dropped the notes you had just typed) */
+  let timer=null; const noteT={};
   sec.addEventListener('input',e=>{
-    if(e.target.id==='wa-search'){ F.q=e.target.value.trim(); clearTimeout(timer); timer=setTimeout(render,200); return }
+    if(e.target.id==='wa-search'){ F.q=e.target.value.trim(); clearTimeout(timer); timer=setTimeout(()=>{ for(const k of Object.keys(noteT)){ clearTimeout(noteT[k].t); noteT[k].fn() } render() },200); return }
     if(e.target.dataset&&e.target.dataset.f==='notes'){ const rowEl=e.target.closest('.warow'); const id=rowEl.dataset.id, val=e.target.value;
-      clearTimeout(timer); timer=setTimeout(()=>{ const d=data(); d.v[id]=Object.assign({},d.v[id],{notes:val,u:Date.now()}); Store.put('watch',d); const s=rowEl.querySelector('[data-f="saved"]'); if(s){ s.textContent='Saved.'; setTimeout(()=>{ if(s.isConnected) s.textContent='' },1500) } },500) }
+      if(noteT[id]) clearTimeout(noteT[id].t); const fn=()=>{ delete noteT[id]; const d=data(); d.v[id]=Object.assign({},d.v[id],{notes:val,u:Date.now()}); Store.put('watch',d); const s=rowEl.querySelector('[data-f="saved"]'); if(s){ s.textContent='Saved.'; setTimeout(()=>{ if(s.isConnected) s.textContent='' },1500) } };
+      noteT[id]={fn,t:setTimeout(fn,500)} }
   });
   /* typing in a detail field must not redraw the list under the cursor: the redraw waits for the field to lose focus */
   sec.addEventListener('focusout',()=>setTimeout(()=>{ const l=$('wa-list'); const a=document.activeElement; if(l.dataset.dirty&&!(a&&a.closest&&a.closest('#watch .wadetail'))){ delete l.dataset.dirty; render() } },50));

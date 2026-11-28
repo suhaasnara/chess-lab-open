@@ -32,7 +32,7 @@ window.BlindTactics=(()=>{
   const AUTO_UP=3, AUTO_DOWN=2;   /* Auto (13 Nov 2026): one more hidden ply after 3 clean solves in a row, one fewer after 2 misses in a row */
   const you=z=>Math.ceil(z.sol.length/2);   /* your moves in the solution */
   const due=r=>!!r&&(r.ok?Date.now()-r.t>=REVIEW[Math.min(REVIEW.length-1,Math.max(1,r.okN||1)-1)]*DAY:r.t<new Date().setHours(0,0,0,0));
-  const daily=list=>{ const seed=new Date().toISOString().slice(0,10);
+  const daily=list=>{ const n=new Date(), seed=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');   /* the local day (roadmap #281) */
     const h=s=>{ let x=2166136261; for(const c of s) x=Math.imul(x^c.charCodeAt(0),16777619); return x>>>0 };
     return list.map(z=>[h(seed+z.id),z]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]) };
   /* A typed move in the real position: SAN (Nxe5, exd5, O-O, 0-0, nf3), or squares (g1f3, g1-f3, e7e8q). */
@@ -254,7 +254,7 @@ window.BlindTactics=(()=>{
       const legal=S.real.moves({square:from,verbose:true}).filter(m=>m.to===sq);
       if(!legal.length){ const p=S.real.get(sq); if(p&&p.color===S.real.turn()){ S.sel=sq; mark(); return }
         say('warn',`${from}–${sq} isn’t legal in the real position.`,' Not counted.'); return }
-      attempt({from,to:sq,promotion:legal[0].promotion?'q':undefined});
+      attempt({from,to:sq,promotion:legal[0].promotion?Board.promoFor(from,sq,'q',expected()):undefined});
     }
     function mark(){ boardEl.querySelectorAll('.sq.bl-sel').forEach(x=>x.classList.remove('bl-sel')); if(S.sel){ const x=boardEl.querySelector(`.sq[data-sq="${S.sel}"]`); if(x) x.classList.add('bl-sel') } }
     boardEl.addEventListener('click',e=>{ const c=e.target.closest('.sq'); if(c&&!S.review) clickSquare(c.dataset.sq) });
