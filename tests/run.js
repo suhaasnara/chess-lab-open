@@ -2577,6 +2577,7 @@ await require('./quickfixes')(H);   /* the 26 Nov 2026 quick fixes (roadmap #257
 await require('./appfixes')(H);   /* the 26 Nov 2026 app batch (roadmap #260, #267, #268) */
 await require('./polishbatch')(H);
 await require('./launchfixes')(H);   /* the 27 Nov 2026 launch fixes */   /* the 26 Nov 2026 polish batch (roadmap #262, #290, #275, #291, #276, #269) */
+await require('./launchwants')(H);   /* the 27 Nov 2026 launch wants (roadmap #277, #279, #399) */
 
 console.log('\n'+(H.failures?H.failures+' FAILURES':'All tests passed.'));
 process.exit(H.failures?1:0);

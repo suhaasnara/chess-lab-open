@@ -14,6 +14,50 @@ function saveGame(result,reason){
   list.unshift({t:Date.now(),me:S.me,elo:S.elo,blind:S.blind,peeks:S.peeks,takebacks:S.takebacks||undefined,hints:S.hints||undefined,result,reason,moves:S.moves.join(' '),fen:S.start||undefined,goal:S.goal||undefined,label:S.label||undefined});
   Store.put('play-games',list.slice(0,30)); renderGames();
 }
+/* The game in progress is kept after every move (27 Nov 2026, roadmap #277: only finished games were saved, so a game
+   was gone when iOS dropped the app or the tab was closed). Coming back, Play offers to continue it; it is cleared when
+   the game ends, and a new game replaces it. A game with no moves yet isn't kept. */
+const CUR='play-current';
+function keep(){
+  if(!S.g||S.over) return;
+  if(!S.moves.length){ Store.del(CUR); return }
+  Store.put(CUR,{t:Date.now(),me:S.me,elo:S.elo,blind:S.blind,peeks:S.peeks,takebacks:S.takebacks,hints:S.hints,moves:S.moves.slice(),fen:S.start||undefined,goal:S.goal||undefined,label:S.label||undefined});
+}
+/* the kept game, replayed: null when there is none or it doesn't replay (then it is dropped) */
+function kept(){
+  const c=Store.get(CUR); if(!c) return null;
+  try{
+    if(!Array.isArray(c.moves)||!c.moves.length||(c.fen&&!new Chess().validate_fen(c.fen).valid)) throw 0;
+    const g=new Chess(c.fen||undefined);
+    for(const s of c.moves) if(!g.move(s)) throw 0;
+    if(g.game_over()) throw 0;
+    return {c,g};
+  }catch(e){ Store.del(CUR); return null }
+}
+const vsBot=(me,elo)=>`${me==='w'?'White':'Black'} vs Stockfish${elo==='max'?' at full strength':' ('+elo+')'}`;
+function offerResume(){
+  const k=kept(); if(!k) return false;
+  const c=k.c, n=Math.ceil(c.moves.length/2);
+  status('','You have a game in progress.',` ${c.goal?'Play it out · ':''}${vsBot(c.me,c.elo)}${c.blind?' · blindfold':''}, ${Help.n(n,'move')} in, from ${localDay(c.t)===localDay(Date.now())?'today':localDay(c.t)}. Continue it, or start a new one.`);
+  const b=document.createElement('button'); b.type='button'; b.className='btn sm primary'; b.id='pl-continue'; b.textContent='Continue your game'; b.style.marginLeft='8px';
+  b.addEventListener('click',()=>resume()); $('pl-status').appendChild(b);
+  return true;
+}
+function resume(){
+  const k=kept(); if(!k) return false; const c=k.c;
+  $('play').classList.remove('idle');
+  S.g=k.g; S.start=c.fen||null; S.goal=c.goal||null; S.label=c.label||''; S.moves=c.moves.slice(); S.over=false; S.busy=false; S.resignArm=false;
+  S.peeks=c.peeks|0; S.takebacks=c.takebacks|0; S.hints=c.hints|0; S.hintStage=0; S.view=null; S.result=null; S.gid++; { const b=$('pl-review'); if(b) b.hidden=true }
+  S.elo=c.elo==='max'?'max':(+c.elo||1800); S.me=c.me==='b'?'b':'w'; S.blind=!!c.blind;
+  $('pl-board').classList.toggle('blind',S.blind);
+  const h=S.g.history({verbose:true}), m=h[h.length-1];
+  board.set(S.g,{orient:S.me,last:m?{from:m.from,to:m.to}:null});
+  renderMoves(); tools();
+  const mine=S.g.turn()===S.me;
+  status('','Game continued.',`${vsBot(S.me,S.elo)}${S.blind?' — blindfold':''}. ${mine?'Your move.':'Stockfish is thinking…'}`);
+  if(!mine) botMove();
+  return true;
+}
 function renderGames(){
   const list=games();
   const el=$('pl-games');
@@ -33,7 +77,7 @@ function newGame(){
   S.blind=$('pl-blind').checked;
   $('pl-board').classList.toggle('blind',S.blind);
   board.set(S.g,{orient:S.me,last:null});
-  renderMoves(); tools();
+  renderMoves(); tools(); keep();
   status('', 'New game.',`You are ${S.me==='w'?'White':'Black'} vs Stockfish${S.elo==='max'?' at full strength':' ('+S.elo+')'}${S.blind?' — blindfold':''}.`);
   if(S.g.turn()!==S.me) botMove();
 }
@@ -44,7 +88,7 @@ function fromPosition(fen,me,goal,label){
   S.elo=$('pl-elo').value==='max'?'max':+$('pl-elo').value; S.me=me; S.blind=false;
   $('pl-board').classList.remove('blind');
   board.set(S.g,{orient:S.me,last:null});
-  renderMoves(); tools();
+  renderMoves(); tools(); keep();
   status('',goal==='win'?'Play it out: convert the advantage.':'Play it out: hold the position.',
     `${S.label?S.label+' · you':'You'} are ${S.me==='w'?'White':'Black'} vs Stockfish${S.elo==='max'?' at full strength':' ('+S.elo+')'}. ${goal==='win'?'Win it.':'Don’t lose it.'}`);
   if(S.g.turn()!==S.me) botMove();
@@ -67,7 +111,7 @@ async function botMove(){
   S.moves.push(m.san);
   board.set(S.g,{last:{from:m.from,to:m.to},orient:S.me});
   renderMoves();
-  if(!checkEnd()) status('', 'Your move.',m.san+' played.'+(S.takebacks?` Takebacks: ${S.takebacks}.`:''));
+  if(!checkEnd()){ keep(); status('', 'Your move.',m.san+' played.'+(S.takebacks?` Takebacks: ${S.takebacks}.`:'')) }
   tools();
 }
 /* Take back your last move (and the engine's reply to it); counted on the saved game. */
@@ -81,7 +125,7 @@ function takeBack(){
   S.takebacks++;
   const h=S.g.history({verbose:true}), m=h[h.length-1];
   board.set(S.g,{last:m?{from:m.from,to:m.to}:null,orient:board.orient});
-  renderMoves(); tools();
+  renderMoves(); tools(); keep();
   status('warn','Taken back.',`Your move again. Takebacks this game: ${S.takebacks} (saved with the game).`);
 }
 /* 19 Nov 2026: the row shows only what applies: Hint, Take back and Resign while a game is on, Peek only blindfolded, and
@@ -97,7 +141,7 @@ function userMove(from,to,promo){
   S.moves.push(m.san); S.resignArm=false; S.hintStage=0; S.view=null;
   board.set(S.g,{last:{from:m.from,to:m.to},orient:S.me});
   renderMoves();
-  if(!checkEnd()){ status('', 'Stockfish is thinking…',''); botMove() }
+  if(!checkEnd()){ keep(); status('', 'Stockfish is thinking…',''); botMove() }
   tools();
 }
 function checkEnd(){
@@ -111,7 +155,7 @@ function checkEnd(){
   endGame(result,reason); return true;
 }
 function endGame(result,reason){
-  S.over=true;
+  S.over=true; Store.del(CUR);
   $('pl-board').classList.remove('blind');
   board.set(S.g,{last:null,orient:S.me,locked:true});
   const met=S.goal?(S.goal==='win'?result==='win':result!=='loss'):null;
@@ -129,7 +173,7 @@ function resign(){
 }
 function peek(){
   if(!S.blind||S.over) return;
-  S.peeks++;
+  S.peeks++; keep();
   const b=$('pl-board'); b.classList.remove('blind');
   status('warn','Peek '+S.peeks,'The pieces hide again in 2 seconds.');
   setTimeout(()=>{ if(S.blind&&!S.over) b.classList.add('blind') },2000);
@@ -153,7 +197,7 @@ async function hint(){
   const gid=S.gid, fen=S.g.fen();
   const a=await SharedEngine.analyse(fen,14,1,6000).catch(()=>null); const u=a&&a[0]&&a[0].uci; if(!u) return;
   if(gid!==S.gid||!S.g||S.g.fen()!==fen||S.view!=null) return;   /* a late answer: another game, a take back or a move since (roadmap #281) */
-  if(!S.hintStage){ S.hints++; S.hintStage=1; board.setHint(u.slice(0,2)); status('warn','Hint: this piece.','Press Hint again for the move. Hints are saved with the game.') }
+  if(!S.hintStage){ S.hints++; S.hintStage=1; keep(); board.setHint(u.slice(0,2)); status('warn','Hint: this piece.','Press Hint again for the move. Hints are saved with the game.') }
   else { board.setHint(u.slice(0,2),u.slice(2,4)); status('warn','Hint: '+sanOf(S.g.fen(),u),`Hints this game: ${S.hints}.`) }
 }
 const numbered=(fen,sans)=>{ const t=(fen||'x w - - 0 1').split(' '); let n=+t[5]||1, w=t[1]!=='b'; return sans.map((s,i)=>{ const x=w?n+'. '+s:(i===0?n+'... '+s:s); if(!w) n++; w=!w; return x }).join(' ') };
@@ -166,7 +210,7 @@ function status(tone,head,rest){ const el=$('pl-status'); el.className='status'+
 function init(){
   board=makeBoard($('pl-board'),{onMove:userMove});
   board.set(new Chess(),{locked:true});
-  renderGames();
+  renderGames(); offerResume();
   $('pl-new').addEventListener('click',newGame);
   /* the setup as segmented rows (Chess Lab's look); they drive the form fields the game reads */
   const setup=()=>{ const seg=(id,opts,cur)=>`<div class="seg mini${opts.length>4?' pwrap':''}" role="group">${opts.map(([v,l])=>`<button type="button" data-f="${id}" data-v="${v}" aria-pressed="${String(cur)===String(v)}">${l}</button>`).join('')}</div>`;
@@ -194,5 +238,5 @@ function init(){
     $('pl-movein').value=''; userMove(mv.from,mv.to,mv.promotion);
   });
 }
-window.PlayTab={init,hint,viewAt,pgn,reviewLichess,newGame,fromPosition,userMove,resign,peek,takeBack,canTakeBack,get state(){return S}};
+window.PlayTab={init,resume,offerResume,hint,viewAt,pgn,reviewLichess,newGame,fromPosition,userMove,resign,peek,takeBack,canTakeBack,get state(){return S}};
 })();
