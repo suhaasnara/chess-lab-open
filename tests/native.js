@@ -91,7 +91,25 @@ module.exports=async function(H){
     assert(m1.title==='Time for your review'&&m1.body==='1 drill is due.','one review: "Time for your review" · "1 drill is due."');
     await w.Native.plan();
     const s=calls(log,'LN','schedule').pop();
-    assert(s&&s[2].notifications.length>=1&&s[2].notifications.every(x=>x.id>=7100&&x.id<=7106),'the plan schedules reminders for the coming days'); }
+    assert(s&&s[2].notifications.length>=1&&s[2].notifications.every(x=>x.id>=7100&&x.id<=7107),'the plan schedules reminders for the coming days');
+    /* roadmap #280: one more, on the first day after the week with something due (still due on day 7 here) */
+    const days=s[2].notifications.map(x=>Math.floor((x.schedule.at.getTime()-w.Due.sod(now))/D));
+    const later=s[2].notifications.find(x=>x.id===7107);
+    assert(later&&days[days.length-1]===7&&s[2].notifications.length<=8,'… and one more on the first day after the week with something due (day 7 here): '+days.join(','));
+    assert(calls(log,'LN','cancel').pop()[2].notifications.some(x=>x.id===7107),'… which is cancelled with the others before each new plan'); }
+
+  section('app layer: a review that comes due after the week is announced (roadmap #280)');
+  { const log=[]; const now=Date.now(), D=864e5;
+    /* only a Blind tactic solved three times (a 21-day review), last tried 10 days ago: due in 11 days, nothing before */
+    const {w}=await makePage({beforeLoad:fakeApp(log,{perm:'granted',localStorage:{'clo-app':JSON.stringify({welcomed:true,asked:true,time:'09:00'}),
+      'clo:blind-progress':JSON.stringify({b1:{n:3,ok:true,okN:3,t:now-10*D}})}})});
+    await sleep(50);
+    const c=w.Due.count(now); assert(!Object.values(c).some(Boolean),'nothing due this week');
+    await w.Native.plan();
+    const s=calls(log,'LN','schedule').pop(), n=s&&s[2].notifications;
+    const day=n&&n.length===1?Math.round((w.Due.sod(n[0].schedule.at.getTime())-w.Due.sod(now))/D):null;
+    assert(n&&n.length===1&&n[0].id===7107&&(day===11||day===12)&&/1 Blind tactic is due/.test(n[0].body),'one reminder, on the day the 21-day review comes due: day '+day+' “'+(n&&n[0]&&n[0].body)+'”');
+    assert(n&&new Date(n[0].schedule.at).getHours()===9,'… at the chosen time'); }
 
   section('app layer: the Apple Watch (results in, the state out)');
   { const T=JSON.parse(fs.readFileSync(path.join(H.SITE,'data','tactics.json'),'utf8'))[0];

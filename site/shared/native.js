@@ -50,9 +50,11 @@ window.Native=(()=>{
     }catch(e){}
   }
 
-  /* ---- the review reminder: a local notification at the chosen time on each of the next 7 days with something due.
-     iOS keeps the scheduled notifications; no server. The plan is redone whenever the app is opened or left. ---- */
-  const IDS=[7100,7101,7102,7103,7104,7105,7106], TEST=7199;
+  /* ---- the review reminder: a local notification at the chosen time on each of the next 7 days with something due,
+     and one more on the first day after that with something due (27 Nov 2026, roadmap #280: a 21-day review that came
+     due after a week away was never announced). iOS keeps the scheduled notifications; no server. The plan is redone
+     whenever the app is opened or left. ---- */
+  const IDS=[7100,7101,7102,7103,7104,7105,7106], LATER=7107, AHEAD=30, TEST=7199;   // AHEAD: days looked at (the longest review gap is 21)
   /* the message for the counts at a time: {total, title, body, hash (the page a tap opens)} */
   function message(c){
     const parts=site.reminder.map(p=>[p,c[p.k]||0]).filter(x=>x[1]>0), total=parts.reduce((s,x)=>s+x[1],0);
@@ -73,7 +75,7 @@ window.Native=(()=>{
   async function plan(){
     if(!app||!P.LocalNotifications) return;
     const LN=P.LocalNotifications;
-    try{ await LN.cancel({notifications:IDS.map(id=>({id}))}) }catch(e){}
+    try{ await LN.cancel({notifications:IDS.concat(LATER).map(id=>({id}))}) }catch(e){}
     next=null; perm=await permission(false);
     if(!cfg.remind||perm!=='granted'){ render(); return }
     const now=Date.now(), list=[];
@@ -81,6 +83,9 @@ window.Native=(()=>{
       const m=message(Due.count(at)); if(!m.total) continue;
       list.push({id:IDS[d],title:m.title,body:m.body,schedule:{at:new Date(at)},extra:{hash:m.hash}});
       if(!next) next={at,m} }
+    for(let d=IDS.length;d<=AHEAD;d++){ const at=atOn(d,cfg.time), m=message(Due.count(at)); if(!m.total) continue;
+      list.push({id:LATER,title:m.title,body:m.body,schedule:{at:new Date(at)},extra:{hash:m.hash}});
+      if(!next) next={at,m}; break }
     if(list.length) try{ await LN.schedule({notifications:list}) }catch(e){}
     render();
   }

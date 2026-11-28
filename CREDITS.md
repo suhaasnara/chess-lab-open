@@ -26,7 +26,8 @@ Narayanan — see [LICENSE](LICENSE).
   [Colin M.L. Burnett](https://en.wikipedia.org/wiki/User:Cburnett), as shipped
   by [Lichess (lila)](https://github.com/lichess-org/lila/blob/master/COPYING.md).
   License: **GPLv2+** (also available under BSD/GFDL per the author's original
-  release on Wikimedia Commons).
+  release on Wikimedia Commons). The home-screen icon (`site/apple-touch-icon.png`) is
+  the cburnett white knight on the site's navy, drawn by `tools/make_touch_icon.swift`.
 - **Board: "maple"** (`site/assets/board/maple.jpg`) — from
   [Lichess (lila)](https://github.com/lichess-org/lila), © the lila authors,
   **AGPL-3.0+** (`public/images/board` in lila's COPYING.md).

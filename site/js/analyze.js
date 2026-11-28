@@ -22,6 +22,31 @@ function note(t,busy){ const n=$('a-note'); n.textContent=t; n.classList.toggle(
 function prog(frac,show=true){ const p=$('a-prog'); p.hidden=!show; p.querySelector('i').style.width=Math.round(frac*100)+'%' }
 const mode=()=>Store.get('a-mode')==='deep'?'deep':'standard';
 
+/* 27 Nov 2026, roadmap #279. The run shows its steps as it goes (a first run could look frozen), keeps the screen awake
+   while it runs (a phone that locks stops it; a browser that refuses or has no wake lock just gets the plain advice), and
+   the username and site are remembered for next time (the box was empty on every launch). */
+const STEPS={online:['Fetch your games','Stockfish','Blunder check','Report'],pgn:['Read the files','Stockfish','Blunder check','Report']};
+let wake=null, awake=false;
+function steps(kind,at){ const el=$('a-steps'); if(!el) return; if(kind==null){ el.hidden=true; return }
+  el.hidden=false;
+  el.innerHTML=`<ol>${STEPS[kind].map((t,i)=>`<li class="${i<at?'done':i===at?'on':''}"${i===at?' aria-current="step"':''}>${t}</li>`).join('')}</ol>`+
+    (at<STEPS[kind].length?`<p class="note">${awake?'The screen stays on while it runs.':'Keep this page open while it runs: if the screen locks, it stops.'}</p>`:'') }
+async function stayAwake(on){
+  if(!on){ const l=wake; wake=null; awake=false; try{ if(l) await l.release() }catch(e){} return false }
+  if(wake&&!wake.released) return awake=true;
+  try{ wake=await navigator.wakeLock.request('screen'); awake=true }catch(e){ wake=null; awake=false }
+  return awake }
+/* a wake lock ends when the page is hidden: take it again on coming back while the run goes on */
+if(typeof document!=='undefined') document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&running) stayAwake(true) });
+const WHO='a-who';
+function remember(){ const o=Store.get(WHO)||{}, site=$('a-site').value; o.site=site;
+  if(site!=='pgn'){ o.u=$('a-user').value.trim().slice(0,40); if($('a-blitz')) o.blitz=$('a-blitz').checked }
+  Store.put(WHO,o) }
+function recall(){ const o=Store.get(WHO); if(!o||typeof o!=='object') return;
+  if(['lichess','chesscom','pgn'].includes(o.site)) $('a-site').value=o.site;
+  if(typeof o.u==='string'&&o.u) $('a-user').value=o.u.slice(0,40);
+  if($('a-blitz')&&typeof o.blitz==='boolean') $('a-blitz').checked=o.blitz }
+
 /* ---------- Fetching ----------
    26 Nov 2026 (roadmap #276): every request has a time limit and Stop ends it; offline, a site that limits requests
    (429) and one that doesn't answer each get a plain sentence (offline showed the browser's own "Load failed", and a
@@ -359,7 +384,8 @@ async function run(site,user,blitz){
   blitz=blitz==null?!!($('a-blitz')&&$('a-blitz').checked):blitz;
   if(running||saving) return; running=true;   /* not while drills are being saved (roadmap #265) */
   $('a-go').disabled=true; $('a-report').innerHTML=''; prog(0);
-  const m=mode();
+  const m=mode(), kind=site==='pgn'?'pgn':'online';
+  steps(kind,0); stayAwake(true).then(()=>{ if(running) steps(kind,0) });
   try{
     let games, budget, fileNote='';
     if(site==='pgn'){
@@ -373,7 +399,7 @@ async function run(site,user,blitz){
       user=me.join(' / ');
     } else {
       LASTCHECKS=null; if($('a-checks')) $('a-checks').hidden=true;
-      note('Fetching games…',true);
+      note(`Fetching your games from ${site==='lichess'?'Lichess':'Chess.com'}…`,true);
       stopReq=false; if($('a-stop')) $('a-stop').hidden=false;   /* Stop ends a slow fetch too */
       games=site==='lichess'?await fetchLichess(user,blitz):await fetchChesscom(user,blitz);
       if(games.failed) fileNote=`Chess.com didn’t send ${games.failed.n} of the ${games.failed.of} months${games.failed.why==='busy'?' (it is limiting requests: try again in a minute for the rest)':games.failed.why==='timeout'?' (no answer in time)':''}; this report covers the others.`;
@@ -387,6 +413,7 @@ async function run(site,user,blitz){
     note(site==='pgn'?`${fileNote} ${games.length-needEngine.length} already have evals${nEng?`; Stockfish is analyzing the other ${nEng} on your device (${how}). You can stop any time: what is done is kept, and running it again carries on.`:'.'}`
       :`${fileNote?fileNote+' ':''}${Help.n(games.length,'game')}.${nEng?` ${nEng} without stored evals — analyzing with Stockfish on your device (${how}), this takes a while…`:''}`,true);
     stopReq=false; if($('a-stop')) $('a-stop').hidden=!nEng;
+    steps(kind,1);
     const rows=[], t0=Date.now(); let doneP=0, drawn=0, tick=Date.now(), noEval=0;
     for(let i=0;i<games.length&&!stopReq;i++){
       const game=games[i], eng=needEngine.includes(game);
@@ -405,16 +432,19 @@ async function run(site,user,blitz){
     /* Blunder check: your biggest blunders, the threat you missed and your move (two searches each, kept for next time) */
     let bcStopped=false;
     if(!stopReq&&rows.length){ const nb=bcCandidates(rows).length;
-      if(nb){ if($('a-stop')) $('a-stop').hidden=false; prog(0); note(`Blunder check: finding the threat in your ${nb} biggest blunder${nb===1?'':'s'} (Stockfish, ${how})…`,true);
+      if(nb){ if($('a-stop')) $('a-stop').hidden=false; prog(0); steps(kind,2); note(`Blunder check: finding the threat in your ${nb} biggest blunder${nb===1?'':'s'} (Stockfish, ${how})…`,true);
         LASTBC=await findBlunderChecks(rows,m,(k,n)=>{ prog(k/n); note(`Blunder check: position ${k} of ${n} (Stockfish, ${how})…`,true) });
         bcStopped=stopReq } }
+    steps(kind,3);
     renderReport(user,site,rows,games.length,true);
     const kept=keepRun(rows,games.length,m);
     const keptNote=kept==='ok'?'':kept==='partial'?' Storage on this device is full: the games your drills come from are kept, but this report won’t come back after a reload.':' Storage on this device is full: these games can’t be kept, so the report won’t come back after a reload.';
     const evNote=noEval?` Stockfish didn’t answer for ${Help.n(noEval,'game')}${SharedEngine.failed?' (it has stopped: Settings → Engine can restart it)':''}, so ${noEval===1?'it is':'they are'} left out; press Analyze again to try ${noEval===1?'it':'them'}.`:'';
     note((bcStopped?`Stopped during Blunder check: ${LASTBC.length} position${LASTBC.length===1?'':'s'} found so far. Press Analyze again to carry on (nothing is redone).`
       :stopReq?`Stopped: ${rows.length} of ${games.length} games analyzed so far. Press Analyze again to carry on (nothing is redone).`:site==='pgn'?`${fileNote} Done.`:fileNote?`Done. ${fileNote}`:'Done.')+evNote+keptNote);
-  }catch(e){ note(String(e.message||e)) }
+    if(bcStopped||stopReq) steps(null); else steps(kind,4);
+  }catch(e){ note(String(e.message||e)); steps(null) }
+  stayAwake(false);
   prog(0,false); $('a-go').disabled=false; if($('a-stop')) $('a-stop').hidden=true; running=false; updateEstimate();
 }
 
@@ -644,12 +674,12 @@ async function readFiles(list){
 function srcUI(){ const f=$('a-site').value==='pgn'; document.querySelectorAll('#analyze [data-src]').forEach(e=>{ e.hidden=(e.dataset.src==='pgn')!==f }); if($('a-checks')) $('a-checks').hidden=!f||!(LASTCHECKS&&LASTCHECKS.length);
   $('a-pgnwho').hidden=!(f&&FILES.length); $('a-files').hidden=!(f&&FILES.length); $('a-go').textContent=f?'Analyze':'Fetch & analyze'; updateEstimate() }
 function init(){
-  prefill(); addEventListener('hashchange',prefill);
+  recall(); prefill(); addEventListener('hashchange',prefill);
   $('a-capnote').textContent=String(CAP_CHESSCOM);
   $('a-go').addEventListener('click',()=>{
-    if($('a-site').value==='pgn'){ if(!FILES.length){ note('Choose your PGN file first.'); return } const me=meList(); if(!me.length){ note('Tick which player is you.'); return } Store.put('pgn-me',me); run('pgn',me); return }
+    if($('a-site').value==='pgn'){ if(!FILES.length){ note('Choose your PGN file first.'); return } const me=meList(); if(!me.length){ note('Tick which player is you.'); return } Store.put('pgn-me',me); remember(); run('pgn',me); return }
     const u=$('a-user').value.trim(); if(!u){ note('Type a username.'); return }
-    run($('a-site').value,u) });
+    remember(); run($('a-site').value,u) });
   $('a-site').addEventListener('change',srcUI); srcUI();
   /* Standard / Deep */
   document.querySelectorAll('input[name="a-mode"]').forEach(r=>{ r.checked=r.value===mode(); r.addEventListener('change',()=>{ if(r.checked) Store.put('a-mode',r.value); updateEstimate() }) });
@@ -693,5 +723,5 @@ window.AnalyzeTab={LIMIT,getFrom,init,verifyDrill,saveDrills,evCache,phaseAccura
   addFiles(list){ for(const [text,name] of list) addFile(text,name); renderFiles() },
   clearFiles(){ FILES=[]; renderFiles() },
   rerender(){ if(LASTR) renderReport(...LASTR) },
-  stop(){ stopReq=true },get running(){return running}};
+  stop(){ stopReq=true },get running(){return running},get awake(){return awake}};
 })();
