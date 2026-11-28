@@ -8,7 +8,7 @@
    (.tv, .tv3, .tvplay below, the opening trainer) still sizes its board from these. */
 .inner{max-width:1500px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 main.inner{padding-block:24px 56px}
-.card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px}
+.card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius-card,var(--radius));padding:18px 20px}   /* 27 Nov 2026 (Navy & Maple, modernised): 16 px corners, more air (was 4 px, 16 x 18) */
 .boardwrap{width:100%;max-width:min(580px,100%)}
 body[data-size="small"] .boardwrap{max-width:min(420px,100%)}
 body[data-size="large"] .boardwrap{max-width:min(760px,100%)}
@@ -25,20 +25,20 @@ body[data-size="large"] .boardwrap{max-width:min(760px,100%)}
 .tv .chips{display:flex;gap:4px;flex-wrap:wrap;align-items:center;position:relative;padding-left:62px}
 .tv .chips.nolabel{padding-left:0}
 .tv .chip{padding:3px 8px;font-size:.75rem;white-space:nowrap;flex:0 0 auto;border-radius:var(--radius)}
-.tv .chip[aria-pressed="true"]{background:var(--navy);color:var(--on-navy);border-color:var(--head)}
+.tv .chip[aria-pressed="true"]{background:var(--primary,var(--navy));color:var(--on-primary,var(--on-navy));border-color:var(--primary,var(--head))}
 .tv .flabel{position:absolute;left:0;top:5px;font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .tv .tvlabel{margin:2px 0 6px}
 .tv .list{display:flex;flex-direction:column;gap:5px;overflow:auto;padding:2px;max-height:calc(100vh - 330px);min-height:200px}
 .tv .list.long{max-height:calc(100vh - 210px)}.tv .list.longest{max-height:calc(100vh - 130px)}
 .tv .list .empty{margin:0}
 .tv .list.isempty{min-height:0}
-.tv .drill{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;text-align:left;width:100%;background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:7px 10px;cursor:pointer;color:var(--ink);text-decoration:none}
-.tv .drill:hover{border-color:var(--blue)}
-.tv .drill[aria-current="true"]{border-color:var(--head);box-shadow:inset 3px 0 0 var(--navy)}
+.tv .drill{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;text-align:left;width:100%;background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:9px 12px;cursor:pointer;color:var(--ink);text-decoration:none}
+.tv .drill:hover{border-color:var(--border-strong)}
+.tv .drill[aria-current="true"]{border-color:var(--primary,var(--head));box-shadow:inset 0 0 0 1px var(--primary,var(--navy))}   /* the one you're on is outlined (was a left bar) */
 .tv .drill .opp{font-weight:600;font-size:.9rem;line-height:1.25;color:var(--head)}
 .tv .drill .meta{color:var(--muted);font-size:.76rem;line-height:1.35}
 .tv .drill.done{opacity:.6}
-.tv .evalchip{font-size:.78rem;font-weight:600;padding:2px 6px;border-radius:3px;background:var(--callout);color:var(--head);white-space:nowrap}
+.tv .evalchip{font-size:.78rem;font-weight:600;padding:2px 6px;border-radius:var(--radius-sm,3px);background:var(--callout);color:var(--head);white-space:nowrap}
 .tv .src{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;font-weight:600;color:var(--brass-text)}
 .tv .tag{display:inline-block;font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;font-weight:700;padding:1px 6px;border-radius:3px;background:var(--bad-soft);color:var(--bad);margin-left:4px;vertical-align:1px}
 .tv .tag.conv{background:var(--good-soft);color:var(--good)}.tv .tag.punish{background:var(--good-soft);color:var(--good)}
@@ -240,7 +240,7 @@ th.num{text-align:right}
   .bbar.bbar .btn{order:0!important;margin:0!important;flex:1 1 44px!important;min-width:44px;min-height:44px;max-width:168px;padding:4px 8px!important;display:inline-flex;align-items:center;justify-content:center;text-align:center;
     white-space:normal;font-size:.82rem;line-height:1.15;border-color:transparent;background:transparent;box-sizing:border-box}
   .bbar.bbar [hidden]:not(.bb-prev):not(.bb-next):not(.bb-in){display:none!important}
-  .bbar.bbar .btn.primary{background:var(--navy);border-color:var(--navy);color:var(--on-navy)}
+  .bbar.bbar .btn.primary{background:var(--primary,var(--navy));border-color:var(--primary,var(--navy));color:var(--on-primary,var(--on-navy))}
   .bbar.bbar .btn.primary:disabled{background:transparent;border-color:transparent;color:var(--muted)}
   .bbar.bbar .btn[aria-pressed="true"],.bbar.bbar .btn.on{background:var(--callout);border-color:var(--blue)}
   .bbar.bbar kbd,.bbar.bbar .pinlab{display:none}

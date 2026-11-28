@@ -14,46 +14,49 @@ body{background:var(--band);color:var(--ink);font-family:var(--sans);font-size:1
    site's theme-color) covers the status bar while the page scrolls under it. In a browser tab both are 0: no change. */
 body{padding-top:env(safe-area-inset-top,0px)}
 body::before{content:'';position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--heroBg);z-index:50;pointer-events:none}
-h1,h2,h3{font-family:var(--serif);font-weight:400;color:var(--head);line-height:1.2;text-wrap:balance}
+h1,h2,h3{font-family:var(--serif);font-weight:700;letter-spacing:-.01em;color:var(--head);line-height:1.2;text-wrap:balance}   /* Navy & Maple, modernised (27 Nov 2026): bold Caslon headings (were 400) */
 a{color:var(--blue);text-underline-offset:3px;text-decoration-thickness:1px}
 a:hover{color:var(--head)}
 button,input,select,textarea{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+input[type=radio],input[type=checkbox],input[type=range]{accent-color:var(--primary)}   /* 27 Nov 2026: native controls in the theme's primary (navy, brass in dark) instead of the browser's blue */
 .mono,.mtable,.evalchip,.moves,.movelist{font-variant-numeric:tabular-nums}
 
 /* Header and section menu */
-.hero{background:var(--heroBg);color:var(--on-navy)}
+/* 27 Nov 2026 (Navy & Maple, modernised): the header sits on the page with a knight tile beside the name (was a navy band) */
+.hero{background:var(--bg);color:var(--ink)}
 /* The intro header is for the landing page only; the other tabs start straight at the menu. */
 body[data-view]:not([data-view=today]) .hero{display:none}
-.hero .inner{padding-block:22px 18px}
-.hero h1{color:var(--on-navy);margin:0;font-size:1.7rem}
-.hero p{margin:6px 0 0;color:var(--blue-on-navy);font-size:.95rem;max-width:62ch}
-.hero a{color:var(--blue-on-navy)}
+.hero .inner{padding-block:28px 14px}
+.hero h1{color:var(--head);margin:0;font-size:1.75rem;display:flex;align-items:center;gap:12px}
+.hero .logo{flex:none;width:36px;height:36px;border-radius:var(--radius);background:var(--primary);display:grid;place-items:center}.hero .logo img{width:28px;height:28px;display:block}
+.hero p{margin:8px 0 0;color:var(--muted);font-size:.95rem;max-width:62ch}
+.hero a{color:var(--blue)}
 body[data-view="openings"] main.inner,body[data-view="tactics"] main.inner,body[data-view="endgames"] main.inner,body[data-view="drills"] main.inner,body[data-view="today"] main.inner{max-width:1500px}   /* Play, Calculation, Guess the move: widths in shared/trainview.css */
 
 /* Shared pieces of UI */
-.label{font-size:.72rem;text-transform:uppercase;letter-spacing:.14em;color:var(--blue);font-weight:600}
+.label{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600}   /* eyebrow: quiet grey (was link blue) */
 .note{font-size:.85rem;color:var(--muted)}
-.card h2{font-size:1.35rem;margin:4px 0 6px}
+.card h2{font-size:1.45rem;margin:4px 0 6px}
 .facts{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:.9rem;margin:8px 0 0}
 .facts dt{color:var(--muted)}.facts dd{margin:0}
 .btns{display:flex;flex-wrap:wrap;gap:8px}
-.btn{display:inline-block;border:1px solid var(--line);background:var(--white);color:var(--head);padding:8px 14px;border-radius:var(--radius);font-size:.9rem;font-weight:600;cursor:pointer;text-decoration:none;transition:border-color .15s,background .15s}
-.btn:hover{border-color:var(--blue);color:var(--head)}
-.btn.primary{background:var(--navy);color:var(--on-navy);border-color:var(--navy)}
-.btn.primary:hover{background:var(--blue-bg);border-color:var(--blue-bg);color:var(--on-navy)}
+.btn{display:inline-block;border:1px solid var(--border-ctl);background:var(--white);color:var(--head);padding:8px 14px;border-radius:var(--radius);font-size:.9rem;font-weight:600;cursor:pointer;text-decoration:none;transition:border-color .15s,background .15s}   /* sizes unchanged (rows under boards are tuned to them); 27 Nov 2026: 12 px corners, a quiet edge */
+.btn:hover{background:var(--callout);border-color:var(--border-strong);color:var(--head)}
+.btn.primary{background:var(--primary);color:var(--on-primary);border-color:var(--primary)}
+.btn.primary:hover{background:var(--primary-hover);border-color:var(--primary-hover);color:var(--on-primary)}
 .btn:disabled{opacity:.5;cursor:default}
 .btn.sm{padding:5px 10px;font-size:.82rem}
-.btn kbd{font-family:var(--sans);font-size:.68rem;color:var(--muted);border:1px solid var(--line);border-radius:3px;padding:0 4px;margin-left:6px;font-weight:600}
-.btn.primary kbd{color:rgba(255,255,255,.8);border-color:rgba(255,255,255,.35)}   /* Chess Lab's: the key hint on a navy button (was 2.3:1) */
-.status{border-radius:var(--radius);padding:11px 14px;font-size:.95rem;background:var(--callout);color:var(--ink)}
+.btn kbd{font-family:var(--sans);font-size:.68rem;color:var(--muted);border:1px solid var(--border-ctl);background:var(--callout);border-radius:var(--radius-sm);padding:0 5px;margin-left:6px;font-weight:600}
+.btn.primary kbd{color:inherit;background:transparent;border-color:currentColor;opacity:.75}   /* Chess Lab's: the key hint on a navy button (was 2.3:1) */
+.status{border-radius:var(--radius);padding:13px 16px;font-size:.95rem;background:var(--callout);color:var(--ink)}
 .status strong{display:block;margin-bottom:2px;color:var(--head)}
 /* success: the calm dark green panel with softer green text (17 Nov 2026, theme.css --ok-*; was a pale green card) */
 /* one shape for every verdict (colour direction A, as in the private site): a soft panel with a 4 px edge in its colour */
 .status.good{background:var(--success-soft);box-shadow:inset 4px 0 0 var(--success)}.status.good strong{color:var(--success)}
 .status.warn{background:var(--warn-soft);box-shadow:inset 4px 0 0 var(--warn)}.status.warn strong{color:var(--warn)}
 .status.bad{background:var(--error-soft);box-shadow:inset 4px 0 0 var(--error)}.status.bad strong{color:var(--error)}
-.empty{padding:14px;border:1px dashed var(--line);border-radius:var(--radius);color:var(--muted);font-size:.9rem;background:var(--white)}
+.empty{padding:16px;border:1px dashed var(--border-ctl);border-radius:var(--radius);color:var(--muted);font-size:.9rem;background:var(--white)}
 .field{display:flex;flex-direction:column;gap:4px;font-size:.9rem}
 .field select,.field input[type=text],.field input[type=number]{min-width:0;border:1px solid var(--border-strong);border-radius:var(--radius);padding:7px 9px;background:var(--white)}
 .row2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
@@ -69,19 +72,19 @@ textarea{width:100%;min-height:72px;border:1px solid var(--border-strong);border
 @media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}.list{max-height:300px}.grid>.panel{order:-1}}
 
 /* List items */
-.drill{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;text-align:left;width:100%;background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:9px 12px;cursor:pointer;color:var(--ink)}
-.drill:hover{border-color:var(--blue)}
-.drill[aria-current="true"]{border-color:var(--head);box-shadow:inset 3px 0 0 var(--head)}
+.drill{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;text-align:left;width:100%;background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:10px 14px;cursor:pointer;color:var(--ink)}
+.drill:hover{border-color:var(--border-strong)}
+.drill[aria-current="true"]{border-color:var(--primary);box-shadow:inset 0 0 0 1px var(--primary)}
 .drill .opp{font-weight:600;font-size:.95rem;line-height:1.25;color:var(--head)}
 .drill .meta{color:var(--muted);font-size:.8rem}
-.evalchip{font-size:.82rem;font-weight:600;padding:3px 7px;border-radius:3px;background:var(--callout);color:var(--head);white-space:nowrap}
+.evalchip{font-size:.82rem;font-weight:600;padding:3px 7px;border-radius:var(--radius-sm);background:var(--callout);color:var(--head);white-space:nowrap}
 .src{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;font-weight:600;color:var(--brass-text)}
 .filters{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
 .chips{display:flex;flex-wrap:wrap;gap:5px}
 .chip{border:1px solid var(--line);background:var(--white);color:var(--muted);border-radius:var(--radius);padding:4px 10px;font-size:.8rem;font-weight:600;cursor:pointer}
-.chip:hover{border-color:var(--blue)}
-.chip[aria-pressed="true"]{background:var(--navy);color:var(--on-navy);border-color:var(--navy)}
-.session{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--heroBg);color:var(--on-navy);border-radius:var(--radius);padding:12px 14px;margin-bottom:12px}
+.chip:hover{border-color:var(--border-strong)}
+.chip[aria-pressed="true"]{background:var(--primary);color:var(--on-primary);border-color:var(--primary)}
+.session{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--heroBg);color:var(--on-navy);border-radius:var(--radius-card);padding:12px 14px;margin-bottom:12px}
 .session .label{color:var(--blue-on-navy)}
 .session b{font-family:var(--serif);font-weight:400;font-size:1.25rem}
 
@@ -129,9 +132,10 @@ body[data-board="grey"] .board{background:repeating-conic-gradient(#9a9a9a 0 25%
 .note.err{color:var(--bad);min-height:1.2em;margin:0}
 
 /* Training mode switch */
-.seg{display:flex;background:var(--callout);border-radius:var(--radius);padding:3px;gap:3px}
-.seg button{flex:1;border:0;background:transparent;padding:8px 6px;border-radius:3px;font-size:.88rem;font-weight:600;color:var(--muted);cursor:pointer}
+.seg{display:flex;background:var(--callout);border-radius:var(--radius);padding:4px;gap:4px}
+.seg button{flex:1;border:0;background:transparent;padding:8px 6px;border-radius:calc(var(--radius) - 4px);font-size:.88rem;font-weight:600;color:var(--muted);cursor:pointer}
 .seg button[aria-pressed="true"]{background:var(--white);color:var(--head);box-shadow:0 1px 2px rgba(19,40,74,.15)}
+@media (min-width:561px){.tvset .setrow .seg{padding:3px;gap:3px}.tvset .setrow .seg button{padding-left:11px;padding-right:11px}}   /* 27 Nov 2026: Settings' choice rows keep one line on desktop (Board colour's five wrapped "Grey" after the 4 px .seg); phones unchanged */
 
 /* Move list / verdict */
 .moves{font-size:.9rem;color:var(--muted);word-break:break-word}
@@ -152,14 +156,14 @@ body[data-board="grey"] .board{background:repeating-conic-gradient(#9a9a9a 0 25%
 
 /* Stats / tables */
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:20px}
-.stat{background:var(--white);border:1px solid var(--line);border-top:2px solid var(--head);border-radius:var(--radius);padding:14px 16px}
+.stat{background:var(--white);border:1px solid var(--line);border-radius:var(--radius-card);padding:16px 18px}
 .stat b{display:block;font-family:var(--serif);font-weight:400;font-size:2rem;line-height:1.1;color:var(--head);font-variant-numeric:tabular-nums}
-.tablewrap{overflow-x:auto;background:var(--white);border:1px solid var(--line);border-radius:var(--radius)}
+.tablewrap{overflow-x:auto;background:var(--white);border:1px solid var(--line);border-radius:var(--radius-card)}
 table{width:100%;border-collapse:collapse;font-size:.9rem}
 th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line)}
-th{background:var(--navy);color:var(--on-navy);font-weight:600;font-size:.82rem}
+th{background:var(--callout);color:var(--head);font-weight:600;font-size:.82rem}   /* 27 Nov 2026: a quiet beige head (was navy) */
 tr:last-child td{border-bottom:0}
-.pill{display:inline-block;padding:2px 8px;border-radius:3px;font-size:.78rem;font-weight:600}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.78rem;font-weight:600}
 .pill.good{background:var(--good-soft);color:var(--good)}.pill.warn{background:var(--warn-soft);color:var(--warn)}.pill.bad{background:var(--bad-soft);color:var(--bad)}.pill.none{background:var(--band);color:var(--muted)}
 
 /* Openings layout: picker + verdict left, board centre, moves right */
@@ -171,8 +175,8 @@ tr:last-child td{border-bottom:0}
 @media (max-width:1180px){.otrain{grid-template-columns:minmax(0,1fr) minmax(0,340px);grid-template-areas:"board pick" "board side" "board right";grid-template-rows:auto auto 1fr}}
 @media (max-width:860px){.otrain{grid-template-columns:minmax(0,1fr);grid-template-areas:"pick" "board" "side" "right";grid-template-rows:none;gap:12px}}
 @media (hover:none) and (pointer:coarse) and (orientation:landscape) and (min-width:1000px) and (max-width:1180px){.otrain{grid-template-columns:minmax(0,240px) minmax(0,1fr) minmax(0,280px);grid-template-areas:"pick board right" "side board right";grid-template-rows:auto 1fr;gap:12px 16px}}   /* an iPad on its side: three columns, like the desktop (his recheck, 23 Nov 2026; trainview.css) */
-.opickbtn{display:grid;grid-template-columns:1fr auto;grid-template-areas:"lab car" "name car";align-items:center;width:100%;text-align:left;background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:8px 12px;cursor:pointer;box-shadow:0 1px 3px rgba(19,40,74,.08);font:inherit;color:inherit}
-.opickbtn:hover,.opickbtn[aria-expanded="true"]{border-color:var(--blue)}
+.opickbtn{display:grid;grid-template-columns:1fr auto;grid-template-areas:"lab car" "name car";align-items:center;width:100%;text-align:left;background:var(--white);border:1px solid var(--line);border-radius:var(--radius-card);padding:10px 14px;cursor:pointer;font:inherit;color:inherit}
+.opickbtn:hover,.opickbtn[aria-expanded="true"]{border-color:var(--border-strong)}
 .opicklab{grid-area:lab;font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .opickname{grid-area:name;font-family:var(--serif);font-size:1.18rem;font-weight:400;color:var(--head);line-height:1.25;min-width:0;overflow-wrap:anywhere}
 .opickcar{grid-area:car;font-size:1rem;color:var(--muted);padding-left:10px}
@@ -216,8 +220,8 @@ tr:last-child td{border-bottom:0}
 #a-report .gamerow .pill{justify-self:start}
 @media (max-width:560px){#a-report .gamerow{grid-template-columns:6.5em minmax(0,1fr) auto}#a-report .gamerow>:last-child{grid-column:2/-1;text-align:left}}
 .gamerow:last-child{border-bottom:0}
-.prog{height:6px;border-radius:3px;background:var(--callout);overflow:hidden;margin-top:8px}
-.prog i{display:block;height:100%;background:var(--blue-bg);transition:width .3s}
+.prog{height:6px;border-radius:999px;background:var(--callout);overflow:hidden;margin-top:8px}
+.prog i{display:block;height:100%;border-radius:inherit;background:var(--primary);transition:width .3s}
 
 footer{border-top:1px solid var(--line);background:var(--white)}
 footer .inner{padding-block:18px;font-size:.85rem;color:var(--muted)}
@@ -243,15 +247,15 @@ footer .inner{padding-block:18px;font-size:.85rem;color:var(--muted)}
 #td-grid .otrain .opick{display:none}
 @media (max-width:1040px){#td-grid .otrain{grid-template-columns:minmax(0,1fr);grid-template-areas:"board" "side" "right";grid-template-rows:none}}
 @media (hover:none) and (pointer:coarse) and (orientation:landscape) and (min-width:1000px) and (max-width:1180px){#td-grid .otrain{grid-template-columns:minmax(0,1fr) minmax(0,250px)}}   /* an iPad on its side: a narrower side column. Here, after the rule above, or that one wins (the same selector, later in the file) */
-#td-cards .wtrow[aria-current="true"]{box-shadow:inset 3px 0 0 var(--navy);padding-left:8px}
+#td-cards .wtrow[aria-current="true"]{box-shadow:inset 3px 0 0 var(--primary);padding-left:10px}
 /* Today's cards under the session bar (Endgame, Opening line, Watch): Chess Lab's .watoday values */
-.watoday{margin:10px 0;padding:10px 14px}
+.watoday{margin:12px 0;padding:14px 18px}
 .watoday .label{margin:0}.watoday a{text-decoration:none;color:var(--head)}.watoday a:hover{text-decoration:underline}
 .watoday .wthead{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}
 .watoday .walink{margin-left:auto;white-space:nowrap}
 .watoday .wtrow{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline;padding:4px 0;border-top:1px solid var(--line)}
 .watoday .wtrow:first-of-type{border-top:0}
-.watoday .wtlab{font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--blue);flex:0 0 100%}.watoday .wtrow>.note{flex:0 0 100%}
+.watoday .wtlab{font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);flex:0 0 100%;display:flex;align-items:center;gap:6px}.watoday .wtrow>.note{flex:0 0 100%}
 body.welcomed[data-view="today"] .hero{display:none}
 /* In the app (26 Nov 2026, roadmap #288): no website header. Its name is the app's, its links leave the app, and it
    pushed a new user's first board down behind the bottom bar. The "New here?" card is the one welcome. */
@@ -278,13 +282,14 @@ html.in-app .hero{display:none}
 
 
 /* first-visit guide */
-.welcome{position:relative;margin-bottom:12px;border-top:3px solid var(--brass)}
-.welcomex{position:absolute;top:12px;right:14px;font-size:.85rem}
+.welcome{position:relative;margin-bottom:12px;background:var(--callout);border-color:transparent;padding:24px}   /* 27 Nov 2026: a calm beige card (was white with a brass top rule) */
+.welcome h2{font-size:1.6rem}
+.welcomex{position:absolute;top:16px;right:18px;font-size:.85rem}
 .welcomelist{margin:0;padding-left:18px;line-height:1.55}.welcomelist li{margin:4px 0}
 .welcomelead{margin:0;max-width:62ch;line-height:1.5}
 .welcomemore{margin-top:12px}.welcomemore>summary{cursor:pointer;color:var(--blue);font-weight:600;padding:6px 0;min-height:32px}
 .welcomemore[open]>summary{margin-bottom:6px}
-.hero .linkbtn.herohelp{color:var(--brass-light);font-size:inherit}
+.hero .linkbtn.herohelp{color:var(--blue);font-size:inherit}
 
 /* Progress charts (single series each; site navy line/bars, recessive grid, one-hue activity scale) */
 .pcharts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:12px;margin-bottom:16px}
@@ -366,7 +371,7 @@ html.in-app .hero{display:none}
 /* Players' filter rows: the shared chip rows (.tv values; this card sits in .tv3) */
 #p-filt .chips{display:flex;gap:4px;flex-wrap:wrap;align-items:center;position:relative;padding-left:92px;margin:0 0 6px}
 #p-filt .chip{padding:3px 8px;font-size:.75rem;white-space:nowrap;flex:0 0 auto;border-radius:var(--radius)}
-#p-filt .chip[aria-pressed="true"]{background:var(--navy);color:var(--on-navy);border-color:var(--head)}
+#p-filt .chip[aria-pressed="true"]{background:var(--primary);color:var(--on-primary);border-color:var(--primary)}
 #p-filt .flabel{position:absolute;left:0;top:5px;font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 #pl-note{font:inherit;font-size:.9rem;border:1px solid var(--line);border-radius:6px;padding:8px;background:var(--white);color:var(--ink);resize:vertical;box-sizing:border-box}
 .psheet .shgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:12px;margin-top:12px}
@@ -395,7 +400,7 @@ section.nodata .grid>.panel{display:none}
 .watitle{font-weight:600;color:var(--head);text-decoration:none;font-size:1.02rem}.watitle:hover{text-decoration:underline}
 .wabtns{display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap}.wadetail{grid-column:1/-1;border-top:1px solid var(--line);padding-top:10px}
 .waprog{display:flex;align-items:center;gap:10px;margin-top:4px}.wst{font-size:.84rem;font-weight:600}.wst.good{color:var(--good)}.wst.warn{color:var(--head)}
-.wbar{flex:0 1 220px;height:5px;border-radius:3px;background:var(--line);overflow:hidden}.wbar i{display:block;height:100%;background:var(--blue-bg)}
+.wbar{flex:0 1 220px;height:5px;border-radius:3px;background:var(--line);overflow:hidden}.wbar i{display:block;height:100%;background:var(--primary)}
 .wabm{margin:4px 0 6px;padding-left:18px}.watags summary{cursor:pointer}
 /* 19 Nov 2026, phones: the buttons go under the title (beside it, three buttons crushed a long title into a word a line) */
 @media (max-width:560px){.warow{grid-template-columns:minmax(0,1fr)}.wabtns{order:0}.wadetail{order:1}}
@@ -531,7 +536,7 @@ th.num{white-space:normal}   /* a heading wraps rather than run into the next on
 .astudy input{flex:1;min-width:0;border:1px solid var(--border-strong);border-radius:var(--radius);padding:6px 9px;background:var(--white);color:var(--ink)}
 #a-files{margin-top:10px;max-width:760px}
 .afhead,.afile{display:grid;grid-template-columns:minmax(0,1fr) 72px minmax(150px,auto) 40px;gap:8px 12px;align-items:center;padding:7px 10px}
-.afhead{background:var(--navy);color:var(--on-navy);font-size:.82rem;font-weight:600;border-radius:var(--radius) var(--radius) 0 0}
+.afhead{background:var(--callout);color:var(--head);font-size:.82rem;font-weight:600;border-radius:var(--radius) var(--radius) 0 0}
 .afile{border:1px solid var(--line);border-top:0;background:var(--white)}
 .afile:last-child{border-radius:0 0 var(--radius) var(--radius)}
 .afname{overflow-wrap:anywhere;font-size:.9rem}.afn .note{display:none}
@@ -566,7 +571,7 @@ th.num{white-space:normal}   /* a heading wraps rather than run into the next on
 .ares td,.aops td,.aq td{vertical-align:top}
 @media (min-width:641px){.repgrid .card.wide .ares th:first-child,.repgrid .card.wide .ares td:first-child,.repgrid .card.wide .aops th:first-child,.repgrid .card.wide .aops td:first-child{width:28%}}
 #a-report .repgrid{align-items:stretch}
-#a-report th .note{color:var(--blue-on-navy)}
+#a-report th .note{color:var(--muted)}
 .aq,.abook{table-layout:auto}.aq th:first-child,.aq td:first-child,.abook th:first-child,.abook td:first-child{width:auto}
 .aq th,.aq td{white-space:nowrap}
 .aperfs{display:flex;flex-direction:column;align-items:flex-end}
@@ -676,6 +681,23 @@ html.on-ipad #h-watch{display:none}   /* Help's Apple Watch answer: the watch pa
 /* Reviews due (26 Nov 2026, roadmap #275): a small count on a tab, "3 due" in Extra */
 .duebadge{display:inline-block;min-width:1.5em;margin-left:5px;padding:1px 6px;border-radius:999px;background:var(--navy);color:var(--on-navy);font-size:.7rem;font-weight:700;line-height:1.5;text-align:center;vertical-align:1px;font-variant-numeric:tabular-nums}
 .xmenu a > b > .duebadge{font-size:.68rem}
+/* Today, Navy & Maple modernised (27 Nov 2026, his Lovable mock-up): one large "Today's session" heading with "n of m
+   done" and a thin progress bar under it (was a navy bar); done is a filled teal ✓, not done a dashed empty circle, on
+   the cards and in Up next (the ✓ is also in the text or the title, so it never rests on colour alone). */
+.tv .session{display:block;background:none;color:var(--ink);padding:0;border-radius:0;margin:2px 0 14px}
+.tv .session>div:first-child{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 12px}
+.tv .session .label{font:700 1.75rem/1.15 var(--serif);letter-spacing:-.01em;text-transform:none;color:var(--head);margin:0 auto 0 0}
+.tv .session b{font:600 .9rem/1.4 var(--sans);color:var(--head)}
+.tv .session .note{color:var(--muted)!important}   /* TV.session colours it for the navy bar inline */
+.tv .session .progressbar{height:6px;border-radius:999px;background:var(--callout);margin-top:12px;min-width:0}
+.tv .session .progressbar i{background:var(--primary);border-radius:inherit}
+.tdmark{flex:none;width:16px;height:16px;border-radius:50%;display:inline-grid;place-items:center;font:700 10px/1 var(--sans);letter-spacing:0}
+.tdmark.done{background:var(--success);color:var(--surface)}.tdmark.done::before{content:"\2713"}
+.tdmark.todo{border:1.5px dashed var(--border-strong)}
+.watoday .wtlab.isdone{color:var(--success)}
+#td-list .dot{width:18px;height:18px;background:none;border:1.5px dashed var(--border-strong);display:grid;place-items:center}
+#td-list .dot.good{background:var(--success);border:0}#td-list .dot.good::before{content:"\2713";color:var(--surface);font:700 11px/1 var(--sans)}
+#td-list .drill.done{opacity:.75}
 .watoday .wtrow.tddue{flex-wrap:nowrap;align-items:baseline}.watoday .wtrow.tddue>.note{flex:0 0 auto;margin-left:auto}
 /* What things are for (26 Nov 2026, roadmap #291): the line under Openings' Rated / Training switch; how to fill an empty
    Progress tile */

@@ -3,26 +3,33 @@
    between themes, so CSS uses them, never literal colours.
    Home: chess-lab-open/site/shared/ (MIT). The private kit pulls a pinned copy; edit it here, never there.
 
-   Colour direction A, "Navy & Maple, tidied" (18 Nov 2026). Tokens are named by their job (as Radix and Material 3 do),
-   and every background has its text colour checked against it (WCAG 2.2 ratio and APCA Lc):
+   Colour direction A, "Navy & Maple, modernised" (27 Nov 2026, from his Lovable mock-up; was "tidied", 18 Nov 2026): the
+   same navy, brass, Libre Caslon and Source Sans, on a warm paper page with brass links, softer corners and quieter
+   borders. Tokens are named by their job (as Radix and Material 3 do), and every background has its text colour checked
+   against it (WCAG 2.2 ratio, AA 4.5:1 for text, 3:1 for field edges):
      --bg page · --surface cards, panels, nav · --surface-2 callouts, chips, hover · --border dividers, card edges ·
-     --border-strong edges of form fields (3:1, WCAG 1.4.11) · --text body · --text-head headings, button labels ·
-     --text-2 secondary text · --accent links, focus ring, selected tab · --accent-solid primary button and pressed chip
-     fill, --accent-solid-hover, --on-accent text on it, --on-accent-2 softer text on it (hero subtitle) ·
-     --success / --success-soft right, solved · --warn / --warn-soft partly, not first try · --error / --error-soft wrong,
-     missed, --on-error text on a solid error fill · --scrim behind a modal.
+     --border-strong edges of form fields (3:1, WCAG 1.4.11) · --border-ctl outline of a text button (decorative: its
+     label names it) · --text body · --text-head headings, button labels · --text-2 secondary text · --accent links, focus
+     ring · --accent-solid navy fill (selected move, table head) with --on-accent text on it, --accent-solid-hover,
+     --on-accent-2 softer text on it (hero subtitle) · --primary the one main button per screen, pressed chip, progress fill,
+     selected tab; --primary-hover, --on-primary text on it (navy in light; brass with navy text in dark. --accent-solid
+     stays a dark fill with white text in both, because pages also put --on-accent on --hero-bg) · --success /
+     --success-soft right, solved · --warn / --warn-soft partly, not first try · --error / --error-soft wrong, missed,
+     --on-error text on a solid error fill · --scrim behind a modal · --radius controls, --radius-card cards, --radius-sm
+     small marks (chips in text, key caps).
    Right and wrong differ in lightness as well as hue (a teal and an orange, after Okabe and Ito), so they stay apart for
    colour-blind eyes; on the board a ✓ / ✗ badge says it too (WCAG 1.4.1). The board's own colours (Lichess's square
    highlights, the right / wrong flash, the hint ring, eval greys) are the same in both themes, because the wood is.
    The older names (--navy, --white, --blue, --good, …) stay as aliases of the roles, so existing rules keep working. */
 :root{
   color-scheme:light;
-  --bg:#f2f5f9; --surface:#ffffff; --surface-2:#e6ecf5; --border:#d9e1ec; --border-strong:#7f8ca0;
-  --text:#1b2636; --text-head:#13284a; --text-2:#526073;
-  --accent:#1f4e8c; --accent-solid:#13284a; --accent-solid-hover:#1f4e8c; --on-accent:#ffffff; --on-accent-2:#a9c4ec;
-  --success:#0b5a52; --success-soft:#e1f1ea; --warn:#855f12; --warn-soft:#f6eedd;
-  --error:#a64b00; --error-soft:#f9e5df; --on-error:#ffffff;
-  --brass:#b08d57; --brass-light:#cfb27e; --brass-text:#8a6a35;
+  --bg:#f9f6f2; --surface:#ffffff; --surface-2:#f3f0e9; --border:#e5e1d9; --border-strong:#81796d; --border-ctl:#c4bdb0;
+  --text:#252e3d; --text-head:#13284a; --text-2:#555e6c;
+  --accent:#7f5b2b; --accent-solid:#13284a; --accent-solid-hover:#233c67; --on-accent:#ffffff; --on-accent-2:#a9c4ec;
+  --primary:#13284a; --primary-hover:#233c67; --on-primary:#fbf8f1;
+  --success:#006460; --success-soft:#d2f3f0; --warn:#895700; --warn-soft:#fcedcd;
+  --error:#aa4600; --error-soft:#ffe8d6; --on-error:#ffffff;
+  --brass:#b08d57; --brass-light:#cfb27e; --brass-text:#7f5b2b;
   --side:#6a3d9a; --side-soft:#efe7f8;   /* side lines in the reader (Chessable's purple) */
   --tree:#b7c3d4; --chart:#13284a; --hero-bg:#13284a;
   --lv1:#c9d8ee; --lv2:#8fb0dc; --lv3:#3f6fae;
@@ -34,7 +41,7 @@
   --sq-good:rgba(10,80,90,.6); --sq-bad:rgba(240,120,30,.62); --mark-good:#0b5a52; --mark-bad:#a64b00;
   --serif:'Libre Caslon Text',Georgia,'Times New Roman',serif;
   --sans:'Source Sans 3','Segoe UI',system-ui,-apple-system,sans-serif;
-  --radius:4px;
+  --radius:12px; --radius-card:16px; --radius-sm:6px;
   /* older names, kept as aliases of the roles above */
   --band:var(--bg); --white:var(--surface); --callout:var(--surface-2); --line:var(--border);
   --ink:var(--text); --head:var(--text-head); --muted:var(--text-2);
@@ -45,18 +52,20 @@
 }
 /* Dark: the same roles with dark values (also under Match device when the device is dark). */
 :root[data-theme="dark"]{color-scheme:dark;
-  --bg:#0f1722;--surface:#172231;--surface-2:#1e2b3d;--border:#2a394e;--border-strong:#6b7f9c;
-  --text:#e2e7ee;--text-head:#e3eaf5;--text-2:#b0bccc;
-  --accent:#9fc2f2;--accent-solid:#2f5590;--accent-solid-hover:#3a66a8;--on-accent:#ffffff;--on-accent-2:#b9d0f2;
-  --success:#7fd6c8;--success-soft:#13302a;--warn:#e8cc66;--warn-soft:#33290f;--error:#f59e7e;--error-soft:#3a1e1a;--on-error:#1f0d07;
+  --bg:#0a1423;--surface:#121d30;--surface-2:#1b273a;--border:#263142;--border-strong:#748196;--border-ctl:#424e61;
+  --text:#e2ded5;--text-head:#f5f1ea;--text-2:#a4abb8;
+  --accent:#d4b27d;--accent-solid:#2f5590;--accent-solid-hover:#3a66a8;--on-accent:#ffffff;--on-accent-2:#b9d0f2;
+  --primary:#c49d67;--primary-hover:#d4b27d;--on-primary:#0b1628;
+  --success:#4cb9b0;--success-soft:#0a3b38;--warn:#ebbd57;--warn-soft:#433215;--error:#ffa460;--error-soft:#512e1a;--on-error:#1f0d07;
   --brass:#c4a26a;--brass-light:#d8bd8c;--brass-text:#d2b27a;--side:#c6a6ef;--side-soft:#2c2140;
   --tree:#4a5d78;--chart:#9fc2f2;--hero-bg:#0c1420;--lv1:#22385a;--lv2:#2f5287;--lv3:#5b86c4;
   --shadow:rgba(0,0,0,.5);--scrim:rgba(0,0,0,.55);--eval-draw:#6b7787}
 @media (prefers-color-scheme:dark){:root[data-theme="auto"]{color-scheme:dark;
-  --bg:#0f1722;--surface:#172231;--surface-2:#1e2b3d;--border:#2a394e;--border-strong:#6b7f9c;
-  --text:#e2e7ee;--text-head:#e3eaf5;--text-2:#b0bccc;
-  --accent:#9fc2f2;--accent-solid:#2f5590;--accent-solid-hover:#3a66a8;--on-accent:#ffffff;--on-accent-2:#b9d0f2;
-  --success:#7fd6c8;--success-soft:#13302a;--warn:#e8cc66;--warn-soft:#33290f;--error:#f59e7e;--error-soft:#3a1e1a;--on-error:#1f0d07;
+  --bg:#0a1423;--surface:#121d30;--surface-2:#1b273a;--border:#263142;--border-strong:#748196;--border-ctl:#424e61;
+  --text:#e2ded5;--text-head:#f5f1ea;--text-2:#a4abb8;
+  --accent:#d4b27d;--accent-solid:#2f5590;--accent-solid-hover:#3a66a8;--on-accent:#ffffff;--on-accent-2:#b9d0f2;
+  --primary:#c49d67;--primary-hover:#d4b27d;--on-primary:#0b1628;
+  --success:#4cb9b0;--success-soft:#0a3b38;--warn:#ebbd57;--warn-soft:#433215;--error:#ffa460;--error-soft:#512e1a;--on-error:#1f0d07;
   --brass:#c4a26a;--brass-light:#d8bd8c;--brass-text:#d2b27a;--side:#c6a6ef;--side-soft:#2c2140;
   --tree:#4a5d78;--chart:#9fc2f2;--hero-bg:#0c1420;--lv1:#22385a;--lv2:#2f5287;--lv3:#5b86c4;
   --shadow:rgba(0,0,0,.5);--scrim:rgba(0,0,0,.55);--eval-draw:#6b7787}}

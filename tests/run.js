@@ -898,7 +898,8 @@ section('t28: dark mode — a Theme setting that only swaps colour variables');
   const L=h=>{ const [r,g,b]=hex(h); return 0.2126*r+0.7152*g+0.0722*b }, cr=(a,b)=>{ const x=L(a),y=L(b); return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05) };
   const light=css.match(/:root\{([^}]*)\}/)[1];
   const pairs=[['text','surface'],['text-2','surface'],['text-head','surface'],['accent','surface'],['text-2','bg'],['text-2','surface-2'],['success','surface'],['error','surface'],['warn','surface'],
-    ['text','surface-2'],['success','success-soft'],['warn','warn-soft'],['error','error-soft'],['brass-text','surface'],['on-accent','accent-solid'],['on-error','error']];
+    ['text','surface-2'],['success','success-soft'],['warn','warn-soft'],['error','error-soft'],['brass-text','surface'],['on-accent','accent-solid'],['on-error','error'],
+    ['accent','bg'],['accent','surface-2'],['brass-text','surface-2'],['on-primary','primary'],['on-primary','primary-hover'],['on-accent','hero-bg']];   /* 27 Nov 2026: brass links on the paper page, the new primary fill */
   for(const [name,blk] of [['light',light],['dark',block]]){
     const v=k=>{ const m=blk.match(new RegExp('--'+k+':(#[0-9a-f]{6})')); if(!m) throw new Error(name+' has no --'+k); return m[1] };
     const low=pairs.filter(([a,b])=>cr(v(a),v(b))<4.5);
